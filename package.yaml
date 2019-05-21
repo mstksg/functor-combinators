@@ -24,6 +24,7 @@ dependencies:
 - kan-extensions
 - free
 - profunctors
+- mtl
 
 ghc-options:
 - -Wall
