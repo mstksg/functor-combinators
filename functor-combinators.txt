@@ -73,6 +73,10 @@ unDayCons :: Cons Static b c d -> Day b c d
 newtype Free f a
 Free :: (forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free f a
 [runFree] :: Free f a -> forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
+data Step f a
+Step :: Natural -> f a -> Step f a
+[stepPos] :: Step f a -> Natural
+[stepVal] :: Step f a -> f a
 data VoidT a
 instance GHC.Base.Functor (t f g) => GHC.Base.Functor (Data.Functor.Combinator.WrappedHBifunctor t f g)
 instance GHC.Base.Functor f => GHC.Base.Functor (Data.Functor.Combinator.Step f)
