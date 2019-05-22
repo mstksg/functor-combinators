@@ -1,21 +1,29 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DeriveFunctor          #-}
-{-# LANGUAGE EmptyCase              #-}
-{-# LANGUAGE EmptyDataDeriving      #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE KindSignatures         #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TypeApplications       #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeInType             #-}
-{-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE AllowAmbiguousTypes        #-}
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DerivingVia                #-}
+{-# LANGUAGE EmptyCase                  #-}
+{-# LANGUAGE EmptyDataDeriving          #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PatternSynonyms            #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeInType                 #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 module Data.Functor.Combinator (
     type (~>)
@@ -24,39 +32,45 @@ module Data.Functor.Combinator (
   , HBifunctor(..)
   , HIso
   , Tensor(..)
-  , Free(..)
+  , F(..)
   , Monoidal(..)
-  , retractT, toFree
-  , listFAlt, altListF
+  , injectF, retractF, interpretF
+  , WrappedHBifunctor(..)
   ) where
 
--- import           Control.Monad
--- import           Control.Monad.Codensity
-import           Control.Alternative.Free   (Alt(..))
 import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Monad.Reader
-import           Data.Foldable
+import           Control.Monad.Writer        (MonadWriter(..))
+import           Data.Function
 import           Data.Functor.Coyoneda
-import           Data.Functor.Day           (Day(..))
+import           Data.Functor.Day            (Day(..))
 import           Data.Functor.Identity
+import           Data.Functor.Plus
 import           Data.Kind
 import           Data.Profunctor
 import           Data.Proxy
-import           Data.Traversable
-import           GHC.Generics hiding        (C)
-import           Numeric.Natural
-import qualified Control.Alternative.Free   as Alt
-import qualified Control.Monad.Free.Church  as M
-import qualified Data.Functor.Day           as D
+import           Data.Semigroup
+import           GHC.Generics hiding         (C)
+import           GHC.Natural
+import qualified Control.Alternative.Free    as Alt
+import qualified Control.Monad.Free.Church   as MC
+import qualified Data.Functor.Day            as D
 
 type f ~> g = forall x. f x -> g x
 
 infixr 0 ~>
 
 class HFunctor t where
-    map1 :: f ~> g -> t f ~> t g
+    hmap :: f ~> g -> t f ~> t g
 
+    {-# MINIMAL hmap #-}
+
+-- | Laws:
+--
+-- @
+-- retract . inject == id
+-- @
 class HFunctor t => Interpret t where
     type C t :: (Type -> Type) -> Constraint
     inject  :: f ~> t f
@@ -65,15 +79,22 @@ class HFunctor t => Interpret t where
     retract = interpret id
 
     interpret :: C t g => (f ~> g) -> t f ~> g
-    interpret f = retract . map1 f
+    interpret f = retract . hmap f
+
+    {-# MINIMAL inject, (retract | interpret) #-}
 
 class HBifunctor t where
     type I t :: Type -> Type
 
     hleft  :: f ~> j -> t f g ~> t j g
+    hleft = (`hbimap` id)
     hright :: g ~> k -> t f g ~> t f k
+    hright = hbimap id
 
     hbimap :: f ~> j -> g ~> k -> t f g ~> t j k
+    hbimap f g = hleft f . hright g
+
+    {-# MINIMAL hleft, hright | hbimap #-}
 
 type HIso f g = forall p x. Profunctor p => p (f x) (f x) -> p (g x) (g x)
 
@@ -87,34 +108,80 @@ class (HBifunctor t, Functor (I t)) => Tensor t where
     assoc    :: (Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
     disassoc :: (Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t g h)
 
-data Free t i f a = Done (i a)
-                  | More (t f (Free t i f) a)
+    {-# MINIMAL intro1, intro2, elim1, elim2, assoc, disassoc #-}
 
-class Tensor t => Monoidal t where
+data F t i f a = Done (i a)
+               | More (t f (F t i f) a)
+
+-- | __WARNING__: If you use @'TM' t = 'F' t ('I' t)@, you /must/ define
+-- 'retractT' and 'injectT'!
+class (Tensor t, Interpret (TM t)) => Monoidal t where
     type TM t :: (Type -> Type) -> Type -> Type
+
+    nilTM    :: I t ~> TM t f
+    nilTM    = fromF @t . Done
+    consTM   :: t f (TM t f) ~> TM t f
+    consTM     = fromF . More . hright toF
+    unconsTM   :: TM t f ~> (I t :+: t f (TM t f))
+    unconsTM m = case toF @t m of
+      Done x  -> L1 x
+      More xs -> R1 . hright fromF $ xs
+
+    fromF :: F t (I t) f ~> TM t f
+    fromF = \case
+      Done x  -> nilTM @t x
+      More xs -> consTM . hright fromF $ xs
+    toF   :: TM t f ~> F t (I t) f
+    toF x = case unconsTM x of
+      L1 y -> Done y
+      R1 z -> More . hright toF $ z
+
+    retractT :: C (TM t) f => t f f ~> f
+    retractT = retract . toTM
+    injectT  :: C (TM t) f => I t ~> f
+    injectT  = retract . fromF @t . Done
+
     toTM     :: t f f ~> TM t f
-    fromFree :: Free t (I t) f ~> TM t f
+    toTM     = fromF . More . hright (More . hright Done . intro1)
 
-retractT
-    :: ( Monoidal t
-       , Interpret (TM t)
-       , C (TM t) f
-       )
-    => t f f
-    ~> f
-retractT = retract . toTM
+    {-# MINIMAL (nilTM, consTM, unconsTM | fromF, toF) #-}
 
-toFree
-    :: ( Monoidal t
-       , Interpret (TM t)
-       , C (TM t) (Free t (I t) f)
-       )
-    => TM t f
-    ~> Free t (I t) f
-toFree = retract . map1 (More . hright Done . intro1)
+instance HBifunctor t => HFunctor (F t i) where
+    hmap f = \case
+      Done x  -> Done x
+      More xs -> More . hbimap f (hmap f) $ xs
+
+injectF :: forall t f. Tensor t => f ~> F t (I t) f
+injectF = More . hright Done . intro1
+
+retractF
+    :: forall t f. (Monoidal t, C (TM t) f)
+    => F t (I t) f ~> f
+retractF = \case
+    Done x  -> injectT @t x
+    More xs -> retractT . hright retractF $ xs
+
+interpretF
+    :: forall t f g. (Monoidal t, C (TM t) g)
+    => (f ~> g)
+    -> F t (I t) f ~> g
+interpretF f = \case
+    Done x  -> injectT @t x
+    More xs -> retractT @t . hbimap f (interpretF f) $ xs
+
+-- newtype FInterpret t i f a
+--     = FInterpret { runFInterpret :: F t i f a }
+--   deriving HFunctor
+
+-- instance (Monoidal t, i ~ I t) => Interpret (FInterpret t i) where
+--     type C (FInterpret t i) = C (TM t)
+--     inject      = FInterpret . injectF
+--     retract     = retractF . runFInterpret
+--     interpret f = interpretF f . runFInterpret
+
 
 instance HFunctor Coyoneda where
-    map1 = hoistCoyoneda
+    hmap = hoistCoyoneda
 
 instance Interpret Coyoneda where
     type C Coyoneda = Functor
@@ -123,7 +190,7 @@ instance Interpret Coyoneda where
     interpret f (Coyoneda g x) = g <$> f x
 
 instance HFunctor Ap where
-    map1 = hoistAp
+    hmap = hoistAp
 
 instance Interpret Ap where
     type C Ap = Applicative
@@ -146,52 +213,46 @@ instance Tensor (:*:) where
     assoc (x :*: (y :*: z)) = (x :*: y) :*: z
     disassoc ((x :*: y) :*: z) = x :*: (y :*: z)
 
+-- | This is the Free 'Plus'.
 newtype ListF f a = ListF { runListF :: [f a] }
   deriving (Show, Eq, Ord, Functor)
-
--- | We can embed 'ListF' in 'Alt'.  However, we can't go backwards,
--- because 'Alt' allows multiplication as well as addition.
-listFAlt :: ListF f ~> Alt f
-listFAlt = retract . map1 Alt.liftAlt
-
--- | Extract an 'Alt' back into a 'ListF', but fail if any '<*>' was used.
--- Should be a (partial) inverse with 'listFAlt'.
-altListF :: forall f. Functor f => Alt f ~> Maybe :.: ListF f
-altListF (Alt xs) = Comp1 . fmap (ListF . concat) . traverse go $ xs
-  where
-    go :: Alt.AltF f x -> Maybe [f x]
-    go = \case
-      Alt.Ap x (Alt fs) -> for fs $ \case
-        Alt.Pure f -> Just (f <$> x)
-        _          -> Nothing
-      _                 -> Nothing
 
 instance Applicative f => Applicative (ListF f) where
     pure  = ListF . (:[]) . pure
     ListF fs <*> ListF xs = ListF $ liftA2 (<*>) fs xs
 
 instance Monoidal (:*:) where
-    -- this could almost be Alt, but there is too much structure there
     type TM (:*:) = ListF
 
-    toTM (x :*: y) = ListF [x, y]
-    fromFree = \case
+    nilTM  = const (ListF [])
+    consTM (x :*: y) = ListF $ x : runListF y
+    unconsTM (ListF xs) = case xs of
+      []   -> L1 Proxy
+      y:ys -> R1 $ y :*: ListF ys
+
+    fromF = \case
       Done _ -> ListF []
-      More (x :*: y) -> ListF $ x : runListF (fromFree y)
+      More (x :*: y) -> ListF $ x : runListF (fromF y)
+    toF (ListF xs) = case xs of
+      []   -> Done Proxy
+      y:ys -> More (y :*: toF (ListF ys))
+
+    retractT (x :*: y) = x <!> y
+    toTM (x :*: y) = ListF [x, y]
 
 instance HFunctor ListF where
-    map1 f (ListF xs) = ListF (map f xs)
+    hmap f (ListF xs) = ListF (map f xs)
 
 instance Interpret ListF where
-    type C ListF = Alternative
+    type C ListF = Plus
     inject = ListF . (:[])
-    retract = asum . runListF
+    retract = foldr (<!>) zero . runListF
 
-instance HFunctor Alt where
-    map1 = Alt.hoistAlt
+instance HFunctor Alt.Alt where
+    hmap = Alt.hoistAlt
 
-instance Interpret Alt where
-    type C Alt = Alternative
+instance Interpret Alt.Alt where
+    type C Alt.Alt = Alternative
     inject = Alt.liftAlt
     interpret = Alt.runAlt
 
@@ -212,10 +273,22 @@ instance Tensor Day where
 
 instance Monoidal Day where
     type TM Day = Ap
-    toTM (Day x y z) = z <$> liftAp x <*> liftAp y
-    fromFree = \case
+
+    nilTM              = pure . runIdentity
+    consTM (Day x y z) = z <$> liftAp x <*> y
+    unconsTM = \case
+      Pure x -> L1 $ Identity x
+      Ap x y -> R1 $ Day x y (&)
+
+    fromF = \case
       Done (Identity x) -> pure x
-      More (Day x y z)  -> z <$> liftAp x <*> fromFree y
+      More (Day x y z)  -> z <$> liftAp x <*> fromF y
+    toF = \case
+      Pure x -> Done $ Identity x
+      Ap x y -> More $ Day x (toF y) (&)
+
+    retractT (Day x y z) = z <$> x <*> y
+    toTM (Day x y z) = z <$> liftAp x <*> liftAp y
 
 data VoidT a
   deriving (Show, Eq, Ord, Functor)
@@ -227,13 +300,13 @@ data Step f a = Step { stepPos :: Natural, stepVal :: f a }
   deriving (Show, Eq, Ord, Functor)
 
 instance HFunctor Step where
-    map1 f (Step n x) = Step n (f x)
+    hmap f (Step n x) = Step n (f x)
 
 instance Interpret Step where
-    type C Step = MonadReader Natural
+    type C Step = MonadWriter (Sum Natural)
     inject = Step 0
-    retract (Step n x) = local (+ n) x
-    interpret f (Step n x) = local (+ n) (f x)
+    retract (Step n x)     = tell (Sum n) *> x
+    interpret f (Step n x) = tell (Sum n) *> f x
 
 instance HBifunctor (:+:) where
     type I (:+:) = VoidT
@@ -270,65 +343,91 @@ instance Tensor (:+:) where
 
 instance Monoidal (:+:) where
     type TM (:+:) = Step
+
+    nilTM = absurdT
+    consTM = \case
+      L1 x          -> Step 0       x
+      R1 (Step n y) -> Step (n + 1) y
+    unconsTM (Step n x) = R1 $ case minusNaturalMaybe n 1 of
+      Nothing -> L1 x
+      Just m  -> R1 (Step m x)
+
+    fromF = \case
+      Done x      -> absurdT x
+      More (L1 x) -> Step 0 x
+      More (R1 y) -> case fromF y of
+        Step n z -> Step (n + 1) z
+    toF (Step n x) = go n
+      where
+        go (flip minusNaturalMaybe 1 -> i) = case i of
+          Nothing -> More (L1 x)
+          Just j  -> More (R1 (go j))
+
+    retractT = \case
+      L1 x -> x
+      R1 y -> y
     toTM = \case
       L1 x -> Step 0 x
       R1 y -> Step 1 y
-    fromFree = \case
-      Done x      -> absurdT x
-      More (L1 x) -> Step 0 x
-      More (R1 y) -> case fromFree y of
-        Step n z -> Step (n + 1) z
 
+newtype Comp f g a = CompCo { unCompCo :: Coyoneda f (g a) }
+  deriving Functor
+  deriving (Applicative, Alternative) via (Coyoneda f :.: g)
 
--- instance Functor f => Interpret ((:.:) f) where
---     type C ((:.:) f) = Monad f
---     inject x = Comp1 (pure x)
---     -- retract (Comp1 x) = join x
+comp :: f (g a) -> Comp f g a
+comp = CompCo . inject
 
--- data Freer :: (Type -> Type) -> Type -> Type where
---     Purer   :: a -> Freer f a
---     Bindier :: f x -> (x -> Freer f a) -> Freer f a
+pattern Comp :: Functor f => f (g a) -> Comp f g a
+pattern Comp { unComp } <- (retract.unCompCo->unComp)
+  where
+    Comp x = comp x
 
--- instance Functor (Freer f) where
---     fmap f = \case
---       Purer x     -> Purer (f x)
---       Bindier x y -> Bindier x (fmap f . y)
+instance HBifunctor Comp where
+    type I Comp = Identity
 
--- instance Applicative (Freer f) where
---     pure  = Purer
---     (<*>) = ap
+    hleft  f = CompCo . hmap f . unCompCo
+    hright g = CompCo . fmap g . unCompCo
 
--- instance Monad (Freer f) where
---     return = pure
---     (>>=) = \case
---       Purer x     -> ($ x)
---       Bindier x y -> \f -> Bindier x ((f =<<) . y)
+    hbimap f g = CompCo . hmap f . fmap g . unCompCo
 
--- instance M.MonadFree f (Freer f) where
---     wrap = (`Bindier` id)
+instance Tensor Comp where
+    intro1 = CompCo . fmap Identity . inject
+    intro2 = Comp . Identity
 
--- instance HFunctor Freer where
---     map1 f = \case
---       Purer x     -> Purer x
---       Bindier x y -> Bindier (f x) (map1 f . y)
+    elim1  = fmap runIdentity . unComp
+    elim2  = runIdentity . unComp
 
--- instance Interpret Freer where
---     type C Freer = Monad
---     inject x = Bindier x Purer
---     retract  = \case
---       Purer x     -> pure x
---       Bindier x y -> retract . y =<< x
+    assoc = Comp . Comp . fmap unComp . unComp
+    disassoc = Comp . fmap Comp . unComp . unComp
 
--- instance HBifunctor (:.:) where
---     type I (:.:) = Identity
+instance Monoidal Comp where
+    type TM Comp = F Comp Identity
 
---     hleft f  (Comp1 x) = Comp1 (f x)
-    -- hright g (Comp1 x) = Comp1 (_ x)
-    -- hbimap f g = _
+    fromF = id
+    toF   = id
 
-instance Functor f => HFunctor ((:.:) f) where
-    map1 f (Comp1 x) = Comp1 (fmap f x)
+    retractT = join . unComp
+    injectT  = pure . runIdentity
+    toTM     = More . hright (More . CompCo . fmap (Done . Identity) . inject)
 
-instance HFunctor M.F where
-    map1 = M.hoistF
+instance Interpret (F Comp Identity) where
+    type C (F Comp Identity) = Monad
+    inject    = injectF
+    retract   = retractF
+    interpret = interpretF
+
+newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
+    = WrappedHBifunctor { unwrapHBifunctor :: t f g a }
+  deriving Functor
+
+instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
+    hmap f = WrappedHBifunctor . hright f . unwrapHBifunctor
+
+deriving via (WrappedHBifunctor Comp f)   instance HFunctor (Comp f)
+deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
+deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
+deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
+
+instance HFunctor MC.F where
+    hmap = MC.hoistF
 
