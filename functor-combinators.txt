@@ -24,16 +24,15 @@ class HFunctor t => Interpret t where {
 inject :: Interpret t => f ~> t f
 retract :: (Interpret t, C t f) => t f ~> f
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
-class HBifunctor t where {
-    type family I t :: Type -> Type;
-}
+class HBifunctor t
 hleft :: HBifunctor t => (f ~> j) -> t f g ~> t j g
 hright :: HBifunctor t => (g ~> k) -> t f g ~> t f k
 hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
-type HIso f g = forall p x. Profunctor p => p (f x) (f x) -> p (g x) (g x)
-class (HBifunctor t, Functor (I t)) => Tensor t
+class HBifunctor t => Tensor t where {
+    type family I t :: Type -> Type;
+}
 intro1 :: Tensor t => f ~> t f (I t)
-intro2 :: Tensor t => g ~> t (I t) g
+intro2 :: (Tensor t, Functor g) => g ~> t (I t) g
 elim1 :: (Tensor t, Functor f) => t f (I t) ~> f
 elim2 :: (Tensor t, Functor g) => t (I t) g ~> g
 assoc :: (Tensor t, Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
@@ -41,17 +40,16 @@ disassoc :: (Tensor t, Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t
 data F t i f a
 Done :: i a -> F t i f a
 More :: t f (F t i f) a -> F t i f a
-
--- | <b>WARNING</b>: If you use <tt><a>TM</a> t = <a>F</a> t (<a>I</a>
---   t)</tt>, you <i>must</i> define <a>retractT</a> and <a>injectT</a>!
 class (Tensor t, Interpret (TM t)) => Monoidal t where {
     type family TM t :: (Type -> Type) -> Type -> Type;
 }
 nilTM :: Monoidal t => I t ~> TM t f
 consTM :: Monoidal t => t f (TM t f) ~> TM t f
 unconsTM :: Monoidal t => TM t f ~> (I t :+: t f (TM t f))
+appendTM :: Monoidal t => t (TM t f) (TM t f) ~> TM t f
 fromF :: Monoidal t => F t (I t) f ~> TM t f
 toF :: Monoidal t => TM t f ~> F t (I t) f
+appendF :: Monoidal t => t (F t (I t) f) (F t (I t) f) ~> F t (I t) f
 retractT :: (Monoidal t, C (TM t) f) => t f f ~> f
 injectT :: (Monoidal t, C (TM t) f) => I t ~> f
 toTM :: Monoidal t => t f f ~> TM t f
@@ -61,7 +59,13 @@ interpretF :: forall t f g. (Monoidal t, C (TM t) g) => (f ~> g) -> F t (I t) f 
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
 WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
+data Cons :: ((Type -> Type) -> Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Type -> Type
+[:=>] :: f x -> p g x a -> Cons p f g a
+compCons :: (f :.: g) ~> Cons Star f g
+consComp :: Functor f => Cons Star f g ~> (f :.: g)
 instance GHC.Base.Functor (t f g) => GHC.Base.Functor (Data.Functor.Combinator.WrappedHBifunctor t f g)
+instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.Free
+instance GHC.Base.Functor (Data.Functor.Combinator.Free f)
 instance (GHC.Base.Alternative f, GHC.Base.Applicative g) => GHC.Base.Alternative (Data.Functor.Combinator.Comp f g)
 instance (GHC.Base.Applicative f, GHC.Base.Applicative g) => GHC.Base.Applicative (Data.Functor.Combinator.Comp f g)
 instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Combinator.Comp f g)
@@ -81,26 +85,37 @@ instance Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.Comp f)
 instance Data.Functor.Combinator.HFunctor (Data.Functor.Day.Day f)
 instance Data.Functor.Combinator.HFunctor ((GHC.Generics.:*:) f)
 instance Data.Functor.Combinator.HFunctor ((GHC.Generics.:+:) f)
+instance Data.Functor.Combinator.HBifunctor (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star)
+instance Data.Functor.Combinator.Tensor (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star)
+instance Data.Functor.Combinator.Monoidal (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star)
+instance Data.Functor.Combinator.Interpret (Data.Functor.Combinator.F (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star) Data.Functor.Identity.Identity)
+instance Data.Functor.Combinator.HBifunctor (Data.Functor.Combinator.Cons Data.Semigroupoid.Static.Static)
+instance Data.Functor.Combinator.Tensor (Data.Functor.Combinator.Cons Data.Semigroupoid.Static.Static)
+instance Data.Functor.Combinator.Monoidal (Data.Functor.Combinator.Cons Data.Semigroupoid.Static.Static)
 instance forall k (t :: (* -> *) -> (* -> *) -> k -> *) (f :: * -> *). Data.Functor.Combinator.HBifunctor t => Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.WrappedHBifunctor t f)
+instance GHC.Base.Applicative (Data.Functor.Combinator.Free f)
+instance GHC.Base.Monad (Data.Functor.Combinator.Free f)
+instance Control.Monad.Free.Class.MonadFree f (Data.Functor.Combinator.Free f)
+instance Data.Functor.Combinator.Monoidal Data.Functor.Combinator.Comp
+instance Data.Functor.Combinator.Interpret Data.Functor.Combinator.Free
 instance Data.Functor.Combinator.HBifunctor Data.Functor.Combinator.Comp
 instance Data.Functor.Combinator.Tensor Data.Functor.Combinator.Comp
-instance Data.Functor.Combinator.Monoidal Data.Functor.Combinator.Comp
-instance Data.Functor.Combinator.Interpret (Data.Functor.Combinator.F Data.Functor.Combinator.Comp Data.Functor.Identity.Identity)
 instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.Step
 instance Data.Functor.Combinator.Interpret Data.Functor.Combinator.Step
 instance Data.Functor.Combinator.Monoidal (GHC.Generics.:+:)
-instance Data.Functor.Combinator.HBifunctor (GHC.Generics.:+:)
+instance Data.Functor.Combinator.Tensor (GHC.Generics.:+:)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Data.Functor.Combinator.ListF f)
 instance Data.Functor.Combinator.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.ListF
 instance Data.Functor.Combinator.Interpret Data.Functor.Combinator.ListF
 instance Data.Functor.Combinator.Monoidal Data.Functor.Day.Day
+instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, forall (g :: * -> *). GHC.Base.Functor g => GHC.Base.Functor (t f g)) => GHC.Base.Functor (Data.Functor.Combinator.F t i f)
 instance forall k1 k2 (t :: (k1 -> *) -> (k2 -> *) -> k2 -> *) (i :: k2 -> *). Data.Functor.Combinator.HBifunctor t => Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.F t i)
 instance Data.Functor.Combinator.Tensor (GHC.Generics.:*:)
 instance Data.Functor.Combinator.Tensor Data.Functor.Day.Day
-instance Data.Functor.Combinator.Tensor (GHC.Generics.:+:)
 instance Data.Functor.Combinator.HBifunctor (GHC.Generics.:*:)
 instance Data.Functor.Combinator.HBifunctor Data.Functor.Day.Day
+instance Data.Functor.Combinator.HBifunctor (GHC.Generics.:+:)
 instance Data.Functor.Combinator.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.Combinator.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.Combinator.Interpret Control.Alternative.Free.Alt
