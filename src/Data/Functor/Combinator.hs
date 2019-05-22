@@ -30,32 +30,38 @@ module Data.Functor.Combinator (
   , HFunctor(..)
   , Interpret(..)
   , HBifunctor(..)
-  , HIso
   , Tensor(..)
   , F(..)
   , Monoidal(..)
   , injectF, retractF, interpretF
   , WrappedHBifunctor(..)
+  , Cons(..)
+  , compCons, consComp
   ) where
 
 import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Monad.Reader
-import           Control.Monad.Writer        (MonadWriter(..))
+import           Control.Monad.Writer      (MonadWriter(..))
 import           Data.Function
 import           Data.Functor.Coyoneda
-import           Data.Functor.Day            (Day(..))
+import           Data.Functor.Day          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Kind
 import           Data.Profunctor
+import           Data.Profunctor.Cayley
+import           Data.Profunctor.Monad
 import           Data.Proxy
 import           Data.Semigroup
-import           GHC.Generics hiding         (C)
+import           Data.Semigroupoid.Static
+import           GHC.Generics hiding       (C)
 import           GHC.Natural
-import qualified Control.Alternative.Free    as Alt
-import qualified Control.Monad.Free.Church   as MC
-import qualified Data.Functor.Day            as D
+import qualified Control.Alternative.Free  as Alt
+import qualified Control.Arrow             as Arr
+import qualified Control.Monad.Free        as M
+import qualified Control.Monad.Free.Church as MC
+import qualified Data.Functor.Day          as D
 
 type f ~> g = forall x. f x -> g x
 
@@ -84,8 +90,6 @@ class HFunctor t => Interpret t where
     {-# MINIMAL inject, (retract | interpret) #-}
 
 class HBifunctor t where
-    type I t :: Type -> Type
-
     hleft  :: f ~> j -> t f g ~> t j g
     hleft = (`hbimap` id)
     hright :: g ~> k -> t f g ~> t f k
@@ -96,11 +100,11 @@ class HBifunctor t where
 
     {-# MINIMAL hleft, hright | hbimap #-}
 
-type HIso f g = forall p x. Profunctor p => p (f x) (f x) -> p (g x) (g x)
+class HBifunctor t => Tensor t where
+    type I t :: Type -> Type
 
-class (HBifunctor t, Functor (I t)) => Tensor t where
     intro1 :: f ~> t f (I t)
-    intro2 :: g ~> t (I t) g
+    intro2 :: Functor g => g ~> t (I t) g
 
     elim1  :: Functor f => t f (I t) ~> f
     elim2  :: Functor g => t (I t) g ~> g
@@ -113,8 +117,6 @@ class (HBifunctor t, Functor (I t)) => Tensor t where
 data F t i f a = Done (i a)
                | More (t f (F t i f) a)
 
--- | __WARNING__: If you use @'TM' t = 'F' t ('I' t)@, you /must/ define
--- 'retractT' and 'injectT'!
 class (Tensor t, Interpret (TM t)) => Monoidal t where
     type TM t :: (Type -> Type) -> Type -> Type
 
@@ -198,12 +200,13 @@ instance Interpret Ap where
     interpret = runAp
 
 instance HBifunctor (:*:) where
-    type I (:*:) = Proxy
     hleft  f (x :*: y) = f x :*:   y
     hright g (x :*: y) =   x :*: g y
     hbimap f g (x :*: y) = f x :*: g y
 
 instance Tensor (:*:) where
+    type I (:*:) = Proxy
+
     intro1 = (:*: Proxy)
     intro2 = (Proxy :*:)
 
@@ -257,13 +260,13 @@ instance Interpret Alt.Alt where
     interpret = Alt.runAlt
 
 instance HBifunctor Day where
-    type I Day = Identity
-
     hleft  = D.trans1
     hright = D.trans2
     hbimap f g (Day x y z) = Day (f x) (g y) z
 
 instance Tensor Day where
+    type I Day = Identity
+
     intro1   = D.intro2
     intro2   = D.intro1
     elim1    = D.elim2
@@ -309,8 +312,6 @@ instance Interpret Step where
     interpret f (Step n x) = tell (Sum n) *> f x
 
 instance HBifunctor (:+:) where
-    type I (:+:) = VoidT
-
     hleft f = \case
       L1 x -> L1 (f x)
       R1 y -> R1 y
@@ -324,6 +325,8 @@ instance HBifunctor (:+:) where
       R1 y -> R1 (g y)
 
 instance Tensor (:+:) where
+    type I (:+:) = VoidT
+
     intro1 = L1
     intro2 = R1
     elim1  = \case
@@ -383,14 +386,14 @@ pattern Comp { unComp } <- (retract.unCompCo->unComp)
     Comp x = comp x
 
 instance HBifunctor Comp where
-    type I Comp = Identity
-
     hleft  f = CompCo . hmap f . unCompCo
     hright g = CompCo . fmap g . unCompCo
 
     hbimap f g = CompCo . hmap f . fmap g . unCompCo
 
 instance Tensor Comp where
+    type I Comp = Identity
+
     intro1 = CompCo . fmap Identity . inject
     intro2 = Comp . Identity
 
@@ -431,3 +434,83 @@ deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
 instance HFunctor MC.F where
     hmap = MC.hoistF
 
+data Cons
+        :: ((Type -> Type) -> Type -> Type -> Type)
+        -> (Type -> Type)
+        -> (Type -> Type)
+        -> Type
+        -> Type where
+    (:=>) :: f x -> p g x a -> Cons p f g a
+
+consComp :: Functor f => Cons Star f g ~> f :.: g
+consComp (x :=> Star y) = Comp1 $ y <$> x
+
+compCons :: f :.: g ~> Cons Star f g
+compCons (Comp1 x) = x :=> Star id
+
+instance HBifunctor (Cons Star) where
+    hleft  f (x :=> y) = f x :=> y
+    hright g (x :=> Star y) = x :=> Star (g . y)
+
+    hbimap f g (x :=> Star y) = f x :=> Star (g . y)
+
+instance Tensor (Cons Star) where
+    type I (Cons Star) = Identity
+
+    intro1 = (:=> Star Identity)
+    intro2 = (Identity () :=>) . Star . const
+
+    elim1 (x :=> Star y) = runIdentity . y <$> x
+    elim2 (x :=> Star y) = y (runIdentity x)
+
+    assoc (x :=> Star y) = (x :=> Star (unComp1 . consComp . y)) :=> Star id
+    disassoc ((x :=> Star y) :=> z) = x :=> Star ((:=> z) . y)
+
+instance Monoidal (Cons Star) where
+    type TM (Cons Star) = F (Cons Star) Identity
+
+    nilTM  = Done
+    consTM = More
+    unconsTM = \case
+      Done x -> L1 x
+      More y -> R1 y
+
+    retractT (x :=> Star y) = x >>= y
+    injectT = pure . runIdentity
+    toTM (x :=> Star y) = More $ x :=> Star (More . (:=> Star (Done . Identity)) . y)
+
+instance Interpret (F (Cons Star) Identity) where
+    type C (F (Cons Star) Identity) = Monad
+    inject = injectF
+    retract = retractF
+
+instance HBifunctor (Cons Static) where
+    hleft  f (x :=> y) = f x :=> y
+    hright g (x :=> Static y) = x :=> Static (g y)
+
+    hbimap f g (x :=> Static y) = f x :=> Static (g y)
+
+instance Tensor (Cons Static) where
+    type I (Cons Static) = Identity
+
+    intro1 = (:=> Static (Identity id))
+    intro2 x = Identity () :=> Static (const <$> x)
+
+    elim1 (x :=> Static (Identity y)) = y <$> x
+    elim2 (Identity x :=> Static y) = ($ x) <$> y
+
+    assoc (x :=> Static (y :=> Static z)) = (x :=> Static ((,) <$> y)) :=> Static (uncurry <$> z)
+    disassoc ((x :=> Static y) :=> Static z) = x :=> Static ((($) <$> y) :=> Static ((.) <$> z))
+
+instance Monoidal (Cons Static) where
+    type TM (Cons Static) = Ap
+
+    nilTM  = pure . runIdentity
+    consTM (x :=> y) = (&) <$> liftAp x <*> runStatic y
+    unconsTM = \case
+      Pure x -> L1 $ Identity x
+      Ap x y -> R1 $ x :=> Static y
+
+    retractT (x :=> Static y) = x <**> y
+    injectT = pure . runIdentity
+    toTM (x :=> Static y) = Ap x (liftAp y)
