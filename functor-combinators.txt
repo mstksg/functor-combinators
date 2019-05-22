@@ -29,6 +29,17 @@ Step :: Natural -> f a -> Step f a
 class Applicative f => AccumNat f
 stepWith :: AccumNat f => Natural -> a -> f a
 step :: AccumNat f => Natural -> f ()
+
+-- | The identity functor of <tt>:+:</tt>.
+data VoidT a
+
+-- | We have a natural transformation between <a>VoidT</a> and any other
+--   functor <tt>f</tt> with no constraints.
+absurdT :: VoidT a -> f a
+instance GHC.Base.Functor Control.Applicative.Step.VoidT
+instance GHC.Classes.Ord (Control.Applicative.Step.VoidT a)
+instance GHC.Classes.Eq (Control.Applicative.Step.VoidT a)
+instance GHC.Show.Show (Control.Applicative.Step.VoidT a)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Step f)
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Step f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step f a)
@@ -420,24 +431,11 @@ interpretF :: forall t f g. (Monoidal t, C (TM t) g) => (f ~> g) -> F t (I t) f 
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
 WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
-
--- | Church-encoded Freer monad
-newtype Free f a
-Free :: (forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free f a
-[runFree] :: Free f a -> forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
-
--- | The identity functor of <a>:+:</a>.
-data VoidT a
 instance GHC.Base.Functor (t f g) => GHC.Base.Functor (Data.Functor.Combinator.Class.WrappedHBifunctor t f g)
-instance GHC.Base.Functor Data.Functor.Combinator.Class.VoidT
-instance forall k (a :: k). GHC.Classes.Ord (Data.Functor.Combinator.Class.VoidT a)
-instance forall k (a :: k). GHC.Classes.Eq (Data.Functor.Combinator.Class.VoidT a)
-instance forall k (a :: k). GHC.Show.Show (Data.Functor.Combinator.Class.VoidT a)
 instance Data.Functor.Combinator.Class.HFunctor (Data.Functor.Day.Day f)
 instance Data.Functor.Combinator.Class.HFunctor ((GHC.Generics.:*:) f)
 instance Data.Functor.Combinator.Class.HFunctor ((GHC.Generics.:+:) f)
 instance forall k (t :: (* -> *) -> (* -> *) -> k -> *) (f :: * -> *). Data.Functor.Combinator.Class.HBifunctor t => Data.Functor.Combinator.Class.HFunctor (Data.Functor.Combinator.Class.WrappedHBifunctor t f)
-instance Data.Functor.Combinator.Class.Tensor (GHC.Generics.:+:)
 instance Data.Functor.Combinator.Class.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Combinator.Class.Monoidal Data.Functor.Day.Day
 instance Data.Functor.Combinator.Class.Monoidal (GHC.Generics.:+:)
@@ -445,6 +443,7 @@ instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Ba
 instance forall k1 k2 (t :: (k1 -> *) -> (k2 -> *) -> k2 -> *) (i :: k2 -> *). Data.Functor.Combinator.Class.HBifunctor t => Data.Functor.Combinator.Class.HFunctor (Data.Functor.Combinator.Class.F t i)
 instance Data.Functor.Combinator.Class.Tensor (GHC.Generics.:*:)
 instance Data.Functor.Combinator.Class.Tensor Data.Functor.Day.Day
+instance Data.Functor.Combinator.Class.Tensor (GHC.Generics.:+:)
 instance Data.Functor.Combinator.Class.HBifunctor (GHC.Generics.:*:)
 instance Data.Functor.Combinator.Class.HBifunctor Data.Functor.Day.Day
 instance Data.Functor.Combinator.Class.HBifunctor (GHC.Generics.:+:)
