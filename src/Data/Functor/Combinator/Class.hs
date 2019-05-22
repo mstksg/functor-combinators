@@ -36,19 +36,17 @@ module Data.Functor.Combinator.Class (
   , Monoidal(..)
   , injectF, retractF, interpretF
   , WrappedHBifunctor(..)
-  , Cons(..)
   -- * Instances
-  , Comp, pattern Comp, unComp, comp
-  , DayCons, pattern DayCons, unDayCons
   , Free(..)
-  , Step(..)
   , VoidT
   ) where
 
 import           Control.Applicative
 import           Control.Applicative.Free
+import           Control.Applicative.ListF
+import           Control.Applicative.Step
 import           Control.Monad.Reader
-import           Control.Monad.Writer      (MonadWriter(..))
+import           Control.Monad.Writer      (MonadWriter(..), WriterT(..))
 import           Data.Function
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day          (Day(..))
@@ -217,18 +215,10 @@ instance Tensor (:*:) where
     assoc (x :*: (y :*: z)) = (x :*: y) :*: z
     disassoc ((x :*: y) :*: z) = x :*: (y :*: z)
 
--- | This is the Free 'Plus'.
-newtype ListF f a = ListF { runListF :: [f a] }
-  deriving (Show, Eq, Ord, Functor)
-
-instance Applicative f => Applicative (ListF f) where
-    pure  = ListF . (:[]) . pure
-    ListF fs <*> ListF xs = ListF $ liftA2 (<*>) fs xs
-
 instance Monoidal (:*:) where
     type TM (:*:) = ListF
 
-    nilTM  = const (ListF [])
+    nilTM ~Proxy = ListF []
     consTM (x :*: y) = ListF $ x : runListF y
     unconsTM (ListF xs) = case xs of
       []   -> L1 Proxy
@@ -245,7 +235,6 @@ instance Monoidal (:*:) where
       Done ~Proxy       -> y
       More (x' :*: x'') -> More (x' :*: appendF (x'' :*: y))
 
-    retractT (x :*: y) = x <!> y
     toTM (x :*: y) = ListF [x, y]
 
 instance HFunctor ListF where
@@ -309,17 +298,14 @@ data VoidT a
 absurdT :: VoidT ~> f
 absurdT = \case {}
 
-data Step f a = Step { stepPos :: Natural, stepVal :: f a }
-  deriving (Show, Eq, Ord, Functor)
-
 instance HFunctor Step where
     hmap f (Step n x) = Step n (f x)
 
 instance Interpret Step where
-    type C Step = MonadWriter (Sum Natural)
+    type C Step = AccumNat
     inject = Step 0
-    retract (Step n x)     = tell (Sum n) *> x
-    interpret f (Step n x) = tell (Sum n) *> f x
+    retract (Step n x)     = step n *> x
+    interpret f (Step n x) = step n *> f x
 
 instance HBifunctor (:+:) where
     hleft f = \case
@@ -403,17 +389,6 @@ deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
 instance HFunctor MC.F where
     hmap = MC.hoistF
 
-data Cons
-        :: ((Type -> Type) -> Type -> Type -> Type)
-        -> (Type -> Type)
-        -> (Type -> Type)
-        -> Type
-        -> Type where
-    (:=>) :: f x -> p g x a -> Cons p f g a
-
-instance (forall x. Functor (p g x)) => Functor (Cons p f g) where
-    fmap f (x :=> y) = x :=> fmap f y
-
 -- | Church-encoded Freer monad
 newtype Free f a = Free
     { runFree :: forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
@@ -442,100 +417,4 @@ instance Interpret Free where
     inject x = Free $ \p b -> b x p
     retract x = runFree x pure (>>=)
     interpret f x = runFree x pure ((>>=) . f)
-
-type Comp = Cons Star
-
-instance HBifunctor Comp where
-    hleft  f (x :=> y) = f x :=> y
-    hright g (x :=> Star y) = x :=> Star (g . y)
-
-    hbimap f g (x :=> Star y) = f x :=> Star (g . y)
-
-deriving via (WrappedHBifunctor Comp f) instance HFunctor (Comp f)
-
-comp :: f (g a) -> Comp f g a
-comp = (:=> Star id)
-
-pattern Comp :: Functor f => f (g a) -> Comp f g a
-pattern Comp { unComp } <- ((\case x :=> Star f -> f <$> x)->unComp)
-  where
-    Comp x = comp x
-{-# COMPLETE Comp #-}
-
-instance Tensor Comp where
-    type I Comp = Identity
-
-    intro1 = (:=> Star Identity)
-    intro2 = (Identity () :=>) . Star . const
-
-    elim1 (x :=> Star y) = runIdentity . y <$> x
-    elim2 (x :=> Star y) = y (runIdentity x)
-
-    assoc (x :=> Star y) = (x :=> Star (unComp . y)) :=> Star id
-    disassoc ((x :=> Star y) :=> z) = x :=> Star ((:=> z) . y)
-
-instance Monoidal Comp where
-    type TM Comp = Free
-
-    nilTM  = pure . runIdentity
-    consTM (x :=> Star y) = Free $ \p b -> b x $ \z -> runFree (y z) p b
-
-    fromF = \case
-      Done x -> pure . runIdentity $ x
-      More (x :=> Star y) -> Free $ \p b -> b x $ \z -> runFree (fromF (y z)) p b
-    toF x = runFree x (Done . Identity) $ \y z -> More (y :=> Star z)
-    appendF (x :=> Star y) = case x of
-      Done (Identity z)   -> y z
-      More (z :=> Star q) -> More $ z :=> Star (appendF . comp . fmap y . q)
-
-    retractT (x :=> Star y) = x >>= y
-    injectT = pure . runIdentity
-    toTM (x :=> Star y) = Free $ \p b -> b x (($ p) . b . y)
-
-type DayCons = Cons Static
-
-unDayCons :: Cons Static b c d -> Day b c d
-unDayCons (x :=> Static y) = Day x y (&)
-
-pattern DayCons :: Functor g => Day f g a -> DayCons f g a
-pattern DayCons udc <- (unDayCons -> udc)
-  where
-    DayCons (Day x y f) = x :=> Static (flip f <$> y)
-{-# COMPLETE DayCons #-}
-
-instance HBifunctor DayCons where
-    hleft  f (x :=> y) = f x :=> y
-    hright g (x :=> Static y) = x :=> Static (g y)
-
-    hbimap f g (x :=> Static y) = f x :=> Static (g y)
-
-deriving via (WrappedHBifunctor DayCons f) instance HFunctor (DayCons f)
-
-instance Tensor DayCons where
-    type I DayCons = Identity
-
-    intro1 = (:=> Static (Identity id))
-    intro2 x = Identity () :=> Static (const <$> x)
-
-    elim1 (x :=> Static (Identity y)) = y <$> x
-    elim2 (Identity x :=> Static y) = ($ x) <$> y
-
-    assoc (x :=> Static (y :=> Static z)) = (x :=> Static ((,) <$> y)) :=> Static (uncurry <$> z)
-    disassoc ((x :=> Static y) :=> Static z) = x :=> Static ((($) <$> y) :=> Static ((.) <$> z))
-
-instance Monoidal DayCons where
-    type TM DayCons = Ap
-
-    nilTM  = pure . runIdentity
-    consTM (x :=> y) = (&) <$> liftAp x <*> runStatic y
-    unconsTM = \case
-      Pure x -> L1 $ Identity x
-      Ap x y -> R1 $ x :=> Static y
-    appendTM (x :=> Static y) = case x of
-      Pure z -> ($ z) <$> y
-      Ap z q -> (\a f g -> g (f a)) <$> liftAp z <*> q <*> y
-
-    retractT (x :=> Static y) = x <**> y
-    injectT = pure . runIdentity
-    toTM (x :=> Static y) = Ap x (liftAp y)
 

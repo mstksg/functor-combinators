@@ -26,6 +26,7 @@ dependencies:
 - profunctors
 - mtl
 - semigroupoids
+- bifunctors
 
 ghc-options:
 - -Wall
