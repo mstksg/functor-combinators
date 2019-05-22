@@ -26,7 +26,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE ViewPatterns               #-}
 
-module Data.Functor.Combinator (
+module Data.Functor.Combinator.Class (
     type (~>)
   , HFunctor(..)
   , Interpret(..)
@@ -539,17 +539,3 @@ instance Monoidal DayCons where
     injectT = pure . runIdentity
     toTM (x :=> Static y) = Ap x (liftAp y)
 
-newtype Final c f a = Final { runFinal :: forall g. c g => (forall x. f x -> g x) -> g a }
-
-instance Functor (Final Functor f) where
-    fmap f x = Final $ \r -> f <$> runFinal x r
-
-instance HFunctor (Final c) where
-    hmap f x = Final $ \r -> runFinal x (r . f)
-
-instance Interpret (Final c) where
-    type C (Final c) = c
-
-    inject x = Final ($ x)
-    retract x = runFinal x id
-    interpret f x = runFinal x f
