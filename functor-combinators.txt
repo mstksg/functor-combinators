@@ -61,14 +61,20 @@ WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
 data Cons :: ((Type -> Type) -> Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Type -> Type
 [:=>] :: f x -> p g x a -> Cons p f g a
-compCons :: (f :.: g) ~> Cons Star f g
-consComp :: Functor f => Cons Star f g ~> (f :.: g)
+type Comp = Cons Star
+pattern Comp :: Functor f => f (g a) -> Comp f g a
+unComp :: () => Comp f g a -> Functor f -> f (g a)
+comp :: f (g a) -> Comp f g a
+type DayCons = Cons Static
+pattern DayCons :: Functor g => Day f g a -> DayCons f g a
+unDayCons :: Cons Static b c d -> Day b c d
+
+-- | Church-encoded Freer monad
+newtype Free f a
+Free :: (forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free f a
+[runFree] :: Free f a -> forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
+data VoidT a
 instance GHC.Base.Functor (t f g) => GHC.Base.Functor (Data.Functor.Combinator.WrappedHBifunctor t f g)
-instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.Free
-instance GHC.Base.Functor (Data.Functor.Combinator.Free f)
-instance (GHC.Base.Alternative f, GHC.Base.Applicative g) => GHC.Base.Alternative (Data.Functor.Combinator.Comp f g)
-instance (GHC.Base.Applicative f, GHC.Base.Applicative g) => GHC.Base.Applicative (Data.Functor.Combinator.Comp f g)
-instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Combinator.Comp f g)
 instance GHC.Base.Functor f => GHC.Base.Functor (Data.Functor.Combinator.Step f)
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Data.Functor.Combinator.Step f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.Functor.Combinator.Step f a)
@@ -81,25 +87,25 @@ instance GHC.Base.Functor f => GHC.Base.Functor (Data.Functor.Combinator.ListF f
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Data.Functor.Combinator.ListF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.Functor.Combinator.ListF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Data.Functor.Combinator.ListF f a)
-instance Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.Comp f)
 instance Data.Functor.Combinator.HFunctor (Data.Functor.Day.Day f)
 instance Data.Functor.Combinator.HFunctor ((GHC.Generics.:*:) f)
 instance Data.Functor.Combinator.HFunctor ((GHC.Generics.:+:) f)
-instance Data.Functor.Combinator.HBifunctor (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star)
-instance Data.Functor.Combinator.Tensor (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star)
-instance Data.Functor.Combinator.Monoidal (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star)
-instance Data.Functor.Combinator.Interpret (Data.Functor.Combinator.F (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star) Data.Functor.Identity.Identity)
-instance Data.Functor.Combinator.HBifunctor (Data.Functor.Combinator.Cons Data.Semigroupoid.Static.Static)
-instance Data.Functor.Combinator.Tensor (Data.Functor.Combinator.Cons Data.Semigroupoid.Static.Static)
-instance Data.Functor.Combinator.Monoidal (Data.Functor.Combinator.Cons Data.Semigroupoid.Static.Static)
-instance forall k (t :: (* -> *) -> (* -> *) -> k -> *) (f :: * -> *). Data.Functor.Combinator.HBifunctor t => Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.WrappedHBifunctor t f)
+instance Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.Cons Data.Profunctor.Types.Star f)
+instance Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.Cons Data.Semigroupoid.Static.Static f)
+instance Data.Functor.Combinator.HBifunctor Data.Functor.Combinator.DayCons
+instance Data.Functor.Combinator.Tensor Data.Functor.Combinator.DayCons
+instance Data.Functor.Combinator.Monoidal Data.Functor.Combinator.DayCons
+instance Data.Functor.Combinator.HBifunctor Data.Functor.Combinator.Comp
+instance Data.Functor.Combinator.Tensor Data.Functor.Combinator.Comp
+instance Data.Functor.Combinator.Monoidal Data.Functor.Combinator.Comp
+instance GHC.Base.Functor (Data.Functor.Combinator.Free f)
 instance GHC.Base.Applicative (Data.Functor.Combinator.Free f)
 instance GHC.Base.Monad (Data.Functor.Combinator.Free f)
 instance Control.Monad.Free.Class.MonadFree f (Data.Functor.Combinator.Free f)
-instance Data.Functor.Combinator.Monoidal Data.Functor.Combinator.Comp
+instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.Free
 instance Data.Functor.Combinator.Interpret Data.Functor.Combinator.Free
-instance Data.Functor.Combinator.HBifunctor Data.Functor.Combinator.Comp
-instance Data.Functor.Combinator.Tensor Data.Functor.Combinator.Comp
+instance (forall x. GHC.Base.Functor (p g x)) => GHC.Base.Functor (Data.Functor.Combinator.Cons p f g)
+instance forall k (t :: (* -> *) -> (* -> *) -> k -> *) (f :: * -> *). Data.Functor.Combinator.HBifunctor t => Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.WrappedHBifunctor t f)
 instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.Step
 instance Data.Functor.Combinator.Interpret Data.Functor.Combinator.Step
 instance Data.Functor.Combinator.Monoidal (GHC.Generics.:+:)
