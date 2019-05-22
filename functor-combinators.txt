@@ -11,7 +11,13 @@ module Data.Functor.Combinator
 type f ~> g = forall x. f x -> g x
 infixr 0 ~>
 class HFunctor t
-map1 :: HFunctor t => (f ~> g) -> t f ~> t g
+hmap :: HFunctor t => (f ~> g) -> t f ~> t g
+
+-- | Laws:
+--   
+--   <pre>
+--   retract . inject == id
+--   </pre>
 class HFunctor t => Interpret t where {
     type family C t :: (Type -> Type) -> Constraint;
 }
@@ -32,26 +38,33 @@ elim1 :: (Tensor t, Functor f) => t f (I t) ~> f
 elim2 :: (Tensor t, Functor g) => t (I t) g ~> g
 assoc :: (Tensor t, Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
 disassoc :: (Tensor t, Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t g h)
-data Free t i f a
-Done :: i a -> Free t i f a
-More :: t f (Free t i f) a -> Free t i f a
-class Tensor t => Monoidal t where {
+data F t i f a
+Done :: i a -> F t i f a
+More :: t f (F t i f) a -> F t i f a
+
+-- | <b>WARNING</b>: If you use <tt><a>TM</a> t = <a>F</a> t (<a>I</a>
+--   t)</tt>, you <i>must</i> define <a>retractT</a> and <a>injectT</a>!
+class (Tensor t, Interpret (TM t)) => Monoidal t where {
     type family TM t :: (Type -> Type) -> Type -> Type;
 }
+nilTM :: Monoidal t => I t ~> TM t f
+consTM :: Monoidal t => t f (TM t f) ~> TM t f
+unconsTM :: Monoidal t => TM t f ~> (I t :+: t f (TM t f))
+fromF :: Monoidal t => F t (I t) f ~> TM t f
+toF :: Monoidal t => TM t f ~> F t (I t) f
+retractT :: (Monoidal t, C (TM t) f) => t f f ~> f
+injectT :: (Monoidal t, C (TM t) f) => I t ~> f
 toTM :: Monoidal t => t f f ~> TM t f
-fromFree :: Monoidal t => Free t (I t) f ~> TM t f
-retractT :: (Monoidal t, Interpret (TM t), C (TM t) f) => t f f ~> f
-toFree :: (Monoidal t, Interpret (TM t), C (TM t) (Free t (I t) f)) => TM t f ~> Free t (I t) f
-
--- | We can embed <a>ListF</a> in <a>Alt</a>. However, we can't go
---   backwards, because <a>Alt</a> allows multiplication as well as
---   addition.
-listFAlt :: ListF f ~> Alt f
-
--- | Extract an <a>Alt</a> back into a <a>ListF</a>, but fail if any
---   <a>&lt;*&gt;</a> was used. Should be a (partial) inverse with
---   <a>listFAlt</a>.
-altListF :: forall f. Functor f => Alt f ~> (Maybe :.: ListF f)
+injectF :: forall t f. Tensor t => f ~> F t (I t) f
+retractF :: forall t f. (Monoidal t, C (TM t) f) => F t (I t) f ~> f
+interpretF :: forall t f g. (Monoidal t, C (TM t) g) => (f ~> g) -> F t (I t) f ~> g
+newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
+WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
+[unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
+instance GHC.Base.Functor (t f g) => GHC.Base.Functor (Data.Functor.Combinator.WrappedHBifunctor t f g)
+instance (GHC.Base.Alternative f, GHC.Base.Applicative g) => GHC.Base.Alternative (Data.Functor.Combinator.Comp f g)
+instance (GHC.Base.Applicative f, GHC.Base.Applicative g) => GHC.Base.Applicative (Data.Functor.Combinator.Comp f g)
+instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Combinator.Comp f g)
 instance GHC.Base.Functor f => GHC.Base.Functor (Data.Functor.Combinator.Step f)
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Data.Functor.Combinator.Step f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.Functor.Combinator.Step f a)
@@ -64,6 +77,15 @@ instance GHC.Base.Functor f => GHC.Base.Functor (Data.Functor.Combinator.ListF f
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Data.Functor.Combinator.ListF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.Functor.Combinator.ListF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Data.Functor.Combinator.ListF f a)
+instance Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.Comp f)
+instance Data.Functor.Combinator.HFunctor (Data.Functor.Day.Day f)
+instance Data.Functor.Combinator.HFunctor ((GHC.Generics.:*:) f)
+instance Data.Functor.Combinator.HFunctor ((GHC.Generics.:+:) f)
+instance forall k (t :: (* -> *) -> (* -> *) -> k -> *) (f :: * -> *). Data.Functor.Combinator.HBifunctor t => Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.WrappedHBifunctor t f)
+instance Data.Functor.Combinator.HBifunctor Data.Functor.Combinator.Comp
+instance Data.Functor.Combinator.Tensor Data.Functor.Combinator.Comp
+instance Data.Functor.Combinator.Monoidal Data.Functor.Combinator.Comp
+instance Data.Functor.Combinator.Interpret (Data.Functor.Combinator.F Data.Functor.Combinator.Comp Data.Functor.Identity.Identity)
 instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.Step
 instance Data.Functor.Combinator.Interpret Data.Functor.Combinator.Step
 instance Data.Functor.Combinator.Monoidal (GHC.Generics.:+:)
@@ -73,6 +95,7 @@ instance Data.Functor.Combinator.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Combinator.HFunctor Data.Functor.Combinator.ListF
 instance Data.Functor.Combinator.Interpret Data.Functor.Combinator.ListF
 instance Data.Functor.Combinator.Monoidal Data.Functor.Day.Day
+instance forall k1 k2 (t :: (k1 -> *) -> (k2 -> *) -> k2 -> *) (i :: k2 -> *). Data.Functor.Combinator.HBifunctor t => Data.Functor.Combinator.HFunctor (Data.Functor.Combinator.F t i)
 instance Data.Functor.Combinator.Tensor (GHC.Generics.:*:)
 instance Data.Functor.Combinator.Tensor Data.Functor.Day.Day
 instance Data.Functor.Combinator.Tensor (GHC.Generics.:+:)
@@ -84,7 +107,6 @@ instance Data.Functor.Combinator.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.Combinator.HFunctor Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.Combinator.HFunctor Control.Applicative.Free.Ap
 instance Data.Functor.Combinator.HFunctor Control.Alternative.Free.Alt
-instance GHC.Base.Functor f => Data.Functor.Combinator.HFunctor ((GHC.Generics.:.:) f)
 instance Data.Functor.Combinator.HFunctor Control.Monad.Free.Church.F
 
 module Lib
