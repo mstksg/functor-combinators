@@ -372,8 +372,8 @@ interpretT :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 --   Specialized (and simplified), this type is:
 --   
 --   <pre>
---   <a>pureT</a> <tt><a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
---   <a>pureT</a> </tt><tt>Comp</tt>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
+--   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
+--   <a>pureT</a> @<tt>Comp</tt>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
 --   <a>pureT</a> @(<a>:*:</a>) :: <a>Plus</a> f =&gt; f a          -- <a>zero</a>
 --   </pre>
 pureT :: (Monoidal t, C (TM t) f) => I t ~> f
