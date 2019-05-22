@@ -37,17 +37,17 @@ module Data.Functor.Combinator (
   , injectF, retractF, interpretF
   , WrappedHBifunctor(..)
   , Cons(..)
-  , compCons, consComp
+  -- * Instances
+  , Comp, pattern Comp, unComp, comp
+  , DayCons, pattern DayCons, unDayCons
+  , Free(..)
+  , VoidT
   ) where
 
--- import           Data.Profunctor.Cayley
--- import           Data.Profunctor.Monad
--- import qualified Control.Arrow          as Arr
 import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Monad.Reader
 import           Control.Monad.Writer      (MonadWriter(..))
-import           Data.Coerce
 import           Data.Function
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day          (Day(..))
@@ -392,78 +392,6 @@ instance Monoidal (:+:) where
       L1 x -> Step 0 x
       R1 y -> Step 1 y
 
-newtype Comp f g a = CompCo { unCompCo :: Coyoneda f (g a) }
-  deriving Functor
-  deriving (Applicative, Alternative) via (Coyoneda f :.: g)
-
-comp :: f (g a) -> Comp f g a
-comp = CompCo . inject
-
-pattern Comp :: Functor f => f (g a) -> Comp f g a
-pattern Comp { unComp } <- (retract.unCompCo->unComp)
-  where
-    Comp x = comp x
-{-# COMPLETE Comp #-}
-
-instance HBifunctor Comp where
-    hleft  f = CompCo . hmap f . unCompCo
-    hright g = CompCo . fmap g . unCompCo
-
-    hbimap f g = CompCo . hmap f . fmap g . unCompCo
-
-instance Tensor Comp where
-    type I Comp = Identity
-
-    intro1 = CompCo . fmap Identity . inject
-    intro2 = Comp . Identity
-
-    elim1  = fmap runIdentity . unComp
-    elim2  = runIdentity . unComp
-
-    assoc = Comp . Comp . fmap unComp . unComp
-    disassoc = Comp . fmap Comp . unComp . unComp
-
-newtype Free f a = Free { runFree :: F Comp Identity f a }
-  deriving (Functor, HFunctor)
-
-instance Applicative (Free f) where
-    pure = return
-    (<*>) = ap
-
-instance Monad (Free f) where
-    return       = coerce Done
-    Free x >>= f = Free . appendF . comp . fmap (runFree . f) $ x
-
-instance M.MonadFree f (Free f) where
-    wrap = Free . More . hright runFree . comp
-
-instance Monoidal Comp where
-    type TM Comp = Free
-    fromF = Free
-    toF   = runFree
-    appendF (Comp x) = case x of
-      Done (Identity y) -> y
-      More (CompCo   y) -> More $ CompCo (appendF . Comp <$> y)
-
-    retractT = join . unComp
-    injectT  = pure . runIdentity
-    toTM     = Free
-             . More
-             . hright (More . CompCo . fmap (Done . Identity) . inject)
-
-instance Interpret Free where
-    type C Free = Monad
-
-    inject    = Free . More . hright Done . intro1
-    retract (Free f) = case f of
-      Done x  -> pure . runIdentity $ x
-      More xs -> retract . Free =<< unComp xs
-    interpret g = go
-      where
-        go (Free f) = case f of
-          Done x  -> pure . runIdentity $ x
-          More xs -> join . fmap (go . Free) . interpret g . unCompCo $ xs
-
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
     = WrappedHBifunctor { unwrapHBifunctor :: t f g a }
   deriving Functor
@@ -471,7 +399,6 @@ newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
 instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
     hmap f = WrappedHBifunctor . hright f . unwrapHBifunctor
 
-deriving via (WrappedHBifunctor Comp f)   instance HFunctor (Comp f)
 deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
@@ -487,20 +414,59 @@ data Cons
         -> Type where
     (:=>) :: f x -> p g x a -> Cons p f g a
 
-consComp :: Functor f => Cons Star f g ~> f :.: g
-consComp (x :=> Star y) = Comp1 $ y <$> x
+instance (forall x. Functor (p g x)) => Functor (Cons p f g) where
+    fmap f (x :=> y) = x :=> fmap f y
 
-compCons :: f :.: g ~> Cons Star f g
-compCons (Comp1 x) = x :=> Star id
+-- | Church-encoded Freer monad
+newtype Free f a = Free
+    { runFree :: forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
+    }
 
-instance HBifunctor (Cons Star) where
+instance Functor (Free f) where
+    fmap f x = Free $ \p b -> runFree x (p . f) b
+
+instance Applicative (Free f) where
+    pure  = return
+    (<*>) = ap
+
+instance Monad (Free f) where
+    return x = Free $ \p _ -> p x
+    x >>= f  = Free $ \p b -> runFree x (\y -> runFree (f y) p b) b
+
+instance M.MonadFree f (Free f) where
+    wrap x = Free $ \p b -> b x $ \y -> runFree y p b
+
+instance HFunctor Free where
+    hmap f x = Free $ \p b -> runFree x p $ \y z -> b (f y) z
+
+instance Interpret Free where
+    type C Free = Monad
+
+    inject x = Free $ \p b -> b x p
+    retract x = runFree x pure (>>=)
+    interpret f x = runFree x pure ((>>=) . f)
+
+type Comp = Cons Star
+
+instance HBifunctor Comp where
     hleft  f (x :=> y) = f x :=> y
     hright g (x :=> Star y) = x :=> Star (g . y)
 
     hbimap f g (x :=> Star y) = f x :=> Star (g . y)
 
-instance Tensor (Cons Star) where
-    type I (Cons Star) = Identity
+deriving via (WrappedHBifunctor Comp f) instance HFunctor (Comp f)
+
+comp :: f (g a) -> Comp f g a
+comp = (:=> Star id)
+
+pattern Comp :: Functor f => f (g a) -> Comp f g a
+pattern Comp { unComp } <- ((\case x :=> Star f -> f <$> x)->unComp)
+  where
+    Comp x = comp x
+{-# COMPLETE Comp #-}
+
+instance Tensor Comp where
+    type I Comp = Identity
 
     intro1 = (:=> Star Identity)
     intro2 = (Identity () :=>) . Star . const
@@ -508,38 +474,48 @@ instance Tensor (Cons Star) where
     elim1 (x :=> Star y) = runIdentity . y <$> x
     elim2 (x :=> Star y) = y (runIdentity x)
 
-    assoc (x :=> Star y) = (x :=> Star (unComp1 . consComp . y)) :=> Star id
+    assoc (x :=> Star y) = (x :=> Star (unComp . y)) :=> Star id
     disassoc ((x :=> Star y) :=> z) = x :=> Star ((:=> z) . y)
 
-instance Monoidal (Cons Star) where
-    type TM (Cons Star) = F (Cons Star) Identity
+instance Monoidal Comp where
+    type TM Comp = Free
 
-    nilTM  = Done
-    consTM = More
-    unconsTM = \case
-      Done x -> L1 x
-      More y -> R1 y
-    appendTM (x :=> Star y) = case x of
-      Done z -> y . runIdentity $ z
-      More (z :=> Star q) -> More $ z :=> Star (appendTM . (:=> Star y) . q)
+    nilTM  = pure . runIdentity
+    consTM (x :=> Star y) = Free $ \p b -> b x $ \z -> runFree (y z) p b
+
+    fromF = \case
+      Done x -> pure . runIdentity $ x
+      More (x :=> Star y) -> Free $ \p b -> b x $ \z -> runFree (fromF (y z)) p b
+    toF x = runFree x (Done . Identity) $ \y z -> More (y :=> Star z)
+    appendF (x :=> Star y) = case x of
+      Done (Identity z)   -> y z
+      More (z :=> Star q) -> More $ z :=> Star (appendF . comp . fmap y . q)
 
     retractT (x :=> Star y) = x >>= y
     injectT = pure . runIdentity
-    toTM (x :=> Star y) = More $ x :=> Star (More . (:=> Star (Done . Identity)) . y)
+    toTM (x :=> Star y) = Free $ \p b -> b x (($ p) . b . y)
 
-instance Interpret (F (Cons Star) Identity) where
-    type C (F (Cons Star) Identity) = Monad
-    inject = injectF
-    retract = retractF
+type DayCons = Cons Static
 
-instance HBifunctor (Cons Static) where
+unDayCons :: Cons Static b c d -> Day b c d
+unDayCons (x :=> Static y) = Day x y (&)
+
+pattern DayCons :: Functor g => Day f g a -> DayCons f g a
+pattern DayCons udc <- (unDayCons -> udc)
+  where
+    DayCons (Day x y f) = x :=> Static (flip f <$> y)
+{-# COMPLETE DayCons #-}
+
+instance HBifunctor DayCons where
     hleft  f (x :=> y) = f x :=> y
     hright g (x :=> Static y) = x :=> Static (g y)
 
     hbimap f g (x :=> Static y) = f x :=> Static (g y)
 
-instance Tensor (Cons Static) where
-    type I (Cons Static) = Identity
+deriving via (WrappedHBifunctor DayCons f) instance HFunctor (DayCons f)
+
+instance Tensor DayCons where
+    type I DayCons = Identity
 
     intro1 = (:=> Static (Identity id))
     intro2 x = Identity () :=> Static (const <$> x)
@@ -550,8 +526,8 @@ instance Tensor (Cons Static) where
     assoc (x :=> Static (y :=> Static z)) = (x :=> Static ((,) <$> y)) :=> Static (uncurry <$> z)
     disassoc ((x :=> Static y) :=> Static z) = x :=> Static ((($) <$> y) :=> Static ((.) <$> z))
 
-instance Monoidal (Cons Static) where
-    type TM (Cons Static) = Ap
+instance Monoidal DayCons where
+    type TM DayCons = Ap
 
     nilTM  = pure . runIdentity
     consTM (x :=> y) = (&) <$> liftAp x <*> runStatic y
@@ -561,7 +537,6 @@ instance Monoidal (Cons Static) where
     appendTM (x :=> Static y) = case x of
       Pure z -> ($ z) <$> y
       Ap z q -> (\a f g -> g (f a)) <$> liftAp z <*> q <*> y
-
 
     retractT (x :=> Static y) = x <**> y
     injectT = pure . runIdentity
