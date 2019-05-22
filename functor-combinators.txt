@@ -108,6 +108,3 @@ instance Data.Functor.Combinator.HFunctor Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.Combinator.HFunctor Control.Applicative.Free.Ap
 instance Data.Functor.Combinator.HFunctor Control.Alternative.Free.Alt
 instance Data.Functor.Combinator.HFunctor Control.Monad.Free.Church.F
-
-module Lib
-someFunc :: IO ()
