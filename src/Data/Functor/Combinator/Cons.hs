@@ -1,12 +1,16 @@
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DerivingVia                #-}
 {-# LANGUAGE EmptyCase                  #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs               #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PatternSynonyms            #-}
 {-# LANGUAGE QuantifiedConstraints      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
@@ -20,6 +24,7 @@
 
 module Data.Functor.Combinator.Cons (
     Cons(Comp, DayCons, ProdCons)
+  , Uncons(..)
   -- * Instances
   -- ** Monadic
   , Comp, unComp, comp
@@ -41,6 +46,7 @@ import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Kind
 import           Data.Profunctor
+import           Data.Profunctor.Composition
 import           Data.Proxy
 import           Data.Semigroupoid.Static
 import           GHC.Generics hiding           (C)
@@ -177,6 +183,14 @@ instance Monoidal DayCons where
     toTM (x :=> Static y) = Ap x (liftAp y)
 
 data ProdK g a b = ProdK (a -> b) (g b)
+  deriving (Functor)
+
+instance Functor g => Profunctor (ProdK g) where
+    dimap f g (ProdK h x) = ProdK (g . h . f) (g <$> x)
+
+instance Applicative g => Applicative (ProdK g a) where
+    pure x = ProdK (pure x) (pure x)
+    liftA2 f (ProdK g x) (ProdK h y) = ProdK (f <$> g <*> h) (f <$> x <*> y)
 
 type ProdCons = Cons ProdK
 
@@ -237,3 +251,23 @@ instance Monoidal ProdCons where
       ListFCo . ListF $ (map . fmap) f xs ++ ys
 
     toTM (x :=> ProdK f y) = ListFCo . ListF $ [Coyoneda f x, inject y]
+
+-- | Associates each @'Tensor' t@ with its 'Cons' equivalent,
+-- @'Cons' p@.
+--
+-- @t@ need not always be a legal 'Tensor'.
+class Monoidal (Cons p) => Uncons p t | t -> p where
+    uncons :: Functor g => t f g ~> Cons p f g
+    cons   :: Functor f => Cons p f g ~> t f g
+
+instance Uncons Star (:.:) where
+    uncons = comp . unComp1
+    cons   = Comp1 . unComp
+
+instance Uncons Static Day where
+    uncons = DayCons
+    cons   = unDayCons
+
+instance Uncons ProdK (:*:) where
+    uncons = prodCons
+    cons   = unProdCons
