@@ -36,9 +36,6 @@ module Data.Functor.Combinator.Class (
   , F(..)
   , injectF, retractF, interpretF
   , WrappedHBifunctor(..)
-  -- * Instances
-  , Free(..)
-  , VoidT
   ) where
 
 import           Control.Applicative
@@ -546,15 +543,6 @@ instance Monoidal Day where
     retractT (Day x y z) = z <$> x <*> y
     interpretT f g (Day x y z) = z <$> f x <*> g y
     toTM (Day x y z) = z <$> liftAp x <*> liftAp y
-
--- | The identity functor of ':+:'.
-data VoidT a
-  deriving (Show, Eq, Ord, Functor)
-
--- | We have a natural transformation between 'VoidT' and any other
--- functor @f@ with no constraints.
-absurdT :: VoidT ~> f
-absurdT = \case {}
 
 instance HFunctor Step where
     hmap f (Step n x) = Step n (f x)
