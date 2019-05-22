@@ -293,6 +293,14 @@ pattern Comp :: Functor f => f (g a) -> Comp f g a
 pattern DayCons :: Functor g => Day f g a -> DayCons f g a
 pattern ProdCons :: Functor f => (f :*: g) a -> ProdCons f g a
 
+-- | Associates each <tt><a>Tensor</a> t</tt> with its <a>Cons</a>
+--   equivalent, <tt><a>Cons</a> p</tt>.
+--   
+--   <tt>t</tt> need not always be a legal <a>Tensor</a>.
+class Monoidal (Cons p) => Uncons p t | t -> p
+uncons :: (Uncons p t, Functor g) => t f g ~> Cons p f g
+cons :: (Uncons p t, Functor f) => Cons p f g ~> t f g
+
 -- | A version of <a>:.:</a> that permits <a>HBifunctor</a>, <a>Tensor</a>,
 --   and <a>Monoidal</a> instances.
 type Comp = Cons Star
@@ -308,15 +316,21 @@ prodCons :: (f :*: g) ~> ProdCons f g
 instance Data.Functor.Plus.Plus (Data.Functor.Combinator.Cons.ListFCo f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Data.Functor.Combinator.Cons.ListFCo f)
 instance GHC.Base.Functor (Data.Functor.Combinator.Cons.ListFCo f)
+instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Combinator.Cons.ProdK g a)
 instance Data.Functor.Combinator.Class.HFunctor (Data.Functor.Combinator.Cons.Cons Data.Profunctor.Types.Star f)
 instance Data.Functor.Combinator.Class.HFunctor (Data.Functor.Combinator.Cons.Cons Data.Semigroupoid.Static.Static f)
 instance Data.Functor.Combinator.Class.HFunctor (Data.Functor.Combinator.Cons.Cons Data.Functor.Combinator.Cons.ProdK f)
+instance Data.Functor.Combinator.Cons.Uncons Data.Profunctor.Types.Star (GHC.Generics.:.:)
+instance Data.Functor.Combinator.Cons.Uncons Data.Semigroupoid.Static.Static Data.Functor.Day.Day
+instance Data.Functor.Combinator.Cons.Uncons Data.Functor.Combinator.Cons.ProdK (GHC.Generics.:*:)
 instance Data.Functor.Alt.Alt (Data.Functor.Combinator.Cons.ListFCo f)
 instance Data.Functor.Combinator.Class.HFunctor Data.Functor.Combinator.Cons.ListFCo
 instance Data.Functor.Combinator.Class.Interpret Data.Functor.Combinator.Cons.ListFCo
 instance Data.Functor.Combinator.Class.Monoidal Data.Functor.Combinator.Cons.ProdCons
 instance Data.Functor.Combinator.Class.HBifunctor Data.Functor.Combinator.Cons.ProdCons
 instance Data.Functor.Combinator.Class.Tensor Data.Functor.Combinator.Cons.ProdCons
+instance GHC.Base.Functor g => Data.Profunctor.Unsafe.Profunctor (Data.Functor.Combinator.Cons.ProdK g)
+instance GHC.Base.Applicative g => GHC.Base.Applicative (Data.Functor.Combinator.Cons.ProdK g a)
 instance Data.Functor.Combinator.Class.HBifunctor Data.Functor.Combinator.Cons.DayCons
 instance Data.Functor.Combinator.Class.Tensor Data.Functor.Combinator.Cons.DayCons
 instance Data.Functor.Combinator.Class.Monoidal Data.Functor.Combinator.Cons.DayCons
