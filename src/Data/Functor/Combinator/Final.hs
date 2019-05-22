@@ -1,10 +1,14 @@
-{-# LANGUAGE ConstraintKinds   #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
 
 module Data.Functor.Combinator.Final (
     Final(..)
+  , fromFinal, toFinal
   , hoistFinalC
   , liftFinal0
   , liftFinal1
@@ -12,6 +16,7 @@ module Data.Functor.Combinator.Final (
   ) where
 
 import           Control.Applicative
+import           Control.Applicative.Step
 import           Control.Monad
 import           Data.Functor.Combinator.Class
 
@@ -111,6 +116,17 @@ instance MonadPlus (Final MonadPlus f) where
     mzero = liftFinal0 mzero
     mplus = liftFinal2 mplus
 
+instance Functor (Final AccumNat f) where
+    fmap f = liftFinal1 (fmap f)
+
+instance Applicative (Final AccumNat f) where
+    pure x = liftFinal0 (pure x)
+    (<*>)  = liftFinal2 (<*>)
+
+instance AccumNat (Final AccumNat f) where
+    stepWith n x = liftFinal0 (stepWith n x)
+    step n = liftFinal0 (step n)
+
 hoistFinalC
     :: (forall g x. (c g => g x) -> (d g => g x))
     -> Final c f a
@@ -126,3 +142,31 @@ instance Interpret (Final c) where
     inject x = Final ($ x)
     retract x = runFinal x id
     interpret f x = runFinal x f
+
+-- | "Finalize" an 'Interpret' instance.
+--
+-- @
+-- toFinal :: 'Coyoneda' f '~>' 'Final' 'Functor' f
+-- toFinal :: 'Ap' f '~>' 'Final' 'Applicative' f
+-- toFinal :: 'Alt' f '~>' 'Final' 'Alternative' f
+-- toFinal :: 'Control.Monad.Freer.Church.Free' f '~>' 'Final' 'Monad' f
+-- @
+--
+-- Note that the instance of @c@ for @'Final' c@ must be defined.
+--
+-- Should form an isomorphism with 'fromFinal'
+toFinal :: (Interpret t, C t (Final c f)) => t f ~> Final c f
+toFinal = interpret inject
+
+-- | "Concretize" a 'Final'.
+
+-- @
+-- toFinal :: 'Final' 'Functor' f '~>' 'Coyoneda' f
+-- toFinal :: 'Final' 'Applicative' f '~>' 'Ap' f
+-- toFinal :: 'Final' 'Alternative' f '~>' 'Alt' f
+-- toFinal :: 'Final' 'Monad' f '~>' 'Control.Monad.Freer.Church.Free' f
+-- @
+--
+-- Should form an isomorphism with 'toFinal'
+fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
+fromFinal = interpret inject

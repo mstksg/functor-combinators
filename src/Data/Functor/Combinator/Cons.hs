@@ -41,16 +41,14 @@ import           Data.Coerce
 import           Data.Function
 import           Data.Functor.Combinator.Class
 import           Data.Functor.Coyoneda
-import           Data.Functor.Day              (Day(..))
+import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Kind
 import           Data.Profunctor
-import           Data.Profunctor.Composition
 import           Data.Proxy
 import           Data.Semigroupoid.Static
-import           GHC.Generics hiding           (C)
-import qualified Data.Bifunctor.Product        as BP
+import           GHC.Generics hiding            (C)
 
 -- | A lot of tensors can be factored out into a 'Cons' on some
 -- parameterized profunctor.  For example, we have:
@@ -132,7 +130,7 @@ instance Monoidal Comp where
       More (z :=> Star q) -> More $ z :=> Star (appendF . comp . fmap y . q)
 
     retractT (x :=> Star y) = x >>= y
-    injectT = pure . runIdentity
+    pureT = pure . runIdentity
     toTM (x :=> Star y) = Free $ \p b -> b x (($ p) . b . y)
 
 type DayCons = Cons Static
@@ -179,7 +177,7 @@ instance Monoidal DayCons where
       Ap z q -> (\a f g -> g (f a)) <$> liftAp z <*> q <*> y
 
     retractT (x :=> Static y) = x <**> y
-    injectT = pure . runIdentity
+    pureT = pure . runIdentity
     toTM (x :=> Static y) = Ap x (liftAp y)
 
 data ProdK g a b = ProdK (a -> b) (g b)
