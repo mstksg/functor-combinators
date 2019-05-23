@@ -40,6 +40,8 @@ instance GHC.Base.Functor Control.Applicative.Step.VoidT
 instance GHC.Classes.Ord (Control.Applicative.Step.VoidT a)
 instance GHC.Classes.Eq (Control.Applicative.Step.VoidT a)
 instance GHC.Show.Show (Control.Applicative.Step.VoidT a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.Step.Step f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.Step.Step f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Step f)
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Step f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step f a)
@@ -141,7 +143,7 @@ class HFunctor t => Interpret t where {
 }
 
 -- | Lift an <tt>f</tt> into the enhanced <tt>t f</tt> structure. Analogous
---   to <tt>lift</tt> from <tt>MonadTrans</tt>.
+--   to <a>lift</a> from <a>MonadTrans</a>.
 inject :: Interpret t => f ~> t f
 
 -- | Remove the <tt>f</tt> out of the enhanced <tt>t f</tt> structure,
@@ -153,6 +155,14 @@ retract :: (Interpret t, C t f) => t f ~> f
 --   interpret the <tt>f</tt> out of the <tt>t f</tt> into a final context
 --   <tt>g</tt>.
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
+class Trivial c
+class (c a, d a) => AndC c d a
+instance forall k (c :: k -> GHC.Types.Constraint) (a :: k) (d :: k -> GHC.Types.Constraint). (c a, d a) => Data.Functor.HFunctor.AndC c d a
+instance (Data.Functor.HFunctor.Interpret s, Data.Functor.HFunctor.Interpret t) => Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Compose.ComposeT s t)
+instance forall k (c :: k). Data.Functor.HFunctor.Trivial c
+instance Data.Functor.HFunctor.Interpret Control.Monad.Trans.Identity.IdentityT
+instance Data.Functor.HFunctor.Interpret Control.Applicative.Backwards.Backwards
+instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 instance Data.Functor.HFunctor.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.ListF
@@ -161,6 +171,8 @@ instance Data.Functor.HFunctor.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Interpret Control.Monad.Freer.Church.Free
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Final.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Fast.Ap
+instance Data.Functor.HFunctor.Interpret Control.Applicative.Lift.Lift
+instance Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Reader.ReaderT r)
 
 module Data.Functor.HFunctor.Final
 
@@ -195,6 +207,7 @@ fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
 --   toFinal :: <tt>Ap</tt> f <a>~&gt;</a> <a>Final</a> <a>Applicative</a> f
 --   toFinal :: <tt>Alt</tt> f <a>~&gt;</a> <a>Final</a> <a>Alternative</a> f
 --   toFinal :: <a>Free</a> f <a>~&gt;</a> <a>Final</a> <a>Monad</a> f
+--   toFinal :: <a>Lift</a> f <a>~&gt;</a> <a>Final</a> <a>Pointed</a> f
 --   </pre>
 --   
 --   Note that the instance of <tt>c</tt> for <tt><a>Final</a> c</tt> must
@@ -223,6 +236,11 @@ instance GHC.Base.MonadPlus (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlu
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
 instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
 instance Control.Applicative.Step.AccumNat (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
+instance Data.Pointed.Pointed (Data.Functor.HFunctor.Final.Final Data.Pointed.Pointed f)
+instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance GHC.Base.Monad (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance Control.Monad.Reader.Class.MonadReader r (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
 instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.Final.Final c)
 instance Data.Functor.HFunctor.Interpret (Data.Functor.HFunctor.Final.Final c)
 
@@ -651,7 +669,7 @@ class HFunctor t => Interpret t where {
 }
 
 -- | Lift an <tt>f</tt> into the enhanced <tt>t f</tt> structure. Analogous
---   to <tt>lift</tt> from <tt>MonadTrans</tt>.
+--   to <a>lift</a> from <a>MonadTrans</a>.
 inject :: Interpret t => f ~> t f
 
 -- | Remove the <tt>f</tt> out of the enhanced <tt>t f</tt> structure,
