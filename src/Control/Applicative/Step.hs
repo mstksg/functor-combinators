@@ -1,4 +1,6 @@
+{-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE EmptyCase         #-}
 {-# LANGUAGE EmptyDataDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -16,7 +18,7 @@ import           Control.Monad.Writer
 
 
 data Step f a = Step { stepPos :: Natural, stepVal :: f a }
-  deriving (Show, Eq, Ord, Functor)
+  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 instance Applicative f => Applicative (Step f) where
     pure = Step 0 . pure

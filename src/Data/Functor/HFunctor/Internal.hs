@@ -13,16 +13,24 @@ module Data.Functor.HFunctor.Internal (
   , WrappedHBifunctor(..)
   ) where
 
+import           Control.Applicative.Backwards
 import           Control.Applicative.Free
+import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Compose
+import           Control.Monad.Trans.Identity
 import           Control.Monad.Trans.Maybe
+import           Control.Monad.Trans.Reader
 import           Control.Natural
+import           Data.Coerce
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
+import           Data.Functor.Reverse
 import           Data.Functor.Yoneda
 import           Data.Kind
+import           Data.Tagged
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
@@ -149,6 +157,27 @@ instance HFunctor FA.Ap where
 
 instance HFunctor FAF.Ap where
     hmap = FAF.hoistAp
+
+instance HFunctor IdentityT where
+    hmap = mapIdentityT
+
+instance HFunctor Lift where
+    hmap = mapLift
+
+instance HFunctor Backwards where
+    hmap f (Backwards x) = Backwards (f x)
+
+instance HFunctor (ReaderT r) where
+    hmap = mapReaderT
+
+instance HFunctor Tagged where
+    hmap _ = coerce
+
+instance HFunctor Reverse where
+    hmap f (Reverse x) = Reverse (f x)
+
+instance (HFunctor s, HFunctor t) => HFunctor (ComposeT s t) where
+    hmap f (ComposeT x) = ComposeT $ hmap (hmap f) x
 
 instance HBifunctor (:*:) where
     hleft  f (x :*: y) = f x :*:   y

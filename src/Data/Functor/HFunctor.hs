@@ -1,22 +1,37 @@
-{-# LANGUAGE RankNTypes    #-}
-{-# LANGUAGE TypeFamilies  #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Data.Functor.HFunctor (
     HFunctor(..)
   , Interpret(..)
+  , Trivial
+  , AndC
   ) where
 
 import           Control.Applicative
+import           Control.Applicative.Backwards
 import           Control.Applicative.Free
+import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Compose
+import           Control.Monad.Trans.Identity
 import           Control.Natural
+import           Data.Coerce
 import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Plus
+import           Data.Functor.Reverse
 import           Data.Kind
+import           Data.Pointed
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
@@ -114,3 +129,44 @@ instance Interpret FAF.Ap where
     retract = FAF.retractAp
     interpret = FAF.runAp
 
+class Trivial c
+instance Trivial c
+
+instance Interpret IdentityT where
+    type C IdentityT = Trivial
+    inject = coerce
+    retract = coerce
+    interpret f = f . runIdentityT
+
+instance Interpret Lift where
+    type C Lift = Pointed
+    inject = Other
+    retract = elimLift point id
+    interpret f = elimLift point f
+
+instance Interpret Backwards where
+    type C Backwards = Trivial
+    inject = Backwards
+    retract = forwards
+    interpret f = f . forwards
+
+instance Interpret (ReaderT r) where
+    type C (ReaderT r) = MonadReader r
+    inject = ReaderT . const
+    retract x = runReaderT x =<< ask
+    interpret f x = f . runReaderT x =<< ask
+
+instance Interpret Reverse where
+    type C Reverse = Trivial
+    inject = Reverse
+    retract = getReverse
+    interpret f = f . getReverse
+
+class (c a, d a) => AndC c d a
+instance (c a, d a) => AndC c d a
+
+instance (Interpret s, Interpret t) => Interpret (ComposeT s t) where
+    type C (ComposeT s t) = AndC (C s) (C t)
+    inject = ComposeT . inject . inject
+    retract = interpret retract . getComposeT
+    interpret f = interpret (interpret f) . getComposeT

@@ -16,10 +16,13 @@ module Data.Functor.HFunctor.Final (
   ) where
 
 import           Control.Applicative
+import           Control.Applicative.Lift
 import           Control.Applicative.Step
 import           Control.Monad
+import           Control.Monad.Reader
 import           Control.Natural
 import           Data.Functor.HFunctor
+import           Data.Pointed
 
 -- | A simple way to inject/reject into any eventual typeclass.
 -- Essentially, @'Final' c@ is the "free c".  @'Final' 'Monad'@ is the free
@@ -128,6 +131,27 @@ instance AccumNat (Final AccumNat f) where
     stepWith n x = liftFinal0 (stepWith n x)
     step n = liftFinal0 (step n)
 
+instance Pointed (Final Pointed f) where
+    point x = liftFinal0 (point x)
+
+instance Functor (Final (MonadReader r) f) where
+    fmap f = liftFinal1 (fmap f)
+
+instance Applicative (Final (MonadReader r) f) where
+    pure x = liftFinal0 (pure x)
+    (<*>)  = liftFinal2 (<*>)
+    liftA2 f = liftFinal2 (liftA2 f)
+
+instance Monad (Final (MonadReader r) f) where
+    return x = liftFinal0 (return x)
+    x >>= f  = Final $ \r -> do
+      y <- runFinal x r
+      runFinal (f y) r
+
+instance MonadReader r (Final (MonadReader r) f) where
+    ask     = liftFinal0 ask
+    local f = liftFinal1 (local f)
+
 hoistFinalC
     :: (forall g x. (c g => g x) -> (d g => g x))
     -> Final c f a
@@ -151,6 +175,7 @@ instance Interpret (Final c) where
 -- toFinal :: 'Ap' f '~>' 'Final' 'Applicative' f
 -- toFinal :: 'Alt' f '~>' 'Final' 'Alternative' f
 -- toFinal :: 'Control.Monad.Freer.Church.Free' f '~>' 'Final' 'Monad' f
+-- toFinal :: 'Lift' f '~>' 'Final' 'Pointed' f
 -- @
 --
 -- Note that the instance of @c@ for @'Final' c@ must be defined.
@@ -162,10 +187,11 @@ toFinal = interpret inject
 -- | "Concretize" a 'Final'.
 
 -- @
--- toFinal :: 'Final' 'Functor' f '~>' 'Coyoneda' f
--- toFinal :: 'Final' 'Applicative' f '~>' 'Ap' f
--- toFinal :: 'Final' 'Alternative' f '~>' 'Alt' f
--- toFinal :: 'Final' 'Monad' f '~>' 'Control.Monad.Freer.Church.Free' f
+-- fromFinal :: 'Final' 'Functor' f '~>' 'Coyoneda' f
+-- fromFinal :: 'Final' 'Applicative' f '~>' 'Ap' f
+-- fromFinal :: 'Final' 'Alternative' f '~>' 'Alt' f
+-- fromFinal :: 'Final' 'Monad' f '~>' 'Control.Monad.Freer.Church.Free' f
+-- fromFinal :: 'Final' 'Pointed' f '~>' 'Lift' f
 -- @
 --
 -- Should form an isomorphism with 'toFinal'

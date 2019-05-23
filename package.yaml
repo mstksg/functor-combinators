@@ -28,6 +28,9 @@ dependencies:
 - semigroupoids
 - transformers
 - natural-transformation
+- pointed
+- tagged
+- mmorph
 
 ghc-options:
 - -Wall
