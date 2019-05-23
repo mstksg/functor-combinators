@@ -79,7 +79,7 @@ module Data.Functor.HFunctor
 --   can be turned into a monad built over <tt>g</tt>.
 --   
 --   For the ability to move in and out of the enhanced functor, see
---   <a>Interpret</a>.
+--   <tt>Interpret</tt>.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -104,62 +104,6 @@ class HFunctor t
 --   The law <tt><a>hmap</a> <a>id</a> == id</tt> is a way of formalizing
 --   this informal property.
 hmap :: HFunctor t => (f ~> g) -> t f ~> t g
-
--- | A <a>HBifunctor</a> is like an <a>HFunctor</a>, but it enhances
---   <i>two</i> different functors instead of just one.
---   
---   Usually, it enhaces them "together" in some sort of combining way.
---   
---   This typeclass provides a uniform instance for "swapping out" or
---   "hoisting" the enhanced functors. We can hoist the first one with
---   <a>hleft</a>, the second one with <a>hright</a>, or both at the same
---   time with <a>hbimap</a>.
---   
---   For example, the <tt>f :*: g</tt> type gives us "both <tt>f</tt> and
---   <tt>g</tt>":
---   
---   <pre>
---   data (f <a>:*:</a> g) a = f a :*: g a
---   </pre>
---   
---   It combines both <tt>f</tt> and <tt>g</tt> into a unified structure
---   --- here, it does it by providing both <tt>f</tt> and <tt>g</tt>.
---   
---   The single law is:
---   
---   <pre>
---   <a>hbimap</a> <a>id</a> id == id
---   </pre>
---   
---   This ensures that <a>hleft</a>, <a>hright</a>, and <a>hbimap</a> do
---   not affect the structure that <tt>t</tt> adds on top of the underlying
---   functors.
-class HBifunctor t
-
--- | Swap out the first transformed functor.
-hleft :: HBifunctor t => (f ~> j) -> t f g ~> t j g
-
--- | Swap out the second transformed functor.
-hright :: HBifunctor t => (g ~> k) -> t f g ~> t f k
-
--- | Swap out both transformed functors at the same time.
-hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
-
--- | Useful newtype to allow us to derive an <a>HFunctor</a> instance from
---   any instance of <a>HBifunctor</a>, using -XDerivingVia.
---   
---   For example, because we have <tt>instance <a>HBifunctor</a>
---   <a>Day</a></tt>, we can write:
---   
---   <pre>
---   deriving via (<a>WrappedHBifunctor</a> <a>Day</a> f) instance <a>HFunctor</a> (<a>Day</a> f)
---   </pre>
---   
---   to give us an automatic <a>HFunctor</a> instance and save us some
---   work.
-newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
-WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
-[unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
 
 -- | An <a>Interpret</a> lets us move in and out of the "enhanced"
 --   <a>Functor</a>.
@@ -209,11 +153,6 @@ retract :: (Interpret t, C t f) => t f ~> f
 --   interpret the <tt>f</tt> out of the <tt>t f</tt> into a final context
 --   <tt>g</tt>.
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
-instance GHC.Base.Functor (t f g) => GHC.Base.Functor (Data.Functor.HFunctor.WrappedHBifunctor t f g)
-instance Data.Functor.HFunctor.HFunctor (Data.Functor.Day.Day f)
-instance Data.Functor.HFunctor.HFunctor ((GHC.Generics.:*:) f)
-instance Data.Functor.HFunctor.HFunctor ((GHC.Generics.:+:) f)
-instance Data.Functor.HFunctor.HBifunctor t => Data.Functor.HFunctor.HFunctor (Data.Functor.HFunctor.WrappedHBifunctor t f)
 instance Data.Functor.HFunctor.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.ListF
@@ -222,20 +161,6 @@ instance Data.Functor.HFunctor.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Interpret Control.Monad.Freer.Church.Free
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Final.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Fast.Ap
-instance Data.Functor.HFunctor.HBifunctor (GHC.Generics.:*:)
-instance Data.Functor.HFunctor.HBifunctor Data.Functor.Day.Day
-instance Data.Functor.HFunctor.HBifunctor (GHC.Generics.:+:)
-instance Data.Functor.HFunctor.HFunctor Data.Functor.Coyoneda.Coyoneda
-instance Data.Functor.HFunctor.HFunctor Control.Applicative.Free.Ap
-instance Data.Functor.HFunctor.HFunctor Control.Applicative.ListF.ListF
-instance Data.Functor.HFunctor.HFunctor Control.Alternative.Free.Alt
-instance Data.Functor.HFunctor.HFunctor Control.Applicative.Step.Step
-instance Data.Functor.HFunctor.HFunctor Control.Monad.Freer.Church.Free
-instance Data.Functor.HFunctor.HFunctor Control.Monad.Free.Church.F
-instance Data.Functor.HFunctor.HFunctor Control.Monad.Trans.Maybe.MaybeT
-instance Data.Functor.HFunctor.HFunctor Data.Functor.Yoneda.Yoneda
-instance Data.Functor.HFunctor.HFunctor Control.Applicative.Free.Final.Ap
-instance Data.Functor.HFunctor.HFunctor Control.Applicative.Free.Fast.Ap
 
 module Data.Functor.HFunctor.Final
 
@@ -298,7 +223,7 @@ instance GHC.Base.MonadPlus (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlu
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
 instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
 instance Control.Applicative.Step.AccumNat (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
-instance Data.Functor.HFunctor.HFunctor (Data.Functor.HFunctor.Final.Final c)
+instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.Final.Final c)
 instance Data.Functor.HFunctor.Interpret (Data.Functor.HFunctor.Final.Final c)
 
 module Data.Functor.Tensor
@@ -578,7 +503,7 @@ instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:+:)
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, forall (g :: * -> *). GHC.Base.Functor g => GHC.Base.Functor (t f g)) => GHC.Base.Functor (Data.Functor.Tensor.F t i f)
-instance Data.Functor.HFunctor.HBifunctor t => Data.Functor.HFunctor.HFunctor (Data.Functor.Tensor.F t i)
+instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.F t i)
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Tensor Data.Functor.Day.Day
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:+:)
@@ -637,24 +562,24 @@ instance Data.Functor.Plus.Plus (Data.Functor.Tensor.Cons.ListFCo f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Data.Functor.Tensor.Cons.ListFCo f)
 instance GHC.Base.Functor (Data.Functor.Tensor.Cons.ListFCo f)
 instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Tensor.Cons.ProdK g a)
-instance Data.Functor.HFunctor.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Profunctor.Types.Star f)
-instance Data.Functor.HFunctor.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Semigroupoid.Static.Static f)
-instance Data.Functor.HFunctor.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Functor.Tensor.Cons.ProdK f)
+instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Profunctor.Types.Star f)
+instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Semigroupoid.Static.Static f)
+instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Functor.Tensor.Cons.ProdK f)
 instance Data.Functor.Tensor.Cons.Uncons Data.Profunctor.Types.Star (GHC.Generics.:.:)
 instance Data.Functor.Tensor.Cons.Uncons Data.Semigroupoid.Static.Static Data.Functor.Day.Day
 instance Data.Functor.Tensor.Cons.Uncons Data.Functor.Tensor.Cons.ProdK (GHC.Generics.:*:)
 instance Data.Functor.Alt.Alt (Data.Functor.Tensor.Cons.ListFCo f)
-instance Data.Functor.HFunctor.HFunctor Data.Functor.Tensor.Cons.ListFCo
+instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Tensor.Cons.ListFCo
 instance Data.Functor.HFunctor.Interpret Data.Functor.Tensor.Cons.ListFCo
 instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.ProdCons
-instance Data.Functor.HFunctor.HBifunctor Data.Functor.Tensor.Cons.ProdCons
+instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Cons.ProdCons
 instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Cons.ProdCons
 instance GHC.Base.Functor g => Data.Profunctor.Unsafe.Profunctor (Data.Functor.Tensor.Cons.ProdK g)
 instance GHC.Base.Applicative g => GHC.Base.Applicative (Data.Functor.Tensor.Cons.ProdK g a)
-instance Data.Functor.HFunctor.HBifunctor Data.Functor.Tensor.Cons.DayCons
+instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Cons.DayCons
 instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Cons.DayCons
 instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.DayCons
-instance Data.Functor.HFunctor.HBifunctor Data.Functor.Tensor.Cons.Comp
+instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Cons.Comp
 instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Cons.Comp
 instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.Comp
 instance (forall x. GHC.Base.Functor (p g x)) => GHC.Base.Functor (Data.Functor.Tensor.Cons.Cons p f g)
