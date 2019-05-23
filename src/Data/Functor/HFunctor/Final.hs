@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
 
-module Data.Functor.Combinator.Final (
+module Data.Functor.HFunctor.Final (
     Final(..)
   , fromFinal, toFinal
   , hoistFinalC
@@ -18,7 +18,8 @@ module Data.Functor.Combinator.Final (
 import           Control.Applicative
 import           Control.Applicative.Step
 import           Control.Monad
-import           Data.Functor.Combinator.Class
+import           Control.Natural
+import           Data.Functor.HFunctor
 
 -- | A simple way to inject/reject into any eventual typeclass.
 -- Essentially, @'Final' c@ is the "free c".  @'Final' 'Monad'@ is the free

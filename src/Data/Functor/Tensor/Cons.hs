@@ -22,7 +22,7 @@
 {-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE ViewPatterns               #-}
 
-module Data.Functor.Combinator.Cons (
+module Data.Functor.Tensor.Cons (
     Cons(Comp, DayCons, ProdCons)
   , Uncons(..)
   -- * Instances
@@ -38,18 +38,20 @@ import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Monad.Freer.Church
+import           Control.Natural
 import           Data.Coerce
 import           Data.Function
-import           Data.Functor.Combinator.Class
 import           Data.Functor.Coyoneda
-import           Data.Functor.Day              (Day(..))
+import           Data.Functor.Day           (Day(..))
+import           Data.Functor.HFunctor
 import           Data.Functor.Identity
 import           Data.Functor.Plus
+import           Data.Functor.Tensor
 import           Data.Kind
 import           Data.Profunctor
 import           Data.Proxy
 import           Data.Semigroupoid.Static
-import           GHC.Generics hiding           (C)
+import           GHC.Generics hiding        (C)
 
 -- | A lot of tensors can be factored out into a 'Cons' on some
 -- parameterized profunctor.  For example, we have:
