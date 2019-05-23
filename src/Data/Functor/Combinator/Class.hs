@@ -43,18 +43,22 @@ import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Maybe
 import           Data.Function
 import           Data.Functor.Coyoneda
-import           Data.Functor.Day            (Day(..))
+import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
+import           Data.Functor.Yoneda
 import           Data.Kind
 import           Data.Proxy
-import           GHC.Generics hiding         (C)
+import           GHC.Generics hiding            (C)
 import           GHC.Natural
-import qualified Control.Alternative.Free    as Alt
-import qualified Control.Monad.Free.Church   as MC
-import qualified Data.Functor.Day            as D
+import qualified Control.Alternative.Free       as Alt
+import qualified Control.Applicative.Free.Fast  as FAF
+import qualified Control.Applicative.Free.Final as FA
+import qualified Control.Monad.Free.Church      as MC
+import qualified Data.Functor.Day               as D
 
 -- | The type of a natural transformation between @f@ and @g@.  Essentially
 -- translates one functor into another, leaving its parameter unchanged.
@@ -380,9 +384,9 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     -- Specialized (and simplified), this type is:
     --
     -- @
-    -- 'pureT' @'Day'   :: 'Applicative' f => a -> f a  -- 'pure'
-    -- 'pureT' @'Comp'  :: 'Monad' f => a -> f a    -- 'return'
-    -- 'pureT' @(':*:') :: 'Plus' f => f a          -- 'zero'
+    -- 'pureT' \@'Day'   :: 'Applicative' f => a -> f a  -- 'pure'
+    -- 'pureT' \@'Comp'  :: 'Monad' f => a -> f a    -- 'return'
+    -- 'pureT' \@(':*:') :: 'Plus' f => f a          -- 'zero'
     -- @
     pureT  :: C (TM t) f => I t ~> f
     pureT  = retract . fromF @t . Done
@@ -646,9 +650,6 @@ deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
 
-instance HFunctor MC.F where
-    hmap = MC.hoistF
-
 instance HFunctor Free where
     hmap f x = Free $ \p b -> runFree x p $ \y z -> b (f y) z
 
@@ -659,3 +660,29 @@ instance Interpret Free where
     retract x = runFree x pure (>>=)
     interpret f x = runFree x pure ((>>=) . f)
 
+instance HFunctor MC.F where
+    hmap = MC.hoistF
+
+instance HFunctor MaybeT where
+    hmap f = mapMaybeT f
+
+instance HFunctor Yoneda where
+    hmap f x = Yoneda $ f . runYoneda x
+
+instance HFunctor FA.Ap where
+    hmap = FA.hoistAp
+
+instance Interpret FA.Ap where
+    type C FA.Ap = Applicative
+    inject = FA.liftAp
+    retract = FA.retractAp
+    interpret = FA.runAp
+
+instance HFunctor FAF.Ap where
+    hmap = FAF.hoistAp
+
+instance Interpret FAF.Ap where
+    type C FAF.Ap = Applicative
+    inject = FAF.liftAp
+    retract = FAF.retractAp
+    interpret = FAF.runAp
