@@ -37,6 +37,8 @@ ghc-options:
 
 library:
   source-dirs: src
+  other-modules:
+  - Data.Functor.HFunctor.Internal
 
 # executables:
 #   functor-combinators-exe:

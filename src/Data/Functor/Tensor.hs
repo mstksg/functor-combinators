@@ -42,6 +42,7 @@ import           Control.Natural
 import           Data.Function
 import           Data.Functor.Day          (Day(..))
 import           Data.Functor.HFunctor
+import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Identity
 import           Data.Kind
 import           Data.Proxy
