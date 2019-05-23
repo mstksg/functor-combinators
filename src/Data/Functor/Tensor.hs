@@ -26,6 +26,31 @@
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE ViewPatterns               #-}
 
+-- |
+-- Module      : Data.Functor.Tensor
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- There are two ways to write a 'Monoidal' instance:
+--
+-- 1.   Define 'nilTM', 'consTM', 'unconsTM', and 'appendTM'.  These allow
+--      you to manipulate @'TM' t@ as if it were a "list" of @f@s appended
+--      together with @t@.
+--
+-- 2.   Define 'fromF', 'toF', and 'appendF'.  'F' is a special data type
+--      that literally represents a linked list of @f@s appended together
+--      with @t@.  The default definitions of 'nilTM', 'consTM', etc. then
+--      work on this representation.
+--
+-- Additionally, this class contains 'retractT', 'interpretT', 'pureT',
+-- and 'toTM'.  These are useful functions of using @t@ as an interpreter
+-- combinator.  They can all be derived from other methods, but they are
+-- provided as a part of the typeclass to allow implementors to provide
+-- more efficient versions.
 module Data.Functor.Tensor (
     HBifunctor(..)
   , Tensor(..)
@@ -142,30 +167,8 @@ instance (Functor i, forall g. Functor g => Functor (t f g)) => Functor (F t i f
 -- The 'Monoidal' class unifies different such patterns.  The associated
 -- type 'TM' is the "repeated aplications of @t@" type.
 --
--- There are two ways to write an instance:
---
--- 1.   Define 'nilTM', 'consTM', 'unconsTM', and 'appendTM'.  These allow
---      you to manipulate @'TM' t@ as if it were a "list" of @f@s appended
---      together with @t@.
---
--- 2.   Define 'fromF', 'toF', and 'appendF'.  'F' is a special data type
---      that literally represents a linked list of @f@s appended together
---      with @t@.  The default definitions of 'nilTM', 'consTM', etc. then
---      work on this representation.
---
---      The advantage of this family of functions is that they allow you to
---      work with many different @'TM' t@ types under a uniform interface.
---      For example, @'F' 'Day' 'Identity'@ gives you 'Ap', @'F' 'Comp'
---      'Identity'@ gives you 'Free', and @'F' (':*:') 'Proxy'@ gives you
---      'ListF'.  However, most people usually don't need to deal with this
---      representation --- it's mostly useful if you are defining new
---      instances.
---
--- Additionally, this class contains 'retractT', 'interpretT', 'pureT',
--- and 'toTM'.  These are useful functions of using 't' as an interpreter
--- combinator.  They can all be derived from other methods, but they are
--- provided as a part of the typeclass to allow implementors to provide
--- more efficient versions.
+-- See documentation of "Data.Functor.Tensor" for information on how to
+-- define instances of this typeclass.
 class (Tensor t, Interpret (TM t)) => Monoidal t where
     type TM t :: (Type -> Type) -> Type -> Type
 
@@ -243,16 +246,6 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     pureT  = retract . fromF @t . Done
 
     -- | Embed a direct application of @f@ to itself into a @'TM' t f@.
-    --
-    -- Conceptually:
-    --
-    -- @
-    -- 'toTM' (x, y) = [x, y]
-    --             = x : y : []
-    -- @
-    --
-    -- If you 'unconsTM' the result, you'll get the first original @f@ consed
-    -- with the second original @f@ consed with a 'nilTM'.
     toTM     :: t f f ~> TM t f
     toTM     = fromF . More . hright (More . hright Done . intro1)
 
