@@ -453,13 +453,19 @@ instance Data.Functor.Combinator.Class.Interpret Control.Applicative.ListF.ListF
 instance Data.Functor.Combinator.Class.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.Combinator.Class.Interpret Control.Applicative.Step.Step
 instance Data.Functor.Combinator.Class.Interpret Control.Monad.Freer.Church.Free
+instance Data.Functor.Combinator.Class.Interpret Control.Applicative.Free.Final.Ap
+instance Data.Functor.Combinator.Class.Interpret Control.Applicative.Free.Fast.Ap
 instance Data.Functor.Combinator.Class.HFunctor Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.Combinator.Class.HFunctor Control.Applicative.Free.Ap
 instance Data.Functor.Combinator.Class.HFunctor Control.Applicative.ListF.ListF
 instance Data.Functor.Combinator.Class.HFunctor Control.Alternative.Free.Alt
 instance Data.Functor.Combinator.Class.HFunctor Control.Applicative.Step.Step
-instance Data.Functor.Combinator.Class.HFunctor Control.Monad.Free.Church.F
 instance Data.Functor.Combinator.Class.HFunctor Control.Monad.Freer.Church.Free
+instance Data.Functor.Combinator.Class.HFunctor Control.Monad.Free.Church.F
+instance Data.Functor.Combinator.Class.HFunctor Control.Monad.Trans.Maybe.MaybeT
+instance Data.Functor.Combinator.Class.HFunctor Data.Functor.Yoneda.Yoneda
+instance Data.Functor.Combinator.Class.HFunctor Control.Applicative.Free.Final.Ap
+instance Data.Functor.Combinator.Class.HFunctor Control.Applicative.Free.Fast.Ap
 
 module Data.Functor.Combinator.Cons
 
