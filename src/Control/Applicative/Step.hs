@@ -16,8 +16,6 @@ module Control.Applicative.Step (
   , absurdT
   ) where
 
-import           Control.Monad.Writer
-import           Data.Map                   (Map)
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           Numeric.Natural
@@ -56,6 +54,8 @@ absurdT :: VoidT a -> f a
 absurdT = \case {}
 
 -- | The fixed point of applications of 'TheseT'.
+--
+-- You can think of it as "Free 'Data.Functor.Alt.Alt'".
 --
 -- Intuitively, in an infinite @f `TheseT` f `TheseT` f `TheseT` f ...@,
 -- each of those infinite positions may have an @f@ in them.  However,

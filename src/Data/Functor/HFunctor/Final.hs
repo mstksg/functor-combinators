@@ -20,6 +20,7 @@ import           Control.Monad
 import           Control.Monad.Reader
 import           Control.Natural
 import           Data.Functor.HFunctor
+import           Data.Functor.Plus
 import           Data.Pointed
 
 -- | A simple way to inject/reject into any eventual typeclass.
@@ -64,7 +65,6 @@ instance Functor (Final Functor f) where
 
 instance Functor (Final Applicative f) where
     fmap f = liftFinal1 (fmap f)
-
 instance Applicative (Final Applicative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
@@ -72,24 +72,20 @@ instance Applicative (Final Applicative f) where
 
 instance Functor (Final Alternative f) where
     fmap f = liftFinal1 (fmap f)
-
 instance Applicative (Final Alternative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
-
 instance Alternative (Final Alternative f) where
     empty = liftFinal0 empty
     (<|>) = liftFinal2 (<|>)
 
 instance Functor (Final Monad f) where
     fmap f = liftFinal1 (fmap f)
-
 instance Applicative (Final Monad f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
-
 instance Monad (Final Monad f) where
     return x = liftFinal0 (return x)
     x >>= f  = Final $ \r -> do
@@ -98,22 +94,18 @@ instance Monad (Final Monad f) where
 
 instance Functor (Final MonadPlus f) where
     fmap f = liftFinal1 (fmap f)
-
 instance Applicative (Final MonadPlus f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
-
 instance Monad (Final MonadPlus f) where
     return x = liftFinal0 (return x)
     x >>= f  = Final $ \r -> do
       y <- runFinal x r
       runFinal (f y) r
-
 instance Alternative (Final MonadPlus f) where
     empty = liftFinal0 empty
     (<|>) = liftFinal2 (<|>)
-
 instance MonadPlus (Final MonadPlus f) where
     mzero = liftFinal0 mzero
     mplus = liftFinal2 mplus
@@ -123,21 +115,30 @@ instance Pointed (Final Pointed f) where
 
 instance Functor (Final (MonadReader r) f) where
     fmap f = liftFinal1 (fmap f)
-
 instance Applicative (Final (MonadReader r) f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
-
 instance Monad (Final (MonadReader r) f) where
     return x = liftFinal0 (return x)
     x >>= f  = Final $ \r -> do
       y <- runFinal x r
       runFinal (f y) r
-
 instance MonadReader r (Final (MonadReader r) f) where
     ask     = liftFinal0 ask
     local f = liftFinal1 (local f)
+
+instance Functor (Final Alt f) where
+    fmap f = liftFinal1 (fmap f)
+instance Alt (Final Alt f) where
+    (<!>) = liftFinal2 (<!>)
+
+instance Functor (Final Plus f) where
+    fmap f = liftFinal1 (fmap f)
+instance Alt (Final Plus f) where
+    (<!>) = liftFinal2 (<!>)
+instance Plus (Final Plus f) where
+    zero = liftFinal0 zero
 
 hoistFinalC
     :: (forall g x. (c g => g x) -> (d g => g x))
@@ -163,6 +164,7 @@ instance Interpret (Final c) where
 -- toFinal :: 'Alt' f '~>' 'Final' 'Alternative' f
 -- toFinal :: 'Control.Monad.Freer.Church.Free' f '~>' 'Final' 'Monad' f
 -- toFinal :: 'Lift' f '~>' 'Final' 'Pointed' f
+-- toFinal :: 'Steps' f '~>' 'Final' 'Alt' f
 -- @
 --
 -- Note that the instance of @c@ for @'Final' c@ must be defined.
@@ -179,6 +181,7 @@ toFinal = interpret inject
 -- fromFinal :: 'Final' 'Alternative' f '~>' 'Alt' f
 -- fromFinal :: 'Final' 'Monad' f '~>' 'Control.Monad.Freer.Church.Free' f
 -- fromFinal :: 'Final' 'Pointed' f '~>' 'Lift' f
+-- fromFinal :: 'Final' 'Alt' f '~>' 'Steps' f
 -- @
 --
 -- Should form an isomorphism with 'toFinal'
