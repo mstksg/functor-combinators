@@ -16,8 +16,6 @@ module Control.Applicative.Step (
   , absurdT
   ) where
 
-import           Control.Monad.Writer
-import           Data.Map                   (Map)
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           Numeric.Natural

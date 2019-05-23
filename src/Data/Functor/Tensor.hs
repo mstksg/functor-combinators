@@ -62,13 +62,16 @@ module Data.Functor.Tensor (
   , WrappedHBifunctor(..)
   , JoinT(..)
   , These1(..)
+  -- , Biff1(..)
   ) where
 
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Data.Function
+import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Internal
@@ -81,6 +84,7 @@ import           Data.Proxy
 import           Data.Semigroup
 import           GHC.Generics hiding            (C)
 import           GHC.Natural
+import qualified Control.Applicative.Lift       as L
 import qualified Data.Functor.Day               as D
 import qualified Data.Map.NonEmpty              as NEM
 
@@ -589,3 +593,88 @@ decrAll = NEM.foldMapWithKey $ \i x ->
     case minusNaturalMaybe i 1 of
       Nothing -> This1 . Comp1 $ First x
       Just i' -> That1 . Comp1 $ NEM.singleton i' x
+
+newtype Tannen1 s t f g a = Tannen1 { unTannen1 :: s (t f g) a }
+
+deriving instance Show (s (t f g) a) => Show (Tannen1 s t f g a)
+deriving instance Eq (s (t f g) a) => Eq (Tannen1 s t f g a)
+deriving instance Ord (s (t f g) a) => Ord (Tannen1 s t f g a)
+deriving instance Functor (s (t f g)) => Functor (Tannen1 s t f g)
+
+instance (HFunctor s, HBifunctor t) => HBifunctor (Tannen1 s t) where
+    hbimap f g (Tannen1 x) = Tannen1 $ hmap (hbimap f g) x
+
+instance (Interpret s, Tensor t, C s ~ Functor) => Tensor (Tannen1 s t) where
+    type I (Tannen1 s t) = I t
+
+    intro1 = Tannen1 . inject . intro1 @t
+    intro2 = Tannen1 . inject . intro2 @t
+
+    elim1 = interpret (elim1 @t) . unTannen1
+    elim2 = interpret (elim2 @t) . unTannen1
+
+
+instance (Interpret s, Monoidal t, C s ~ Functor, Interpret (TM (Tannen1 s t))) => Monoidal (Tannen1 s t) where
+    type TM (Tannen1 s t) = ComposeT s (TM t)
+
+    fromF = \case
+      Done x  -> ComposeT . inject . fromF @t $ Done x
+      More xs -> ComposeT . hmap (toTM @t . hright (interpret retract . getComposeT . fromF)) . unTannen1 $ xs
+
+-- data ProdT s t f g a = ProdT (s f g a) (t f g a)
+
+-- instance (HBifunctor s, HBifunctor t) => HBifunctor (ProdT s t) where
+--     hleft  f (ProdT x y) = ProdT (hleft f x) (hleft f y)
+--     hright g (ProdT x y) = ProdT (hright g x) (hright g y)
+
+-- instance (Tensor s, Tensor t, I s ~ I t) => Tensor (ProdT s t) where
+--     type I (ProdT s t) = I s
+
+--     intro1 x = ProdT (intro1 x) (intro1 x)
+--     intro2 x = ProdT (intro2 x) (intro2 x)
+
+--     elim1 (ProdT x y) = _ (elim1 x) (elim1 y)
+
+-- newtype BiFu1 p t f g a = BiFu1 { unBiFu1 :: p (t f) (t g) a }
+
+-- instance (HBifunctor p, HFunctor t) => HBifunctor (BiFu1 p t) where
+--     hleft  f (BiFu1 x) = BiFu1 (hleft  (hmap f) x)
+--     hright g (BiFu1 x) = BiFu1 (hright (hmap g) x)
+--     hbimap f g (BiFu1 x) = BiFu1 (hbimap (hmap f) (hmap g) x)
+
+-- instance Tensor (BiFu1 (:*:)
+
+-- newtype Biff1 p s t f g a = Biff1 { unBiff1 :: p (s f) (t g) a }
+
+-- deriving instance Show (p (s f) (t g) a) => Show (Biff1 p s t f g a)
+-- deriving instance Eq (p (s f) (t g) a) => Eq (Biff1 p s t f g a)
+-- deriving instance Ord (p (s f) (t g) a) => Ord (Biff1 p s t f g a)
+-- deriving instance Functor (p (s f) (t g)) => Functor (Biff1 p s t f g)
+
+-- instance (HBifunctor p, HFunctor s, HFunctor t) => HBifunctor (Biff1 p s t) where
+--     hleft  f (Biff1 x) = Biff1 (hleft  (hmap f) x)
+--     hright g (Biff1 x) = Biff1 (hright (hmap g) x)
+--     hbimap f g (Biff1 x) = Biff1 (hbimap (hmap f) (hmap g) x)
+
+-- instance Tensor (Biff1 (:*:) L.Lift L.Lift) where
+--     type I (Biff1 (:*:) s t) = Proxy
+
+-- instance (Interpret s, Interpret t) => Tensor (Biff1 (:*:) s t) where
+--     type I (Biff1 (:*:) s t) = Proxy
+
+--     intro1 = Biff1 . hbimap inject inject . intro1
+--     intro2 = Biff1 . hbimap inject inject . intro2
+
+    -- elim1 (Biff1 (x :*: _)) = _ x
+          -- . elim1 @(:*:)
+          -- . hbimap (inject @Coyoneda) retract
+          -- . unBiff1
+
+-- instance (Interpret s, Interpret t) => Monoidal (Biff1 (:*:) s t) where
+--     type TM (Biff1 (:*:) s t) = Biff1 (:*:) s t
+
+-- instance (Tensor p, Interpret s, Interpret t, C t (I p), forall f. Functor (s f)) => Tensor (Biff1 p s t) where
+--     type I (Biff1 p s t) = I p
+
+    -- intro1 = Biff1 . hbimap inject inject . intro1
+    -- intro2 = Biff1 . hbimap inject inject . intro2
