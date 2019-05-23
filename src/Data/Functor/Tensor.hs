@@ -58,6 +58,7 @@ module Data.Functor.Tensor (
   , F(..)
   , injectF, retractF, interpretF
   , WrappedHBifunctor(..)
+  , JoinT(..)
   ) where
 
 import           Control.Applicative.Free
@@ -407,3 +408,9 @@ instance Monoidal (:+:) where
       L1 x -> Step 0 x
       R1 y -> Step 1 y
 
+data JoinT t f a = JoinT { runJoinT :: t f f a }
+
+deriving instance Functor (t f f) => Functor (JoinT t f)
+
+instance HBifunctor t => HFunctor (JoinT t) where
+    hmap f (JoinT x) = JoinT $ hbimap f f x

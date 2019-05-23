@@ -16,8 +16,6 @@ module Data.Functor.HFunctor.Final (
   ) where
 
 import           Control.Applicative
-import           Control.Applicative.Lift
-import           Control.Applicative.Step
 import           Control.Monad
 import           Control.Monad.Reader
 import           Control.Natural
@@ -119,17 +117,6 @@ instance Alternative (Final MonadPlus f) where
 instance MonadPlus (Final MonadPlus f) where
     mzero = liftFinal0 mzero
     mplus = liftFinal2 mplus
-
-instance Functor (Final AccumNat f) where
-    fmap f = liftFinal1 (fmap f)
-
-instance Applicative (Final AccumNat f) where
-    pure x = liftFinal0 (pure x)
-    (<*>)  = liftFinal2 (<*>)
-
-instance AccumNat (Final AccumNat f) where
-    stepWith n x = liftFinal0 (stepWith n x)
-    step n = liftFinal0 (step n)
 
 instance Pointed (Final Pointed f) where
     point x = liftFinal0 (point x)

@@ -100,10 +100,10 @@ instance Interpret ListF where
     retract = foldr (<!>) zero . runListF
 
 instance Interpret Step where
-    type C Step = AccumNat
+    type C Step = Trivial
     inject = Step 0
-    retract (Step n x)     = step n *> x
-    interpret f (Step n x) = step n *> f x
+    retract (Step _ x)     = x
+    interpret f (Step _ x) = f x
 
 instance Interpret Alt.Alt where
     type C Alt.Alt = Alternative
