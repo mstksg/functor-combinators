@@ -226,6 +226,26 @@ instance Control.Applicative.Step.AccumNat (Data.Functor.HFunctor.Final.Final Co
 instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.Final.Final c)
 instance Data.Functor.HFunctor.Interpret (Data.Functor.HFunctor.Final.Final c)
 
+
+-- | There are two ways to write a <a>Monoidal</a> instance:
+--   
+--   <ol>
+--   <li>Define <a>nilTM</a>, <a>consTM</a>, <a>unconsTM</a>, and
+--   <a>appendTM</a>. These allow you to manipulate <tt><a>TM</a> t</tt> as
+--   if it were a "list" of <tt>f</tt>s appended together with
+--   <tt>t</tt>.</li>
+--   <li>Define <a>fromF</a>, <a>toF</a>, and <a>appendF</a>. <a>F</a> is a
+--   special data type that literally represents a linked list of
+--   <tt>f</tt>s appended together with <tt>t</tt>. The default definitions
+--   of <a>nilTM</a>, <a>consTM</a>, etc. then work on this
+--   representation.</li>
+--   </ol>
+--   
+--   Additionally, this class contains <a>retractT</a>, <a>interpretT</a>,
+--   <a>pureT</a>, and <a>toTM</a>. These are useful functions of using
+--   <tt>t</tt> as an interpreter combinator. They can all be derived from
+--   other methods, but they are provided as a part of the typeclass to
+--   allow implementors to provide more efficient versions.
 module Data.Functor.Tensor
 
 -- | A <a>HBifunctor</a> is like an <a>HFunctor</a>, but it enhances
@@ -350,32 +370,8 @@ disassoc :: (Tensor t, Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t
 --   associated type <a>TM</a> is the "repeated aplications of <tt>t</tt>"
 --   type.
 --   
---   There are two ways to write an instance:
---   
---   <ol>
---   <li>Define <a>nilTM</a>, <a>consTM</a>, <a>unconsTM</a>, and
---   <a>appendTM</a>. These allow you to manipulate <tt><a>TM</a> t</tt> as
---   if it were a "list" of <tt>f</tt>s appended together with
---   <tt>t</tt>.</li>
---   <li>Define <a>fromF</a>, <a>toF</a>, and <a>appendF</a>. <a>F</a> is a
---   special data type that literally represents a linked list of
---   <tt>f</tt>s appended together with <tt>t</tt>. The default definitions
---   of <a>nilTM</a>, <a>consTM</a>, etc. then work on this
---   representation.The advantage of this family of functions is that they
---   allow you to work with many different <tt><a>TM</a> t</tt> types under
---   a uniform interface. For example, <tt><a>F</a> <a>Day</a>
---   <a>Identity</a></tt> gives you <a>Ap</a>, <tt><a>F</a> <tt>Comp</tt>
---   <a>Identity</a></tt> gives you <tt>Free</tt>, and <tt><a>F</a>
---   (<a>:*:</a>) <a>Proxy</a></tt> gives you <a>ListF</a>. However, most
---   people usually don't need to deal with this representation --- it's
---   mostly useful if you are defining new instances.</li>
---   </ol>
---   
---   Additionally, this class contains <a>retractT</a>, <a>interpretT</a>,
---   <a>pureT</a>, and <a>toTM</a>. These are useful functions of using
---   <tt>t</tt> as an interpreter combinator. They can all be derived from
---   other methods, but they are provided as a part of the typeclass to
---   allow implementors to provide more efficient versions.
+--   See documentation of <a>Data.Functor.Tensor</a> for information on how
+--   to define instances of this typeclass.
 class (Tensor t, Interpret (TM t)) => Monoidal t where {
     type family TM t :: (Type -> Type) -> Type -> Type;
 }
@@ -448,17 +444,6 @@ pureT :: (Monoidal t, C (TM t) f) => I t ~> f
 
 -- | Embed a direct application of <tt>f</tt> to itself into a
 --   <tt><a>TM</a> t f</tt>.
---   
---   Conceptually:
---   
---   <pre>
---   <a>toTM</a> (x, y) = [x, y]
---               = x : y : []
---   </pre>
---   
---   If you <a>unconsTM</a> the result, you'll get the first original
---   <tt>f</tt> consed with the second original <tt>f</tt> consed with a
---   <a>nilTM</a>.
 toTM :: Monoidal t => t f f ~> TM t f
 
 -- | A useful construction that works like a "linked list" of <tt>t f</tt>
@@ -583,3 +568,342 @@ instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Cons.Comp
 instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Cons.Comp
 instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.Comp
 instance (forall x. GHC.Base.Functor (p g x)) => GHC.Base.Functor (Data.Functor.Tensor.Cons.Cons p f g)
+
+module Data.Functor.Combinator
+
+-- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
+--   a basic functor combinator. It takes a functor as input and returns a
+--   functor as output.
+--   
+--   It "enhances" a functor with extra structure (sort of like how a monad
+--   transformer enhances a <a>Monad</a> with extra structure).
+--   
+--   As a uniform inteface, we can "swap the underlying functor" (also
+--   sometimes called "hoisting"). This is what <a>hmap</a> does: it lets
+--   us swap out the <tt>f</tt> in a <tt>t f</tt> for a <tt>t g</tt>.
+--   
+--   For example, the free monad <a>Free</a> takes a <a>Functor</a> and
+--   returns a new <a>Functor</a>. In the process, it provides a monadic
+--   structure over <tt>f</tt>. <a>hmap</a> lets us turn a <tt><a>Free</a>
+--   f</tt> into a <tt><a>Free</a> g</tt>: a monad built over <tt>f</tt>
+--   can be turned into a monad built over <tt>g</tt>.
+--   
+--   For the ability to move in and out of the enhanced functor, see
+--   <tt>Interpret</tt>.
+class HFunctor t
+
+-- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
+--   <tt>t f</tt> into a <tt>t g</tt>.
+--   
+--   It must be the case that
+--   
+--   <pre>
+--   <a>hmap</a> <a>id</a> == id
+--   </pre>
+--   
+--   Essentially, <tt><tt>t</tt> f</tt> adds some "extra structure" to
+--   <tt>f</tt>. <a>hmap</a> must swap out the functor, <i>without
+--   affecting the added structure</i>.
+--   
+--   For example, <tt><a>ListF</a> f a</tt> is essentially a list of <tt>f
+--   a</tt>s. If we <a>hmap</a> to swap out the <tt>f a</tt>s for <tt>g
+--   a</tt>s, then we must ensure that the "added structure" (here, the
+--   number of items in the list) remains the same. So, <a>hmap</a> must
+--   preserve the number of items in the list.
+--   
+--   The law <tt><a>hmap</a> <a>id</a> == id</tt> is a way of formalizing
+--   this informal property.
+hmap :: HFunctor t => (f ~> g) -> t f ~> t g
+
+-- | An <a>Interpret</a> lets us move in and out of the "enhanced"
+--   <a>Functor</a>.
+--   
+--   For example, <tt><a>Free</a> f</tt> is <tt>f</tt> enhanced with
+--   monadic structure. We get:
+--   
+--   <pre>
+--   <a>inject</a>    :: f a -&gt; <a>Free</a> f a
+--   <a>interpret</a> :: <a>Monad</a> m =&gt; (forall x. f x -&gt; m x) -&gt; <a>Free</a> f a -&gt; m a
+--   </pre>
+--   
+--   <a>inject</a> will let us use our <tt>f</tt> inside the enhanced
+--   <tt><a>Free</a> f</tt>. <a>interpret</a> will let us "extract" the
+--   <tt>f</tt> from a <tt><a>Free</a> f</tt> if we can give an
+--   <i>interpreting function</i> that interprets <tt>f</tt> into some
+--   target <a>Monad</a>.
+--   
+--   The type family <a>C</a> tells us the typeclass constraint of the
+--   "target" functor. For <a>Free</a>, it is <a>Monad</a>, but for other
+--   <a>Interpret</a> instances, we might have other constraints.
+--   
+--   We enforce that:
+--   
+--   <pre>
+--   <a>interpret</a> id . <a>inject</a> == id
+--   </pre>
+--   
+--   That is, if we lift a value into our structure, then immediately
+--   interpret it out as itself, it should lave the value unchanged.
+class HFunctor t => Interpret t where {
+    
+    -- | The constraint on the target context of <a>interpret</a>.
+    type family C t :: (Type -> Type) -> Constraint;
+}
+
+-- | Lift an <tt>f</tt> into the enhanced <tt>t f</tt> structure. Analogous
+--   to <tt>lift</tt> from <tt>MonadTrans</tt>.
+inject :: Interpret t => f ~> t f
+
+-- | Remove the <tt>f</tt> out of the enhanced <tt>t f</tt> structure,
+--   provided that <tt>f</tt> satisfies the necessary constraints. If it
+--   doesn't, it needs to be properly <a>interpret</a>ed out.
+retract :: (Interpret t, C t f) => t f ~> f
+
+-- | Given an "interpeting function" from <tt>f</tt> to <tt>g</tt>,
+--   interpret the <tt>f</tt> out of the <tt>t f</tt> into a final context
+--   <tt>g</tt>.
+interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
+
+-- | A <a>HBifunctor</a> is like an <a>HFunctor</a>, but it enhances
+--   <i>two</i> different functors instead of just one.
+--   
+--   Usually, it enhaces them "together" in some sort of combining way.
+--   
+--   This typeclass provides a uniform instance for "swapping out" or
+--   "hoisting" the enhanced functors. We can hoist the first one with
+--   <a>hleft</a>, the second one with <a>hright</a>, or both at the same
+--   time with <a>hbimap</a>.
+--   
+--   For example, the <tt>f :*: g</tt> type gives us "both <tt>f</tt> and
+--   <tt>g</tt>":
+--   
+--   <pre>
+--   data (f <a>:*:</a> g) a = f a :*: g a
+--   </pre>
+--   
+--   It combines both <tt>f</tt> and <tt>g</tt> into a unified structure
+--   --- here, it does it by providing both <tt>f</tt> and <tt>g</tt>.
+--   
+--   The single law is:
+--   
+--   <pre>
+--   <a>hbimap</a> <a>id</a> id == id
+--   </pre>
+--   
+--   This ensures that <a>hleft</a>, <a>hright</a>, and <a>hbimap</a> do
+--   not affect the structure that <tt>t</tt> adds on top of the underlying
+--   functors.
+class HBifunctor t
+
+-- | Swap out the first transformed functor.
+hleft :: HBifunctor t => (f ~> j) -> t f g ~> t j g
+
+-- | Swap out the second transformed functor.
+hright :: HBifunctor t => (g ~> k) -> t f g ~> t f k
+
+-- | Swap out both transformed functors at the same time.
+hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
+
+-- | A <a>HBifunctor</a> can be a <a>Tensor</a> if:
+--   
+--   <ol>
+--   <li>There is some identity <tt>i</tt> where <tt>t i f</tt> is
+--   equivalent to just <tt>f</tt>. That is, "enhancing" <tt>f</tt> with
+--   <tt>t i</tt> does nothing.</li>
+--   <li><tt>t</tt> is associative: <tt>f <tt>t</tt> (g <tt>t</tt> h)</tt>
+--   is equivalent to @(f <tt>t</tt> g) <tt>t</tt> h).</li>
+--   </ol>
+--   
+--   The methods in this class provide us useful ways of navigating a
+--   <tt><a>Tensor</a> t</tt> with respect to this property.
+class HBifunctor t => Tensor t where {
+    
+    -- | The identity of <tt><a>Tensor</a> t</tt>. If you "combine" <tt>f</tt>
+    --   with the identity, it leaves <tt>f</tt> unchanged.
+    --   
+    --   For example, the identity of <a>:*:</a> is <a>Proxy</a>. This is
+    --   because
+    --   
+    --   <pre>
+    --   (<a>Proxy</a> :*: f) a
+    --   </pre>
+    --   
+    --   is equivalent to just
+    --   
+    --   <pre>
+    --   f a
+    --   </pre>
+    --   
+    --   <a>:*:</a>-ing <tt>f</tt> with <a>Proxy</a> gives you no additional
+    --   structure.
+    type family I t :: Type -> Type;
+}
+
+-- | For some tensors <tt>t</tt>, you can represt the act of repeatedly
+--   combining the same functor an arbitrary amount of times:
+--   
+--   <pre>
+--   t f f                    -- 2 times
+--   t f (t f f)              -- 3 times
+--   t f (t f (t f f))        -- 4 times
+--   t f (t f (t f (t f f)))  -- 5 times
+--   </pre>
+--   
+--   Sometimes, we have a type that can <i>describe</i> this repeated
+--   combination. For example, <tt><a>ListF</a> f</tt> is the type that
+--   contains <tt>f</tt> <a>:*:</a>d with itself many number of times, and
+--   <tt><a>Ap</a></tt> is the type that contains <tt>f</tt> <a>Day</a>d
+--   with itself many number of times.
+--   
+--   <pre>
+--   <a>ListF</a> [x, y]       == x <a>:*:</a> y
+--   <a>ListF</a> [x, y, z]    == x <a>:*:</a> y <a>:*:</a> z
+--   <a>ListF</a> [x, y, z, q] == x <a>:*:</a> y <a>:*:</a> z <a>:*:</a> q
+--   </pre>
+--   
+--   This is convenient because it allows you to represent repeated
+--   applications of <tt>t</tt> as a single data type.
+--   
+--   For example, <tt><a>Day</a> f f</tt> can be interpreted as "two
+--   sequenced <tt>f</tt>s", allowing you to specify "I want exactly two
+--   sequenced <tt>f</tt>s". If you want to specify "I want 0, 1, or many
+--   <tt>f</tt>s sequenced after each other", then you can use
+--   <tt><a>Ap</a> f</tt>.
+--   
+--   And, <tt>f <a>:*:</a> f</tt> can be interpreted as "a free selection
+--   of two <tt>f</tt>s", allowing you to specify "I have to <tt>f</tt>s
+--   that I can use". If you want to specify "I want 0, 1, or many
+--   different <tt>f</tt>s that I can use", you can use <tt><a>ListF</a>
+--   f</tt>.
+--   
+--   The <a>Monoidal</a> class unifies different such patterns. The
+--   associated type <a>TM</a> is the "repeated aplications of <tt>t</tt>"
+--   type.
+--   
+--   See documentation of <a>Data.Functor.Tensor</a> for information on how
+--   to define instances of this typeclass.
+class (Tensor t, Interpret (TM t)) => Monoidal t where {
+    type family TM t :: (Type -> Type) -> Type -> Type;
+}
+
+-- | A version of <a>retract</a> that works for a <a>Tensor</a>. It
+--   retracts <i>both</i> <tt>f</tt>s into a single <tt>f</tt>.
+retractT :: (Monoidal t, C (TM t) f) => t f f ~> f
+
+-- | A version of <a>interpret</a> that works for a <a>Tensor</a>. It takes
+--   two interpreting functions, and interprets both joined functors one
+--   after the other into <tt>h</tt>.
+interpretT :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+
+-- | If we have an instance of <tt>t</tt>, we can generate an <tt>f</tt>
+--   based on how it interacts with <tt>t</tt>.
+--   
+--   Specialized (and simplified), this type is:
+--   
+--   <pre>
+--   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
+--   <a>pureT</a> @<tt>Comp</tt>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
+--   <a>pureT</a> @(<a>:*:</a>) :: <tt>Plus</tt> f =&gt; f a          -- <tt>zero</tt>
+--   </pre>
+pureT :: (Monoidal t, C (TM t) f) => I t ~> f
+
+-- | Embed a direct application of <tt>f</tt> to itself into a
+--   <tt><a>TM</a> t f</tt>.
+toTM :: Monoidal t => t f f ~> TM t f
+
+-- | A covariant <a>Functor</a> suitable for Yoneda reduction
+data Coyoneda (f :: Type -> Type) a
+[Coyoneda] :: forall (f :: Type -> Type) a b. () => (b -> a) -> f b -> Coyoneda f a
+
+-- | This is the Free <a>Plus</a>.
+newtype ListF f a
+ListF :: [f a] -> ListF f a
+[runListF] :: ListF f a -> [f a]
+
+-- | The free <a>Applicative</a> for a <a>Functor</a> <tt>f</tt>.
+data Ap (f :: Type -> Type) a
+data Alt (f :: Type -> Type) a
+
+-- | Church-encoded Freer monad
+data Free f a
+data Step f a
+Step :: Natural -> f a -> Step f a
+[stepPos] :: Step f a -> Natural
+[stepVal] :: Step f a -> f a
+
+-- | The Day convolution of two covariant functors.
+data Day (f :: Type -> Type) (g :: Type -> Type) a
+[Day] :: forall (f :: Type -> Type) (g :: Type -> Type) a b c. () => f b -> g c -> (b -> c -> a) -> Day f g a
+
+-- | Products: encode multiple arguments to constructors
+data (:*:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Type -> k -> Type -> k -> Type
+(:*:) :: f p -> g p -> (:*:)
+infixr 6 :*:
+infixr 6 :*:
+
+-- | Sums: encode choice between constructors
+data (:+:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Type -> k -> Type -> k -> Type
+L1 :: f p -> (:+:)
+R1 :: g p -> (:+:)
+infixr 5 :+:
+
+-- | A version of <a>:.:</a> that permits <a>HBifunctor</a>, <a>Tensor</a>,
+--   and <a>Monoidal</a> instances.
+type Comp = Cons Star
+
+-- | A simple way to inject/reject into any eventual typeclass.
+--   Essentially, <tt><a>Final</a> c</tt> is the "free c". <tt><a>Final</a>
+--   <a>Monad</a></tt> is the free <a>Monad</a>, etc.
+--   
+--   Useful for lifting a functor <tt>f</tt> into arbitrary structure given
+--   by a typeclass.
+--   
+--   Note that this doesn't have instances for all the typeclasses; you
+--   probably have to define your own if you want to use <tt><a>Final</a>
+--   c</tt> as an <i>instance</i> of <tt>c</tt> (using <a>liftFinal0</a>,
+--   <a>liftFinal1</a>, <a>liftFinal2</a> for help). This is mostly meant
+--   to be usable as a final <a>Interpret</a>, with
+--   
+--   <pre>
+--   <a>inject</a>    :: f a -&gt; <a>Final</a> c f a
+--   <a>interpret</a> :: (f <a>~&gt;</a> g) -&gt; <a>Final</a> c f a -&gt; g a
+--   </pre>
+newtype Final c f a
+Final :: (forall g. c g => (forall x. f x -> g x) -> g a) -> Final c f a
+[runFinal] :: Final c f a -> forall g. c g => (forall x. f x -> g x) -> g a
+
+-- | A lot of tensors can be factored out into a <a>Cons</a> on some
+--   parameterized profunctor. For example, we have:
+--   
+--   <pre>
+--   <a>:.:</a> = <a>Cons</a> <a>Star</a>
+--   <a>Day</a> = <a>Cons</a> <a>Static</a>
+--   <a>:*:</a> = <a>Cons</a> <a>ProdK</a>
+--   </pre>
+--   
+--   In the case of <a>:.:</a>, this actually allows us to have
+--   <a>HFunctor</a> and <a>Interpret</a> instances for functor
+--   composition, because the representation of <a>:.:</a> normally does
+--   not allow this. This gives us a proper tensor to form <a>Free</a>,
+--   which makes the free monad work nicely within our system.
+--   
+--   In the normal case, you can just use <a>Day</a> and <a>:*:</a> instead
+--   of <tt><a>DayCons</a> = <a>Cons</a> <a>Static</a></tt> and
+--   <tt><a>ProdCons</a> = <a>Cons</a> <a>ProdK</a></tt>. The only one that
+--   gives us extra power is <tt><a>Comp</a> = <a>Cons</a>
+--   <a>Star</a></tt>.
+--   
+--   You can use <a>DayCons</a> and <a>ProdCons</a> as <a>Day</a> and
+--   <a>:*:</a> using the provided pattern synonyms.
+data Cons :: ((Type -> Type) -> Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Type -> Type
+pattern Comp :: Functor f => f (g a) -> Comp f g a
+pattern DayCons :: Functor g => Day f g a -> DayCons f g a
+pattern ProdCons :: Functor f => (f :*: g) a -> ProdCons f g a
+
+-- | Associates each <tt><a>Tensor</a> t</tt> with its <a>Cons</a>
+--   equivalent, <tt><a>Cons</a> p</tt>.
+--   
+--   <tt>t</tt> need not always be a legal <a>Tensor</a>.
+class Monoidal (Cons p) => Uncons p t | t -> p
+uncons :: (Uncons p t, Functor g) => t f g ~> Cons p f g
+cons :: (Uncons p t, Functor f) => Cons p f g ~> t f g
