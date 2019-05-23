@@ -22,17 +22,53 @@ instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.L
 instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.ListF f)
 
 module Control.Applicative.Step
+
+-- | The fixed point of applications of <tt>:+:</tt> (functor sums).
+--   
+--   Intuitively, in an infinite <tt>f <tt>:+:</tt> f <tt>:+:</tt> f
+--   <tt>:+:</tt> f ...</tt>, you have exactly one <tt>f</tt>
+--   <i>somewhere</i>. A <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with
+--   a <a>Natural</a> giving you "where" the <tt>f</tt> is in the long
+--   chain.
+--   
+--   <tt>interpret</tt>ing it requires no constraint on the target context.
 data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
 [stepVal] :: Step f a -> f a
 
--- | The identity functor of <tt>:+:</tt>.
+-- | The fixed point of applications of <tt>TheseT</tt>.
+--   
+--   Intuitively, in an infinite <tt>f <tt>TheseT</tt> f <tt>TheseT</tt> f
+--   <tt>TheseT</tt> f ...</tt>, each of those infinite positions may have
+--   an <tt>f</tt> in them. However, because of the at-least-one nature of
+--   <tt>TheseT</tt>, we know we have at least one f at one position
+--   <i>somewhere</i>.
+--   
+--   A <tt><a>Steps</a> f a</tt> has potentially many <tt>f</tt>s, each
+--   stored at a different <a>Natural</a> position, with the guaruntee that
+--   at least one <tt>f</tt> exists.
+--   
+--   <tt>interpret</tt>ing it requires at least an <a>Alt</a> instance in
+--   the target context, since we have to handle potentially more than one
+--   <tt>f</tt>. However, we don't fully need <tt>Plus</tt>, since we know
+--   we always have at least one <tt>f</tt>.
+newtype Steps f a
+Steps :: NEMap Natural (f a) -> Steps f a
+[getSteps] :: Steps f a -> NEMap Natural (f a)
+
+-- | The identity functor of <tt>:+:</tt> (and also <tt>TheseT</tt>)
 data VoidT a
 
 -- | We have a natural transformation between <a>VoidT</a> and any other
 --   functor <tt>f</tt> with no constraints.
 absurdT :: VoidT a -> f a
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.Step.Steps f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.Step.Steps f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Steps f)
+instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Steps f a)
+instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Steps f a)
+instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Steps f a)
 instance GHC.Base.Functor Control.Applicative.Step.VoidT
 instance GHC.Classes.Ord (Control.Applicative.Step.VoidT a)
 instance GHC.Classes.Eq (Control.Applicative.Step.VoidT a)
@@ -43,7 +79,11 @@ instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Step f
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Step f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Steps f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Steps f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Step f)
 
 module Control.Monad.Freer.Church
 
@@ -162,6 +202,7 @@ instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 instance Data.Functor.HFunctor.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.ListF
+instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Steps
 instance Data.Functor.HFunctor.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Interpret Control.Monad.Freer.Church.Free
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Final.Ap
@@ -339,6 +380,10 @@ elim2 :: (Tensor t, Functor g) => t (I t) g ~> g
 assoc :: (Tensor t, Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
 disassoc :: (Tensor t, Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t g h)
 
+-- | The inverse of <a>unconsTM</a>. Calls <a>nilTM</a> on the left (nil)
+--   branch, and <a>consTM</a> on the right (cons) branch.
+reconsTM :: forall t f. Monoidal t => (I t :+: t f (TM t f)) ~> TM t f
+
 -- | For some tensors <tt>t</tt>, you can represt the act of repeatedly
 --   combining the same functor an arbitrary amount of times:
 --   
@@ -389,10 +434,23 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where {
 -- | If <tt><a>TM</a> t f</tt> represents multiple applications of <tt>t
 --   f</tt> with itself, then <tt>nilTM</tt> gives us "zero applications of
 --   <tt>f</tt>".
+--   
+--   Note that <tt>t</tt> cannot be inferred from the type of <a>nilTM</a>,
+--   so this function must always be called with -XTypeApplications:
+--   
+--   <pre>
+--   <a>nilTM</a> @<a>Day</a> :: <a>Identity</a> <a>~&gt;</a> <a>Ap</a> f
+--   <a>nilTM</a> @<tt>Comp</tt> :: <a>Identity</a> <a>~&gt;</a> <tt>Free</tt> f
+--   <a>nilTM</a> @(<a>:*:</a>) :: <a>Proxy</a> <a>~&gt;</a> <a>ListF</a> f
+--   </pre>
+--   
+--   Together with <a>consTM</a>, forms an inverse with <a>unconsTM</a>.
 nilTM :: Monoidal t => I t ~> TM t f
 
 -- | Prepend an application of <tt>t f</tt> to the front of a <tt><a>TM</a>
 --   t f</tt>.
+--   
+--   Together with <a>nilTM</a>, forms an inverse with <a>unconsTM</a>.
 consTM :: Monoidal t => t f (TM t f) ~> TM t f
 
 -- | If a <tt><a>TM</a> t f</tt> represents multiple applications of <tt>t
@@ -405,6 +463,16 @@ consTM :: Monoidal t => t f (TM t f) ~> TM t f
 --   <tt>f</tt>; we return the "first" <tt>f</tt> applied to the rest of
 --   the <tt>f</tt>s.</li>
 --   </ol>
+--   
+--   Should form an inverse with <a>reconsTM</a>:
+--   
+--   <pre>
+--   <a>reconsTM</a> . <a>unconsTM</a> == id
+--   <a>unconsTM</a> . <a>reconsTM</a> == id
+--   </pre>
+--   
+--   where <a>reconsTM</a> is <a>nilTM</a> on the left side of the
+--   <a>:+:</a>, and <a>consTM</a> on the right side of the <a>:+:</a>.
 unconsTM :: Monoidal t => TM t f ~> (I t :+: t f (TM t f))
 
 -- | If a <tt><a>TM</a> t f</tt> represents multiple applications of <tt>t
@@ -421,6 +489,11 @@ appendTM :: Monoidal t => t (TM t f) (TM t f) ~> TM t f
 --   representation of multiple-applications-to-self, and <tt><a>TM</a>
 --   t</tt> can be thought of as a tailor-made represenation for your
 --   specific <tt><a>Tensor</a> t</tt>.
+--   
+--   <pre>
+--   <a>fromF</a> . <a>toF</a> == id
+--   <a>toF</a> . <a>fromF</a> == id
+--   </pre>
 fromF :: Monoidal t => F t (I t) f ~> TM t f
 
 -- | The inverse of <a>fromF</a>: convert a <tt><a>TM</a> t f</tt> into a
@@ -448,7 +521,7 @@ interpretT :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 --   <pre>
 --   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
 --   <a>pureT</a> @<tt>Comp</tt>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
---   <a>pureT</a> @(<a>:*:</a>) :: <tt>Plus</tt> f =&gt; f a          -- <tt>zero</tt>
+--   <a>pureT</a> @(<a>:*:</a>) :: <a>Plus</a> f =&gt; f a          -- <a>zero</a>
 --   </pre>
 pureT :: (Monoidal t, C (TM t) f) => I t ~> f
 
@@ -497,12 +570,24 @@ WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
 data JoinT t f a
 JoinT :: t f f a -> JoinT t f a
 [runJoinT] :: JoinT t f a -> t f f a
+data These1 f g a
+This1 :: f a -> These1 f g a
+That1 :: g a -> These1 f g a
+These1 :: f a -> g a -> These1 f g a
+instance forall k (f :: k -> *) (g :: k -> *) (a :: k). (GHC.Classes.Ord (f a), GHC.Classes.Ord (g a)) => GHC.Classes.Ord (Data.Functor.Tensor.These1 f g a)
+instance forall k (f :: k -> *) (g :: k -> *) (a :: k). (GHC.Classes.Eq (f a), GHC.Classes.Eq (g a)) => GHC.Classes.Eq (Data.Functor.Tensor.These1 f g a)
+instance forall k (f :: k -> *) (g :: k -> *) (a :: k). (GHC.Show.Show (f a), GHC.Show.Show (g a)) => GHC.Show.Show (Data.Functor.Tensor.These1 f g a)
+instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Show.Show (i a), GHC.Show.Show (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Show.Show (Data.Functor.Tensor.F t i f a)
 instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.Tensor.JoinT t f)
+instance forall k (f :: k -> *) (a :: k) (g :: k -> *). (GHC.Base.Semigroup (f a), GHC.Base.Semigroup (g a)) => GHC.Base.Semigroup (Data.Functor.Tensor.These1 f g a)
+instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.These1
+instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.These1
+instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.These1
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.JoinT t)
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:+:)
-instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, forall (g :: * -> *). GHC.Base.Functor g => GHC.Base.Functor (t f g)) => GHC.Base.Functor (Data.Functor.Tensor.F t i f)
+instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, GHC.Base.Functor (t f (Data.Functor.Tensor.F t i f))) => GHC.Base.Functor (Data.Functor.Tensor.F t i f)
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.F t i)
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Tensor Data.Functor.Day.Day
@@ -585,6 +670,10 @@ instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.Comp
 instance (forall x. GHC.Base.Functor (p g x)) => GHC.Base.Functor (Data.Functor.Tensor.Cons.Cons p f g)
 
 module Data.Functor.Combinator
+
+-- | A natural transformation from <tt>f</tt> to <tt>g</tt>.
+type (~>) (f :: k -> Type) (g :: k -> Type) = forall (x :: k). () => f x -> g x
+infixr 0 ~>
 
 -- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
 --   a basic functor combinator. It takes a functor as input and returns a
@@ -818,7 +907,7 @@ interpretT :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 --   <pre>
 --   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
 --   <a>pureT</a> @<tt>Comp</tt>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
---   <a>pureT</a> @(<a>:*:</a>) :: <tt>Plus</tt> f =&gt; f a          -- <tt>zero</tt>
+--   <a>pureT</a> @(<a>:*:</a>) :: <a>Plus</a> f =&gt; f a          -- <a>zero</a>
 --   </pre>
 pureT :: (Monoidal t, C (TM t) f) => I t ~> f
 
@@ -841,10 +930,40 @@ data Alt (f :: Type -> Type) a
 
 -- | Church-encoded Freer monad
 data Free f a
+
+-- | The fixed point of applications of <tt>:+:</tt> (functor sums).
+--   
+--   Intuitively, in an infinite <tt>f <tt>:+:</tt> f <tt>:+:</tt> f
+--   <tt>:+:</tt> f ...</tt>, you have exactly one <tt>f</tt>
+--   <i>somewhere</i>. A <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with
+--   a <a>Natural</a> giving you "where" the <tt>f</tt> is in the long
+--   chain.
+--   
+--   <tt>interpret</tt>ing it requires no constraint on the target context.
 data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
 [stepVal] :: Step f a -> f a
+
+-- | The fixed point of applications of <tt>TheseT</tt>.
+--   
+--   Intuitively, in an infinite <tt>f <tt>TheseT</tt> f <tt>TheseT</tt> f
+--   <tt>TheseT</tt> f ...</tt>, each of those infinite positions may have
+--   an <tt>f</tt> in them. However, because of the at-least-one nature of
+--   <tt>TheseT</tt>, we know we have at least one f at one position
+--   <i>somewhere</i>.
+--   
+--   A <tt><a>Steps</a> f a</tt> has potentially many <tt>f</tt>s, each
+--   stored at a different <a>Natural</a> position, with the guaruntee that
+--   at least one <tt>f</tt> exists.
+--   
+--   <tt>interpret</tt>ing it requires at least an <a>Alt</a> instance in
+--   the target context, since we have to handle potentially more than one
+--   <tt>f</tt>. However, we don't fully need <tt>Plus</tt>, since we know
+--   we always have at least one <tt>f</tt>.
+newtype Steps f a
+Steps :: NEMap Natural (f a) -> Steps f a
+[getSteps] :: Steps f a -> NEMap Natural (f a)
 
 -- | The Day convolution of two covariant functors.
 data Day (f :: Type -> Type) (g :: Type -> Type) a
@@ -861,6 +980,10 @@ data (:+:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Ty
 L1 :: f p -> (:+:)
 R1 :: g p -> (:+:)
 infixr 5 :+:
+data These1 f g a
+This1 :: f a -> These1 f g a
+That1 :: g a -> These1 f g a
+These1 :: f a -> g a -> These1 f g a
 
 -- | A version of <a>:.:</a> that permits <a>HBifunctor</a>, <a>Tensor</a>,
 --   and <a>Monoidal</a> instances.
