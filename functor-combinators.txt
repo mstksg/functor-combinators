@@ -26,9 +26,6 @@ data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
 [stepVal] :: Step f a -> f a
-class Applicative f => AccumNat f
-stepWith :: AccumNat f => Natural -> a -> f a
-step :: AccumNat f => Natural -> f ()
 
 -- | The identity functor of <tt>:+:</tt>.
 data VoidT a
@@ -46,8 +43,6 @@ instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Step f
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Step f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
-instance GHC.Base.Applicative f => Control.Applicative.Step.AccumNat (Control.Applicative.Step.Step f)
-instance GHC.Base.Monad m => Control.Applicative.Step.AccumNat (Control.Monad.Trans.Writer.Lazy.WriterT (Data.Semigroup.Internal.Sum GHC.Natural.Natural) m)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
 
 module Control.Monad.Freer.Church
@@ -159,6 +154,7 @@ class Trivial c
 class (c a, d a) => AndC c d a
 instance forall k (c :: k -> GHC.Types.Constraint) (a :: k) (d :: k -> GHC.Types.Constraint). (c a, d a) => Data.Functor.HFunctor.AndC c d a
 instance (Data.Functor.HFunctor.Interpret s, Data.Functor.HFunctor.Interpret t) => Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Compose.ComposeT s t)
+instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Step
 instance forall k (c :: k). Data.Functor.HFunctor.Trivial c
 instance Data.Functor.HFunctor.Interpret Control.Monad.Trans.Identity.IdentityT
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Backwards.Backwards
@@ -166,7 +162,6 @@ instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 instance Data.Functor.HFunctor.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.ListF
-instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Step
 instance Data.Functor.HFunctor.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Interpret Control.Monad.Freer.Church.Free
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Final.Ap
@@ -207,7 +202,7 @@ fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
 --   toFinal :: <tt>Ap</tt> f <a>~&gt;</a> <a>Final</a> <a>Applicative</a> f
 --   toFinal :: <tt>Alt</tt> f <a>~&gt;</a> <a>Final</a> <a>Alternative</a> f
 --   toFinal :: <a>Free</a> f <a>~&gt;</a> <a>Final</a> <a>Monad</a> f
---   toFinal :: <a>Lift</a> f <a>~&gt;</a> <a>Final</a> <a>Pointed</a> f
+--   toFinal :: <tt>Lift</tt> f <a>~&gt;</a> <a>Final</a> <a>Pointed</a> f
 --   </pre>
 --   
 --   Note that the instance of <tt>c</tt> for <tt><a>Final</a> c</tt> must
@@ -233,9 +228,6 @@ instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.MonadP
 instance GHC.Base.Monad (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
 instance GHC.Base.Alternative (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
 instance GHC.Base.MonadPlus (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
-instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
-instance Control.Applicative.Step.AccumNat (Data.Functor.HFunctor.Final.Final Control.Applicative.Step.AccumNat f)
 instance Data.Pointed.Pointed (Data.Functor.HFunctor.Final.Final Data.Pointed.Pointed f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
 instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
@@ -502,6 +494,11 @@ interpretF :: forall t f g. (Monoidal t, C (TM t) g) => (f ~> g) -> F t (I t) f 
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
 WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
+data JoinT t f a
+JoinT :: t f f a -> JoinT t f a
+[runJoinT] :: JoinT t f a -> t f f a
+instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.Tensor.JoinT t f)
+instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.JoinT t)
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:+:)
