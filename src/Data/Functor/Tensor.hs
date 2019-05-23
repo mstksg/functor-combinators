@@ -19,6 +19,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeInType                 #-}
@@ -54,11 +55,13 @@
 module Data.Functor.Tensor (
     HBifunctor(..)
   , Tensor(..)
+  , reconsTM
   , Monoidal(..)
   , F(..)
   , injectF, retractF, interpretF
   , WrappedHBifunctor(..)
   , JoinT(..)
+  , These1(..)
   ) where
 
 import           Control.Applicative.Free
@@ -66,15 +69,20 @@ import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Natural
 import           Data.Function
-import           Data.Functor.Day          (Day(..))
+import           Data.Functor.Day               (Day(..))
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Identity
+import           Data.Functor.Plus
 import           Data.Kind
+import           Data.List.NonEmpty             (NonEmpty(..))
+import           Data.Map.NonEmpty              (NEMap)
 import           Data.Proxy
-import           GHC.Generics hiding       (C)
+import           Data.Semigroup
+import           GHC.Generics hiding            (C)
 import           GHC.Natural
-import qualified Data.Functor.Day          as D
+import qualified Data.Functor.Day               as D
+import qualified Data.Map.NonEmpty              as NEM
 
 -- | A 'HBifunctor' can be a 'Tensor' if:
 --
@@ -126,10 +134,12 @@ class HBifunctor t => Tensor t where
 data F t i f a = Done (i a)
                | More (t f (F t i f) a)
 
-instance (Functor i, forall g. Functor g => Functor (t f g)) => Functor (F t i f) where
+instance (Functor i, Functor (t f (F t i f))) => Functor (F t i f) where
     fmap f = \case
       Done x  -> Done (fmap f x)
       More xs -> More (fmap f xs)
+
+deriving instance (Show (i a), Show (t f (F t i f) a)) => Show (F t i f a)
 
 -- | For some tensors @t@, you can represt the act of repeatedly combining
 -- the same functor an arbitrary amount of times:
@@ -175,10 +185,23 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
 
     -- | If @'TM' t f@ represents multiple applications of @t f@ with
     -- itself, then @nilTM@ gives us "zero applications of @f@".
+    --
+    -- Note that @t@ cannot be inferred from the type of 'nilTM', so this
+    -- function must always be called with -XTypeApplications:
+    --
+    -- @
+    -- 'nilTM' \@'Day' :: 'Identity' '~>' 'Ap' f
+    -- 'nilTM' \@'Comp' :: 'Identity' '~>' 'Free' f
+    -- 'nilTM' \@(':*:') :: 'Proxy' '~>' 'ListF' f
+    -- @
+    --
+    -- Together with 'consTM', forms an inverse with 'unconsTM'.
     nilTM    :: I t ~> TM t f
     nilTM    = fromF @t . Done
 
     -- | Prepend an application of @t f@ to the front of a @'TM' t f@.
+    --
+    -- Together with 'nilTM', forms an inverse with 'unconsTM'.
     consTM   :: t f (TM t f) ~> TM t f
     consTM     = fromF . More . hright toF
 
@@ -188,7 +211,17 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     -- 1.   The @'TM' t f@ had no applications of @f@
     -- 2.   The @'TM' t f@ had at least one application of @f@; we return
     --      the "first" @f@ applied to the rest of the @f@s.
-    unconsTM   :: TM t f ~> (I t :+: t f (TM t f))
+    --
+    -- Should form an inverse with 'reconsTM':
+    --
+    -- @
+    -- 'reconsTM' . 'unconsTM' == id
+    -- 'unconsTM' . 'reconsTM' == id
+    -- @
+    --
+    -- where 'reconsTM' is 'nilTM' on the left side of the ':+:', and
+    -- 'consTM' on the right side of the ':+:'.
+    unconsTM   :: TM t f ~> I t :+: t f (TM t f)
     unconsTM m = case toF @t m of
       Done x  -> L1 x
       More xs -> R1 . hright fromF $ xs
@@ -206,6 +239,11 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     -- @'F' i ('I' t)@ can be thought of as a "universal" representation of
     -- multiple-applications-to-self, and @'TM' t@ can be thought of as
     -- a tailor-made represenation for your specific @'Tensor' t@.
+    --
+    -- @
+    -- 'fromF' . 'toF' == id
+    -- 'toF' . 'fromF' == id
+    -- @
     fromF :: F t (I t) f ~> TM t f
     fromF = \case
       Done x  -> nilTM @t x
@@ -256,6 +294,11 @@ instance HBifunctor t => HFunctor (F t i) where
     hmap f = \case
       Done x  -> Done x
       More xs -> More . hbimap f (hmap f) $ xs
+
+-- | The inverse of 'unconsTM'.  Calls 'nilTM' on the left (nil) branch,
+-- and 'consTM' on the right (cons) branch.
+reconsTM :: forall t f. Monoidal t => I t :+: t f (TM t f) ~> TM t f
+reconsTM = interpretT (nilTM @t) (consTM @t)
 
 -- | If we have @'Tensor' t@, we can make a singleton 'F'.
 injectF :: forall t f. Tensor t => f ~> F t (I t) f
@@ -313,7 +356,10 @@ instance Monoidal (:*:) where
       Done ~Proxy       -> y
       More (x' :*: x'') -> More (x' :*: appendF (x'' :*: y))
 
+    retractT (x :*: y) = x <!> y
+    interpretT f g (x :*: y) = f x <!> g y
     toTM (x :*: y) = ListF [x, y]
+    pureT _ = zero
 
 instance Tensor Day where
     type I Day = Identity
@@ -349,6 +395,7 @@ instance Monoidal Day where
     retractT (Day x y z) = z <$> x <*> y
     interpretT f g (Day x y z) = z <$> f x <*> g y
     toTM (Day x y z) = z <$> liftAp x <*> liftAp y
+    pureT = pure . runIdentity
 
 instance Tensor (:+:) where
     type I (:+:) = VoidT
@@ -387,8 +434,9 @@ instance Monoidal (:+:) where
     fromF = \case
       Done x      -> absurdT x
       More (L1 x) -> Step 0 x
-      More (R1 y) -> case fromF y of
-        Step n z -> Step (n + 1) z
+      More (R1 y) ->
+        let Step n z = fromF y
+        in  Step (n + 1) z
     toF (Step n x) = go n
       where
         go (flip minusNaturalMaybe 1 -> i) = case i of
@@ -396,7 +444,7 @@ instance Monoidal (:+:) where
           Just j  -> More (R1 (go j))
     appendF = \case
       L1 x -> x
-      R1 y -> y     -- hm, what is this?
+      R1 y -> y
 
     retractT = \case
       L1 x -> x
@@ -407,6 +455,7 @@ instance Monoidal (:+:) where
     toTM = \case
       L1 x -> Step 0 x
       R1 y -> Step 1 y
+    pureT = absurdT
 
 data JoinT t f a = JoinT { runJoinT :: t f f a }
 
@@ -414,3 +463,129 @@ deriving instance Functor (t f f) => Functor (JoinT t f)
 
 instance HBifunctor t => HFunctor (JoinT t) where
     hmap f (JoinT x) = JoinT $ hbimap f f x
+
+data These1 f g a
+    = This1 (f a)
+    | That1 (g a)
+    | These1 (f a) (g a)
+  deriving (Show, Eq, Ord)
+
+instance (Semigroup (f a), Semigroup (g a)) => Semigroup (These1 f g a) where
+    (<>) = \case
+      This1  x   -> \case
+        This1  x'    -> This1  (x <> x')
+        That1     y' -> These1 x         y'
+        These1 x' y' -> These1 (x <> x') y'
+      That1    y -> \case
+        This1  x'    -> These1 x'        y
+        That1     y' -> That1            (y <> y')
+        These1 x' y' -> These1 x'        (y <> y')
+      These1 x y -> \case
+        This1  x'    -> These1 (x <> x') y
+        That1     y' -> These1 x         (y <> y')
+        These1 x' y' -> These1 (x <> x') (y <> y')
+
+
+instance HBifunctor These1 where
+    hbimap f g = \case
+      This1  x   -> This1  (f x)
+      That1    y -> That1        (g y)
+      These1 x y -> These1 (f x) (g y)
+
+instance Tensor These1 where
+    type I These1 = VoidT
+
+    intro1 = This1
+    intro2 = That1
+    elim1  = \case
+      This1  x   -> x
+      That1    y -> absurdT y
+      These1 _ y -> absurdT y
+    elim2  = \case
+      This1  x   -> absurdT x
+      That1    y -> y
+      These1 x _ -> absurdT x
+    assoc = \case
+      This1  x              -> This1  (This1  x  )
+      That1    (This1  y  ) -> This1  (That1    y)
+      That1    (That1    z) -> That1               z
+      That1    (These1 y z) -> These1 (That1    y) z
+      These1 x (This1  y  ) -> This1  (These1 x y)
+      These1 x (That1    z) -> These1 (This1  x  ) z
+      These1 x (These1 y z) -> These1 (These1 x y) z
+    disassoc = \case
+      This1  (This1  x  )   -> This1  x
+      This1  (That1    y)   -> That1    (This1  y  )
+      This1  (These1 x y)   -> These1 x (This1  y  )
+      That1               z -> That1    (That1    z)
+      These1 (This1  x  ) z -> These1 x (That1    z)
+      These1 (That1    y) z -> That1    (These1 y z)
+      These1 (These1 x y) z -> These1 x (These1 y z)
+
+instance Monoidal These1 where
+    type TM These1 = Steps
+
+    nilTM  = absurdT
+    consTM = \case
+      This1  x            -> Steps $ NEM.singleton 0 x
+      That1    (Steps xs) -> Steps $ NEM.mapKeysMonotonic (+ 1) xs
+      These1 x (Steps xs) -> Steps . NEM.insertMapMin 0 x
+                                   . NEM.toMap
+                                   . NEM.mapKeysMonotonic (+ 1)
+                                   $ xs
+    unconsTM = R1
+             . hbimap (getFirst . unComp1) (Steps . unComp1)
+             . decrAll
+             . getSteps
+    appendTM = \case
+      This1  (Steps xs)            -> Steps xs
+      That1             (Steps ys) -> Steps ys
+      These1 (Steps xs) (Steps ys) -> Steps $
+        let (k, _) = NEM.findMax xs
+        in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+
+    fromF = \case
+      Done x            -> absurdT x
+      More (This1  x  ) -> Steps . NEM.singleton 0 $ x
+      More (That1    y) ->
+        let Steps ys = fromF y
+        in  Steps $ NEM.mapKeysMonotonic (+ 1) ys
+      More (These1 x y) ->
+        let Steps ys = fromF y
+        in  Steps
+              . NEM.insertMapMin 0 x
+              . NEM.toMap
+              . NEM.mapKeysMonotonic (+ 1)
+              $ ys
+    toF = More
+        . hbimap (getFirst . unComp1) (toF . Steps . unComp1)
+        . decrAll
+        . getSteps
+    appendF = \case
+      This1  xs    -> xs
+      That1     ys -> ys
+      These1 xs ys -> case xs of
+        Done x              -> absurdT x
+        More (This1  x    ) -> More $ These1 x ys
+        More (That1    xs') -> More $ That1    (appendF (These1 xs' ys))
+        More (These1 x xs') -> More $ These1 x (appendF (These1 xs' ys))
+
+    retractT = \case
+      This1  x   -> x
+      That1    y -> y
+      These1 x y -> x <!> y
+    interpretT f g = \case
+      This1  x   -> f x
+      That1    y -> g y
+      These1 x y -> f x <!> g y
+    toTM = \case
+      This1  x   -> Steps $ NEM.singleton 0 x
+      That1    y -> Steps $ NEM.singleton 1 y
+      These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
+    pureT = absurdT
+
+decrAll :: NEMap Natural (f x) -> These1 (First :.: f) (NEMap Natural :.: f) x
+decrAll = NEM.foldMapWithKey $ \i x ->
+    case minusNaturalMaybe i 1 of
+      Nothing -> This1 . Comp1 $ First x
+      Just i' -> That1 . Comp1 $ NEM.singleton i' x

@@ -140,6 +140,9 @@ instance HFunctor Alt.Alt where
 instance HFunctor Step where
     hmap f (Step n x) = Step n (f x)
 
+instance HFunctor Steps where
+    hmap f (Steps xs) = Steps (f <$> xs)
+
 instance HFunctor Free where
     hmap f x = Free $ \p b -> runFree x p $ \y z -> b (f y) z
 

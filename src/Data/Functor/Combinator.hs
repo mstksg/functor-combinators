@@ -1,10 +1,12 @@
+{-# LANGUAGE ExplicitNamespaces #-}
 
 module Data.Functor.Combinator (
   -- * Main interface
+    type (~>)
   -- ** Single Functors
-    HFunctor(..)
+  , HFunctor(..)
   , Interpret(..)
-  -- ** Mulit-Functors
+  -- ** Multi-Functors
   , HBifunctor(..)
   , Tensor(I)
   , Monoidal(TM, retractT, interpretT, pureT, toTM)
@@ -15,9 +17,11 @@ module Data.Functor.Combinator (
   , Alt
   , Free
   , Step(..)
+  , Steps(..)
   , Day(..)
   , (:*:)(..)
   , (:+:)(..)
+  , These1(..)
   , Comp
   , Final(..)
   , Cons(..), Uncons(..)
@@ -28,6 +32,7 @@ import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
+import           Control.Natural
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
 import           Data.Functor.HFunctor

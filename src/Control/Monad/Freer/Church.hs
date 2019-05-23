@@ -27,4 +27,3 @@ instance Monad (Free f) where
 
 instance M.MonadFree f (Free f) where
     wrap x = Free $ \p b -> b x $ \y -> runFree y p b
-

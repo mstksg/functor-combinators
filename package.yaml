@@ -31,6 +31,9 @@ dependencies:
 - pointed
 - tagged
 - mmorph
+- containers
+- nonempty-containers
+- dlist
 
 ghc-options:
 - -Wall

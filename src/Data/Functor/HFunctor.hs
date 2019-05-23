@@ -35,6 +35,7 @@ import           Data.Pointed
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
+import qualified Data.Map.NonEmpty              as NEM
 
 -- | An 'Interpret' lets us move in and out of the "enhanced" 'Functor'.
 --
@@ -104,6 +105,12 @@ instance Interpret Step where
     inject = Step 0
     retract (Step _ x)     = x
     interpret f (Step _ x) = f x
+
+instance Interpret Steps where
+    type C Steps = Alt
+    inject      = Steps . NEM.singleton 0
+    retract     = NEM.foldr1 (<!>) . getSteps
+    interpret f = NEM.foldr1 (<!>) . NEM.map f . getSteps
 
 instance Interpret Alt.Alt where
     type C Alt.Alt = Alternative
