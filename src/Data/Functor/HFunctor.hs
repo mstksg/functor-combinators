@@ -27,10 +27,12 @@ import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
 import           Data.Functor.Coyoneda
+import           Data.Semigroup.Foldable
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Plus
 import           Data.Functor.Reverse
 import           Data.Kind
+import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
@@ -99,6 +101,13 @@ instance Interpret ListF where
     type C ListF = Plus
     inject = ListF . (:[])
     retract = foldr (<!>) zero . runListF
+    interpret f = foldr ((<!>) . f) zero . runListF
+
+instance Interpret NonEmptyF where
+    type C NonEmptyF = Alt
+    inject = NonEmptyF . (:| [])
+    retract = asum1 . runNonEmptyF
+    interpret f = asum1 . fmap f . runNonEmptyF
 
 instance Interpret Step where
     type C Step = Trivial
@@ -109,8 +118,8 @@ instance Interpret Step where
 instance Interpret Steps where
     type C Steps = Alt
     inject      = Steps . NEM.singleton 0
-    retract     = NEM.foldr1 (<!>) . getSteps
-    interpret f = NEM.foldr1 (<!>) . NEM.map f . getSteps
+    retract     = asum1 . getSteps
+    interpret f = asum1 . NEM.map f . getSteps
 
 instance Interpret Alt.Alt where
     type C Alt.Alt = Alternative

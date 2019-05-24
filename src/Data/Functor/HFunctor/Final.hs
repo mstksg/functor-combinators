@@ -42,17 +42,20 @@ import           Data.Pointed
 newtype Final c f a = Final
     { runFinal :: forall g. c g => (forall x. f x -> g x) -> g a }
 
+-- | Lift an action into a 'Final'.
 liftFinal0
     :: (forall g. c g => g a)
     -> Final c f a
 liftFinal0 x = Final $ \_ -> x
 
+-- | Map the action in a 'Final'.
 liftFinal1
     :: (forall g. c g => g a -> g b)
     -> Final c f a
     -> Final c f b
 liftFinal1 f x = Final $ \r -> f (runFinal x r)
 
+-- | Merge two 'Final' actions.
 liftFinal2
     :: (forall g. c g => g a -> g b -> g d)
     -> Final c f a
@@ -63,8 +66,17 @@ liftFinal2 f x y = Final $ \r -> f (runFinal x r) (runFinal y r)
 instance Functor (Final Functor f) where
     fmap f = liftFinal1 (fmap f)
 
+instance Functor (Final Apply f) where
+    fmap f = liftFinal1 (fmap f)
+instance Apply (Final Apply f) where
+    (<.>) = liftFinal2 (<.>)
+    liftF2 f = liftFinal2 (liftF2 f)
+
 instance Functor (Final Applicative f) where
     fmap f = liftFinal1 (fmap f)
+instance Apply (Final Applicative f) where
+    (<.>) = liftFinal2 (<*>)
+    liftF2 f = liftFinal2 (liftA2 f)
 instance Applicative (Final Applicative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
@@ -72,6 +84,9 @@ instance Applicative (Final Applicative f) where
 
 instance Functor (Final Alternative f) where
     fmap f = liftFinal1 (fmap f)
+instance Apply (Final Alternative f) where
+    (<.>) = liftFinal2 (<*>)
+    liftF2 f = liftFinal2 (liftA2 f)
 instance Applicative (Final Alternative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
@@ -82,6 +97,9 @@ instance Alternative (Final Alternative f) where
 
 instance Functor (Final Monad f) where
     fmap f = liftFinal1 (fmap f)
+instance Apply (Final Monad f) where
+    (<.>) = liftFinal2 (<*>)
+    liftF2 f = liftFinal2 (liftA2 f)
 instance Applicative (Final Monad f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
@@ -119,6 +137,9 @@ instance Applicative (Final (MonadReader r) f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
+instance Apply (Final (MonadReader r) f) where
+    (<.>) = liftFinal2 (<*>)
+    liftF2 f = liftFinal2 (liftA2 f)
 instance Monad (Final (MonadReader r) f) where
     return x = liftFinal0 (return x)
     x >>= f  = Final $ \r -> do
@@ -164,7 +185,7 @@ instance Interpret (Final c) where
 -- toFinal :: 'Alt' f '~>' 'Final' 'Alternative' f
 -- toFinal :: 'Control.Monad.Freer.Church.Free' f '~>' 'Final' 'Monad' f
 -- toFinal :: 'Lift' f '~>' 'Final' 'Pointed' f
--- toFinal :: 'Steps' f '~>' 'Final' 'Alt' f
+-- toFinal :: 'ListF' f '~>' 'Final' 'Plus' f
 -- @
 --
 -- Note that the instance of @c@ for @'Final' c@ must be defined.
@@ -181,7 +202,7 @@ toFinal = interpret inject
 -- fromFinal :: 'Final' 'Alternative' f '~>' 'Alt' f
 -- fromFinal :: 'Final' 'Monad' f '~>' 'Control.Monad.Freer.Church.Free' f
 -- fromFinal :: 'Final' 'Pointed' f '~>' 'Lift' f
--- fromFinal :: 'Final' 'Alt' f '~>' 'Steps' f
+-- fromFinal :: 'Final' 'Plus' f '~>' 'ListF' f
 -- @
 --
 -- Should form an isomorphism with 'toFinal'

@@ -134,6 +134,9 @@ instance HFunctor Ap where
 instance HFunctor ListF where
     hmap f (ListF xs) = ListF (map f xs)
 
+instance HFunctor NonEmptyF where
+    hmap f (NonEmptyF xs) = NonEmptyF (fmap f xs)
+
 instance HFunctor Alt.Alt where
     hmap = Alt.hoistAlt
 

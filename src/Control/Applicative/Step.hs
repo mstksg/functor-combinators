@@ -17,6 +17,7 @@ module Control.Applicative.Step (
   ) where
 
 import           Data.Semigroup.Foldable
+import           Data.Functor.Alt
 import           Data.Semigroup.Traversable
 import           Numeric.Natural
 import qualified Data.Map.NonEmpty          as NEM
@@ -55,8 +56,6 @@ absurdT = \case {}
 
 -- | The fixed point of applications of 'TheseT'.
 --
--- You can think of it as "Free 'Data.Functor.Alt.Alt'".
---
 -- Intuitively, in an infinite @f `TheseT` f `TheseT` f `TheseT` f ...@,
 -- each of those infinite positions may have an @f@ in them.  However,
 -- because of the at-least-one nature of 'TheseT', we know we have at least
@@ -80,3 +79,8 @@ instance Foldable1 f => Foldable1 (Steps f) where
 instance Traversable1 f => Traversable1 (Steps f) where
     traverse1 f = fmap Steps . (traverse1 . traverse1) f . getSteps
     sequence1   = fmap Steps . traverse1 sequence1 . getSteps
+
+instance Functor f => Alt (Steps f) where
+    Steps xs <!> Steps ys = Steps $
+      let (k, _) = NEM.findMax xs
+      in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys

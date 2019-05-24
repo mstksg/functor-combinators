@@ -33,7 +33,6 @@ dependencies:
 - mmorph
 - containers
 - nonempty-containers
-- dlist
 
 ghc-options:
 - -Wall
