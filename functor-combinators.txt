@@ -412,7 +412,7 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 --   equivalent to just <tt>f</tt>. That is, "enhancing" <tt>f</tt> with
 --   <tt>t i</tt> does nothing.</li>
 --   <li><tt>t</tt> is associative: <tt>f <tt>t</tt> (g <tt>t</tt> h)</tt>
---   is equivalent to @(f <tt>t</tt> g) <tt>t</tt> h).</li>
+--   is equivalent to <tt>(f <tt>t</tt> g) <tt>t</tt> h)</tt>.</li>
 --   </ol>
 --   
 --   The methods in this class provide us useful ways of navigating a
@@ -870,7 +870,7 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 --   equivalent to just <tt>f</tt>. That is, "enhancing" <tt>f</tt> with
 --   <tt>t i</tt> does nothing.</li>
 --   <li><tt>t</tt> is associative: <tt>f <tt>t</tt> (g <tt>t</tt> h)</tt>
---   is equivalent to @(f <tt>t</tt> g) <tt>t</tt> h).</li>
+--   is equivalent to <tt>(f <tt>t</tt> g) <tt>t</tt> h)</tt>.</li>
 --   </ol>
 --   
 --   The methods in this class provide us useful ways of navigating a
