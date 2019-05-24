@@ -14,6 +14,7 @@ module Data.Functor.Combinator (
   , Coyoneda(..)
   , ListF(..)
   , Ap
+  , Ap1
   , Alt
   , Free
   , Step(..)
@@ -33,10 +34,12 @@ import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
+import           Data.Functor.Apply.Free
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Final
 import           Data.Functor.Tensor
 import           Data.Functor.Tensor.Cons
+import           Data.Functor.These
 import           GHC.Generics

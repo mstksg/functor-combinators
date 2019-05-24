@@ -44,6 +44,7 @@ library:
   source-dirs: src
   other-modules:
   - Data.Functor.HFunctor.Internal
+  - Data.Functor.These
 
 # executables:
 #   functor-combinators-exe:
