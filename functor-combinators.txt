@@ -9,14 +9,29 @@
 
 module Control.Applicative.ListF
 
--- | This is the Free <a>Plus</a>.
+-- | A list of <tt>f a</tt>s.
+--   
+--   This is the Free <a>Plus</a>.
 newtype ListF f a
 ListF :: [f a] -> ListF f a
 [runListF] :: ListF f a -> [f a]
+
+-- | A non-empty list of <tt>f a</tt>s.
+--   
+--   This is the Free <a>Plus</a>.
+newtype NonEmptyF f a
+NonEmptyF :: NonEmpty (f a) -> NonEmptyF f a
+[runNonEmptyF] :: NonEmptyF f a -> NonEmpty (f a)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.NonEmptyF f)
+instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.NonEmptyF f a)
+instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.NonEmptyF f a)
+instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.NonEmptyF f a)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.ListF f)
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.ListF f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.ListF f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.ListF f a)
+instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.NonEmptyF f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.ListF f)
@@ -81,6 +96,7 @@ instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step f
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
 instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Steps f)
 instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Steps f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.Step.Steps f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
 instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step f)
 instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Step f)
@@ -202,6 +218,7 @@ instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 instance Data.Functor.HFunctor.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.ListF
+instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.NonEmptyF
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Steps
 instance Data.Functor.HFunctor.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Interpret Control.Monad.Freer.Church.Free
@@ -241,9 +258,10 @@ fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
 --   <pre>
 --   toFinal :: <tt>Coyoneda</tt> f <a>~&gt;</a> <a>Final</a> <a>Functor</a> f
 --   toFinal :: <tt>Ap</tt> f <a>~&gt;</a> <a>Final</a> <a>Applicative</a> f
---   toFinal :: <tt>Alt</tt> f <a>~&gt;</a> <a>Final</a> <a>Alternative</a> f
+--   toFinal :: <a>Alt</a> f <a>~&gt;</a> <a>Final</a> <a>Alternative</a> f
 --   toFinal :: <a>Free</a> f <a>~&gt;</a> <a>Final</a> <a>Monad</a> f
 --   toFinal :: <tt>Lift</tt> f <a>~&gt;</a> <a>Final</a> <a>Pointed</a> f
+--   toFinal :: <tt>ListF</tt> f <a>~&gt;</a> <a>Final</a> <a>Plus</a> f
 --   </pre>
 --   
 --   Note that the instance of <tt>c</tt> for <tt><a>Final</a> c</tt> must
@@ -252,16 +270,27 @@ fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
 --   Should form an isomorphism with <a>fromFinal</a>
 toFinal :: (Interpret t, C t (Final c f)) => t f ~> Final c f
 hoistFinalC :: (forall g x. (c g => g x) -> d g => g x) -> Final c f a -> Final d f a
+
+-- | Lift an action into a <a>Final</a>.
 liftFinal0 :: (forall g. c g => g a) -> Final c f a
+
+-- | Map the action in a <a>Final</a>.
 liftFinal1 :: (forall g. c g => g a -> g b) -> Final c f a -> Final c f b
+
+-- | Merge two <a>Final</a> actions.
 liftFinal2 :: (forall g. c g => g a -> g b -> g d) -> Final c f a -> Final c f b -> Final c f d
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Functor f)
+instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
+instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Applicative f)
+instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final GHC.Base.Applicative f)
 instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.Applicative f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
+instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
 instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
 instance GHC.Base.Alternative (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
+instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
 instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
 instance GHC.Base.Monad (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
@@ -272,10 +301,47 @@ instance GHC.Base.MonadPlus (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlu
 instance Data.Pointed.Pointed (Data.Functor.HFunctor.Final.Final Data.Pointed.Pointed f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
 instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
 instance GHC.Base.Monad (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
 instance Control.Monad.Reader.Class.MonadReader r (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Alt.Alt f)
+instance Data.Functor.Alt.Alt (Data.Functor.HFunctor.Final.Final Data.Functor.Alt.Alt f)
+instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Plus.Plus f)
+instance Data.Functor.Alt.Alt (Data.Functor.HFunctor.Final.Final Data.Functor.Plus.Plus f)
+instance Data.Functor.Plus.Plus (Data.Functor.HFunctor.Final.Final Data.Functor.Plus.Plus f)
 instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.Final.Final c)
 instance Data.Functor.HFunctor.Interpret (Data.Functor.HFunctor.Final.Final c)
+
+module Data.Functor.Apply.Free
+
+-- | The free <a>Apply</a>. Basically a "non-empty" <a>Ap</a>.
+--   
+--   The construction here is based on <a>Ap</a>, similar to now
+--   <a>NonEmpty</a> is built on list.
+data Ap1 :: (Type -> Type) -> Type -> Type
+[Ap1] :: f a -> Ap f (a -> b) -> Ap1 f b
+
+-- | An <a>Ap1</a> is a "non-empty" <a>Ap</a>; this function "forgets" the
+--   non-empty property and turns it back into a normal <a>Ap</a>.
+toAp :: Ap1 f ~> Ap f
+
+-- | Embed an <tt>f</tt> into <a>Ap1</a>.
+liftAp1 :: f ~> Ap1 f
+
+-- | Extract the <tt>f</tt> out of the <a>Ap1</a>.
+--   
+--   <pre>
+--   <a>retractAp1</a> . <a>liftAp1</a> == id
+--   </pre>
+retractAp1 :: Apply f => Ap1 f ~> f
+
+-- | Interpret an <tt><a>Ap</a> f</tt> into some <a>Apply</a> context
+--   <tt>g</tt>.
+runAp1 :: Apply g => (f ~> g) -> Ap1 f ~> g
+instance GHC.Base.Functor (Data.Functor.Apply.Free.Ap1 f)
+instance Data.Functor.Bind.Class.Apply (Data.Functor.Apply.Free.Ap1 f)
+instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Apply.Free.Ap1
+instance Data.Functor.HFunctor.Interpret Data.Functor.Apply.Free.Ap1
 
 
 -- | There are two ways to write a <a>Monoidal</a> instance:
@@ -919,7 +985,9 @@ toTM :: Monoidal t => t f f ~> TM t f
 data Coyoneda (f :: Type -> Type) a
 [Coyoneda] :: forall (f :: Type -> Type) a b. () => (b -> a) -> f b -> Coyoneda f a
 
--- | This is the Free <a>Plus</a>.
+-- | A list of <tt>f a</tt>s.
+--   
+--   This is the Free <a>Plus</a>.
 newtype ListF f a
 ListF :: [f a] -> ListF f a
 [runListF] :: ListF f a -> [f a]
