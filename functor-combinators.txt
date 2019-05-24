@@ -994,6 +994,12 @@ ListF :: [f a] -> ListF f a
 
 -- | The free <a>Applicative</a> for a <a>Functor</a> <tt>f</tt>.
 data Ap (f :: Type -> Type) a
+
+-- | The free <a>Apply</a>. Basically a "non-empty" <a>Ap</a>.
+--   
+--   The construction here is based on <a>Ap</a>, similar to now
+--   <a>NonEmpty</a> is built on list.
+data Ap1 :: (Type -> Type) -> Type -> Type
 data Alt (f :: Type -> Type) a
 
 -- | Church-encoded Freer monad
