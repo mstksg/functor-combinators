@@ -636,19 +636,8 @@ WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
 data JoinT t f a
 JoinT :: t f f a -> JoinT t f a
 [runJoinT] :: JoinT t f a -> t f f a
-data These1 f g a
-This1 :: f a -> These1 f g a
-That1 :: g a -> These1 f g a
-These1 :: f a -> g a -> These1 f g a
-instance forall k (f :: k -> *) (g :: k -> *) (a :: k). (GHC.Classes.Ord (f a), GHC.Classes.Ord (g a)) => GHC.Classes.Ord (Data.Functor.Tensor.These1 f g a)
-instance forall k (f :: k -> *) (g :: k -> *) (a :: k). (GHC.Classes.Eq (f a), GHC.Classes.Eq (g a)) => GHC.Classes.Eq (Data.Functor.Tensor.These1 f g a)
-instance forall k (f :: k -> *) (g :: k -> *) (a :: k). (GHC.Show.Show (f a), GHC.Show.Show (g a)) => GHC.Show.Show (Data.Functor.Tensor.These1 f g a)
 instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Show.Show (i a), GHC.Show.Show (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Show.Show (Data.Functor.Tensor.F t i f a)
 instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.Tensor.JoinT t f)
-instance forall k (f :: k -> *) (a :: k) (g :: k -> *). (GHC.Base.Semigroup (f a), GHC.Base.Semigroup (g a)) => GHC.Base.Semigroup (Data.Functor.Tensor.These1 f g a)
-instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.These1
-instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.These1
-instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.These1
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.JoinT t)
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Monoidal Data.Functor.Day.Day
@@ -1054,6 +1043,12 @@ data (:+:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Ty
 L1 :: f p -> (:+:)
 R1 :: g p -> (:+:)
 infixr 5 :+:
+
+-- | A <tt>These f g a</tt> has either an <tt>f a</tt>, a <tt>g a</tt>, or
+--   both.
+--   
+--   This is re-defined here from the <i>these</i> package, to avoid the
+--   high dependency footprint.
 data These1 f g a
 This1 :: f a -> These1 f g a
 That1 :: g a -> These1 f g a
