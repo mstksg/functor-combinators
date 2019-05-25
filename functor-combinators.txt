@@ -206,26 +206,79 @@ retract :: (Interpret t, C t f) => t f ~> f
 --   interpret the <tt>f</tt> out of the <tt>t f</tt> into a final context
 --   <tt>g</tt>.
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
-class Trivial c
+
+-- | Useful wrapper over <a>retract</a> to allow you to directly extract an
+--   <tt>a</tt> from a <tt>t f a</tt>, if <tt>f</tt> is a valid retraction
+--   from <tt>t</tt>, and <tt>f</tt> is an instance of <a>Copointed</a>.
+--   
+--   Useful <tt>f</tt>s include <tt>Identity</tt> or related newtype
+--   wrappers from base:
+--   
+--   <pre>
+--   <a>extractI</a>
+--       :: (<a>Interpret</a> t, <a>C</a> t <tt>Identity</tt>)
+--       =&gt; t <tt>Identity</tt> a
+--       -&gt; a
+--   </pre>
+extractI :: (Interpret t, C t f, Copointed f) => t f a -> a
+
+-- | Useful wrapper over <a>interpret</a> to allow you to directly extract
+--   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
+--   x</tt> into <tt>b</tt>.
+--   
+--   Note that depending on the constraints on the interpretation of
+--   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
+--   
+--   <ul>
+--   <li>If <tt><a>C</a> t</tt> is <a>Unconstrained</a>, there are no
+--   constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> t</tt> is <a>Apply</a>, <tt>b</tt> needs to be an
+--   instance of <a>Semigroup</a></li>
+--   <li>If <tt><a>C</a> t</tt> is <a>Applicative</a>, <tt>b</tt> needs to
+--   be an instance of <a>Monoid</a></li>
+--   </ul>
+--   
+--   For some constraints (like <a>Monad</a>), this will not be usable.
+--   
+--   <pre>
+--   -- get the length of the <tt>Map String</tt> in the <a>Step</a>.
+--   <a>collectI</a> length
+--        :: Step (Map String) Bool
+--        -&gt; [Int]
+--   </pre>
+getI :: (Interpret t, C t (Const b)) => (forall x. f x -> b) -> t f a -> b
+
+-- | Useful wrapper over <a>getI</a> to allow you to collect a <tt>b</tt>
+--   from all instances of <tt>f</tt> inside a <tt>t f a</tt>.
+--   
+--   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
+--   <a>Apply</a>, or <a>Applicative</a>.
+--   
+--   <pre>
+--   -- get the lengths of all <tt>Map String</tt>s in the <a>Ap</a>.
+--   <a>collectI</a> length
+--        :: Ap (Map String) Bool
+--        -&gt; [Int]
+--   </pre>
+collectI :: (Interpret t, C t (Const [b])) => (forall x. f x -> b) -> t f a -> [b]
 class (c a, d a) => AndC c d a
 instance forall k (c :: k -> GHC.Types.Constraint) (a :: k) (d :: k -> GHC.Types.Constraint). (c a, d a) => Data.Functor.HFunctor.AndC c d a
 instance (Data.Functor.HFunctor.Interpret s, Data.Functor.HFunctor.Interpret t) => Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Compose.ComposeT s t)
-instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Step
-instance forall k (c :: k). Data.Functor.HFunctor.Trivial c
-instance Data.Functor.HFunctor.Interpret Control.Monad.Trans.Identity.IdentityT
-instance Data.Functor.HFunctor.Interpret Control.Applicative.Backwards.Backwards
-instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 instance Data.Functor.HFunctor.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.ListF
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.NonEmptyF
+instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Step
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Steps
 instance Data.Functor.HFunctor.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Interpret Control.Monad.Freer.Church.Free
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Final.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Fast.Ap
+instance Data.Functor.HFunctor.Interpret Control.Monad.Trans.Identity.IdentityT
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Lift.Lift
+instance Data.Functor.HFunctor.Interpret Control.Applicative.Backwards.Backwards
 instance Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Reader.ReaderT r)
+instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 
 module Data.Functor.HFunctor.Final
 
@@ -449,6 +502,66 @@ disassoc :: (Tensor t, Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t
 -- | The inverse of <a>unconsTM</a>. Calls <a>nilTM</a> on the left (nil)
 --   branch, and <a>consTM</a> on the right (cons) branch.
 reconsTM :: forall t f. Monoidal t => (I t :+: t f (TM t f)) ~> TM t f
+
+-- | Useful wrapper over <a>retractT</a> to allow you to directly extract
+--   an <tt>a</tt> from a <tt>t f f a</tt>, if <tt>f</tt> is a valid
+--   retraction from <tt>t</tt>, and <tt>f</tt> is an instance of
+--   <a>Copointed</a>.
+--   
+--   Useful <tt>f</tt>s include <a>Identity</a> or related newtype wrappers
+--   from base:
+--   
+--   <pre>
+--   <a>extractT</a>
+--       :: (<a>Monoidal</a> t, <a>C</a> (<a>TM</a> t) <a>Identity</a>)
+--       =&gt; t <a>Identity</a> <a>Identity</a> a
+--       -&gt; a
+--   </pre>
+extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
+
+-- | Useful wrapper over <a>interpret</a> to allow you to directly extract
+--   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
+--   x</tt> into <tt>b</tt>.
+--   
+--   Note that depending on the constraints on the interpretation of
+--   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
+--   
+--   <ul>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <tt>Unconstrained</tt>,
+--   there are no constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
+--   needs to be an instance of <a>Semigroup</a></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Applicative</a>,
+--   <tt>b</tt> needs to be an instance of <a>Monoid</a></li>
+--   </ul>
+--   
+--   For some constraints (like <a>Monad</a>), this will not be usable.
+--   
+--   <pre>
+--   -- Return the length of either the list, or the Map, depending on which
+--   --   one s in the <a>+</a>
+--   length !*! length
+--       :: ([] :+: Map Int) Char
+--       -&gt; Int
+--   
+--   -- Return the length of both the list and the map, added together
+--   (Sum . length) !*! (Sum . length)
+--       :: Day [] (Map Int) Char
+--       -&gt; Sum Int
+--   </pre>
+getT :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+
+-- | Infix alias for <a>getT</a>
+(!*!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+infixr 5 !*!
+
+-- | Useful wrapper over <a>getT</a> to allow you to collect a <tt>b</tt>
+--   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
+--   a</tt>.
+--   
+--   This will work if <tt><a>C</a> t</tt> is <tt>Unconstrained</tt>,
+--   <a>Apply</a>, or <a>Applicative</a>.
+collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
 -- | For some tensors <tt>t</tt>, you can represt the act of repeatedly
 --   combining the same functor an arbitrary amount of times:
@@ -823,6 +936,61 @@ retract :: (Interpret t, C t f) => t f ~> f
 --   <tt>g</tt>.
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
 
+-- | Useful wrapper over <a>retract</a> to allow you to directly extract an
+--   <tt>a</tt> from a <tt>t f a</tt>, if <tt>f</tt> is a valid retraction
+--   from <tt>t</tt>, and <tt>f</tt> is an instance of <a>Copointed</a>.
+--   
+--   Useful <tt>f</tt>s include <tt>Identity</tt> or related newtype
+--   wrappers from base:
+--   
+--   <pre>
+--   <a>extractI</a>
+--       :: (<a>Interpret</a> t, <a>C</a> t <tt>Identity</tt>)
+--       =&gt; t <tt>Identity</tt> a
+--       -&gt; a
+--   </pre>
+extractI :: (Interpret t, C t f, Copointed f) => t f a -> a
+
+-- | Useful wrapper over <a>interpret</a> to allow you to directly extract
+--   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
+--   x</tt> into <tt>b</tt>.
+--   
+--   Note that depending on the constraints on the interpretation of
+--   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
+--   
+--   <ul>
+--   <li>If <tt><a>C</a> t</tt> is <a>Unconstrained</a>, there are no
+--   constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> t</tt> is <a>Apply</a>, <tt>b</tt> needs to be an
+--   instance of <a>Semigroup</a></li>
+--   <li>If <tt><a>C</a> t</tt> is <a>Applicative</a>, <tt>b</tt> needs to
+--   be an instance of <a>Monoid</a></li>
+--   </ul>
+--   
+--   For some constraints (like <a>Monad</a>), this will not be usable.
+--   
+--   <pre>
+--   -- get the length of the <tt>Map String</tt> in the <a>Step</a>.
+--   <a>collectI</a> length
+--        :: Step (Map String) Bool
+--        -&gt; [Int]
+--   </pre>
+getI :: (Interpret t, C t (Const b)) => (forall x. f x -> b) -> t f a -> b
+
+-- | Useful wrapper over <a>getI</a> to allow you to collect a <tt>b</tt>
+--   from all instances of <tt>f</tt> inside a <tt>t f a</tt>.
+--   
+--   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
+--   <a>Apply</a>, or <a>Applicative</a>.
+--   
+--   <pre>
+--   -- get the lengths of all <tt>Map String</tt>s in the <a>Ap</a>.
+--   <a>collectI</a> length
+--        :: Ap (Map String) Bool
+--        -&gt; [Int]
+--   </pre>
+collectI :: (Interpret t, C t (Const [b])) => (forall x. f x -> b) -> t f a -> [b]
+
 -- | A <a>HBifunctor</a> is like an <a>HFunctor</a>, but it enhances
 --   <i>two</i> different functors instead of just one.
 --   
@@ -969,6 +1137,66 @@ pureT :: (Monoidal t, C (TM t) f) => I t ~> f
 -- | Embed a direct application of <tt>f</tt> to itself into a
 --   <tt><a>TM</a> t f</tt>.
 toTM :: Monoidal t => t f f ~> TM t f
+
+-- | Useful wrapper over <a>retractT</a> to allow you to directly extract
+--   an <tt>a</tt> from a <tt>t f f a</tt>, if <tt>f</tt> is a valid
+--   retraction from <tt>t</tt>, and <tt>f</tt> is an instance of
+--   <a>Copointed</a>.
+--   
+--   Useful <tt>f</tt>s include <a>Identity</a> or related newtype wrappers
+--   from base:
+--   
+--   <pre>
+--   <a>extractT</a>
+--       :: (<a>Monoidal</a> t, <a>C</a> (<a>TM</a> t) <a>Identity</a>)
+--       =&gt; t <a>Identity</a> <a>Identity</a> a
+--       -&gt; a
+--   </pre>
+extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
+
+-- | Useful wrapper over <a>interpret</a> to allow you to directly extract
+--   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
+--   x</tt> into <tt>b</tt>.
+--   
+--   Note that depending on the constraints on the interpretation of
+--   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
+--   
+--   <ul>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <tt>Unconstrained</tt>,
+--   there are no constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
+--   needs to be an instance of <a>Semigroup</a></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Applicative</a>,
+--   <tt>b</tt> needs to be an instance of <a>Monoid</a></li>
+--   </ul>
+--   
+--   For some constraints (like <a>Monad</a>), this will not be usable.
+--   
+--   <pre>
+--   -- Return the length of either the list, or the Map, depending on which
+--   --   one s in the <a>+</a>
+--   length !*! length
+--       :: ([] :+: Map Int) Char
+--       -&gt; Int
+--   
+--   -- Return the length of both the list and the map, added together
+--   (Sum . length) !*! (Sum . length)
+--       :: Day [] (Map Int) Char
+--       -&gt; Sum Int
+--   </pre>
+getT :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+
+-- | Infix alias for <a>getT</a>
+(!*!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+infixr 5 !*!
+
+-- | Useful wrapper over <a>getT</a> to allow you to collect a <tt>b</tt>
+--   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
+--   a</tt>.
+--   
+--   This will work if <tt><a>C</a> t</tt> is <tt>Unconstrained</tt>,
+--   <a>Apply</a>, or <a>Applicative</a>.
+collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
 -- | A covariant <a>Functor</a> suitable for Yoneda reduction
 data Coyoneda (f :: Type -> Type) a
