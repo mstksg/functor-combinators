@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DefaultSignatures      #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -9,6 +10,7 @@
 module Data.Functor.HFunctor.Final (
     Final(..)
   , fromFinal, toFinal
+  , FreeOf(..)
   , hoistFinalC
   , liftFinal0
   , liftFinal1
@@ -16,12 +18,18 @@ module Data.Functor.HFunctor.Final (
   ) where
 
 import           Control.Applicative
+import           Control.Applicative.Free
+import           Control.Applicative.Lift
+import           Control.Applicative.ListF
 import           Control.Monad
+import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
 import           Control.Natural
+import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor
 import           Data.Functor.Plus
 import           Data.Pointed
+import qualified Control.Alternative.Free   as Alt
 
 -- | A simple way to inject/reject into any eventual typeclass.
 -- Essentially, @'Final' c@ is the "free c".  @'Final' 'Monad'@ is the free
@@ -183,14 +191,25 @@ instance Interpret (Final c) where
 -- toFinal :: 'Coyoneda' f '~>' 'Final' 'Functor' f
 -- toFinal :: 'Ap' f '~>' 'Final' 'Applicative' f
 -- toFinal :: 'Alt' f '~>' 'Final' 'Alternative' f
--- toFinal :: 'Control.Monad.Freer.Church.Free' f '~>' 'Final' 'Monad' f
+-- toFinal :: 'Free' f '~>' 'Final' 'Monad' f
 -- toFinal :: 'Lift' f '~>' 'Final' 'Pointed' f
 -- toFinal :: 'ListF' f '~>' 'Final' 'Plus' f
 -- @
 --
 -- Note that the instance of @c@ for @'Final' c@ must be defined.
 --
--- Should form an isomorphism with 'fromFinal'
+-- This operation can potentially /forget/ structure in @t@.  For example,
+-- we have:
+--
+-- @
+-- 'toFinal' :: 'Steps' f ~> 'Final' 'Alt' f
+-- @
+--
+-- In this process, we lose the "positional" structure of 'Steps'.
+--
+-- In the case where 'toFinal' doesn't lose any information, this will form
+-- an isomorphism with 'fromFinal', and @t@ is known as the "Free @c@".
+-- For such a situation, @t@ will have a 'FreeOf' instance.
 toFinal :: (Interpret t, C t (Final c f)) => t f ~> Final c f
 toFinal = interpret inject
 
@@ -200,11 +219,41 @@ toFinal = interpret inject
 -- fromFinal :: 'Final' 'Functor' f '~>' 'Coyoneda' f
 -- fromFinal :: 'Final' 'Applicative' f '~>' 'Ap' f
 -- fromFinal :: 'Final' 'Alternative' f '~>' 'Alt' f
--- fromFinal :: 'Final' 'Monad' f '~>' 'Control.Monad.Freer.Church.Free' f
+-- fromFinal :: 'Final' 'Monad' f '~>' 'Free' f
 -- fromFinal :: 'Final' 'Pointed' f '~>' 'Lift' f
 -- fromFinal :: 'Final' 'Plus' f '~>' 'ListF' f
 -- @
 --
--- Should form an isomorphism with 'toFinal'
+-- In the case that this forms an isomorphism with 'toFinal', the @t@ will
+-- have an instance of 'FreeOf'.
 fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
 fromFinal = interpret inject
+
+-- | A typeclass associating a free structure with the typeclass it is free
+-- on.
+--
+-- This essentially lists instances of 'Interpret' where a "trip" through
+-- 'Final' will leave it unchanged.
+--
+-- A @t@ can be considered a "Free c" if:
+--
+-- @
+-- 'fromFree' . 'toFree' == id
+-- 'toFree' . 'fromFree' == id
+-- @
+class Interpret t => FreeOf c t | t -> c where
+    fromFree :: t f ~> Final c f
+    toFree   :: Functor f => Final c f ~> t f
+
+    default fromFree :: C t (Final c f) => t f ~> Final c f
+    fromFree = toFinal
+    default toFree :: c (t f) => Final c f ~> t f
+    toFree = fromFinal
+
+instance FreeOf Functor Coyoneda
+instance FreeOf Applicative Ap
+instance FreeOf Alternative Alt.Alt
+instance FreeOf Monad Free
+instance FreeOf Pointed Lift
+instance FreeOf Alt NonEmptyF
+instance FreeOf Plus ListF

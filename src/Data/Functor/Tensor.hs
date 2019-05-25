@@ -61,7 +61,7 @@ module Data.Functor.Tensor (
   , collectT
   , Monoidal(..)
   , F(..)
-  , injectF, retractF, interpretF
+  , injectF
   , WrappedHBifunctor(..)
   , JoinT(..)
   ) where
@@ -295,34 +295,31 @@ instance HBifunctor t => HFunctor (F t i) where
       Done x  -> Done x
       More xs -> More . hbimap f (hmap f) $ xs
 
+-- | We can collapse and interpret an @'F' t i@ if we have @'Tensor' i@.
+--
+-- Note that 'inject' only requires @'Tensor' t@.  This is given as
+-- 'injectF'.
+instance (Monoidal t, i ~ I t) => Interpret (F t i) where
+    type C (F t i) = C (TM t)
+    inject    = injectF
+    retract   = \case
+      Done x  -> pureT @t x
+      More xs -> retractT . hright retract $ xs
+    interpret f = \case
+      Done x  -> pureT @t x
+      More xs -> interpretT @t f (interpret f) xs
+
 -- | The inverse of 'unconsTM'.  Calls 'nilTM' on the left (nil) branch,
 -- and 'consTM' on the right (cons) branch.
 reconsTM :: forall t f. Monoidal t => I t :+: t f (TM t f) ~> TM t f
 reconsTM = interpretT (nilTM @t) (consTM @t)
 
 -- | If we have @'Tensor' t@, we can make a singleton 'F'.
+--
+-- We can also 'retract' and 'interpret' an 'F' using its 'Interpret'
+-- instance.
 injectF :: forall t f. Tensor t => f ~> F t (I t) f
 injectF = More . hright Done . intro1
-
--- | If we have @'Monoidal' t@, we can collapse all @t f@s in the 'F' into
--- a single @f@.
-retractF
-    :: forall t f. (Monoidal t, C (TM t) f)
-    => F t (I t) f ~> f
-retractF = \case
-    Done x  -> pureT @t x
-    More xs -> retractT . hright retractF $ xs
-
--- | If we have @'Monoidal' t@, we can interpret all of the @f@s in the 'F'
--- into a final target context @g@, given an @f@-to-@g@ interpreting
--- function.
-interpretF
-    :: forall t f g. (Monoidal t, C (TM t) g)
-    => (f ~> g)
-    -> F t (I t) f ~> g
-interpretF f = \case
-    Done x  -> pureT @t x
-    More xs -> interpretT @t f (interpretF f) xs
 
 -- | Useful wrapper over 'retractT' to allow you to directly extract an @a@
 -- from a @t f f a@, if @f@ is a valid retraction from @t@, and @f@ is an
