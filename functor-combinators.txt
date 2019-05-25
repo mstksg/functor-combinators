@@ -283,22 +283,30 @@ instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 module Data.Functor.HFunctor.Final
 
 -- | A simple way to inject/reject into any eventual typeclass.
+--   
+--   In a way, this is the "ultimate" <a>Interpret</a> instance. You can
+--   use this to inject an <tt>f</tt> into a free structure of any
+--   typeclass. If you want <tt>f</tt> to have a <a>Monad</a> instance, for
+--   example, just use
+--   
+--   <pre>
+--   <a>inject</a> :: f a -&gt; <a>Final</a> <a>Monad</a> f a
+--   </pre>
+--   
+--   When you want to eventually interpret out the data, use:
+--   
+--   <pre>
+--   <a>interpret</a> :: (f <a>~&gt;</a> g) -&gt; <a>Final</a> c f a -&gt; g a
+--   </pre>
+--   
 --   Essentially, <tt><a>Final</a> c</tt> is the "free c". <tt><a>Final</a>
 --   <a>Monad</a></tt> is the free <a>Monad</a>, etc.
 --   
---   Useful for lifting a functor <tt>f</tt> into arbitrary structure given
---   by a typeclass.
---   
---   Note that this doesn't have instances for all the typeclasses; you
---   probably have to define your own if you want to use <tt><a>Final</a>
---   c</tt> as an <i>instance</i> of <tt>c</tt> (using <a>liftFinal0</a>,
---   <a>liftFinal1</a>, <a>liftFinal2</a> for help). This is mostly meant
---   to be usable as a final <a>Interpret</a>, with
---   
---   <pre>
---   <a>inject</a>    :: f a -&gt; <a>Final</a> c f a
---   <a>interpret</a> :: (f <a>~&gt;</a> g) -&gt; <a>Final</a> c f a -&gt; g a
---   </pre>
+--   Note that this doesn't have instances for <i>all</i> the typeclasses
+--   you could lift things into; you probably have to define your own if
+--   you want to use <tt><a>Final</a> c</tt> as an <i>instance</i> of
+--   <tt>c</tt> (using <a>liftFinal0</a>, <a>liftFinal1</a>,
+--   <a>liftFinal2</a> for help).
 newtype Final c f a
 Final :: (forall g. c g => (forall x. f x -> g x) -> g a) -> Final c f a
 [runFinal] :: Final c f a -> forall g. c g => (forall x. f x -> g x) -> g a
@@ -341,12 +349,14 @@ toFinal :: (Interpret t, C t (Final c f)) => t f ~> Final c f
 --   This essentially lists instances of <a>Interpret</a> where a "trip"
 --   through <a>Final</a> will leave it unchanged.
 --   
---   A <tt>t</tt> can be considered a "Free c" if:
---   
 --   <pre>
 --   <a>fromFree</a> . <a>toFree</a> == id
 --   <a>toFree</a> . <a>fromFree</a> == id
 --   </pre>
+--   
+--   This can be useful because <a>Final</a> doesn't have a concrete
+--   structure that you can pattern match on and inspect, but <tt>t</tt>
+--   might. This lets you work on a concrete structure if you desire.
 class Interpret t => FreeOf c t | t -> c
 fromFree :: FreeOf c t => t f ~> Final c f
 toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
@@ -1319,25 +1329,53 @@ These1 :: f a -> g a -> These1 f g a
 type Comp = Cons Star
 
 -- | A simple way to inject/reject into any eventual typeclass.
+--   
+--   In a way, this is the "ultimate" <a>Interpret</a> instance. You can
+--   use this to inject an <tt>f</tt> into a free structure of any
+--   typeclass. If you want <tt>f</tt> to have a <a>Monad</a> instance, for
+--   example, just use
+--   
+--   <pre>
+--   <a>inject</a> :: f a -&gt; <a>Final</a> <a>Monad</a> f a
+--   </pre>
+--   
+--   When you want to eventually interpret out the data, use:
+--   
+--   <pre>
+--   <a>interpret</a> :: (f <a>~&gt;</a> g) -&gt; <a>Final</a> c f a -&gt; g a
+--   </pre>
+--   
 --   Essentially, <tt><a>Final</a> c</tt> is the "free c". <tt><a>Final</a>
 --   <a>Monad</a></tt> is the free <a>Monad</a>, etc.
 --   
---   Useful for lifting a functor <tt>f</tt> into arbitrary structure given
---   by a typeclass.
---   
---   Note that this doesn't have instances for all the typeclasses; you
---   probably have to define your own if you want to use <tt><a>Final</a>
---   c</tt> as an <i>instance</i> of <tt>c</tt> (using <a>liftFinal0</a>,
---   <a>liftFinal1</a>, <a>liftFinal2</a> for help). This is mostly meant
---   to be usable as a final <a>Interpret</a>, with
---   
---   <pre>
---   <a>inject</a>    :: f a -&gt; <a>Final</a> c f a
---   <a>interpret</a> :: (f <a>~&gt;</a> g) -&gt; <a>Final</a> c f a -&gt; g a
---   </pre>
+--   Note that this doesn't have instances for <i>all</i> the typeclasses
+--   you could lift things into; you probably have to define your own if
+--   you want to use <tt><a>Final</a> c</tt> as an <i>instance</i> of
+--   <tt>c</tt> (using <a>liftFinal0</a>, <a>liftFinal1</a>,
+--   <a>liftFinal2</a> for help).
 newtype Final c f a
 Final :: (forall g. c g => (forall x. f x -> g x) -> g a) -> Final c f a
 [runFinal] :: Final c f a -> forall g. c g => (forall x. f x -> g x) -> g a
+
+-- | A typeclass associating a free structure with the typeclass it is free
+--   on.
+--   
+--   This essentially lists instances of <a>Interpret</a> where a "trip"
+--   through <a>Final</a> will leave it unchanged.
+--   
+--   <pre>
+--   <a>fromFree</a> . <a>toFree</a> == id
+--   <a>toFree</a> . <a>fromFree</a> == id
+--   </pre>
+--   
+--   This can be useful because <a>Final</a> doesn't have a concrete
+--   structure that you can pattern match on and inspect, but <tt>t</tt>
+--   might. This lets you work on a concrete structure if you desire.
+class Interpret t => FreeOf c t | t -> c
+fromFree :: FreeOf c t => t f ~> Final c f
+toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
+fromFree :: (FreeOf c t, C t (Final c f)) => t f ~> Final c f
+toFree :: (FreeOf c t, c (t f)) => Final c f ~> t f
 
 -- | A lot of tensors can be factored out into a <a>Cons</a> on some
 --   parameterized profunctor. For example, we have:
