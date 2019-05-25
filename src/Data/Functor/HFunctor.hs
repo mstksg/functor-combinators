@@ -10,7 +10,9 @@
 module Data.Functor.HFunctor (
     HFunctor(..)
   , Interpret(..)
-  , Trivial
+  , extractI
+  , getI
+  , collectI
   , AndC
   ) where
 
@@ -26,14 +28,16 @@ import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
+import           Data.Constraint.Trivial
+import           Data.Copointed
 import           Data.Functor.Coyoneda
-import           Data.Semigroup.Foldable
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Plus
 import           Data.Functor.Reverse
 import           Data.Kind
 import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
+import           Data.Semigroup.Foldable
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
@@ -86,6 +90,65 @@ class HFunctor t => Interpret t where
 
     {-# MINIMAL inject, (retract | interpret) #-}
 
+-- | Useful wrapper over 'retract' to allow you to directly extract an @a@
+-- from a @t f a@, if @f@ is a valid retraction from @t@, and @f@ is an
+-- instance of 'Copointed'.
+--
+-- Useful @f@s include 'Identity' or related newtype wrappers from
+-- base:
+--
+-- @
+-- 'extractI'
+--     :: ('Interpret' t, 'C' t 'Identity')
+--     => t 'Identity' a
+--     -> a
+-- @
+extractI :: (Interpret t, C t f, Copointed f) => t f a -> a
+extractI = copoint . retract
+
+-- | Useful wrapper over 'interpret' to allow you to directly extract
+-- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
+--
+-- Note that depending on the constraints on the interpretation of @t@, you
+-- may have extra constraints on @b@.
+--
+-- *    If @'C' t@ is 'Unconstrained', there are no constraints on @b@
+-- *    If @'C' t@ is 'Apply', @b@ needs to be an instance of 'Semigroup'
+-- *    If @'C' t@ is 'Applicative', @b@ needs to be an instance of 'Monoid'
+--
+-- For some constraints (like 'Monad'), this will not be usable.
+--
+-- @
+-- -- get the length of the @Map String@ in the 'Step'.
+-- 'collectI' length
+--      :: Step (Map String) Bool
+--      -> [Int]
+-- @
+getI
+    :: (Interpret t, C t (Const b))
+    => (forall x. f x -> b)
+    -> t f a
+    -> b
+getI f = getConst . interpret (Const . f)
+
+-- | Useful wrapper over 'getI' to allow you to collect a @b@ from all
+-- instances of @f@ inside a @t f a@.
+--
+-- This will work if @'C' t@ is 'Unconstrained', 'Apply', or 'Applicative'.
+--
+-- @
+-- -- get the lengths of all @Map String@s in the 'Ap'.
+-- 'collectI' length
+--      :: Ap (Map String) Bool
+--      -> [Int]
+-- @
+collectI
+    :: (Interpret t, C t (Const [b]))
+    => (forall x. f x -> b)
+    -> t f a
+    -> [b]
+collectI f = getConst . interpret (Const . (:[]) . f)
+
 instance Interpret Coyoneda where
     type C Coyoneda = Functor
     inject  = liftCoyoneda
@@ -110,7 +173,7 @@ instance Interpret NonEmptyF where
     interpret f = asum1 . fmap f . runNonEmptyF
 
 instance Interpret Step where
-    type C Step = Trivial
+    type C Step = Unconstrained
     inject = Step 0
     retract (Step _ x)     = x
     interpret f (Step _ x) = f x
@@ -145,11 +208,8 @@ instance Interpret FAF.Ap where
     retract = FAF.retractAp
     interpret = FAF.runAp
 
-class Trivial c
-instance Trivial c
-
 instance Interpret IdentityT where
-    type C IdentityT = Trivial
+    type C IdentityT = Unconstrained
     inject = coerce
     retract = coerce
     interpret f = f . runIdentityT
@@ -161,7 +221,7 @@ instance Interpret Lift where
     interpret f = elimLift point f
 
 instance Interpret Backwards where
-    type C Backwards = Trivial
+    type C Backwards = Unconstrained
     inject = Backwards
     retract = forwards
     interpret f = f . forwards
@@ -173,7 +233,7 @@ instance Interpret (ReaderT r) where
     interpret f x = f . runReaderT x =<< ask
 
 instance Interpret Reverse where
-    type C Reverse = Trivial
+    type C Reverse = Unconstrained
     inject = Reverse
     retract = getReverse
     interpret f = f . getReverse

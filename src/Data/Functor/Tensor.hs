@@ -56,6 +56,9 @@ module Data.Functor.Tensor (
     HBifunctor(..)
   , Tensor(..)
   , reconsTM
+  , extractT
+  , getT, (!*!)
+  , collectT
   , Monoidal(..)
   , F(..)
   , injectF, retractF, interpretF
@@ -63,10 +66,12 @@ module Data.Functor.Tensor (
   , JoinT(..)
   ) where
 
+import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Natural
+import           Data.Copointed
 import           Data.Function
 import           Data.Functor.Day               (Day(..))
 import           Data.Functor.HFunctor
@@ -85,7 +90,7 @@ import qualified Data.Functor.Day               as D
 --      That is, "enhancing" @f@ with @t i@ does nothing.
 --
 -- 2.   @t@ is associative: @f `t` (g `t` h)@ is equivalent to @(f `t` g)
---      `t` h).
+--      `t` h)@.
 --
 -- The methods in this class provide us useful ways of navigating
 -- a @'Tensor' t@ with respect to this property.
@@ -319,6 +324,80 @@ interpretF f = \case
     Done x  -> pureT @t x
     More xs -> interpretT @t f (interpretF f) xs
 
+-- | Useful wrapper over 'retractT' to allow you to directly extract an @a@
+-- from a @t f f a@, if @f@ is a valid retraction from @t@, and @f@ is an
+-- instance of 'Copointed'.
+--
+-- Useful @f@s include 'Identity' or related newtype wrappers from
+-- base:
+--
+-- @
+-- 'extractT'
+--     :: ('Monoidal' t, 'C' ('TM' t) 'Identity')
+--     => t 'Identity' 'Identity' a
+--     -> a
+-- @
+extractT
+    :: (Monoidal t, C (TM t) f, Copointed f)
+    => t f f a
+    -> a
+extractT = copoint . retractT
+
+-- | Useful wrapper over 'interpret' to allow you to directly extract
+-- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
+--
+-- Note that depending on the constraints on the interpretation of @t@, you
+-- may have extra constraints on @b@.
+--
+-- *    If @'C' ('TM' t)@ is 'Unconstrained', there are no constraints on @b@
+-- *    If @'C' ('TM' t)@ is 'Apply', @b@ needs to be an instance of 'Semigroup'
+-- *    If @'C' ('TM' t)@ is 'Applicative', @b@ needs to be an instance of 'Monoid'
+--
+-- For some constraints (like 'Monad'), this will not be usable.
+--
+-- @
+-- -- Return the length of either the list, or the Map, depending on which
+-- --   one s in the '+'
+-- length !*! length
+--     :: ([] :+: Map Int) Char
+--     -> Int
+--
+-- -- Return the length of both the list and the map, added together
+-- (Sum . length) !*! (Sum . length)
+--     :: Day [] (Map Int) Char
+--     -> Sum Int
+-- @
+getT
+    :: (Monoidal t, C (TM t) (Const b))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> b
+getT f g = getConst . interpretT (Const . f) (Const . g)
+
+-- | Infix alias for 'getT'
+(!*!)
+    :: (Monoidal t, C (TM t) (Const b))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> b
+(!*!) = getT
+infixr 5 !*!
+
+-- | Useful wrapper over 'getT' to allow you to collect a @b@ from all
+-- instances of @f@ and @g@ inside a @t f g a@.
+--
+-- This will work if @'C' t@ is 'Unconstrained', 'Apply', or 'Applicative'.
+collectT
+    :: (Monoidal t, C (TM t) (Const [b]))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> [b]
+collectT f g = getConst . interpretT (Const . (:[]) . f) (Const . (:[]) . g)
+
+
 instance Tensor (:*:) where
     type I (:*:) = Proxy
 
@@ -458,4 +537,3 @@ deriving instance Functor (t f f) => Functor (JoinT t f)
 
 instance HBifunctor t => HFunctor (JoinT t) where
     hmap f (JoinT x) = JoinT $ hbimap f f x
-

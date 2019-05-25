@@ -6,10 +6,12 @@ module Data.Functor.Combinator (
   -- ** Single Functors
   , HFunctor(..)
   , Interpret(..)
+  , extractI, getI, collectI
   -- ** Multi-Functors
   , HBifunctor(..)
   , Tensor(I)
   , Monoidal(TM, retractT, interpretT, pureT, toTM)
+  , extractT, getT, (!*!), collectT
   -- * Combinators
   , Coyoneda(..)
   , ListF(..)

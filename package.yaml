@@ -32,6 +32,8 @@ dependencies:
 - tagged
 - mmorph
 - containers
+- trivial-constraint >= 0.5
+- comonad
 - nonempty-containers
 
 ghc-options:
