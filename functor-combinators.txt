@@ -309,19 +309,49 @@ fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
 -- | <a>Finalize</a> an <a>Interpret</a> instance.
 --   
 --   <pre>
---   toFinal :: <tt>Coyoneda</tt> f <a>~&gt;</a> <a>Final</a> <a>Functor</a> f
---   toFinal :: <tt>Ap</tt> f <a>~&gt;</a> <a>Final</a> <a>Applicative</a> f
+--   toFinal :: <a>Coyoneda</a> f <a>~&gt;</a> <a>Final</a> <a>Functor</a> f
+--   toFinal :: <a>Ap</a> f <a>~&gt;</a> <a>Final</a> <a>Applicative</a> f
 --   toFinal :: <a>Alt</a> f <a>~&gt;</a> <a>Final</a> <a>Alternative</a> f
 --   toFinal :: <a>Free</a> f <a>~&gt;</a> <a>Final</a> <a>Monad</a> f
---   toFinal :: <tt>Lift</tt> f <a>~&gt;</a> <a>Final</a> <a>Pointed</a> f
---   toFinal :: <tt>ListF</tt> f <a>~&gt;</a> <a>Final</a> <a>Plus</a> f
+--   toFinal :: <a>Lift</a> f <a>~&gt;</a> <a>Final</a> <a>Pointed</a> f
+--   toFinal :: <a>ListF</a> f <a>~&gt;</a> <a>Final</a> <a>Plus</a> f
 --   </pre>
 --   
 --   Note that the instance of <tt>c</tt> for <tt><a>Final</a> c</tt> must
 --   be defined.
 --   
---   Should form an isomorphism with <a>fromFinal</a>
+--   This operation can potentially <i>forget</i> structure in <tt>t</tt>.
+--   For example, we have:
+--   
+--   <pre>
+--   <a>toFinal</a> :: <tt>Steps</tt> f ~&gt; <a>Final</a> <a>Alt</a> f
+--   </pre>
+--   
+--   In this process, we lose the "positional" structure of <tt>Steps</tt>.
+--   
+--   In the case where <a>toFinal</a> doesn't lose any information, this
+--   will form an isomorphism with <a>fromFinal</a>, and <tt>t</tt> is
+--   known as the "Free <tt>c</tt>". For such a situation, <tt>t</tt> will
+--   have a <a>FreeOf</a> instance.
 toFinal :: (Interpret t, C t (Final c f)) => t f ~> Final c f
+
+-- | A typeclass associating a free structure with the typeclass it is free
+--   on.
+--   
+--   This essentially lists instances of <a>Interpret</a> where a "trip"
+--   through <a>Final</a> will leave it unchanged.
+--   
+--   A <tt>t</tt> can be considered a "Free c" if:
+--   
+--   <pre>
+--   <a>fromFree</a> . <a>toFree</a> == id
+--   <a>toFree</a> . <a>fromFree</a> == id
+--   </pre>
+class Interpret t => FreeOf c t | t -> c
+fromFree :: FreeOf c t => t f ~> Final c f
+toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
+fromFree :: (FreeOf c t, C t (Final c f)) => t f ~> Final c f
+toFree :: (FreeOf c t, c (t f)) => Final c f ~> t f
 hoistFinalC :: (forall g x. (c g => g x) -> d g => g x) -> Final c f a -> Final d f a
 
 -- | Lift an action into a <a>Final</a>.
@@ -332,6 +362,13 @@ liftFinal1 :: (forall g. c g => g a -> g b) -> Final c f a -> Final c f b
 
 -- | Merge two <a>Final</a> actions.
 liftFinal2 :: (forall g. c g => g a -> g b -> g d) -> Final c f a -> Final c f b -> Final c f d
+instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Functor Data.Functor.Coyoneda.Coyoneda
+instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Ap
+instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Alternative Control.Alternative.Free.Alt
+instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Monad Control.Monad.Freer.Church.Free
+instance Data.Functor.HFunctor.Final.FreeOf Data.Pointed.Pointed Control.Applicative.Lift.Lift
+instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Alt.Alt Control.Applicative.ListF.NonEmptyF
+instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Plus.Plus Control.Applicative.ListF.ListF
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Functor f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
 instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
@@ -720,16 +757,10 @@ Done :: i a -> F t i f a
 More :: t f (F t i f) a -> F t i f a
 
 -- | If we have <tt><a>Tensor</a> t</tt>, we can make a singleton <a>F</a>.
+--   
+--   We can also <a>retract</a> and <a>interpret</a> an <a>F</a> using its
+--   <a>Interpret</a> instance.
 injectF :: forall t f. Tensor t => f ~> F t (I t) f
-
--- | If we have <tt><a>Monoidal</a> t</tt>, we can collapse all <tt>t
---   f</tt>s in the <a>F</a> into a single <tt>f</tt>.
-retractF :: forall t f. (Monoidal t, C (TM t) f) => F t (I t) f ~> f
-
--- | If we have <tt><a>Monoidal</a> t</tt>, we can interpret all of the
---   <tt>f</tt>s in the <a>F</a> into a final target context <tt>g</tt>,
---   given an <tt>f</tt>-to-<tt>g</tt> interpreting function.
-interpretF :: forall t f g. (Monoidal t, C (TM t) g) => (f ~> g) -> F t (I t) f ~> g
 
 -- | Useful newtype to allow us to derive an <a>HFunctor</a> instance from
 --   any instance of <a>HBifunctor</a>, using -XDerivingVia.
@@ -752,6 +783,7 @@ JoinT :: t f f a -> JoinT t f a
 instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Show.Show (i a), GHC.Show.Show (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Show.Show (Data.Functor.Tensor.F t i f a)
 instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.Tensor.JoinT t f)
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.JoinT t)
+instance (Data.Functor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.Functor.Tensor.I t) => Data.Functor.HFunctor.Interpret (Data.Functor.Tensor.F t i)
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:+:)
