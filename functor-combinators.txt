@@ -546,70 +546,6 @@ elim2 :: (Tensor t, Functor g) => t (I t) g ~> g
 assoc :: (Tensor t, Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
 disassoc :: (Tensor t, Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t g h)
 
--- | The inverse of <a>unconsTM</a>. Calls <a>nilTM</a> on the left (nil)
---   branch, and <a>consTM</a> on the right (cons) branch.
-reconsTM :: forall t f. Monoidal t => (I t :+: t f (TM t f)) ~> TM t f
-
--- | Useful wrapper over <a>retractT</a> to allow you to directly extract
---   an <tt>a</tt> from a <tt>t f f a</tt>, if <tt>f</tt> is a valid
---   retraction from <tt>t</tt>, and <tt>f</tt> is an instance of
---   <a>Copointed</a>.
---   
---   Useful <tt>f</tt>s include <a>Identity</a> or related newtype wrappers
---   from base:
---   
---   <pre>
---   <a>extractT</a>
---       :: (<a>Monoidal</a> t, <a>C</a> (<a>TM</a> t) <a>Identity</a>)
---       =&gt; t <a>Identity</a> <a>Identity</a> a
---       -&gt; a
---   </pre>
-extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
-
--- | Useful wrapper over <a>interpret</a> to allow you to directly extract
---   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
---   x</tt> into <tt>b</tt>.
---   
---   Note that depending on the constraints on the interpretation of
---   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
---   
---   <ul>
---   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <tt>Unconstrained</tt>,
---   there are no constraints on <tt>b</tt></li>
---   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
---   needs to be an instance of <a>Semigroup</a></li>
---   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Applicative</a>,
---   <tt>b</tt> needs to be an instance of <a>Monoid</a></li>
---   </ul>
---   
---   For some constraints (like <a>Monad</a>), this will not be usable.
---   
---   <pre>
---   -- Return the length of either the list, or the Map, depending on which
---   --   one s in the <a>+</a>
---   length !*! length
---       :: ([] :+: Map Int) Char
---       -&gt; Int
---   
---   -- Return the length of both the list and the map, added together
---   (Sum . length) !*! (Sum . length)
---       :: Day [] (Map Int) Char
---       -&gt; Sum Int
---   </pre>
-getT :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
-
--- | Infix alias for <a>getT</a>
-(!*!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
-infixr 5 !*!
-
--- | Useful wrapper over <a>getT</a> to allow you to collect a <tt>b</tt>
---   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
---   a</tt>.
---   
---   This will work if <tt><a>C</a> t</tt> is <tt>Unconstrained</tt>,
---   <a>Apply</a>, or <a>Applicative</a>.
-collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
-
 -- | For some tensors <tt>t</tt>, you can represt the act of repeatedly
 --   combining the same functor an arbitrary amount of times:
 --   
@@ -765,6 +701,74 @@ toTM :: Monoidal t => t f f ~> TM t f
 data F t i f a
 Done :: i a -> F t i f a
 More :: t f (F t i f) a -> F t i f a
+
+-- | Infix alias for <a>getT</a>
+(!$!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+infixr 5 !$!
+
+-- | The inverse of <a>unconsTM</a>. Calls <a>nilTM</a> on the left (nil)
+--   branch, and <a>consTM</a> on the right (cons) branch.
+reconsTM :: forall t f. Monoidal t => (I t :+: t f (TM t f)) ~> TM t f
+
+-- | Useful wrapper over <a>retractT</a> to allow you to directly extract
+--   an <tt>a</tt> from a <tt>t f f a</tt>, if <tt>f</tt> is a valid
+--   retraction from <tt>t</tt>, and <tt>f</tt> is an instance of
+--   <a>Copointed</a>.
+--   
+--   Useful <tt>f</tt>s include <a>Identity</a> or related newtype wrappers
+--   from base:
+--   
+--   <pre>
+--   <a>extractT</a>
+--       :: (<a>Monoidal</a> t, <a>C</a> (<a>TM</a> t) <a>Identity</a>)
+--       =&gt; t <a>Identity</a> <a>Identity</a> a
+--       -&gt; a
+--   </pre>
+extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
+
+-- | Useful wrapper over <a>interpret</a> to allow you to directly extract
+--   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
+--   x</tt> into <tt>b</tt>.
+--   
+--   Note that depending on the constraints on the interpretation of
+--   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
+--   
+--   <ul>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <tt>Unconstrained</tt>,
+--   there are no constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
+--   needs to be an instance of <a>Semigroup</a></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Applicative</a>,
+--   <tt>b</tt> needs to be an instance of <a>Monoid</a></li>
+--   </ul>
+--   
+--   For some constraints (like <a>Monad</a>), this will not be usable.
+--   
+--   <pre>
+--   -- Return the length of either the list, or the Map, depending on which
+--   --   one s in the <a>+</a>
+--   length !*! length
+--       :: ([] :+: Map Int) Char
+--       -&gt; Int
+--   
+--   -- Return the length of both the list and the map, added together
+--   (Sum . length) !*! (Sum . length)
+--       :: Day [] (Map Int) Char
+--       -&gt; Sum Int
+--   </pre>
+getT :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+
+-- | Infix alias for <a>interpretT</a>
+(!*!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+infixr 5 !*!
+
+-- | Useful wrapper over <a>getT</a> to allow you to collect a <tt>b</tt>
+--   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
+--   a</tt>.
+--   
+--   This will work if <tt><a>C</a> t</tt> is <tt>Unconstrained</tt>,
+--   <a>Apply</a>, or <a>Applicative</a>.
+collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
 -- | If we have <tt><a>Tensor</a> t</tt>, we can make a singleton <a>F</a>.
 --   
@@ -1180,6 +1184,10 @@ pureT :: (Monoidal t, C (TM t) f) => I t ~> f
 --   <tt><a>TM</a> t f</tt>.
 toTM :: Monoidal t => t f f ~> TM t f
 
+-- | Infix alias for <a>getT</a>
+(!$!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+infixr 5 !$!
+
 -- | Useful wrapper over <a>retractT</a> to allow you to directly extract
 --   an <tt>a</tt> from a <tt>t f f a</tt>, if <tt>f</tt> is a valid
 --   retraction from <tt>t</tt>, and <tt>f</tt> is an instance of
@@ -1228,7 +1236,7 @@ extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
 --   </pre>
 getT :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 
--- | Infix alias for <a>getT</a>
+-- | Infix alias for <a>interpretT</a>
 (!*!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 infixr 5 !*!
 
