@@ -55,12 +55,13 @@
 module Data.Functor.Tensor (
     HBifunctor(..)
   , Tensor(..)
+  , Monoidal(..)
+  , F(..)
+  , (!$!)
   , reconsTM
   , extractT
   , getT, (!*!)
   , collectT
-  , Monoidal(..)
-  , F(..)
   , injectF
   , WrappedHBifunctor(..)
   , JoinT(..)
@@ -373,6 +374,16 @@ getT
 getT f g = getConst . interpretT (Const . f) (Const . g)
 
 -- | Infix alias for 'getT'
+(!$!)
+    :: (Monoidal t, C (TM t) (Const b))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> b
+(!$!) = getT
+infixr 5 !$!
+
+-- | Infix alias for 'interpretT'
 (!*!)
     :: (Monoidal t, C (TM t) (Const b))
     => (forall x. f x -> b)
