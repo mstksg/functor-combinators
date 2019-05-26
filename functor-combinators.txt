@@ -759,7 +759,7 @@ extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
 getT :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 
 -- | Infix alias for <a>interpretT</a>
-(!*!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+(!*!) :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 infixr 5 !*!
 
 -- | Useful wrapper over <a>getT</a> to allow you to collect a <tt>b</tt>
@@ -1237,7 +1237,7 @@ extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
 getT :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 
 -- | Infix alias for <a>interpretT</a>
-(!*!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+(!*!) :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 infixr 5 !*!
 
 -- | Useful wrapper over <a>getT</a> to allow you to collect a <tt>b</tt>
