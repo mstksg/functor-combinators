@@ -385,12 +385,12 @@ infixr 5 !$!
 
 -- | Infix alias for 'interpretT'
 (!*!)
-    :: (Monoidal t, C (TM t) (Const b))
-    => (forall x. f x -> b)
-    -> (forall x. g x -> b)
-    -> t f g a
-    -> b
-(!*!) = getT
+    :: (Monoidal t, C (TM t) h)
+    => (f ~> h)
+    -> (g ~> h)
+    -> t f g
+    ~> h
+(!*!) = interpretT
 infixr 5 !*!
 
 -- | Useful wrapper over 'getT' to allow you to collect a @b@ from all
