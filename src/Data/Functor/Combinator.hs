@@ -1,9 +1,8 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 
 module Data.Functor.Combinator (
-  -- * Main interface
-    type (~>)
   -- ** Single Functors
+    type (~>)
   , HFunctor(..)
   , Interpret(..)
   , extractI, getI, collectI
@@ -27,7 +26,9 @@ module Data.Functor.Combinator (
   , These1(..)
   , Comp
   , Final(..)
-  , Cons(..), Uncons(..)
+  , FreeOf(..)
+  , Cons(..)
+  , Uncons(..)
   ) where
 
 import           Control.Alternative.Free

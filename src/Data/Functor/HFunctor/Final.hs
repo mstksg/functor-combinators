@@ -32,21 +32,28 @@ import           Data.Pointed
 import qualified Control.Alternative.Free   as Alt
 
 -- | A simple way to inject/reject into any eventual typeclass.
+--
+-- In a way, this is the "ultimate" 'Interpret' instance.  You can use this
+-- to inject an @f@ into a free structure of any typeclass.  If you want
+-- @f@ to have a 'Monad' instance, for example, just use
+--
+-- @
+-- 'inject' :: f a -> 'Final' 'Monad' f a
+-- @
+--
+-- When you want to eventually interpret out the data, use:
+--
+-- @
+-- 'interpret' :: (f '~>' g) -> 'Final' c f a -> g a
+-- @
+--
 -- Essentially, @'Final' c@ is the "free c".  @'Final' 'Monad'@ is the free
 -- 'Monad', etc.
 --
--- Useful for lifting a functor @f@ into arbitrary structure given by
--- a typeclass.
---
--- Note that this doesn't have instances for all the typeclasses; you
--- probably have to define your own if you want to use @'Final' c@ as an
--- /instance/ of @c@ (using 'liftFinal0', 'liftFinal1', 'liftFinal2' for
--- help).  This is mostly meant to be usable as a final 'Interpret', with
---
--- @
--- 'inject'    :: f a -> 'Final' c f a
--- 'interpret' :: (f '~>' g) -> 'Final' c f a -> g a
--- @
+-- Note that this doesn't have instances for /all/ the typeclasses you
+-- could lift things into; you probably have to define your own if you want
+-- to use @'Final' c@ as an /instance/ of @c@ (using 'liftFinal0',
+-- 'liftFinal1', 'liftFinal2' for help).
 newtype Final c f a = Final
     { runFinal :: forall g. c g => (forall x. f x -> g x) -> g a }
 
@@ -224,6 +231,9 @@ toFinal = interpret inject
 -- fromFinal :: 'Final' 'Plus' f '~>' 'ListF' f
 -- @
 --
+-- This can be useful because 'Final' doesn't have a concrete structure
+-- that you can pattern match on and inspect, but @t@ might.
+--
 -- In the case that this forms an isomorphism with 'toFinal', the @t@ will
 -- have an instance of 'FreeOf'.
 fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
@@ -235,12 +245,14 @@ fromFinal = interpret inject
 -- This essentially lists instances of 'Interpret' where a "trip" through
 -- 'Final' will leave it unchanged.
 --
--- A @t@ can be considered a "Free c" if:
---
 -- @
 -- 'fromFree' . 'toFree' == id
 -- 'toFree' . 'fromFree' == id
 -- @
+--
+-- This can be useful because 'Final' doesn't have a concrete structure
+-- that you can pattern match on and inspect, but @t@ might.  This lets you
+-- work on a concrete structure if you desire.
 class Interpret t => FreeOf c t | t -> c where
     fromFree :: t f ~> Final c f
     toFree   :: Functor f => Final c f ~> t f
