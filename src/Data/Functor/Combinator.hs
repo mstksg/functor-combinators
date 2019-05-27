@@ -10,6 +10,7 @@ module Data.Functor.Combinator (
   , HBifunctor(..)
   , Tensor(I)
   , Monoidal(TM, retractT, interpretT, pureT, toTM)
+  , inL, inR
   , (!$!)
   , extractT, getT, (!*!), collectT
   -- * Combinators

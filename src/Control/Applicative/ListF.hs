@@ -6,7 +6,6 @@ module Control.Applicative.ListF (
   ) where
 
 import           Control.Applicative
-import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
 import           Data.List.NonEmpty    (NonEmpty(..))
 

@@ -58,6 +58,7 @@ module Data.Functor.Tensor (
   , Monoidal(..)
   , F(..)
   , (!$!)
+  , inL, inR
   , reconsTM
   , extractT
   , getT, (!*!)
@@ -405,6 +406,21 @@ collectT
     -> [b]
 collectT f g = getConst . interpretT (Const . (:[]) . f) (Const . (:[]) . g)
 
+-- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
+-- functor @g@ to the right of an @f@.
+inL
+    :: forall t f g a. (Monoidal t, C (TM t) g)
+    => f a
+    -> t f g a
+inL = hright (pureT @t) . intro1 @t
+
+-- | Convenient wrapper over 'intro2' that lets us introduce an arbitrary
+-- functor @f@ to the right of a @g@.
+inR
+    :: forall t f g a. (Monoidal t, C (TM t) f, Functor g)
+    => g a
+    -> t f g a
+inR = hleft (pureT @t) . intro2 @t
 
 instance Tensor (:*:) where
     type I (:*:) = Proxy
