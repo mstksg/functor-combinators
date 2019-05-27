@@ -22,29 +22,46 @@ ListF :: [f a] -> ListF f a
 newtype NonEmptyF f a
 NonEmptyF :: NonEmpty (f a) -> NonEmptyF f a
 [runNonEmptyF] :: NonEmptyF f a -> NonEmpty (f a)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.NonEmptyF f)
+instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.NonEmptyF f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.NonEmptyF f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.NonEmptyF f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.NonEmptyF f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.NonEmptyF f)
+instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.NonEmptyF f a)
+instance GHC.Generics.Generic (Control.Applicative.ListF.NonEmptyF f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.NonEmptyF f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.NonEmptyF f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.NonEmptyF f a)
+instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.NonEmptyF f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.NonEmptyF f a)
-instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.ListF f)
-instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.ListF f a)
-instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.ListF f a)
-instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.ListF f a)
-instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.NonEmptyF f)
-instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.NonEmptyF f)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.ListF f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.ListF f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.ListF f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.ListF f)
+instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.ListF f a)
+instance GHC.Generics.Generic (Control.Applicative.ListF.ListF f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.ListF f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.ListF f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.ListF f)
+instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.ListF f a)
+instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.ListF f a)
+instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.ListF f a)
+instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.ListF f a)
 
 module Control.Applicative.Step
 
--- | The fixed point of applications of <tt>:+:</tt> (functor sums).
+-- | The fixed point of applications of <a>:+:</a> (functor sums).
 --   
---   Intuitively, in an infinite <tt>f <tt>:+:</tt> f <tt>:+:</tt> f
---   <tt>:+:</tt> f ...</tt>, you have exactly one <tt>f</tt>
---   <i>somewhere</i>. A <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with
---   a <a>Natural</a> giving you "where" the <tt>f</tt> is in the long
---   chain.
+--   Intuitively, in an infinite <tt>f <a>:+:</a> f <a>:+:</a> f <a>:+:</a>
+--   f ...</tt>, you have exactly one <tt>f</tt> <i>somewhere</i>. A
+--   <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with a <a>Natural</a>
+--   giving you "where" the <tt>f</tt> is in the long chain.
 --   
 --   <tt>interpret</tt>ing it requires no constraint on the target context.
 data Step f a
@@ -72,34 +89,57 @@ newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
 
--- | The identity functor of <tt>:+:</tt> (and also <tt>TheseT</tt>)
+-- | The identity functor of <a>:+:</a> (and also <tt>TheseT</tt>)
 data VoidT a
 
 -- | We have a natural transformation between <a>VoidT</a> and any other
 --   functor <tt>f</tt> with no constraints.
 absurdT :: VoidT a -> f a
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Steps f)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Steps f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Steps f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.Step.Steps f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.Step.Steps f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.Step.Steps f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.Step.Steps f)
+instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.Step.Steps f a)
+instance GHC.Generics.Generic (Control.Applicative.Step.Steps f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.Step.Steps f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.Step.Steps f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Steps f)
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Steps f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Steps f a)
+instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Steps f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Steps f a)
+instance Data.Functor.Classes.Ord1 Control.Applicative.Step.VoidT
+instance Data.Functor.Classes.Eq1 Control.Applicative.Step.VoidT
+instance Data.Functor.Classes.Read1 Control.Applicative.Step.VoidT
+instance Data.Functor.Classes.Show1 Control.Applicative.Step.VoidT
+instance Data.Data.Data a => Data.Data.Data (Control.Applicative.Step.VoidT a)
+instance GHC.Generics.Generic (Control.Applicative.Step.VoidT a)
+instance Data.Traversable.Traversable Control.Applicative.Step.VoidT
+instance Data.Foldable.Foldable Control.Applicative.Step.VoidT
 instance GHC.Base.Functor Control.Applicative.Step.VoidT
 instance GHC.Classes.Ord (Control.Applicative.Step.VoidT a)
 instance GHC.Classes.Eq (Control.Applicative.Step.VoidT a)
+instance GHC.Read.Read (Control.Applicative.Step.VoidT a)
 instance GHC.Show.Show (Control.Applicative.Step.VoidT a)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Step f)
+instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Step f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.Step.Step f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.Step.Step f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.Step.Step f)
+instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.Step.Step f a)
+instance GHC.Generics.Generic (Control.Applicative.Step.Step f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.Step.Step f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.Step.Step f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Step f)
 instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Step f a)
 instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step f a)
+instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Step f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
-instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Steps f)
-instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Steps f)
-instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.Step.Steps f)
-instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
-instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step f)
-instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Step f)
 
 module Control.Monad.Freer.Church
 
@@ -107,10 +147,50 @@ module Control.Monad.Freer.Church
 newtype Free f a
 Free :: (forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free f a
 [runFree] :: Free f a -> forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
+
+-- | Convert a <tt><a>Free</a> f</tt> into any instance of
+--   <tt><tt>MonadFree</tt> f</tt>.
+reFree :: (MonadFree f m, Functor f) => Free f a -> m a
+
+-- | A version of <tt>:.:</tt> and <a>Compose</a> that allows for an
+--   <tt>HBifunctor</tt> instance.
+--   
+--   It is slightly less performant. Using 'comp . unComp' every once in a
+--   while will concretize a <a>Comp</a> value (if you have
+--   <tt><a>Functor</a> f</tt>) and remove some indirection if you have a
+--   lot of chained operations.
+--   
+--   The "free monoid" over <a>Comp</a> is <a>Free</a>.
+data Comp f g a
+(:>>=) :: f x -> (x -> g a) -> Comp f g a
+pattern Comp :: Functor f => f (g a) -> Comp f g a
+
+-- | "Smart constructor" for <a>Comp</a> that doesn't require
+--   <tt><a>Functor</a> f</tt>.
+comp :: f (g a) -> Comp f g a
+instance GHC.Base.Functor g => GHC.Base.Functor (Control.Monad.Freer.Church.Comp f g)
+instance (GHC.Base.Applicative f, GHC.Base.Applicative g) => GHC.Base.Applicative (Control.Monad.Freer.Church.Comp f g)
+instance (Data.Foldable.Foldable f, Data.Foldable.Foldable g) => Data.Foldable.Foldable (Control.Monad.Freer.Church.Comp f g)
+instance (Data.Traversable.Traversable f, Data.Traversable.Traversable g) => Data.Traversable.Traversable (Control.Monad.Freer.Church.Comp f g)
+instance (GHC.Base.Alternative f, GHC.Base.Alternative g) => GHC.Base.Alternative (Control.Monad.Freer.Church.Comp f g)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f, Data.Functor.Classes.Show1 g) => Data.Functor.Classes.Show1 (Control.Monad.Freer.Church.Comp f g)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f, Data.Functor.Classes.Show1 g, GHC.Show.Show a) => GHC.Show.Show (Control.Monad.Freer.Church.Comp f g a)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f, Data.Functor.Classes.Read1 g) => Data.Functor.Classes.Read1 (Control.Monad.Freer.Church.Comp f g)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f, Data.Functor.Classes.Read1 g, GHC.Read.Read a) => GHC.Read.Read (Control.Monad.Freer.Church.Comp f g a)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f, Data.Functor.Classes.Eq1 g) => Data.Functor.Classes.Eq1 (Control.Monad.Freer.Church.Comp f g)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, Data.Functor.Classes.Ord1 g) => Data.Functor.Classes.Ord1 (Control.Monad.Freer.Church.Comp f g)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f, Data.Functor.Classes.Eq1 g, GHC.Classes.Eq a) => GHC.Classes.Eq (Control.Monad.Freer.Church.Comp f g a)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, Data.Functor.Classes.Ord1 g, GHC.Classes.Ord a) => GHC.Classes.Ord (Control.Monad.Freer.Church.Comp f g a)
 instance GHC.Base.Functor (Control.Monad.Freer.Church.Free f)
 instance GHC.Base.Applicative (Control.Monad.Freer.Church.Free f)
 instance GHC.Base.Monad (Control.Monad.Freer.Church.Free f)
 instance Control.Monad.Free.Class.MonadFree f (Control.Monad.Freer.Church.Free f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Monad.Freer.Church.Free f)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Monad.Freer.Church.Free f)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Control.Monad.Freer.Church.Free f)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Control.Monad.Freer.Church.Free f)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f, GHC.Classes.Eq a) => GHC.Classes.Eq (Control.Monad.Freer.Church.Free f a)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, GHC.Classes.Ord a) => GHC.Classes.Ord (Control.Monad.Freer.Church.Free f a)
 
 module Data.Functor.HFunctor
 
@@ -784,11 +864,6 @@ collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (foral
 --   <a>Interpret</a> instance.
 injectF :: forall t f. Tensor t => f ~> F t (I t) f
 
--- | A version of <a>:.:</a> and <a>Compose</a> that allows for an
---   <a>HBifunctor</a> instance.
-data Comp f g a
-pattern Comp :: Functor f => f (g a) -> Comp f g a
-
 -- | Useful newtype to allow us to derive an <a>HFunctor</a> instance from
 --   any instance of <a>HBifunctor</a>, using -XDerivingVia.
 --   
@@ -808,23 +883,20 @@ data JoinT t f a
 JoinT :: t f f a -> JoinT t f a
 [runJoinT] :: JoinT t f a -> t f f a
 instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Show.Show (i a), GHC.Show.Show (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Show.Show (Data.Functor.Tensor.F t i f a)
+instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Read.Read (i a), GHC.Read.Read (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Read.Read (Data.Functor.Tensor.F t i f a)
 instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.Tensor.JoinT t f)
-instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Comp f)
-instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Tensor.Comp f g)
-instance (GHC.Base.Applicative f, GHC.Base.Applicative g) => GHC.Base.Applicative (Data.Functor.Tensor.Comp f g)
-instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Comp
-instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Comp
-instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Comp
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.JoinT t)
 instance (Data.Functor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.Functor.Tensor.I t) => Data.Functor.HFunctor.Interpret (Data.Functor.Tensor.F t i)
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:+:)
+instance Data.Functor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, GHC.Base.Functor (t f (Data.Functor.Tensor.F t i f))) => GHC.Base.Functor (Data.Functor.Tensor.F t i f)
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.F t i)
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Tensor Data.Functor.Day.Day
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:+:)
+instance Data.Functor.Tensor.Tensor Control.Monad.Freer.Church.Comp
 
 module Data.Functor.Combinator
 
@@ -1223,13 +1295,12 @@ data Alt (f :: Type -> Type) a
 -- | Church-encoded Freer monad
 data Free f a
 
--- | The fixed point of applications of <tt>:+:</tt> (functor sums).
+-- | The fixed point of applications of <a>:+:</a> (functor sums).
 --   
---   Intuitively, in an infinite <tt>f <tt>:+:</tt> f <tt>:+:</tt> f
---   <tt>:+:</tt> f ...</tt>, you have exactly one <tt>f</tt>
---   <i>somewhere</i>. A <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with
---   a <a>Natural</a> giving you "where" the <tt>f</tt> is in the long
---   chain.
+--   Intuitively, in an infinite <tt>f <a>:+:</a> f <a>:+:</a> f <a>:+:</a>
+--   f ...</tt>, you have exactly one <tt>f</tt> <i>somewhere</i>. A
+--   <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with a <a>Natural</a>
+--   giving you "where" the <tt>f</tt> is in the long chain.
 --   
 --   <tt>interpret</tt>ing it requires no constraint on the target context.
 data Step f a
@@ -1283,8 +1354,15 @@ This1 :: f a -> These1 f g a
 That1 :: g a -> These1 f g a
 These1 :: f a -> g a -> These1 f g a
 
--- | A version of <a>:.:</a> and <a>Compose</a> that allows for an
---   <a>HBifunctor</a> instance.
+-- | A version of <tt>:.:</tt> and <a>Compose</a> that allows for an
+--   <tt>HBifunctor</tt> instance.
+--   
+--   It is slightly less performant. Using 'comp . unComp' every once in a
+--   while will concretize a <a>Comp</a> value (if you have
+--   <tt><a>Functor</a> f</tt>) and remove some indirection if you have a
+--   lot of chained operations.
+--   
+--   The "free monoid" over <a>Comp</a> is <a>Free</a>.
 data Comp f g a
 pattern Comp :: Functor f => f (g a) -> Comp f g a
 
