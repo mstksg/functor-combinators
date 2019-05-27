@@ -34,14 +34,20 @@ instance Applicative f => Applicative (ListF f) where
     ListF fs <*> ListF xs = ListF $ liftA2 (<*>) fs xs
 
 instance Functor f => Alt (ListF f) where
-    ListF xs <!> ListF ys = ListF (xs ++ ys)
+    (<!>) = (<>)
 
 instance Functor f => Plus (ListF f) where
-    zero = ListF []
+    zero = mempty
 
 instance Applicative f => Alternative (ListF f) where
     empty = zero
     (<|>) = (<!>)
+
+instance Semigroup (ListF f a) where
+    ListF xs <> ListF ys = ListF (xs ++ ys)
+
+instance Monoid (ListF f a) where
+    mempty = ListF []
 
 -- | A non-empty list of @f a@s.
 --
@@ -59,7 +65,10 @@ instance Applicative f => Applicative (NonEmptyF f) where
     NonEmptyF fs <*> NonEmptyF xs = NonEmptyF $ liftA2 (<*>) fs xs
 
 instance Functor f => Alt (NonEmptyF f) where
-    NonEmptyF xs <!> NonEmptyF ys = NonEmptyF (xs <> ys)
+    (<!>) = (<>)
+
+instance Semigroup (NonEmptyF f a) where
+    NonEmptyF xs <> NonEmptyF ys = NonEmptyF (xs <> ys)
 
 -- | A maybe @f a@.  This is the free structure for a "fail"-like typeclass
 -- that only has @zero :: f a@.
@@ -76,11 +85,17 @@ instance Applicative f => Applicative (MaybeF f) where
     MaybeF f <*> MaybeF x = MaybeF $ liftA2 (<*>) f x
 
 instance Functor f => Alt (MaybeF f) where
-    MaybeF x <!> MaybeF y = MaybeF (x <!> y)
+    (<!>) = (<>)
 
 instance Functor f => Plus (MaybeF f) where
-    zero = MaybeF Nothing
+    zero = mempty
 
 instance Applicative f => Alternative (MaybeF f) where
     empty = zero
     (<|>) = (<!>)
+
+instance Semigroup (MaybeF f a) where
+    MaybeF xs <> MaybeF ys = MaybeF (xs <!> ys)
+
+instance Monoid (MaybeF f a) where
+    mempty = MaybeF Nothing
