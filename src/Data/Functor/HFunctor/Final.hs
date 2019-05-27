@@ -24,12 +24,15 @@ import           Control.Applicative.ListF
 import           Control.Monad
 import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
+import           Control.Monad.Trans.Identity
 import           Control.Natural
+import           Data.Constraint.Trivial
 import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor
 import           Data.Functor.Plus
 import           Data.Pointed
-import qualified Control.Alternative.Free   as Alt
+import qualified Control.Alternative.Free      as Alt
+import qualified Control.Applicative.Free.Fast as FAF
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --
@@ -264,8 +267,11 @@ class Interpret t => FreeOf c t | t -> c where
 
 instance FreeOf Functor Coyoneda
 instance FreeOf Applicative Ap
+instance FreeOf Applicative FAF.Ap
 instance FreeOf Alternative Alt.Alt
 instance FreeOf Monad Free
 instance FreeOf Pointed Lift
+instance FreeOf Pointed MaybeApply
 instance FreeOf Alt NonEmptyF
 instance FreeOf Plus ListF
+instance FreeOf Unconstrained IdentityT

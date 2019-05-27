@@ -24,7 +24,9 @@ import           Control.Monad.Trans.Identity
 import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Reader
 import           Control.Natural
+import           Data.Bifunctor
 import           Data.Coerce
+import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Reverse
@@ -173,8 +175,14 @@ instance HFunctor IdentityT where
 instance HFunctor Lift where
     hmap = mapLift
 
+instance HFunctor MaybeApply where
+    hmap f (MaybeApply x) = MaybeApply (first f x)
+
 instance HFunctor Backwards where
     hmap f (Backwards x) = Backwards (f x)
+
+instance HFunctor WrappedApplicative where
+    hmap f (WrapApplicative x) = WrapApplicative (f x)
 
 instance HFunctor (ReaderT r) where
     hmap = mapReaderT
@@ -231,11 +239,11 @@ instance HBifunctor Comp where
 --
 -- to give us an automatic 'HFunctor' instance and save us some work.
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
-    = WrappedHBifunctor { unwrapHBifunctor :: t f g a }
+    = WrapHBifunctor { unwrapHBifunctor :: t f g a }
   deriving Functor
 
 instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
-    hmap f = WrappedHBifunctor . hright f . unwrapHBifunctor
+    hmap f = WrapHBifunctor . hright f . unwrapHBifunctor
 
 deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)

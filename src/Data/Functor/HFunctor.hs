@@ -150,23 +150,27 @@ collectI
     -> [b]
 collectI f = getConst . interpret (Const . (:[]) . f)
 
+-- | A free 'Functor'
 instance Interpret Coyoneda where
     type C Coyoneda = Functor
     inject  = liftCoyoneda
     retract = lowerCoyoneda
     interpret f (Coyoneda g x) = g <$> f x
 
+-- | A free 'Applicative'
 instance Interpret Ap where
     type C Ap = Applicative
     inject    = liftAp
     interpret = runAp
 
+-- | A free 'Plus'
 instance Interpret ListF where
     type C ListF = Plus
     inject = ListF . (:[])
     retract = foldr (<!>) zero . runListF
     interpret f = foldr ((<!>) . f) zero . runListF
 
+-- | A free 'Alt'
 instance Interpret NonEmptyF where
     type C NonEmptyF = Alt
     inject = NonEmptyF . (:| [])
@@ -196,11 +200,13 @@ instance Interpret Steps where
     retract     = asum1 . getSteps
     interpret f = asum1 . NEM.map f . getSteps
 
+-- | A free 'Alternative'
 instance Interpret Alt.Alt where
     type C Alt.Alt = Alternative
     inject = Alt.liftAlt
     interpret = Alt.runAlt
 
+-- | A free 'Monad'
 instance Interpret Free where
     type C Free = Monad
 
@@ -208,29 +214,40 @@ instance Interpret Free where
     retract x = runFree x pure (>>=)
     interpret f x = runFree x pure ((>>=) . f)
 
+-- | A free 'Applicative'
 instance Interpret FA.Ap where
     type C FA.Ap = Applicative
     inject = FA.liftAp
     retract = FA.retractAp
     interpret = FA.runAp
 
+-- | A free 'Applicative'
 instance Interpret FAF.Ap where
     type C FAF.Ap = Applicative
     inject = FAF.liftAp
     retract = FAF.retractAp
     interpret = FAF.runAp
 
+-- | A free 'Unconstrained'
 instance Interpret IdentityT where
     type C IdentityT = Unconstrained
     inject = coerce
     retract = coerce
     interpret f = f . runIdentityT
 
+-- | A free 'Pointed'
 instance Interpret Lift where
     type C Lift = Pointed
     inject = Other
     retract = elimLift point id
     interpret f = elimLift point f
+
+-- | A free 'Pointed'
+instance Interpret MaybeApply where
+    type C MaybeApply = Pointed
+    inject = MaybeApply . Left
+    retract = either id point . runMaybeApply
+    interpret f = either f point . runMaybeApply
 
 instance Interpret Backwards where
     type C Backwards = Unconstrained
@@ -238,6 +255,13 @@ instance Interpret Backwards where
     retract = forwards
     interpret f = f . forwards
 
+instance Interpret WrappedApplicative where
+    type C WrappedApplicative = Unconstrained
+    inject = WrapApplicative
+    retract = unwrapApplicative
+    interpret f = f . unwrapApplicative
+
+-- | A free 'MonadReader'
 instance Interpret (ReaderT r) where
     type C (ReaderT r) = MonadReader r
     inject = ReaderT . const
