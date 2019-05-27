@@ -26,11 +26,9 @@ module Data.Functor.Combinator (
   , (:*:)(..)
   , (:+:)(..)
   , These1(..)
-  , Comp
+  , Comp(Comp, unComp)
   , Final(..)
   , FreeOf(..)
-  , Cons(..)
-  , Uncons(..)
   ) where
 
 import           Control.Alternative.Free
@@ -45,6 +43,5 @@ import           Data.Functor.Day
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Final
 import           Data.Functor.Tensor
-import           Data.Functor.Tensor.Cons
 import           Data.Functor.These
 import           GHC.Generics

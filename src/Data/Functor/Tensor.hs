@@ -64,6 +64,7 @@ module Data.Functor.Tensor (
   , getT, (!*!)
   , collectT
   , injectF
+  , Comp(Comp, unComp)
   , WrappedHBifunctor(..)
   , JoinT(..)
   ) where
@@ -72,6 +73,7 @@ import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Data.Copointed
 import           Data.Function
@@ -116,7 +118,7 @@ class HBifunctor t => Tensor t where
     type I t :: Type -> Type
 
     intro1 :: f ~> t f (I t)
-    intro2 :: Functor g => g ~> t (I t) g
+    intro2 :: g ~> t (I t) g
 
     elim1  :: Functor f => t f (I t) ~> f
     elim2  :: Functor g => t (I t) g ~> g
@@ -417,7 +419,7 @@ inL = hright (pureT @t) . intro1 @t
 -- | Convenient wrapper over 'intro2' that lets us introduce an arbitrary
 -- functor @f@ to the right of a @g@.
 inR
-    :: forall t f g a. (Monoidal t, C (TM t) f, Functor g)
+    :: forall t f g a. (Monoidal t, C (TM t) f)
     => g a
     -> t f g a
 inR = hleft (pureT @t) . intro2 @t
@@ -561,3 +563,55 @@ deriving instance Functor (t f f) => Functor (JoinT t f)
 
 instance HBifunctor t => HFunctor (JoinT t) where
     hmap f (JoinT x) = JoinT $ hbimap f f x
+
+data Comp f g a =
+    forall x. f x :>>= (x -> g a)
+
+instance Functor g => Functor (Comp f g) where
+    fmap f (x :>>= h) = x :>>= (fmap f . h)
+
+instance HBifunctor Comp where
+    hleft  f   (x :>>= h) = f x :>>= h
+    hright   g (x :>>= h) =   x :>>= (g . h)
+    hbimap f g (x :>>= h) = f x :>>= (g . h)
+
+deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)
+
+comp :: f (g a) -> Comp f g a
+comp = (:>>= id)
+
+pattern Comp :: Functor f => f (g a) -> Comp f g a
+pattern Comp { unComp } <- ((\case x :>>= f -> f <$> x)->unComp)
+  where
+    Comp x = comp x
+{-# COMPLETE Comp #-}
+
+instance Tensor Comp where
+    type I Comp = Identity
+
+    intro1 = (:>>= Identity)
+    intro2 = (Identity () :>>=) . const
+
+    elim1 (x :>>= y) = runIdentity . y <$> x
+    elim2 (x :>>= y) = y (runIdentity x)
+
+    assoc (x :>>= y) = (x :>>= (unComp . y)) :>>= id
+    disassoc ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
+
+instance Monoidal Comp where
+    type TM Comp = Free
+
+    nilTM  = pure . runIdentity
+    consTM (x :>>= y) = Free $ \p b -> b x $ \z -> runFree (y z) p b
+
+    fromF = \case
+      Done x -> pure . runIdentity $ x
+      More (x :>>= y) -> Free $ \p b -> b x $ \z -> runFree (fromF (y z)) p b
+    toF x = runFree x (Done . Identity) $ \y z -> More (y :>>= z)
+    appendF (x :>>= y) = case x of
+      Done (Identity z)   -> y z
+      More (z :>>= q) -> More $ z :>>= (appendF . comp . fmap y . q)
+
+    retractT (x :>>= y) = x >>= y
+    pureT = pure . runIdentity
+    toTM (x :>>= y) = Free $ \p b -> b x (($ p) . b . y)
