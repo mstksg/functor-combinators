@@ -706,6 +706,14 @@ More :: t f (F t i f) a -> F t i f a
 (!$!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 infixr 5 !$!
 
+-- | Convenient wrapper over <a>intro1</a> that lets us introduce an
+--   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
+inL :: forall t f g a. (Monoidal t, C (TM t) g) => f a -> t f g a
+
+-- | Convenient wrapper over <a>intro2</a> that lets us introduce an
+--   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
+inR :: forall t f g a. (Monoidal t, C (TM t) f, Functor g) => g a -> t f g a
+
 -- | The inverse of <a>unconsTM</a>. Calls <a>nilTM</a> on the left (nil)
 --   branch, and <a>consTM</a> on the right (cons) branch.
 reconsTM :: forall t f. Monoidal t => (I t :+: t f (TM t f)) ~> TM t f
@@ -1183,6 +1191,14 @@ pureT :: (Monoidal t, C (TM t) f) => I t ~> f
 -- | Embed a direct application of <tt>f</tt> to itself into a
 --   <tt><a>TM</a> t f</tt>.
 toTM :: Monoidal t => t f f ~> TM t f
+
+-- | Convenient wrapper over <a>intro1</a> that lets us introduce an
+--   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
+inL :: forall t f g a. (Monoidal t, C (TM t) g) => f a -> t f g a
+
+-- | Convenient wrapper over <a>intro2</a> that lets us introduce an
+--   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
+inR :: forall t f g a. (Monoidal t, C (TM t) f, Functor g) => g a -> t f g a
 
 -- | Infix alias for <a>getT</a>
 (!$!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
