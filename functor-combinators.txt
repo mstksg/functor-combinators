@@ -316,6 +316,9 @@ retract :: (Interpret t, C t f) => t f ~> f
 --   <tt>g</tt>.
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
 
+-- | A convenient flipped version of <a>interpret</a>.
+interpretFor :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
+
 -- | Useful wrapper over <a>retract</a> to allow you to directly extract an
 --   <tt>a</tt> from a <tt>t f a</tt>, if <tt>f</tt> is a valid retraction
 --   from <tt>t</tt>, and <tt>f</tt> is an instance of <a>Copointed</a>.
@@ -1031,6 +1034,9 @@ retract :: (Interpret t, C t f) => t f ~> f
 --   interpret the <tt>f</tt> out of the <tt>t f</tt> into a final context
 --   <tt>g</tt>.
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
+
+-- | A convenient flipped version of <a>interpret</a>.
+interpretFor :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
 
 -- | Useful wrapper over <a>retract</a> to allow you to directly extract an
 --   <tt>a</tt> from a <tt>t f a</tt>, if <tt>f</tt> is a valid retraction
