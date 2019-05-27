@@ -1,12 +1,18 @@
-{-# LANGUAGE LambdaCase    #-}
-{-# LANGUAGE TypeFamilies  #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DeriveTraversable  #-}
+{-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE TypeOperators      #-}
 
 module Data.Functor.These (
     These1(..)
   ) where
 
 import           Control.Applicative.Step
+import           Data.Data
+import           Data.Deriving
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Plus
 import           Data.Functor.Tensor
@@ -25,7 +31,12 @@ data These1 f g a
     = This1 (f a)
     | That1 (g a)
     | These1 (f a) (g a)
-  deriving (Show, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''These1
+deriveRead1 ''These1
+deriveEq1 ''These1
+deriveOrd1 ''These1
 
 instance (Semigroup (f a), Semigroup (g a)) => Semigroup (These1 f g a) where
     (<>) = \case

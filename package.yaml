@@ -21,20 +21,20 @@ description:         Please see the README on GitHub at <https://github.com/mstk
 
 dependencies:
 - base >= 4.7 && < 5
-- kan-extensions
-- free
-- profunctors
-- mtl
-- semigroupoids
-- transformers
-- natural-transformation
-- pointed
-- tagged
-- mmorph
 - containers
-- trivial-constraint >= 0.5
-- comonad
+- deriving-compat
+- free
+- kan-extensions
+- mmorph
+- mtl
+- natural-transformation
 - nonempty-containers
+- pointed
+- profunctors
+- semigroupoids
+- tagged
+- transformers
+- trivial-constraint >= 0.5
 
 ghc-options:
 - -Wall
@@ -47,25 +47,3 @@ library:
   other-modules:
   - Data.Functor.HFunctor.Internal
   - Data.Functor.These
-
-# executables:
-#   functor-combinators-exe:
-#     main:                Main.hs
-#     source-dirs:         app
-#     ghc-options:
-#     - -threaded
-#     - -rtsopts
-#     - -with-rtsopts=-N
-#     dependencies:
-#     - functor-combinators
-
-# tests:
-#   functor-combinators-test:
-#     main:                Spec.hs
-#     source-dirs:         test
-#     ghc-options:
-#     - -threaded
-#     - -rtsopts
-#     - -with-rtsopts=-N
-#     dependencies:
-#     - functor-combinators

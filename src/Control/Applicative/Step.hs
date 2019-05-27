@@ -1,11 +1,14 @@
+{-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE EmptyCase                  #-}
 {-# LANGUAGE EmptyDataDeriving          #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
 module Control.Applicative.Step (
   -- * Fixed Points
@@ -16,8 +19,11 @@ module Control.Applicative.Step (
   , absurdT
   ) where
 
-import           Data.Semigroup.Foldable
+import           Data.Deriving
+import           Data.Data
+import           GHC.Generics
 import           Data.Functor.Alt
+import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           Numeric.Natural
 import qualified Data.Map.NonEmpty          as NEM
@@ -30,7 +36,12 @@ import qualified Data.Map.NonEmpty          as NEM
 --
 -- 'interpret'ing it requires no constraint on the target context.
 data Step f a = Step { stepPos :: Natural, stepVal :: f a }
-  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''Step
+deriveRead1 ''Step
+deriveEq1 ''Step
+deriveOrd1 ''Step
 
 instance Applicative f => Applicative (Step f) where
     pure = Step 0 . pure
@@ -47,7 +58,12 @@ instance Traversable1 f => Traversable1 (Step f) where
 
 -- | The identity functor of ':+:' (and also 'TheseT')
 data VoidT a
-  deriving (Show, Eq, Ord, Functor)
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''VoidT
+deriveRead1 ''VoidT
+deriveEq1 ''VoidT
+deriveOrd1 ''VoidT
 
 -- | We have a natural transformation between 'VoidT' and any other
 -- functor @f@ with no constraints.
@@ -69,7 +85,12 @@ absurdT = \case {}
 -- However, we don't fully need 'Plus', since we know we always have at
 -- least one @f@.
 newtype Steps f a = Steps { getSteps :: NEM.NEMap Natural (f a) }
-  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''Steps
+deriveRead1 ''Steps
+deriveEq1 ''Steps
+deriveOrd1 ''Steps
 
 instance Foldable1 f => Foldable1 (Steps f) where
     fold1      = foldMap1 fold1 . getSteps

@@ -208,6 +208,11 @@ instance HBifunctor (:+:) where
       L1 x -> L1 (f x)
       R1 y -> R1 (g y)
 
+instance HBifunctor Comp where
+    hleft  f   (x :>>= h) = f x :>>= h
+    hright   g (x :>>= h) =   x :>>= (g . h)
+    hbimap f g (x :>>= h) = f x :>>= (g . h)
+
 -- | Useful newtype to allow us to derive an 'HFunctor' instance from any
 -- instance of 'HBifunctor', using -XDerivingVia.
 --
@@ -229,3 +234,5 @@ instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
 deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
+deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)
+

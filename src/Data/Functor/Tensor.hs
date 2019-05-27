@@ -64,7 +64,6 @@ module Data.Functor.Tensor (
   , getT, (!*!)
   , collectT
   , injectF
-  , Comp(Comp, unComp)
   , WrappedHBifunctor(..)
   , JoinT(..)
   ) where
@@ -144,6 +143,7 @@ instance (Functor i, Functor (t f (F t i f))) => Functor (F t i f) where
       More xs -> More (fmap f xs)
 
 deriving instance (Show (i a), Show (t f (F t i f) a)) => Show (F t i f a)
+deriving instance (Read (i a), Read (t f (F t i f) a)) => Read (F t i f a)
 
 -- | For some tensors @t@, you can represt the act of repeatedly combining
 -- the same functor an arbitrary amount of times:
@@ -557,35 +557,6 @@ instance Monoidal (:+:) where
       R1 y -> Step 1 y
     pureT = absurdT
 
-data JoinT t f a = JoinT { runJoinT :: t f f a }
-
-deriving instance Functor (t f f) => Functor (JoinT t f)
-
-instance HBifunctor t => HFunctor (JoinT t) where
-    hmap f (JoinT x) = JoinT $ hbimap f f x
-
-data Comp f g a =
-    forall x. f x :>>= (x -> g a)
-
-instance Functor g => Functor (Comp f g) where
-    fmap f (x :>>= h) = x :>>= (fmap f . h)
-
-instance HBifunctor Comp where
-    hleft  f   (x :>>= h) = f x :>>= h
-    hright   g (x :>>= h) =   x :>>= (g . h)
-    hbimap f g (x :>>= h) = f x :>>= (g . h)
-
-deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)
-
-comp :: f (g a) -> Comp f g a
-comp = (:>>= id)
-
-pattern Comp :: Functor f => f (g a) -> Comp f g a
-pattern Comp { unComp } <- ((\case x :>>= f -> f <$> x)->unComp)
-  where
-    Comp x = comp x
-{-# COMPLETE Comp #-}
-
 instance Tensor Comp where
     type I Comp = Identity
 
@@ -615,3 +586,11 @@ instance Monoidal Comp where
     retractT (x :>>= y) = x >>= y
     pureT = pure . runIdentity
     toTM (x :>>= y) = Free $ \p b -> b x (($ p) . b . y)
+
+data JoinT t f a = JoinT { runJoinT :: t f f a }
+
+deriving instance Functor (t f f) => Functor (JoinT t f)
+
+instance HBifunctor t => HFunctor (JoinT t) where
+    hmap f (JoinT x) = JoinT $ hbimap f f x
+
