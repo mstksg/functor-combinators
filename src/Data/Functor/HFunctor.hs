@@ -9,7 +9,7 @@
 
 module Data.Functor.HFunctor (
     HFunctor(..)
-  , Interpret(..)
+  , Interpret(..), interpretFor
   , extractI
   , getI
   , collectI
@@ -90,6 +90,14 @@ class HFunctor t => Interpret t where
     interpret f = retract . hmap f
 
     {-# MINIMAL inject, (retract | interpret) #-}
+
+-- | A convenient flipped version of 'interpret'.
+interpretFor
+    :: (Interpret t, C t g)
+    => t f a
+    -> (f ~> g)
+    -> g a
+interpretFor x f = interpret f x
 
 -- | Useful wrapper over 'retract' to allow you to directly extract an @a@
 -- from a @t f a@, if @f@ is a valid retraction from @t@, and @f@ is an
@@ -261,7 +269,7 @@ instance Interpret WrappedApplicative where
     retract = unwrapApplicative
     interpret f = f . unwrapApplicative
 
--- | A free 'MonadReader'
+-- | A free 'MonadReader', but only when applied to a 'Monad'.
 instance Interpret (ReaderT r) where
     type C (ReaderT r) = MonadReader r
     inject = ReaderT . const

@@ -4,7 +4,7 @@ module Data.Functor.Combinator (
   -- ** Single Functors
     type (~>)
   , HFunctor(..)
-  , Interpret(..)
+  , Interpret(..), interpretFor
   , extractI, getI, collectI
   -- ** Multi-Functors
   , HBifunctor(..)
