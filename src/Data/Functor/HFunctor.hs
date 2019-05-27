@@ -36,6 +36,7 @@ import           Data.Functor.Plus
 import           Data.Functor.Reverse
 import           Data.Kind
 import           Data.List.NonEmpty             (NonEmpty(..))
+import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import qualified Control.Alternative.Free       as Alt
@@ -171,6 +172,17 @@ instance Interpret NonEmptyF where
     inject = NonEmptyF . (:| [])
     retract = asum1 . runNonEmptyF
     interpret f = asum1 . fmap f . runNonEmptyF
+
+-- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- but we don't really have that typeclass in any standard hierarchies.  We
+-- use 'Plus' here instead, but we never use '<!>'.  This would only go
+-- wrong in situations where your type supports 'zero' but not '<!>', like
+-- instances of 'MonadFail' without 'MonadPlus'.
+instance Interpret MaybeF where
+    type C MaybeF = Plus
+    inject = MaybeF . Just
+    retract = fromMaybe zero . runMaybeF
+    interpret f = maybe zero f . runMaybeF
 
 instance Interpret Step where
     type C Step = Unconstrained

@@ -8,6 +8,7 @@
 module Control.Applicative.ListF (
     ListF(..)
   , NonEmptyF(..)
+  , MaybeF(..)
   ) where
 
 import           Control.Applicative
@@ -38,6 +39,10 @@ instance Functor f => Alt (ListF f) where
 instance Functor f => Plus (ListF f) where
     zero = ListF []
 
+instance Applicative f => Alternative (ListF f) where
+    empty = zero
+    (<|>) = (<!>)
+
 -- | A non-empty list of @f a@s.
 --
 -- This is the Free 'Plus'.
@@ -56,3 +61,26 @@ instance Applicative f => Applicative (NonEmptyF f) where
 instance Functor f => Alt (NonEmptyF f) where
     NonEmptyF xs <!> NonEmptyF ys = NonEmptyF (xs <> ys)
 
+-- | A maybe @f a@.  This is the free structure for a "fail"-like typeclass
+-- that only has @zero :: f a@.
+newtype MaybeF f a = MaybeF { runMaybeF :: Maybe (f a) }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''MaybeF
+deriveRead1 ''MaybeF
+deriveEq1 ''MaybeF
+deriveOrd1 ''MaybeF
+
+instance Applicative f => Applicative (MaybeF f) where
+    pure = MaybeF . Just . pure
+    MaybeF f <*> MaybeF x = MaybeF $ liftA2 (<*>) f x
+
+instance Functor f => Alt (MaybeF f) where
+    MaybeF x <!> MaybeF y = MaybeF (x <!> y)
+
+instance Functor f => Plus (MaybeF f) where
+    zero = MaybeF Nothing
+
+instance Applicative f => Alternative (MaybeF f) where
+    empty = zero
+    (<|>) = (<!>)

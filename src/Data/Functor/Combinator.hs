@@ -16,6 +16,8 @@ module Data.Functor.Combinator (
   -- * Combinators
   , Coyoneda(..)
   , ListF(..)
+  , NonEmptyF(..)
+  , MaybeF(..)
   , Ap
   , Ap1
   , Alt

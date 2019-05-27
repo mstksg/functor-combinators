@@ -137,6 +137,9 @@ instance HFunctor ListF where
 instance HFunctor NonEmptyF where
     hmap f (NonEmptyF xs) = NonEmptyF (fmap f xs)
 
+instance HFunctor MaybeF where
+    hmap f (MaybeF xs) = MaybeF (fmap f xs)
+
 instance HFunctor Alt.Alt where
     hmap = Alt.hoistAlt
 
@@ -184,6 +187,9 @@ instance HFunctor Reverse where
 
 instance (HFunctor s, HFunctor t) => HFunctor (ComposeT s t) where
     hmap f (ComposeT x) = ComposeT $ hmap (hmap f) x
+
+instance Functor f => HFunctor ((:.:) f) where
+    hmap f (Comp1 x) = Comp1 (f <$> x)
 
 instance HBifunctor (:*:) where
     hleft  f (x :*: y) = f x :*:   y
@@ -234,5 +240,5 @@ instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
 deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
-deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)
+deriving via (WrappedHBifunctor Comp f)   instance HFunctor (Comp f)
 
