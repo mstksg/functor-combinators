@@ -386,7 +386,9 @@ instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Final.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Fast.Ap
 instance Data.Functor.HFunctor.Interpret Control.Monad.Trans.Identity.IdentityT
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Lift.Lift
+instance Data.Functor.HFunctor.Interpret Data.Functor.Bind.Class.MaybeApply
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Backwards.Backwards
+instance Data.Functor.HFunctor.Interpret Data.Functor.Bind.Class.WrappedApplicative
 instance Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Reader.ReaderT r)
 instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 
@@ -484,11 +486,14 @@ liftFinal1 :: (forall g. c g => g a -> g b) -> Final c f a -> Final c f b
 liftFinal2 :: (forall g. c g => g a -> g b -> g d) -> Final c f a -> Final c f b -> Final c f d
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Functor Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Ap
+instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Fast.Ap
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Alternative Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Monad Control.Monad.Freer.Church.Free
 instance Data.Functor.HFunctor.Final.FreeOf Data.Pointed.Pointed Control.Applicative.Lift.Lift
+instance Data.Functor.HFunctor.Final.FreeOf Data.Pointed.Pointed Data.Functor.Bind.Class.MaybeApply
 instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Alt.Alt Control.Applicative.ListF.NonEmptyF
 instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Plus.Plus Control.Applicative.ListF.ListF
+instance Data.Functor.HFunctor.Final.FreeOf Data.Constraint.Trivial.Unconstrained Control.Monad.Trans.Identity.IdentityT
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Functor f)
 instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
 instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
@@ -907,7 +912,7 @@ injectF :: forall t f. Tensor t => f ~> F t (I t) f
 --   to give us an automatic <a>HFunctor</a> instance and save us some
 --   work.
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
-WrappedHBifunctor :: t f g a -> WrappedHBifunctor t a
+WrapHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
 data JoinT t f a
 JoinT :: t f f a -> JoinT t f a
