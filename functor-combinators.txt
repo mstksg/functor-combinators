@@ -22,6 +22,29 @@ ListF :: [f a] -> ListF f a
 newtype NonEmptyF f a
 NonEmptyF :: NonEmpty (f a) -> NonEmptyF f a
 [runNonEmptyF] :: NonEmptyF f a -> NonEmpty (f a)
+
+-- | A maybe <tt>f a</tt>. This is the free structure for a "fail"-like
+--   typeclass that only has <tt>zero :: f a</tt>.
+newtype MaybeF f a
+MaybeF :: Maybe (f a) -> MaybeF f a
+[runMaybeF] :: MaybeF f a -> Maybe (f a)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.MaybeF f)
+instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.MaybeF f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.MaybeF f)
+instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.MaybeF f)
+instance GHC.Base.Applicative f => GHC.Base.Alternative (Control.Applicative.ListF.MaybeF f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.MaybeF f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.MaybeF f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.MaybeF f)
+instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.MaybeF f a)
+instance GHC.Generics.Generic (Control.Applicative.ListF.MaybeF f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.MaybeF f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.MaybeF f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.MaybeF f)
+instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.MaybeF f a)
+instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.MaybeF f a)
+instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.MaybeF f a)
+instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.MaybeF f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.NonEmptyF f)
@@ -41,6 +64,7 @@ instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Appli
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.ListF f)
+instance GHC.Base.Applicative f => GHC.Base.Alternative (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.ListF f)
@@ -348,6 +372,7 @@ instance Data.Functor.HFunctor.Interpret Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Free.Ap
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.ListF
 instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.NonEmptyF
+instance Data.Functor.HFunctor.Interpret Control.Applicative.ListF.MaybeF
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Step
 instance Data.Functor.HFunctor.Interpret Control.Applicative.Step.Steps
 instance Data.Functor.HFunctor.Interpret Control.Alternative.Free.Alt
@@ -1281,6 +1306,19 @@ data Coyoneda (f :: Type -> Type) a
 newtype ListF f a
 ListF :: [f a] -> ListF f a
 [runListF] :: ListF f a -> [f a]
+
+-- | A non-empty list of <tt>f a</tt>s.
+--   
+--   This is the Free <a>Plus</a>.
+newtype NonEmptyF f a
+NonEmptyF :: NonEmpty (f a) -> NonEmptyF f a
+[runNonEmptyF] :: NonEmptyF f a -> NonEmpty (f a)
+
+-- | A maybe <tt>f a</tt>. This is the free structure for a "fail"-like
+--   typeclass that only has <tt>zero :: f a</tt>.
+newtype MaybeF f a
+MaybeF :: Maybe (f a) -> MaybeF f a
+[runMaybeF] :: MaybeF f a -> Maybe (f a)
 
 -- | The free <a>Applicative</a> for a <a>Functor</a> <tt>f</tt>.
 data Ap (f :: Type -> Type) a
