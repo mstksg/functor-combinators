@@ -540,7 +540,7 @@ class HBifunctor t => Tensor t where {
     type family I t :: Type -> Type;
 }
 intro1 :: Tensor t => f ~> t f (I t)
-intro2 :: (Tensor t, Functor g) => g ~> t (I t) g
+intro2 :: Tensor t => g ~> t (I t) g
 elim1 :: (Tensor t, Functor f) => t f (I t) ~> f
 elim2 :: (Tensor t, Functor g) => t (I t) g ~> g
 assoc :: (Tensor t, Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
@@ -602,7 +602,7 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where {
 --   
 --   <pre>
 --   <a>nilTM</a> @<a>Day</a> :: <a>Identity</a> <a>~&gt;</a> <a>Ap</a> f
---   <a>nilTM</a> @<tt>Comp</tt> :: <a>Identity</a> <a>~&gt;</a> <tt>Free</tt> f
+--   <a>nilTM</a> @<a>Comp</a> :: <a>Identity</a> <a>~&gt;</a> <a>Free</a> f
 --   <a>nilTM</a> @(<a>:*:</a>) :: <a>Proxy</a> <a>~&gt;</a> <a>ListF</a> f
 --   </pre>
 --   
@@ -682,7 +682,7 @@ interpretT :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 --   
 --   <pre>
 --   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
---   <a>pureT</a> @<tt>Comp</tt>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
+--   <a>pureT</a> @<a>Comp</a>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
 --   <a>pureT</a> @(<a>:*:</a>) :: <a>Plus</a> f =&gt; f a          -- <a>zero</a>
 --   </pre>
 pureT :: (Monoidal t, C (TM t) f) => I t ~> f
@@ -712,7 +712,7 @@ inL :: forall t f g a. (Monoidal t, C (TM t) g) => f a -> t f g a
 
 -- | Convenient wrapper over <a>intro2</a> that lets us introduce an
 --   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
-inR :: forall t f g a. (Monoidal t, C (TM t) f, Functor g) => g a -> t f g a
+inR :: forall t f g a. (Monoidal t, C (TM t) f) => g a -> t f g a
 
 -- | The inverse of <a>unconsTM</a>. Calls <a>nilTM</a> on the left (nil)
 --   branch, and <a>consTM</a> on the right (cons) branch.
@@ -784,6 +784,11 @@ collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (foral
 --   <a>Interpret</a> instance.
 injectF :: forall t f. Tensor t => f ~> F t (I t) f
 
+-- | A version of <a>:.:</a> and <a>Compose</a> that allows for an
+--   <a>HBifunctor</a> instance.
+data Comp f g a
+pattern Comp :: Functor f => f (g a) -> Comp f g a
+
 -- | Useful newtype to allow us to derive an <a>HFunctor</a> instance from
 --   any instance of <a>HBifunctor</a>, using -XDerivingVia.
 --   
@@ -804,6 +809,12 @@ JoinT :: t f f a -> JoinT t f a
 [runJoinT] :: JoinT t f a -> t f f a
 instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Show.Show (i a), GHC.Show.Show (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Show.Show (Data.Functor.Tensor.F t i f a)
 instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.Tensor.JoinT t f)
+instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Comp f)
+instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Tensor.Comp f g)
+instance (GHC.Base.Applicative f, GHC.Base.Applicative g) => GHC.Base.Applicative (Data.Functor.Tensor.Comp f g)
+instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Comp
+instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Comp
+instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Comp
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.JoinT t)
 instance (Data.Functor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.Functor.Tensor.I t) => Data.Functor.HFunctor.Interpret (Data.Functor.Tensor.F t i)
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
@@ -814,82 +825,6 @@ instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.In
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:*:)
 instance Data.Functor.Tensor.Tensor Data.Functor.Day.Day
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:+:)
-
-module Data.Functor.Tensor.Cons
-
--- | A lot of tensors can be factored out into a <a>Cons</a> on some
---   parameterized profunctor. For example, we have:
---   
---   <pre>
---   <a>:.:</a> = <a>Cons</a> <a>Star</a>
---   <a>Day</a> = <a>Cons</a> <a>Static</a>
---   <a>:*:</a> = <a>Cons</a> <a>ProdK</a>
---   </pre>
---   
---   In the case of <a>:.:</a>, this actually allows us to have
---   <a>HFunctor</a> and <a>Interpret</a> instances for functor
---   composition, because the representation of <a>:.:</a> normally does
---   not allow this. This gives us a proper tensor to form <a>Free</a>,
---   which makes the free monad work nicely within our system.
---   
---   In the normal case, you can just use <a>Day</a> and <a>:*:</a> instead
---   of <tt><a>DayCons</a> = <a>Cons</a> <a>Static</a></tt> and
---   <tt><a>ProdCons</a> = <a>Cons</a> <a>ProdK</a></tt>. The only one that
---   gives us extra power is <tt><a>Comp</a> = <a>Cons</a>
---   <a>Star</a></tt>.
---   
---   You can use <a>DayCons</a> and <a>ProdCons</a> as <a>Day</a> and
---   <a>:*:</a> using the provided pattern synonyms.
-data Cons :: ((Type -> Type) -> Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Type -> Type
-pattern Comp :: Functor f => f (g a) -> Comp f g a
-pattern DayCons :: Functor g => Day f g a -> DayCons f g a
-pattern ProdCons :: Functor f => (f :*: g) a -> ProdCons f g a
-
--- | Associates each <tt><a>Tensor</a> t</tt> with its <a>Cons</a>
---   equivalent, <tt><a>Cons</a> p</tt>.
---   
---   <tt>t</tt> need not always be a legal <a>Tensor</a>.
-class Monoidal (Cons p) => Uncons p t | t -> p
-uncons :: (Uncons p t, Functor g) => t f g ~> Cons p f g
-cons :: (Uncons p t, Functor f) => Cons p f g ~> t f g
-
--- | A version of <a>:.:</a> that permits <a>HBifunctor</a>, <a>Tensor</a>,
---   and <a>Monoidal</a> instances.
-type Comp = Cons Star
-unComp :: () => Comp f g a -> Functor f -> f (g a)
-comp :: f (g a) -> Comp f g a
-type DayCons = Cons Static
-unDayCons :: DayCons b c ~> Day b c
-data ProdK g a b
-ProdK :: (a -> b) -> g b -> ProdK g a b
-type ProdCons = Cons ProdK
-unProdCons :: () => ProdCons f g a -> Functor f -> (f :*: g) a
-prodCons :: (f :*: g) ~> ProdCons f g
-instance Data.Functor.Plus.Plus (Data.Functor.Tensor.Cons.ListFCo f)
-instance GHC.Base.Applicative f => GHC.Base.Applicative (Data.Functor.Tensor.Cons.ListFCo f)
-instance GHC.Base.Functor (Data.Functor.Tensor.Cons.ListFCo f)
-instance GHC.Base.Functor g => GHC.Base.Functor (Data.Functor.Tensor.Cons.ProdK g a)
-instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Profunctor.Types.Star f)
-instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Semigroupoid.Static.Static f)
-instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Cons.Cons Data.Functor.Tensor.Cons.ProdK f)
-instance Data.Functor.Tensor.Cons.Uncons Data.Profunctor.Types.Star (GHC.Generics.:.:)
-instance Data.Functor.Tensor.Cons.Uncons Data.Semigroupoid.Static.Static Data.Functor.Day.Day
-instance Data.Functor.Tensor.Cons.Uncons Data.Functor.Tensor.Cons.ProdK (GHC.Generics.:*:)
-instance Data.Functor.Alt.Alt (Data.Functor.Tensor.Cons.ListFCo f)
-instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Tensor.Cons.ListFCo
-instance Data.Functor.HFunctor.Interpret Data.Functor.Tensor.Cons.ListFCo
-instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.ProdCons
-instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Cons.ProdCons
-instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Cons.ProdCons
-instance GHC.Base.Functor g => Data.Profunctor.Unsafe.Profunctor (Data.Functor.Tensor.Cons.ProdK g)
-instance GHC.Base.Applicative g => GHC.Base.Applicative (Data.Functor.Tensor.Cons.ProdK g a)
-instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Cons.DayCons
-instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Cons.DayCons
-instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.DayCons
-instance Data.Functor.HFunctor.Internal.HBifunctor Data.Functor.Tensor.Cons.Comp
-instance Data.Functor.Tensor.Tensor Data.Functor.Tensor.Cons.Comp
-instance Data.Functor.Tensor.Monoidal Data.Functor.Tensor.Cons.Comp
-instance (forall x. GHC.Base.Functor (p g x)) => GHC.Base.Functor (Data.Functor.Tensor.Cons.Cons p f g)
 
 module Data.Functor.Combinator
 
@@ -1183,7 +1118,7 @@ interpretT :: (Monoidal t, C (TM t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 --   
 --   <pre>
 --   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
---   <a>pureT</a> @<tt>Comp</tt>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
+--   <a>pureT</a> @<a>Comp</a>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
 --   <a>pureT</a> @(<a>:*:</a>) :: <a>Plus</a> f =&gt; f a          -- <a>zero</a>
 --   </pre>
 pureT :: (Monoidal t, C (TM t) f) => I t ~> f
@@ -1198,7 +1133,7 @@ inL :: forall t f g a. (Monoidal t, C (TM t) g) => f a -> t f g a
 
 -- | Convenient wrapper over <a>intro2</a> that lets us introduce an
 --   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
-inR :: forall t f g a. (Monoidal t, C (TM t) f, Functor g) => g a -> t f g a
+inR :: forall t f g a. (Monoidal t, C (TM t) f) => g a -> t f g a
 
 -- | Infix alias for <a>getT</a>
 (!$!) :: (Monoidal t, C (TM t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
@@ -1348,9 +1283,10 @@ This1 :: f a -> These1 f g a
 That1 :: g a -> These1 f g a
 These1 :: f a -> g a -> These1 f g a
 
--- | A version of <a>:.:</a> that permits <a>HBifunctor</a>, <a>Tensor</a>,
---   and <a>Monoidal</a> instances.
-type Comp = Cons Star
+-- | A version of <a>:.:</a> and <a>Compose</a> that allows for an
+--   <a>HBifunctor</a> instance.
+data Comp f g a
+pattern Comp :: Functor f => f (g a) -> Comp f g a
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --   
@@ -1400,39 +1336,3 @@ fromFree :: FreeOf c t => t f ~> Final c f
 toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
 fromFree :: (FreeOf c t, C t (Final c f)) => t f ~> Final c f
 toFree :: (FreeOf c t, c (t f)) => Final c f ~> t f
-
--- | A lot of tensors can be factored out into a <a>Cons</a> on some
---   parameterized profunctor. For example, we have:
---   
---   <pre>
---   <a>:.:</a> = <a>Cons</a> <a>Star</a>
---   <a>Day</a> = <a>Cons</a> <a>Static</a>
---   <a>:*:</a> = <a>Cons</a> <a>ProdK</a>
---   </pre>
---   
---   In the case of <a>:.:</a>, this actually allows us to have
---   <a>HFunctor</a> and <a>Interpret</a> instances for functor
---   composition, because the representation of <a>:.:</a> normally does
---   not allow this. This gives us a proper tensor to form <a>Free</a>,
---   which makes the free monad work nicely within our system.
---   
---   In the normal case, you can just use <a>Day</a> and <a>:*:</a> instead
---   of <tt><a>DayCons</a> = <a>Cons</a> <a>Static</a></tt> and
---   <tt><a>ProdCons</a> = <a>Cons</a> <a>ProdK</a></tt>. The only one that
---   gives us extra power is <tt><a>Comp</a> = <a>Cons</a>
---   <a>Star</a></tt>.
---   
---   You can use <a>DayCons</a> and <a>ProdCons</a> as <a>Day</a> and
---   <a>:*:</a> using the provided pattern synonyms.
-data Cons :: ((Type -> Type) -> Type -> Type -> Type) -> (Type -> Type) -> (Type -> Type) -> Type -> Type
-pattern Comp :: Functor f => f (g a) -> Comp f g a
-pattern DayCons :: Functor g => Day f g a -> DayCons f g a
-pattern ProdCons :: Functor f => (f :*: g) a -> ProdCons f g a
-
--- | Associates each <tt><a>Tensor</a> t</tt> with its <a>Cons</a>
---   equivalent, <tt><a>Cons</a> p</tt>.
---   
---   <tt>t</tt> need not always be a legal <a>Tensor</a>.
-class Monoidal (Cons p) => Uncons p t | t -> p
-uncons :: (Uncons p t, Functor g) => t f g ~> Cons p f g
-cons :: (Uncons p t, Functor f) => Cons p f g ~> t f g
