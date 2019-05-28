@@ -66,6 +66,8 @@ module Data.Functor.Tensor (
   , injectF
   , WrappedHBifunctor(..)
   , JoinT(..)
+  , TannenT(..)
+  , BiffT(..)
   ) where
 
 import           Control.Applicative
@@ -73,6 +75,7 @@ import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Data.Copointed
 import           Data.Function
@@ -593,4 +596,24 @@ deriving instance Functor (t f f) => Functor (JoinT t f)
 
 instance HBifunctor t => HFunctor (JoinT t) where
     hmap f (JoinT x) = JoinT $ hbimap f f x
+
+newtype TannenT t p f g a = TannenT { runTannenT :: t (p f g) a }
+
+deriving instance Functor (t (p f g)) => Functor (TannenT t p f g)
+
+instance (HFunctor t, HBifunctor p) => HBifunctor (TannenT t p) where
+    hbimap f g (TannenT x) = TannenT (hmap (hbimap f g) x)
+
+deriving via (WrappedHBifunctor (TannenT (t :: (Type -> Type) -> Type -> Type) p) f)
+    instance (HFunctor t, HBifunctor p) => HFunctor (TannenT t p f)
+
+newtype BiffT p s t f g a = BiffT { runBiffT :: p (s f) (t g) a }
+
+deriving instance Functor (p (s f) (t g)) => Functor (BiffT p s t f g)
+
+instance (HBifunctor p, HFunctor s, HFunctor t) => HBifunctor (BiffT p s t) where
+    hbimap f g (BiffT x) = BiffT (hbimap (hmap f) (hmap g) x)
+
+deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) -> Type -> Type) s t) f)
+    instance (HBifunctor p, HFunctor s, HFunctor t) => HFunctor (BiffT p s t f)
 
