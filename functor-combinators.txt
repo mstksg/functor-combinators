@@ -286,12 +286,12 @@ Free :: (forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free f 
 --   <tt><a>MonadFree</a> f</tt>.
 reFree :: (MonadFree f m, Functor f) => Free f a -> m a
 
--- | Functor composition. <tt>'type Comp' f g a</tt> is equivalent to <tt>f
---   (g a)</tt>, and the 'pattern Comp' pattern synonym is a way of getting
---   the <tt>f (g a)</tt> in a <tt>'type Comp' f g a</tt>.
+-- | Functor composition. <tt><a>Comp</a> f g a</tt> is equivalent to <tt>f
+--   (g a)</tt>, and the <a>Comp</a> pattern synonym is a way of getting
+--   the <tt>f (g a)</tt> in a <tt><a>Comp</a> f g a</tt>.
 --   
 --   For example, <tt><a>Maybe</a> (<a>IO</a> <a>Bool</a>)</tt> is
---   <tt>'type Comp' <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
+--   <tt><a>Comp</a> <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
 --   
 --   This is mostly useful for its typeclass instances: in particular,
 --   <a>Functor</a>, <a>Applicative</a>, <a>HBifunctor</a>, and
@@ -301,19 +301,19 @@ reFree :: (MonadFree f m, Functor f) => Free f a -> m a
 --   allows for an <a>HBifunctor</a> instance.
 --   
 --   It is slightly less performant. Using <tt><a>comp</a> .
---   <a>unComp</a></tt> every once in a while will concretize a 'type Comp'
+--   <a>unComp</a></tt> every once in a while will concretize a <a>Comp</a>
 --   value (if you have <tt><a>Functor</a> f</tt>) and remove some
 --   indirection if you have a lot of chained operations.
 --   
---   The "free monoid" over 'type Comp' is <a>Free</a>.
+--   The "free monoid" over <a>Comp</a> is <a>Free</a>.
 data Comp f g a
 (:>>=) :: f x -> (x -> g a) -> Comp f g a
 
--- | Pattern match on and construct a <tt>'type Comp' f g a</tt> as if it
+-- | Pattern match on and construct a <tt><a>Comp</a> f g a</tt> as if it
 --   were <tt>f (g a)</tt>.
 pattern Comp :: Functor f => f (g a) -> Comp f g a
 
--- | "Smart constructor" for 'type Comp' that doesn't require
+-- | "Smart constructor" for <a>Comp</a> that doesn't require
 --   <tt><a>Functor</a> f</tt>.
 comp :: f (g a) -> Comp f g a
 instance GHC.Base.Functor g => GHC.Base.Functor (Control.Monad.Freer.Church.Comp f g)
@@ -1666,12 +1666,12 @@ This1 :: f a -> These1 f g a
 That1 :: g a -> These1 f g a
 These1 :: f a -> g a -> These1 f g a
 
--- | Functor composition. <tt>'type Comp' f g a</tt> is equivalent to <tt>f
---   (g a)</tt>, and the 'pattern Comp' pattern synonym is a way of getting
---   the <tt>f (g a)</tt> in a <tt>'type Comp' f g a</tt>.
+-- | Functor composition. <tt><a>Comp</a> f g a</tt> is equivalent to <tt>f
+--   (g a)</tt>, and the <a>Comp</a> pattern synonym is a way of getting
+--   the <tt>f (g a)</tt> in a <tt><a>Comp</a> f g a</tt>.
 --   
 --   For example, <tt><a>Maybe</a> (<a>IO</a> <a>Bool</a>)</tt> is
---   <tt>'type Comp' <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
+--   <tt><a>Comp</a> <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
 --   
 --   This is mostly useful for its typeclass instances: in particular,
 --   <a>Functor</a>, <a>Applicative</a>, <a>HBifunctor</a>, and
@@ -1681,14 +1681,14 @@ These1 :: f a -> g a -> These1 f g a
 --   allows for an <a>HBifunctor</a> instance.
 --   
 --   It is slightly less performant. Using <tt><a>comp</a> .
---   <a>unComp</a></tt> every once in a while will concretize a 'type Comp'
+--   <a>unComp</a></tt> every once in a while will concretize a <a>Comp</a>
 --   value (if you have <tt><a>Functor</a> f</tt>) and remove some
 --   indirection if you have a lot of chained operations.
 --   
---   The "free monoid" over 'type Comp' is <a>Free</a>.
+--   The "free monoid" over <a>Comp</a> is <a>Free</a>.
 data Comp f g a
 
--- | Pattern match on and construct a <tt>'type Comp' f g a</tt> as if it
+-- | Pattern match on and construct a <tt><a>Comp</a> f g a</tt> as if it
 --   were <tt>f (g a)</tt>.
 pattern Comp :: Functor f => f (g a) -> Comp f g a
 
