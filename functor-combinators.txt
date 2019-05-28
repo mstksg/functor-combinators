@@ -920,9 +920,21 @@ WrapHBifunctor :: t f g a -> WrappedHBifunctor t a
 data JoinT t f a
 JoinT :: t f f a -> JoinT t f a
 [runJoinT] :: JoinT t f a -> t f f a
+newtype TannenT t p f g a
+TannenT :: t (p f g) a -> TannenT t p f g a
+[runTannenT] :: TannenT t p f g a -> t (p f g) a
+newtype BiffT p s t f g a
+BiffT :: p (s f) (t g) a -> BiffT p s t f g a
+[runBiffT] :: BiffT p s t f g a -> p (s f) (t g) a
 instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Show.Show (i a), GHC.Show.Show (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Show.Show (Data.Functor.Tensor.F t i f a)
 instance forall k1 k2 (i :: k2 -> *) (a :: k2) (t :: k1 -> (k2 -> *) -> k2 -> *) (f :: k1). (GHC.Read.Read (i a), GHC.Read.Read (t f (Data.Functor.Tensor.F t i f) a)) => GHC.Read.Read (Data.Functor.Tensor.F t i f a)
 instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.Tensor.JoinT t f)
+instance forall k1 k2 k3 (t :: k3 -> * -> *) (p :: k1 -> k2 -> k3) (f :: k1) (g :: k2). GHC.Base.Functor (t (p f g)) => GHC.Base.Functor (Data.Functor.Tensor.TannenT t p f g)
+instance (Data.Functor.HFunctor.Internal.HFunctor t, Data.Functor.HFunctor.Internal.HBifunctor p) => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.TannenT t p f)
+instance forall k1 k2 k3 k4 (p :: k3 -> k4 -> * -> *) (s :: k2 -> k3) (f :: k2) (t :: k1 -> k4) (g :: k1). GHC.Base.Functor (p (s f) (t g)) => GHC.Base.Functor (Data.Functor.Tensor.BiffT p s t f g)
+instance (Data.Functor.HFunctor.Internal.HBifunctor p, Data.Functor.HFunctor.Internal.HFunctor s, Data.Functor.HFunctor.Internal.HFunctor t) => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.BiffT p s t f)
+instance (Data.Functor.HFunctor.Internal.HBifunctor p, Data.Functor.HFunctor.Internal.HFunctor s, Data.Functor.HFunctor.Internal.HFunctor t) => Data.Functor.HFunctor.Internal.HBifunctor (Data.Functor.Tensor.BiffT p s t)
+instance (Data.Functor.HFunctor.Internal.HFunctor t, Data.Functor.HFunctor.Internal.HBifunctor p) => Data.Functor.HFunctor.Internal.HBifunctor (Data.Functor.Tensor.TannenT t p)
 instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.JoinT t)
 instance (Data.Functor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.Functor.Tensor.I t) => Data.Functor.HFunctor.Interpret (Data.Functor.Tensor.F t i)
 instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
