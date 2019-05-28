@@ -7,27 +7,77 @@
 @package functor-combinators
 @version 0.1.0.0
 
+
+-- | This module provides functor combinators that are wrappers over lists
+--   or maybes of <tt>f a</tt>s, especially for their <a>Interpret</a>
+--   instances.
+--   
+--   Each one transforms a functor into some product of itself. For
+--   example, <tt><a>NonEmptyF</a> f</tt> represents <tt>f <a>:*:</a>
+--   f</tt>, or <tt>f :*: f :*: f</tt>, or <tt>f :*: f :*: f :*: f</tt>,
+--   etc.
 module Control.Applicative.ListF
 
--- | A list of <tt>f a</tt>s.
+-- | A list of <tt>f a</tt>s. Can be used to describe a product of many
+--   different values of type <tt>f a</tt>.
 --   
 --   This is the Free <a>Plus</a>.
 newtype ListF f a
 ListF :: [f a] -> ListF f a
 [runListF] :: ListF f a -> [f a]
 
--- | A non-empty list of <tt>f a</tt>s.
+-- | Map a function over the inside of a <a>ListF</a>.
+mapListF :: ([f a] -> [g b]) -> ListF f a -> ListF g b
+
+-- | A non-empty list of <tt>f a</tt>s. Can be used to describe a product
+--   between many different possible values of type <tt>f a</tt>.
+--   
+--   Essentially:
+--   
+--   <pre>
+--   <a>NonEmptyF</a> f
+--       ~ f                          -- one f
+--     <a>:+:</a> (f <a>:*:</a> f)              -- two f's
+--     :+: (f :*: f :*: f)            -- three f's
+--     :+: (f :*: f :*: f :*: f)      -- four f's
+--     :+: ...                        -- etc.
+--   </pre>
 --   
 --   This is the Free <a>Plus</a>.
 newtype NonEmptyF f a
 NonEmptyF :: NonEmpty (f a) -> NonEmptyF f a
 [runNonEmptyF] :: NonEmptyF f a -> NonEmpty (f a)
 
--- | A maybe <tt>f a</tt>. This is the free structure for a "fail"-like
---   typeclass that only has <tt>zero :: f a</tt>.
+-- | Map a function over the inside of a <a>NonEmptyF</a>.
+mapNonEmptyF :: (NonEmpty (f a) -> NonEmpty (g b)) -> NonEmptyF f a -> NonEmptyF g b
+
+-- | Convert a <a>NonEmptyF</a> into a <a>ListF</a> with at least one item.
+toListF :: NonEmptyF f ~> ListF f
+
+-- | Convert a <a>ListF</a> either a <a>NonEmptyF</a>, or a <a>Proxy</a> in
+--   the case that the list was empty.
+fromListF :: ListF f ~> (Proxy :+: NonEmptyF f)
+
+-- | A maybe <tt>f a</tt>.
+--   
+--   Can be useful for describing a "an <tt>f a</tt> that may or may not be
+--   there".
+--   
+--   This is the free structure for a "fail"-like typeclass that only has
+--   <tt>zero :: f a</tt>.
 newtype MaybeF f a
 MaybeF :: Maybe (f a) -> MaybeF f a
 [runMaybeF] :: MaybeF f a -> Maybe (f a)
+
+-- | Map a function over the inside of a <a>MaybeF</a>.
+mapMaybeF :: (Maybe (f a) -> Maybe (g b)) -> MaybeF f a -> MaybeF g b
+
+-- | Convert a <a>ListF</a> into a <a>MaybeF</a> containing the first <tt>f
+--   a</tt> in the list, if it exists.
+listToMaybeF :: ListF f ~> MaybeF f
+
+-- | Convert a <a>MaybeF</a> into a <a>ListF</a> with zero or one items.
+maybeToListF :: MaybeF f ~> ListF f
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.MaybeF f)
@@ -532,7 +582,20 @@ instance Data.Functor.HFunctor.Interpret (Data.Functor.HFunctor.Final.Final c)
 
 module Data.Functor.Apply.Free
 
--- | The free <a>Apply</a>. Basically a "non-empty" <a>Ap</a>.
+-- | One or more <tt>f</tt>s convolved with itself.
+--   
+--   Essentially:
+--   
+--   <pre>
+--   <a>Ap1</a> f
+--       ~ f                            -- one f
+--     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
+--     :+: (f <tt>Day</tt> f `Day f)           -- three f's
+--     :+: (f <tt>Day</tt> f <tt>Day</tt> f <tt>Day</tt> f)  -- four f's
+--     :+: ...                          -- etc.
+--   </pre>
+--   
+--   This is the free <a>Apply</a> --- Basically a "non-empty" <a>Ap</a>.
 --   
 --   The construction here is based on <a>Ap</a>, similar to now
 --   <a>NonEmpty</a> is built on list.
@@ -542,6 +605,10 @@ data Ap1 :: (Type -> Type) -> Type -> Type
 -- | An <a>Ap1</a> is a "non-empty" <a>Ap</a>; this function "forgets" the
 --   non-empty property and turns it back into a normal <a>Ap</a>.
 toAp :: Ap1 f ~> Ap f
+
+-- | Convert an <a>Ap</a> into an <a>Ap1</a> if possible. If the <a>Ap</a>
+--   was "empty", return the <a>Pure</a> value instead.
+fromAp :: Ap f ~> (Identity :+: Ap1 f)
 
 -- | Embed an <tt>f</tt> into <a>Ap1</a>.
 liftAp1 :: f ~> Ap1 f
@@ -562,25 +629,28 @@ instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Apply.Free.Ap1
 instance Data.Functor.HFunctor.Interpret Data.Functor.Apply.Free.Ap1
 
 
--- | There are two ways to write a <a>Monoidal</a> instance:
+-- | This module provides tools for working with binary functor
+--   combinators.
 --   
---   <ol>
---   <li>Define <a>nilTM</a>, <a>consTM</a>, <a>unconsTM</a>, and
---   <a>appendTM</a>. These allow you to manipulate <tt><a>TM</a> t</tt> as
---   if it were a "list" of <tt>f</tt>s appended together with
---   <tt>t</tt>.</li>
---   <li>Define <a>fromF</a>, <a>toF</a>, and <a>appendF</a>. <a>F</a> is a
---   special data type that literally represents a linked list of
---   <tt>f</tt>s appended together with <tt>t</tt>. The default definitions
---   of <a>nilTM</a>, <a>consTM</a>, etc. then work on this
---   representation.</li>
---   </ol>
+--   <a>Data.Functor.HFunctor</a> deals with <i>single</i> functor
+--   combinators (transforming a single functor). This module provides
+--   tools for working with combinators that combine two functors
+--   "together".
 --   
---   Additionally, this class contains <a>retractT</a>, <a>interpretT</a>,
---   <a>pureT</a>, and <a>toTM</a>. These are useful functions of using
---   <tt>t</tt> as an interpreter combinator. They can all be derived from
---   other methods, but they are provided as a part of the typeclass to
---   allow implementors to provide more efficient versions.
+--   The binary analog of <a>HFunctor</a> is <a>HBifunctor</a>: we can map
+--   a structure-transforming function over both of the transformed
+--   functors.
+--   
+--   The binary analog of <a>Interpret</a> is <a>Monoidal</a> (and
+--   <a>Tensor</a>). If your combinator is an instance of <a>Monoidal</a>,
+--   it means that you can "squish" both arguments together into an
+--   <a>Interpret</a>. For example:
+--   
+--   <pre>
+--   <a>toTM</a> :: (f <a>:*:</a> f) a -&gt; <a>ListF</a> f a
+--   <a>toTM</a> :: <a>Comp</a> f f a -&gt; <a>Free</a> f a
+--   <a>toTM</a> :: <a>Day</a> f f a -&gt; <a>Ap</a> f a
+--   </pre>
 module Data.Functor.Tensor
 
 -- | A <a>HBifunctor</a> is like an <a>HFunctor</a>, but it enhances
@@ -635,6 +705,10 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 --   
 --   The methods in this class provide us useful ways of navigating a
 --   <tt><a>Tensor</a> t</tt> with respect to this property.
+--   
+--   Realistically, there won't be any <a>Tensor</a> instances that are not
+--   also <a>Monoidal</a> instances. The two classes are separated only to
+--   help organize functionality into cleaner sub-divisions.
 class HBifunctor t => Tensor t where {
     
     -- | The identity of <tt><a>Tensor</a> t</tt>. If you "combine" <tt>f</tt>
@@ -774,14 +848,29 @@ appendTM :: Monoidal t => t (TM t f) (TM t f) ~> TM t f
 --   <a>fromF</a> . <a>toF</a> == id
 --   <a>toF</a> . <a>fromF</a> == id
 --   </pre>
+--   
+--   <a>fromF</a>, <a>toF</a>, and <a>appendF</a> are a way to completely
+--   define a <a>Monoidal</a> instance; all other methods can be inferred
+--   from them. In some cases, it can be easier to define these instead of
+--   the other ones.
 fromF :: Monoidal t => F t (I t) f ~> TM t f
 
 -- | The inverse of <a>fromF</a>: convert a <tt><a>TM</a> t f</tt> into a
 --   linked list of <tt>t f</tt>s applied to themselves. See <a>fromF</a>
 --   for more information.
+--   
+--   <a>fromF</a>, <a>toF</a>, and <a>appendF</a> are a way to completely
+--   define a <a>Monoidal</a> instance; all other methods can be inferred
+--   from them. In some cases, it can be easier to define these instead of
+--   the other ones.
 toF :: Monoidal t => TM t f ~> F t (I t) f
 
 -- | Append two linked lists of <tt>t f</tt> applied to itself together.
+--   
+--   <a>fromF</a>, <a>toF</a>, and <a>appendF</a> are a way to completely
+--   define a <a>Monoidal</a> instance; all other methods can be inferred
+--   from them. In some cases, it can be easier to define these instead of
+--   the other ones.
 appendF :: Monoidal t => t (F t (I t) f) (F t (I t) f) ~> F t (I t) f
 
 -- | A version of <a>retract</a> that works for a <a>Tensor</a>. It
@@ -917,12 +1006,20 @@ injectF :: forall t f. Tensor t => f ~> F t (I t) f
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
 WrapHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
+
+-- | Form an <a>HFunctor</a> by applying the same input twice to an
+--   <a>HBifunctor</a>.
 data JoinT t f a
 JoinT :: t f f a -> JoinT t f a
 [runJoinT] :: JoinT t f a -> t f f a
+
+-- | Form an <a>HBifunctor</a> by wrapping another <a>HBifunctor</a> in a
+--   <a>HFunctor</a>.
 newtype TannenT t p f g a
 TannenT :: t (p f g) a -> TannenT t p f g a
 [runTannenT] :: TannenT t p f g a -> t (p f g) a
+
+-- | Form an <a>HBifunctor</a> over two <a>HFunctor</a>s.
 newtype BiffT p s t f g a
 BiffT :: p (s f) (t g) a -> BiffT p s t f g a
 [runBiffT] :: BiffT p s t f g a -> p (s f) (t g) a
@@ -1157,6 +1254,10 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 --   
 --   The methods in this class provide us useful ways of navigating a
 --   <tt><a>Tensor</a> t</tt> with respect to this property.
+--   
+--   Realistically, there won't be any <a>Tensor</a> instances that are not
+--   also <a>Monoidal</a> instances. The two classes are separated only to
+--   help organize functionality into cleaner sub-divisions.
 class HBifunctor t => Tensor t where {
     
     -- | The identity of <tt><a>Tensor</a> t</tt>. If you "combine" <tt>f</tt>
@@ -1328,22 +1429,40 @@ collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (foral
 data Coyoneda (f :: Type -> Type) a
 [Coyoneda] :: forall (f :: Type -> Type) a b. () => (b -> a) -> f b -> Coyoneda f a
 
--- | A list of <tt>f a</tt>s.
+-- | A list of <tt>f a</tt>s. Can be used to describe a product of many
+--   different values of type <tt>f a</tt>.
 --   
 --   This is the Free <a>Plus</a>.
 newtype ListF f a
 ListF :: [f a] -> ListF f a
 [runListF] :: ListF f a -> [f a]
 
--- | A non-empty list of <tt>f a</tt>s.
+-- | A non-empty list of <tt>f a</tt>s. Can be used to describe a product
+--   between many different possible values of type <tt>f a</tt>.
+--   
+--   Essentially:
+--   
+--   <pre>
+--   <a>NonEmptyF</a> f
+--       ~ f                          -- one f
+--     <a>:+:</a> (f <a>:*:</a> f)              -- two f's
+--     :+: (f :*: f :*: f)            -- three f's
+--     :+: (f :*: f :*: f :*: f)      -- four f's
+--     :+: ...                        -- etc.
+--   </pre>
 --   
 --   This is the Free <a>Plus</a>.
 newtype NonEmptyF f a
 NonEmptyF :: NonEmpty (f a) -> NonEmptyF f a
 [runNonEmptyF] :: NonEmptyF f a -> NonEmpty (f a)
 
--- | A maybe <tt>f a</tt>. This is the free structure for a "fail"-like
---   typeclass that only has <tt>zero :: f a</tt>.
+-- | A maybe <tt>f a</tt>.
+--   
+--   Can be useful for describing a "an <tt>f a</tt> that may or may not be
+--   there".
+--   
+--   This is the free structure for a "fail"-like typeclass that only has
+--   <tt>zero :: f a</tt>.
 newtype MaybeF f a
 MaybeF :: Maybe (f a) -> MaybeF f a
 [runMaybeF] :: MaybeF f a -> Maybe (f a)
@@ -1351,7 +1470,20 @@ MaybeF :: Maybe (f a) -> MaybeF f a
 -- | The free <a>Applicative</a> for a <a>Functor</a> <tt>f</tt>.
 data Ap (f :: Type -> Type) a
 
--- | The free <a>Apply</a>. Basically a "non-empty" <a>Ap</a>.
+-- | One or more <tt>f</tt>s convolved with itself.
+--   
+--   Essentially:
+--   
+--   <pre>
+--   <a>Ap1</a> f
+--       ~ f                            -- one f
+--     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
+--     :+: (f <tt>Day</tt> f `Day f)           -- three f's
+--     :+: (f <tt>Day</tt> f <tt>Day</tt> f <tt>Day</tt> f)  -- four f's
+--     :+: ...                          -- etc.
+--   </pre>
+--   
+--   This is the free <a>Apply</a> --- Basically a "non-empty" <a>Ap</a>.
 --   
 --   The construction here is based on <a>Ap</a>, similar to now
 --   <a>NonEmpty</a> is built on list.
