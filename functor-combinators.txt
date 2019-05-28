@@ -360,7 +360,7 @@ module Data.Functor.HFunctor
 --   can be turned into a monad built over <tt>g</tt>.
 --   
 --   For the ability to move in and out of the enhanced functor, see
---   <tt>Interpret</tt>.
+--   <a>Interpret</a>.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -372,9 +372,9 @@ class HFunctor t
 --   <a>hmap</a> <a>id</a> == id
 --   </pre>
 --   
---   Essentially, <tt><tt>t</tt> f</tt> adds some "extra structure" to
---   <tt>f</tt>. <a>hmap</a> must swap out the functor, <i>without
---   affecting the added structure</i>.
+--   Essentially, <tt>t f</tt> adds some "extra structure" to <tt>f</tt>.
+--   <a>hmap</a> must swap out the functor, <i>without affecting the added
+--   structure</i>.
 --   
 --   For example, <tt><a>ListF</a> f a</tt> is essentially a list of <tt>f
 --   a</tt>s. If we <a>hmap</a> to swap out the <tt>f a</tt>s for <tt>g
@@ -442,13 +442,13 @@ interpretFor :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
 --   <tt>a</tt> from a <tt>t f a</tt>, if <tt>f</tt> is a valid retraction
 --   from <tt>t</tt>, and <tt>f</tt> is an instance of <a>Copointed</a>.
 --   
---   Useful <tt>f</tt>s include <tt>Identity</tt> or related newtype
---   wrappers from base:
+--   Useful <tt>f</tt>s include <a>Identity</a> or related newtype wrappers
+--   from base:
 --   
 --   <pre>
 --   <a>extractI</a>
---       :: (<a>Interpret</a> t, <a>C</a> t <tt>Identity</tt>)
---       =&gt; t <tt>Identity</tt> a
+--       :: (<a>Interpret</a> t, <a>C</a> t <a>Identity</a>)
+--       =&gt; t <a>Identity</a> a
 --       -&gt; a
 --   </pre>
 extractI :: (Interpret t, C t f, Copointed f) => t f a -> a
@@ -492,6 +492,10 @@ getI :: (Interpret t, C t (Const b)) => (forall x. f x -> b) -> t f a -> b
 --        -&gt; [Int]
 --   </pre>
 collectI :: (Interpret t, C t (Const [b])) => (forall x. f x -> b) -> t f a -> [b]
+
+-- | A constraint on <tt>a</tt> for both <tt>c a</tt> and <tt>d a</tt>.
+--   Requiring <tt><a>AndC</a> <a>Show</a> <a>Eq</a> a</tt> is the same as
+--   requiring <tt>(<a>Show</a> a, <a>Eq</a> a)</tt>.
 class (c a, d a) => AndC c d a
 instance forall k (c :: k -> GHC.Types.Constraint) (a :: k) (d :: k -> GHC.Types.Constraint). (c a, d a) => Data.Functor.HFunctor.AndC c d a
 instance (Data.Functor.HFunctor.Interpret s, Data.Functor.HFunctor.Interpret t) => Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Compose.ComposeT s t)
@@ -1146,7 +1150,7 @@ infixr 0 ~>
 --   can be turned into a monad built over <tt>g</tt>.
 --   
 --   For the ability to move in and out of the enhanced functor, see
---   <tt>Interpret</tt>.
+--   <a>Interpret</a>.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -1158,9 +1162,9 @@ class HFunctor t
 --   <a>hmap</a> <a>id</a> == id
 --   </pre>
 --   
---   Essentially, <tt><tt>t</tt> f</tt> adds some "extra structure" to
---   <tt>f</tt>. <a>hmap</a> must swap out the functor, <i>without
---   affecting the added structure</i>.
+--   Essentially, <tt>t f</tt> adds some "extra structure" to <tt>f</tt>.
+--   <a>hmap</a> must swap out the functor, <i>without affecting the added
+--   structure</i>.
 --   
 --   For example, <tt><a>ListF</a> f a</tt> is essentially a list of <tt>f
 --   a</tt>s. If we <a>hmap</a> to swap out the <tt>f a</tt>s for <tt>g
@@ -1228,13 +1232,13 @@ interpretFor :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
 --   <tt>a</tt> from a <tt>t f a</tt>, if <tt>f</tt> is a valid retraction
 --   from <tt>t</tt>, and <tt>f</tt> is an instance of <a>Copointed</a>.
 --   
---   Useful <tt>f</tt>s include <tt>Identity</tt> or related newtype
---   wrappers from base:
+--   Useful <tt>f</tt>s include <a>Identity</a> or related newtype wrappers
+--   from base:
 --   
 --   <pre>
 --   <a>extractI</a>
---       :: (<a>Interpret</a> t, <a>C</a> t <tt>Identity</tt>)
---       =&gt; t <tt>Identity</tt> a
+--       :: (<a>Interpret</a> t, <a>C</a> t <a>Identity</a>)
+--       =&gt; t <a>Identity</a> a
 --       -&gt; a
 --   </pre>
 extractI :: (Interpret t, C t f, Copointed f) => t f a -> a

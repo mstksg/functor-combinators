@@ -58,7 +58,7 @@
 </span><a name="line-58"></a><span class="hs-comment">-- @f@ can be turned into a monad built over @g@.</span><span>
 </span><a name="line-59"></a><span class="hs-comment">--</span><span>
 </span><a name="line-60"></a><span class="hs-comment">-- For the ability to move in and out of the enhanced functor, see</span><span>
-</span><a name="line-61"></a><span class="hs-comment">-- 'Interpret'.</span><span>
+</span><a name="line-61"></a><span class="hs-comment">-- 'Data.Functor.HFunctor.Interpret'.</span><span>
 </span><a name="line-62"></a><span class="hs-keyword">class</span><span> </span><a name="HFunctor"><a href="Data.Functor.HFunctor.Internal.html#HFunctor"><span class="hs-identifier">HFunctor</span></a></a><span> </span><a name="local-6989586621679176033"><a href="#local-6989586621679176033"><span class="hs-identifier">t</span></a></a><span> </span><span class="hs-keyword">where</span><span>
 </span><a name="line-63"></a><span>    </span><span class="hs-comment">-- | If we can turn an @f@ into a @g@, then we can turn a @t f@ into</span><span>
 </span><a name="line-64"></a><span>    </span><span class="hs-comment">-- a @t g@.</span><span>
@@ -69,7 +69,7 @@
 </span><a name="line-69"></a><span>    </span><span class="hs-comment">-- 'hmap' 'id' == id</span><span>
 </span><a name="line-70"></a><span>    </span><span class="hs-comment">-- @</span><span>
 </span><a name="line-71"></a><span>    </span><span class="hs-comment">--</span><span>
-</span><a name="line-72"></a><span>    </span><span class="hs-comment">-- Essentially, @'t' f@ adds some &quot;extra structure&quot; to @f@.  'hmap'</span><span>
+</span><a name="line-72"></a><span>    </span><span class="hs-comment">-- Essentially, @t f@ adds some &quot;extra structure&quot; to @f@.  'hmap'</span><span>
 </span><a name="line-73"></a><span>    </span><span class="hs-comment">-- must swap out the functor, /without affecting the added structure/.</span><span>
 </span><a name="line-74"></a><span>    </span><span class="hs-comment">--</span><span>
 </span><a name="line-75"></a><span>    </span><span class="hs-comment">-- For example, @'ListF' f a@ is essentially a list of @f a@s.  If we</span><span>
