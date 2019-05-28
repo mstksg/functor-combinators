@@ -11,20 +11,37 @@
 
 module Data.Functor.Apply.Free (
     Ap1(..)
-  , toAp
+  , toAp, fromAp
   , liftAp1
   , retractAp1
   , runAp1
+  , ap1Day, dayAp1
   ) where
 
 import           Control.Applicative.Free
 import           Control.Natural
 import           Data.Function
 import           Data.Functor.Apply
+import           Data.Functor.Day
 import           Data.Functor.HFunctor
+import           Data.Functor.Identity
 import           Data.Kind
+import           GHC.Generics
 
--- | The free 'Apply'.  Basically a "non-empty" 'Ap'.
+-- | One or more @f@s convolved with itself.
+--
+-- Essentially:
+--
+-- @
+-- 'Ap1' f
+--     ~ f                            -- one f
+--   ':+:' (f \`'Day'` f)          -- two f's
+--   :+: (f \`Day\` f \`Day\` f)           -- three f's
+--   :+: (f \`Day\` f \`Day\` f \`Day\` f)  -- four f's
+--   :+: ...                          -- etc.
+-- @
+--
+-- This is the free 'Apply' ---  Basically a "non-empty" 'Ap'.
 --
 -- The construction here is based on 'Ap', similar to now
 -- 'Data.List.NonEmpty.NonEmpty' is built on list.
@@ -35,6 +52,23 @@ data Ap1 :: (Type -> Type) -> Type -> Type where
 -- property and turns it back into a normal 'Ap'.
 toAp :: Ap1 f ~> Ap f
 toAp (Ap1 x xs) = Ap x xs
+
+-- | Convert an 'Ap' into an 'Ap1' if possible.  If the 'Ap' was "empty",
+-- return the 'Pure' value instead.
+fromAp :: Ap f ~> (Identity :+: Ap1 f)
+fromAp = \case
+    Pure x  -> L1 $ Identity x
+    Ap x xs -> R1 $ Ap1 x xs
+
+-- | An @'Ap1' f@ is just a @'Day' f ('Ap' f)@.  This brings provides the
+-- forward trip of the isomorphism.
+ap1Day :: Ap1 f ~> Day f (Ap f)
+ap1Day (Ap1 x y) = Day x y (&)
+
+-- | An @'Ap1' f@ is just a @'Day' f ('Ap' f)@.  This brings provides the
+-- return trip of the isomorphism.
+dayAp1 :: Functor f => Day f (Ap f) ~> Ap1 f
+dayAp1 (Day x y f) = Ap1 (f <$> x) ((&) <$> y)
 
 deriving instance Functor (Ap1 f)
 

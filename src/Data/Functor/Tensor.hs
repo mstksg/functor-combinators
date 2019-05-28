@@ -36,22 +36,24 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- There are two ways to write a 'Monoidal' instance:
+-- This module provides tools for working with binary functor combinators.
 --
--- 1.   Define 'nilTM', 'consTM', 'unconsTM', and 'appendTM'.  These allow
---      you to manipulate @'TM' t@ as if it were a "list" of @f@s appended
---      together with @t@.
+-- "Data.Functor.HFunctor" deals with /single/ functor combinators
+-- (transforming a single functor).  This module provides tools for working
+-- with combinators that combine two functors "together".
 --
--- 2.   Define 'fromF', 'toF', and 'appendF'.  'F' is a special data type
---      that literally represents a linked list of @f@s appended together
---      with @t@.  The default definitions of 'nilTM', 'consTM', etc. then
---      work on this representation.
+-- The binary analog of 'HFunctor' is 'HBifunctor': we can map
+-- a structure-transforming function over both of the transformed functors.
 --
--- Additionally, this class contains 'retractT', 'interpretT', 'pureT',
--- and 'toTM'.  These are useful functions of using @t@ as an interpreter
--- combinator.  They can all be derived from other methods, but they are
--- provided as a part of the typeclass to allow implementors to provide
--- more efficient versions.
+-- The binary analog of 'Interpret' is 'Monoidal' (and 'Tensor').  If your
+-- combinator is an instance of 'Monoidal', it means that you can "squish"
+-- both arguments together into an 'Interpret'.  For example:
+--
+-- @
+-- 'toTM' :: (f ':*:' f) a -> 'ListF' f a
+-- 'toTM' :: 'Comp' f f a -> 'Free' f a
+-- 'toTM' :: 'Day' f f a -> 'Ap' f a
+-- @
 module Data.Functor.Tensor (
     HBifunctor(..)
   , Tensor(..)
@@ -75,10 +77,9 @@ import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
-import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Data.Copointed
-import           Data.Function
+import           Data.Functor.Apply.Free
 import           Data.Functor.Day               (Day(..))
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Internal
@@ -100,6 +101,10 @@ import qualified Data.Functor.Day               as D
 --
 -- The methods in this class provide us useful ways of navigating
 -- a @'Tensor' t@ with respect to this property.
+--
+-- Realistically, there won't be any 'Tensor' instances that are not also
+-- 'Monoidal' instances.  The two classes are separated only to help
+-- organize functionality into cleaner sub-divisions.
 class HBifunctor t => Tensor t where
     -- | The identity of @'Tensor' t@.  If you "combine" @f@ with the
     -- identity, it leaves @f@ unchanged.
@@ -251,6 +256,11 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     -- 'fromF' . 'toF' == id
     -- 'toF' . 'fromF' == id
     -- @
+    --
+    -- 'fromF', 'toF', and 'appendF' are a way to completely define
+    -- a 'Monoidal' instance; all other methods can be inferred from them.
+    -- In some cases, it can be easier to define these instead of the other
+    -- ones.
     fromF :: F t (I t) f ~> TM t f
     fromF = \case
       Done x  -> nilTM @t x
@@ -258,12 +268,22 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
 
     -- | The inverse of 'fromF': convert a @'TM' t f@ into a linked list of
     -- @t f@s applied to themselves.  See 'fromF' for more information.
+    --
+    -- 'fromF', 'toF', and 'appendF' are a way to completely define
+    -- a 'Monoidal' instance; all other methods can be inferred from them.
+    -- In some cases, it can be easier to define these instead of the other
+    -- ones.
     toF :: TM t f ~> F t (I t) f
     toF x = case unconsTM x of
       L1 y -> Done y
       R1 z -> More . hright toF $ z
 
     -- | Append two linked lists of @t f@ applied to itself together.
+    --
+    -- 'fromF', 'toF', and 'appendF' are a way to completely define
+    -- a 'Monoidal' instance; all other methods can be inferred from them.
+    -- In some cases, it can be easier to define these instead of the other
+    -- ones.
     appendF  :: t (F t (I t) f) (F t (I t) f) ~> F t (I t) f
     appendF = toF . appendTM . hbimap fromF fromF
 
@@ -444,17 +464,14 @@ instance Monoidal (:*:) where
 
     nilTM ~Proxy = ListF []
     consTM (x :*: y) = ListF $ x : runListF y
-    unconsTM (ListF xs) = case xs of
-      []   -> L1 Proxy
-      y:ys -> R1 $ y :*: ListF ys
+    unconsTM = hright nonEmptyProd . fromListF
     appendTM (ListF xs :*: ListF ys) = ListF (xs ++ ys)
 
     fromF = \case
       Done ~Proxy -> ListF []
       More (x :*: y) -> ListF $ x : runListF (fromF y)
-    toF (ListF xs) = case xs of
-      []   -> Done Proxy
-      y:ys -> More (y :*: toF (ListF ys))
+    toF = (Done !*! More . hright toF . nonEmptyProd)
+        . fromListF
     appendF (x :*: y) = case x of
       Done ~Proxy       -> y
       More (x' :*: x'') -> More (x' :*: appendF (x'' :*: y))
@@ -479,17 +496,14 @@ instance Monoidal Day where
 
     nilTM              = pure . runIdentity
     consTM (Day x y z) = z <$> liftAp x <*> y
-    unconsTM = \case
-      Pure x -> L1 $ Identity x
-      Ap x y -> R1 $ Day x y (&)
+    unconsTM           = hright ap1Day . fromAp
     appendTM (Day x y z) = z <$> x <*> y
 
     fromF = \case
       Done (Identity x) -> pure x
       More (Day x y z)  -> z <$> liftAp x <*> fromF y
-    toF = \case
-      Pure x -> Done $ Identity x
-      Ap x y -> More $ Day x (toF y) (&)
+    toF = (Done !*! More . hright toF . ap1Day )
+        . fromAp
     appendF (Day x y f) = case x of
       Done (Identity x')  -> f x' <$> y
       More (Day x' y' f') -> More $ Day x' (appendF (Day y' y (,))) $
@@ -590,6 +604,8 @@ instance Monoidal Comp where
     pureT = pure . runIdentity
     toTM (x :>>= y) = Free $ \p b -> b x (($ p) . b . y)
 
+-- | Form an 'HFunctor' by applying the same input twice to an
+-- 'HBifunctor'.
 data JoinT t f a = JoinT { runJoinT :: t f f a }
 
 deriving instance Functor (t f f) => Functor (JoinT t f)
@@ -597,6 +613,7 @@ deriving instance Functor (t f f) => Functor (JoinT t f)
 instance HBifunctor t => HFunctor (JoinT t) where
     hmap f (JoinT x) = JoinT $ hbimap f f x
 
+-- | Form an 'HBifunctor' by wrapping another 'HBifunctor' in a 'HFunctor'.
 newtype TannenT t p f g a = TannenT { runTannenT :: t (p f g) a }
 
 deriving instance Functor (t (p f g)) => Functor (TannenT t p f g)
@@ -607,6 +624,7 @@ instance (HFunctor t, HBifunctor p) => HBifunctor (TannenT t p) where
 deriving via (WrappedHBifunctor (TannenT (t :: (Type -> Type) -> Type -> Type) p) f)
     instance (HFunctor t, HBifunctor p) => HFunctor (TannenT t p f)
 
+-- | Form an 'HBifunctor' over two 'HFunctor's.
 newtype BiffT p s t f g a = BiffT { runBiffT :: p (s f) (t g) a }
 
 deriving instance Functor (p (s f) (t g)) => Functor (BiffT p s t f g)
@@ -616,4 +634,3 @@ instance (HBifunctor p, HFunctor s, HFunctor t) => HBifunctor (BiffT p s t) wher
 
 deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) -> Type -> Type) s t) f)
     instance (HBifunctor p, HFunctor s, HFunctor t) => HFunctor (BiffT p s t f)
-

@@ -103,13 +103,13 @@ interpretFor x f = interpret f x
 -- from a @t f a@, if @f@ is a valid retraction from @t@, and @f@ is an
 -- instance of 'Copointed'.
 --
--- Useful @f@s include 'Identity' or related newtype wrappers from
+-- Useful @f@s include 'Data.Functor.Identity' or related newtype wrappers from
 -- base:
 --
 -- @
 -- 'extractI'
---     :: ('Interpret' t, 'C' t 'Identity')
---     => t 'Identity' a
+--     :: ('Interpret' t, 'C' t 'Data.Functor.Identity')
+--     => t 'Data.Functor.Identity' a
 --     -> a
 -- @
 extractI :: (Interpret t, C t f, Copointed f) => t f a -> a
@@ -189,7 +189,8 @@ instance Interpret NonEmptyF where
 -- but we don't really have that typeclass in any standard hierarchies.  We
 -- use 'Plus' here instead, but we never use '<!>'.  This would only go
 -- wrong in situations where your type supports 'zero' but not '<!>', like
--- instances of 'MonadFail' without 'MonadPlus'.
+-- instances of 'Control.Monad.Fail.MonadFail' without
+-- 'Control.Monad.MonadPlus'.
 instance Interpret MaybeF where
     type C MaybeF = Plus
     inject = MaybeF . Just
@@ -282,6 +283,8 @@ instance Interpret Reverse where
     retract = getReverse
     interpret f = f . getReverse
 
+-- | A constraint on @a@ for both @c a@ and @d a@.  Requiring @'AndC'
+-- 'Show' 'Eq' a@ is the same as requiring @('Show' a, 'Eq' a)@.
 class (c a, d a) => AndC c d a
 instance (c a, d a) => AndC c d a
 

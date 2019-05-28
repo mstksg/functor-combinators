@@ -58,7 +58,7 @@ import qualified Data.Functor.Day               as D
 -- @f@ can be turned into a monad built over @g@.
 --
 -- For the ability to move in and out of the enhanced functor, see
--- 'Interpret'.
+-- 'Data.Functor.HFunctor.Interpret'.
 class HFunctor t where
     -- | If we can turn an @f@ into a @g@, then we can turn a @t f@ into
     -- a @t g@.
@@ -69,7 +69,7 @@ class HFunctor t where
     -- 'hmap' 'id' == id
     -- @
     --
-    -- Essentially, @'t' f@ adds some "extra structure" to @f@.  'hmap'
+    -- Essentially, @t f@ adds some "extra structure" to @f@.  'hmap'
     -- must swap out the functor, /without affecting the added structure/.
     --
     -- For example, @'ListF' f a@ is essentially a list of @f a@s.  If we

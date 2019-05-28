@@ -10,6 +10,20 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE TemplateHaskell            #-}
 
+-- |
+-- Module      : Control.Applicative.Step
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- This module provides functor combinators that are the fixed points of
+-- applications of ':+:' and 'Data.Functor.These.TheseT'.  They are useful
+-- for their 'Data.Functor.HFunctor.Interpret' instances, along with their
+-- relationship to the 'Data.Functor.Tensor.Monoidal' insatnces of ':+:'
+-- and 'Data.Functor.These.TheseT'.
 module Control.Applicative.Step (
   -- * Fixed Points
     Step(..)
@@ -28,13 +42,21 @@ import           Data.Semigroup.Traversable
 import           Numeric.Natural
 import qualified Data.Map.NonEmpty          as NEM
 
--- | The fixed point of applications of ':+:' (functor sums).
+-- | An @f a@, along with a 'Natural' index.
 --
--- Intuitively, in an infinite @f ':+:' f ':+:' f ':+:' f ...@, you have
+-- @
+-- Step f a ~ ('Natural', f a)
+-- Step f   ~ ((,) 'Natural') ':.:' f       -- functor composition
+-- @
+--
+-- It is the fixed point of applications of ':+:' (functor sums).
+--
+-- Intuitively, in an infinite @f :+: f :+: f :+: f ...@, you have
 -- exactly one @f@ /somewhere/.  A @'Step' f a@ has that @f@, with
 -- a 'Natural' giving you "where" the @f@ is in the long chain.
 --
--- 'interpret'ing it requires no constraint on the target context.
+-- 'Data.Functor.HFunctor.interpret'ing it requires no constraint on the
+-- target context.
 data Step f a = Step { stepPos :: Natural, stepVal :: f a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -56,7 +78,7 @@ instance Traversable1 f => Traversable1 (Step f) where
     traverse1 f (Step n x) = Step n <$> traverse1 f x
     sequence1 (Step n x) = Step n <$> sequence1 x
 
--- | The identity functor of ':+:' (and also 'TheseT')
+-- | The identity functor of ':+:' (and also 'Data.Functor.These.TheseT')
 data VoidT a
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -70,20 +92,28 @@ deriveOrd1 ''VoidT
 absurdT :: VoidT a -> f a
 absurdT = \case {}
 
--- | The fixed point of applications of 'TheseT'.
+-- | A non-empty map of 'Natural' to @f a@.  Basically, contains multiple
+-- @f a@s, each at a given 'Natural' index.
 --
--- Intuitively, in an infinite @f `TheseT` f `TheseT` f `TheseT` f ...@,
+-- @
+-- Steps f a ~ 'M.Map' 'Natural' (f a)
+-- Steps f   ~ 'M.Map' 'Natural' ':.:' f       -- functor composition
+-- @
+--
+-- It is the fixed point of applications of 'Data.Functor.These.TheseT'.
+--
+-- Intuitively, in an infinite @f \`TheseT\` f \`TheseT\` f \`TheseT\` f ...@,
 -- each of those infinite positions may have an @f@ in them.  However,
--- because of the at-least-one nature of 'TheseT', we know we have at least
+-- because of the at-least-one nature of 'Data.Functor.These.TheseT', we know we have at least
 -- one f at one position /somewhere/.
 --
 -- A @'Steps' f a@ has potentially many @f@s, each stored at a different
 -- 'Natural' position, with the guaruntee that at least one @f@ exists.
 --
--- 'interpret'ing it requires at least an 'Alt' instance in the target
--- context, since we have to handle potentially more than one @f@.
--- However, we don't fully need 'Plus', since we know we always have at
--- least one @f@.
+-- 'Data.Functor.HFunctor.interpret'ing it requires at least an 'Alt'
+-- instance in the target context, since we have to handle potentially more
+-- than one @f@.  However, we don't fully need 'Data.Functor.Plus.Plus',
+-- since we know we always have at least one @f@.
 newtype Steps f a = Steps { getSteps :: NEM.NEMap Natural (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

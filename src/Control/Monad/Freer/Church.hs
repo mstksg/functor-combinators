@@ -8,6 +8,21 @@
 {-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE ViewPatterns              #-}
 
+-- |
+-- Module      : Control.Monad.Freer.Church
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- The church-encoded "Freer" Monad.  Basically provides the free monad in
+-- a way that is compatible with 'Data.Functor.HFunctor.HFunctor' and
+-- 'Data.Functor.HFunctor.Interpret', and 'GHC.Generisc.:.:' or
+-- 'Data.Functor.Compose' in a way that is compatible with
+-- 'Data.Functor.Tensor.HBifunctor' and 'Data.Functor.Tensor.Tensor' and
+-- 'Data.Functor.Tensor.Monoidal'.
 module Control.Monad.Freer.Church (
     Free(..), reFree
   , Comp(.., Comp, unComp), comp
@@ -19,7 +34,30 @@ import           Data.Functor.Classes
 import           Text.Read
 import qualified Control.Monad.Free             as M
 
--- | Church-encoded Freer monad
+-- | A @'Free' f@ is @f@ enhanced with "sequential binding" capabilities.
+-- It allows you to sequence multiple @f@s one after the other, and also to
+-- determine "what @f@ to sequence" based on the result of the computation
+-- so far.
+--
+-- Essentially, you can think of this as "giving @f@ a 'Monad' instance",
+-- with all that that entails ('return', '>>=', etc.).
+--
+-- Lift @f@ into it with @'Data.Functor.HFunctor.inject' :: f a -> Free
+-- f a@.  When you finally want to "use" it, you can interpret it into any
+-- monadic context:
+--
+-- @
+-- 'Data.Functor.HFunctor.interpret'
+--     :: 'Monad' g
+--     => (forall x. f x -> g x)
+--     -> 'Free' f a
+--     -> g a
+-- @
+--
+-- Under the hood, this is the Church-encoded Freer monad.  It's
+-- 'Control.Monad.Free.Free', or 'Control.Monad.Free.Church.F', but in
+-- a way that is compatible with 'Data.Functor.HFunctor.HFunctor' and
+-- 'Data.Functor.HFunctor.Interpret'.
 newtype Free f a = Free
     { runFree :: forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
     }
@@ -56,19 +94,30 @@ instance (Functor f, Eq1 f, Eq a) => Eq (Free f a) where
 instance (Functor f, Ord1 f, Ord a) => Ord (Free f a) where
     compare = compare1
 
--- | Convert a @'Free' f@ into any instance of @'MonadFree' f@.
+-- | Convert a @'Free' f@ into any instance of @'M.MonadFree' f@.
 reFree
     :: (M.MonadFree f m, Functor f)
     => Free f a
     -> m a
 reFree x = runFree x pure $ \y g -> M.wrap (g <$> y)
 
--- | A version of ':.:' and 'Data.Functor.Compose.Compose' that allows for
--- an 'HBifunctor' instance.
+-- | Functor composition.  @'Comp' f g a@ is equivalent to @f (g a)@, and
+-- the 'Comp' pattern synonym is a way of getting the @f (g a)@ in
+-- a @'Comp' f g a@.
 --
--- It is slightly less performant.  Using 'comp . unComp' every once in
--- a while will concretize a 'Comp' value (if you have @'Functor' f@) and
--- remove some indirection if you have a lot of chained operations.
+-- For example, @'Maybe' ('IO' 'Bool')@ is @'Comp' 'Maybe' 'IO' 'Bool'@.
+--
+-- This is mostly useful for its typeclass instances: in particular,
+-- 'Functor', 'Applicative', 'Data.Functor.Tensor.HBifunctor', and
+-- 'Data.Functor.Tensor.Monoidal'.
+--
+-- This is essentially a version of 'GHC.Generics.:.:' and
+-- 'Data.Functor.Compose.Compose' that allows for an
+-- 'Data.Functor.Tensor.HBifunctor' instance.
+--
+-- It is slightly less performant.  Using @'comp' . 'unComp'@ every once in
+-- a while will concretize a 'Comp' value (if you have @'Functor' f@)
+-- and remove some indirection if you have a lot of chained operations.
 --
 -- The "free monoid" over 'Comp' is 'Free'.
 data Comp f g a =
@@ -134,6 +183,8 @@ instance (Functor f, Ord1 f, Ord1 g, Ord a) => Ord (Comp f g a) where
 comp :: f (g a) -> Comp f g a
 comp = (:>>= id)
 
+-- | Pattern match on and construct a @'Comp' f g a@ as if it were @f
+-- (g a)@.
 pattern Comp :: Functor f => f (g a) -> Comp f g a
 pattern Comp { unComp } <- ((\case x :>>= f -> f <$> x)->unComp)
   where
