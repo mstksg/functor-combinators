@@ -58,6 +58,13 @@ toListF :: NonEmptyF f ~> ListF f
 --   the case that the list was empty.
 fromListF :: ListF f ~> (Proxy :+: NonEmptyF f)
 
+-- | Treat a <tt><a>NonEmptyF</a> f</tt> as a product between an <tt>f</tt>
+--   and a <tt><a>ListF</a> f</tt>.
+--   
+--   <a>nonEmptyProd</a> is the record accessor.
+pattern ProdNonEmpty :: (f :*: ListF f) a -> NonEmptyF f a
+nonEmptyProd :: () => NonEmptyF f a -> (f :*: ListF f) a
+
 -- | A maybe <tt>f a</tt>.
 --   
 --   Can be useful for describing a "an <tt>f a</tt> that may or may not be
@@ -133,42 +140,61 @@ instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.ListF
 instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.ListF f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.ListF f a)
 
+
+-- | This module provides functor combinators that are the fixed points of
+--   applications of <a>:+:</a> and <a>TheseT</a>. They are useful for
+--   their <a>Interpret</a> instances, along with their relationship to the
+--   <a>Monoidal</a> insatnces of <a>:+:</a> and <a>TheseT</a>.
 module Control.Applicative.Step
 
--- | The fixed point of applications of <a>:+:</a> (functor sums).
+-- | An <tt>f a</tt>, along with a <a>Natural</a> index.
 --   
---   Intuitively, in an infinite <tt>f <a>:+:</a> f <a>:+:</a> f <a>:+:</a>
---   f ...</tt>, you have exactly one <tt>f</tt> <i>somewhere</i>. A
---   <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with a <a>Natural</a>
---   giving you "where" the <tt>f</tt> is in the long chain.
+--   <pre>
+--   Step f a ~ (<a>Natural</a>, f a)
+--   Step f   ~ ((,) <a>Natural</a>) <a>:.:</a> f       -- functor composition
+--   </pre>
 --   
---   <tt>interpret</tt>ing it requires no constraint on the target context.
+--   It is the fixed point of applications of <a>:+:</a> (functor sums).
+--   
+--   Intuitively, in an infinite <tt>f :+: f :+: f :+: f ...</tt>, you have
+--   exactly one <tt>f</tt> <i>somewhere</i>. A <tt><a>Step</a> f a</tt>
+--   has that <tt>f</tt>, with a <a>Natural</a> giving you "where" the
+--   <tt>f</tt> is in the long chain.
+--   
+--   <a>interpret</a>ing it requires no constraint on the target context.
 data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
 [stepVal] :: Step f a -> f a
 
--- | The fixed point of applications of <tt>TheseT</tt>.
+-- | A non-empty map of <a>Natural</a> to <tt>f a</tt>. Basically, contains
+--   multiple <tt>f a</tt>s, each at a given <a>Natural</a> index.
 --   
---   Intuitively, in an infinite <tt>f <tt>TheseT</tt> f <tt>TheseT</tt> f
---   <tt>TheseT</tt> f ...</tt>, each of those infinite positions may have
---   an <tt>f</tt> in them. However, because of the at-least-one nature of
---   <tt>TheseT</tt>, we know we have at least one f at one position
---   <i>somewhere</i>.
+--   <pre>
+--   Steps f a ~ <a>Map</a> <a>Natural</a> (f a)
+--   Steps f   ~ <a>Map</a> <a>Natural</a> <a>:.:</a> f       -- functor composition
+--   </pre>
+--   
+--   It is the fixed point of applications of <a>TheseT</a>.
+--   
+--   Intuitively, in an infinite <tt>f `TheseT` f `TheseT` f `TheseT` f
+--   ...</tt>, each of those infinite positions may have an <tt>f</tt> in
+--   them. However, because of the at-least-one nature of <a>TheseT</a>, we
+--   know we have at least one f at one position <i>somewhere</i>.
 --   
 --   A <tt><a>Steps</a> f a</tt> has potentially many <tt>f</tt>s, each
 --   stored at a different <a>Natural</a> position, with the guaruntee that
 --   at least one <tt>f</tt> exists.
 --   
---   <tt>interpret</tt>ing it requires at least an <a>Alt</a> instance in
---   the target context, since we have to handle potentially more than one
---   <tt>f</tt>. However, we don't fully need <tt>Plus</tt>, since we know
---   we always have at least one <tt>f</tt>.
+--   <a>interpret</a>ing it requires at least an <a>Alt</a> instance in the
+--   target context, since we have to handle potentially more than one
+--   <tt>f</tt>. However, we don't fully need <a>Plus</a>, since we know we
+--   always have at least one <tt>f</tt>.
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
 
--- | The identity functor of <a>:+:</a> (and also <tt>TheseT</tt>)
+-- | The identity functor of <a>:+:</a> (and also <a>TheseT</a>)
 data VoidT a
 
 -- | We have a natural transformation between <a>VoidT</a> and any other
@@ -220,31 +246,74 @@ instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step f
 instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Step f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
 
+
+-- | The church-encoded <a>Freer</a> Monad. Basically provides the free
+--   monad in a way that is compatible with <a>HFunctor</a> and
+--   <a>Interpret</a>, and <a>:.:</a> or <a>Compose</a> in a way that is
+--   compatible with <a>HBifunctor</a> and <a>Tensor</a> and
+--   <a>Monoidal</a>.
 module Control.Monad.Freer.Church
 
--- | Church-encoded Freer monad
+-- | A <tt><a>Free</a> f</tt> is <tt>f</tt> enhanced with "sequential
+--   binding" capabilities. It allows you to sequence multiple <tt>f</tt>s
+--   one after the other, and also to determine "what <tt>f</tt> to
+--   sequence" based on the result of the computation so far.
+--   
+--   Essentially, you can think of this as "giving <tt>f</tt> a
+--   <a>Monad</a> instance", with all that that entails (<a>return</a>,
+--   <a>&gt;&gt;=</a>, etc.).
+--   
+--   Lift <tt>f</tt> into it with <tt><a>inject</a> :: f a -&gt; Free f
+--   a</tt>. When you finally want to "use" it, you can interpret it into
+--   any monadic context:
+--   
+--   <pre>
+--   <a>interpret</a>
+--       :: <a>Monad</a> g
+--       =&gt; (forall x. f x -&gt; g x)
+--       -&gt; <a>Free</a> f a
+--       -&gt; g a
+--   </pre>
+--   
+--   Under the hood, this is the Church-encoded Freer monad. It's
+--   <a>Free</a>, or <a>F</a>, but in a way that is compatible with
+--   <a>HFunctor</a> and <a>Interpret</a>.
 newtype Free f a
 Free :: (forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free f a
 [runFree] :: Free f a -> forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r
 
 -- | Convert a <tt><a>Free</a> f</tt> into any instance of
---   <tt><tt>MonadFree</tt> f</tt>.
+--   <tt><a>MonadFree</a> f</tt>.
 reFree :: (MonadFree f m, Functor f) => Free f a -> m a
 
--- | A version of <tt>:.:</tt> and <a>Compose</a> that allows for an
---   <tt>HBifunctor</tt> instance.
+-- | Functor composition. <tt>'type Comp' f g a</tt> is equivalent to <tt>f
+--   (g a)</tt>, and the 'pattern Comp' pattern synonym is a way of getting
+--   the <tt>f (g a)</tt> in a <tt>'type Comp' f g a</tt>.
 --   
---   It is slightly less performant. Using 'comp . unComp' every once in a
---   while will concretize a <a>Comp</a> value (if you have
---   <tt><a>Functor</a> f</tt>) and remove some indirection if you have a
---   lot of chained operations.
+--   For example, <tt><a>Maybe</a> (<a>IO</a> <a>Bool</a>)</tt> is
+--   <tt>'type Comp' <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
 --   
---   The "free monoid" over <a>Comp</a> is <a>Free</a>.
+--   This is mostly useful for its typeclass instances: in particular,
+--   <a>Functor</a>, <a>Applicative</a>, <a>HBifunctor</a>, and
+--   <a>Monoidal</a>.
+--   
+--   This is essentially a version of <a>:.:</a> and <a>Compose</a> that
+--   allows for an <a>HBifunctor</a> instance.
+--   
+--   It is slightly less performant. Using <tt><a>comp</a> .
+--   <a>unComp</a></tt> every once in a while will concretize a 'type Comp'
+--   value (if you have <tt><a>Functor</a> f</tt>) and remove some
+--   indirection if you have a lot of chained operations.
+--   
+--   The "free monoid" over 'type Comp' is <a>Free</a>.
 data Comp f g a
 (:>>=) :: f x -> (x -> g a) -> Comp f g a
+
+-- | Pattern match on and construct a <tt>'type Comp' f g a</tt> as if it
+--   were <tt>f (g a)</tt>.
 pattern Comp :: Functor f => f (g a) -> Comp f g a
 
--- | "Smart constructor" for <a>Comp</a> that doesn't require
+-- | "Smart constructor" for 'type Comp' that doesn't require
 --   <tt><a>Functor</a> f</tt>.
 comp :: f (g a) -> Comp f g a
 instance GHC.Base.Functor g => GHC.Base.Functor (Control.Monad.Freer.Church.Comp f g)
@@ -589,7 +658,7 @@ module Data.Functor.Apply.Free
 --   <pre>
 --   <a>Ap1</a> f
 --       ~ f                            -- one f
---     <a>:+:</a> (f `'Day'\` f)          -- two f's
+--     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
 --     :+: (f `Day` f `Day` f)           -- three f's
 --     :+: (f `Day` f `Day` f `Day` f)  -- four f's
 --     :+: ...                          -- etc.
@@ -623,6 +692,14 @@ retractAp1 :: Apply f => Ap1 f ~> f
 -- | Interpret an <tt><a>Ap</a> f</tt> into some <a>Apply</a> context
 --   <tt>g</tt>.
 runAp1 :: Apply g => (f ~> g) -> Ap1 f ~> g
+
+-- | An <tt><a>Ap1</a> f</tt> is just a <tt><a>Day</a> f (<a>Ap</a>
+--   f)</tt>. This brings provides the forward trip of the isomorphism.
+ap1Day :: Ap1 f ~> Day f (Ap f)
+
+-- | An <tt><a>Ap1</a> f</tt> is just a <tt><a>Day</a> f (<a>Ap</a>
+--   f)</tt>. This brings provides the return trip of the isomorphism.
+dayAp1 :: Functor f => Day f (Ap f) ~> Ap1 f
 instance GHC.Base.Functor (Data.Functor.Apply.Free.Ap1 f)
 instance Data.Functor.Bind.Class.Apply (Data.Functor.Apply.Free.Ap1 f)
 instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Apply.Free.Ap1
@@ -1477,7 +1554,7 @@ data Ap (f :: Type -> Type) a
 --   <pre>
 --   <a>Ap1</a> f
 --       ~ f                            -- one f
---     <a>:+:</a> (f `'Day'\` f)          -- two f's
+--     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
 --     :+: (f `Day` f `Day` f)           -- three f's
 --     :+: (f `Day` f `Day` f `Day` f)  -- four f's
 --     :+: ...                          -- etc.
@@ -1490,38 +1567,75 @@ data Ap (f :: Type -> Type) a
 data Ap1 :: (Type -> Type) -> Type -> Type
 data Alt (f :: Type -> Type) a
 
--- | Church-encoded Freer monad
+-- | A <tt><a>Free</a> f</tt> is <tt>f</tt> enhanced with "sequential
+--   binding" capabilities. It allows you to sequence multiple <tt>f</tt>s
+--   one after the other, and also to determine "what <tt>f</tt> to
+--   sequence" based on the result of the computation so far.
+--   
+--   Essentially, you can think of this as "giving <tt>f</tt> a
+--   <a>Monad</a> instance", with all that that entails (<a>return</a>,
+--   <a>&gt;&gt;=</a>, etc.).
+--   
+--   Lift <tt>f</tt> into it with <tt><a>inject</a> :: f a -&gt; Free f
+--   a</tt>. When you finally want to "use" it, you can interpret it into
+--   any monadic context:
+--   
+--   <pre>
+--   <a>interpret</a>
+--       :: <a>Monad</a> g
+--       =&gt; (forall x. f x -&gt; g x)
+--       -&gt; <a>Free</a> f a
+--       -&gt; g a
+--   </pre>
+--   
+--   Under the hood, this is the Church-encoded Freer monad. It's
+--   <a>Free</a>, or <a>F</a>, but in a way that is compatible with
+--   <a>HFunctor</a> and <a>Interpret</a>.
 data Free f a
 
--- | The fixed point of applications of <a>:+:</a> (functor sums).
+-- | An <tt>f a</tt>, along with a <a>Natural</a> index.
 --   
---   Intuitively, in an infinite <tt>f <a>:+:</a> f <a>:+:</a> f <a>:+:</a>
---   f ...</tt>, you have exactly one <tt>f</tt> <i>somewhere</i>. A
---   <tt><a>Step</a> f a</tt> has that <tt>f</tt>, with a <a>Natural</a>
---   giving you "where" the <tt>f</tt> is in the long chain.
+--   <pre>
+--   Step f a ~ (<a>Natural</a>, f a)
+--   Step f   ~ ((,) <a>Natural</a>) <a>:.:</a> f       -- functor composition
+--   </pre>
 --   
---   <tt>interpret</tt>ing it requires no constraint on the target context.
+--   It is the fixed point of applications of <a>:+:</a> (functor sums).
+--   
+--   Intuitively, in an infinite <tt>f :+: f :+: f :+: f ...</tt>, you have
+--   exactly one <tt>f</tt> <i>somewhere</i>. A <tt><a>Step</a> f a</tt>
+--   has that <tt>f</tt>, with a <a>Natural</a> giving you "where" the
+--   <tt>f</tt> is in the long chain.
+--   
+--   <a>interpret</a>ing it requires no constraint on the target context.
 data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
 [stepVal] :: Step f a -> f a
 
--- | The fixed point of applications of <tt>TheseT</tt>.
+-- | A non-empty map of <a>Natural</a> to <tt>f a</tt>. Basically, contains
+--   multiple <tt>f a</tt>s, each at a given <a>Natural</a> index.
 --   
---   Intuitively, in an infinite <tt>f <tt>TheseT</tt> f <tt>TheseT</tt> f
---   <tt>TheseT</tt> f ...</tt>, each of those infinite positions may have
---   an <tt>f</tt> in them. However, because of the at-least-one nature of
---   <tt>TheseT</tt>, we know we have at least one f at one position
---   <i>somewhere</i>.
+--   <pre>
+--   Steps f a ~ <a>Map</a> <a>Natural</a> (f a)
+--   Steps f   ~ <a>Map</a> <a>Natural</a> <a>:.:</a> f       -- functor composition
+--   </pre>
+--   
+--   It is the fixed point of applications of <a>TheseT</a>.
+--   
+--   Intuitively, in an infinite <tt>f `TheseT` f `TheseT` f `TheseT` f
+--   ...</tt>, each of those infinite positions may have an <tt>f</tt> in
+--   them. However, because of the at-least-one nature of <a>TheseT</a>, we
+--   know we have at least one f at one position <i>somewhere</i>.
 --   
 --   A <tt><a>Steps</a> f a</tt> has potentially many <tt>f</tt>s, each
 --   stored at a different <a>Natural</a> position, with the guaruntee that
 --   at least one <tt>f</tt> exists.
 --   
---   <tt>interpret</tt>ing it requires at least an <a>Alt</a> instance in
---   the target context, since we have to handle potentially more than one
---   <tt>f</tt>. However, we don't fully need <tt>Plus</tt>, since we know
---   we always have at least one <tt>f</tt>.
+--   <a>interpret</a>ing it requires at least an <a>Alt</a> instance in the
+--   target context, since we have to handle potentially more than one
+--   <tt>f</tt>. However, we don't fully need <a>Plus</a>, since we know we
+--   always have at least one <tt>f</tt>.
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
@@ -1552,16 +1666,30 @@ This1 :: f a -> These1 f g a
 That1 :: g a -> These1 f g a
 These1 :: f a -> g a -> These1 f g a
 
--- | A version of <tt>:.:</tt> and <a>Compose</a> that allows for an
---   <tt>HBifunctor</tt> instance.
+-- | Functor composition. <tt>'type Comp' f g a</tt> is equivalent to <tt>f
+--   (g a)</tt>, and the 'pattern Comp' pattern synonym is a way of getting
+--   the <tt>f (g a)</tt> in a <tt>'type Comp' f g a</tt>.
 --   
---   It is slightly less performant. Using 'comp . unComp' every once in a
---   while will concretize a <a>Comp</a> value (if you have
---   <tt><a>Functor</a> f</tt>) and remove some indirection if you have a
---   lot of chained operations.
+--   For example, <tt><a>Maybe</a> (<a>IO</a> <a>Bool</a>)</tt> is
+--   <tt>'type Comp' <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
 --   
---   The "free monoid" over <a>Comp</a> is <a>Free</a>.
+--   This is mostly useful for its typeclass instances: in particular,
+--   <a>Functor</a>, <a>Applicative</a>, <a>HBifunctor</a>, and
+--   <a>Monoidal</a>.
+--   
+--   This is essentially a version of <a>:.:</a> and <a>Compose</a> that
+--   allows for an <a>HBifunctor</a> instance.
+--   
+--   It is slightly less performant. Using <tt><a>comp</a> .
+--   <a>unComp</a></tt> every once in a while will concretize a 'type Comp'
+--   value (if you have <tt><a>Functor</a> f</tt>) and remove some
+--   indirection if you have a lot of chained operations.
+--   
+--   The "free monoid" over 'type Comp' is <a>Free</a>.
 data Comp f g a
+
+-- | Pattern match on and construct a <tt>'type Comp' f g a</tt> as if it
+--   were <tt>f (g a)</tt>.
 pattern Comp :: Functor f => f (g a) -> Comp f g a
 
 -- | A simple way to inject/reject into any eventual typeclass.
