@@ -340,6 +340,47 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f) => Data.Functor.Class
 instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f, GHC.Classes.Eq a) => GHC.Classes.Eq (Control.Monad.Freer.Church.Free f a)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, GHC.Classes.Ord a) => GHC.Classes.Ord (Control.Monad.Freer.Church.Free f a)
 
+
+-- | This module provides tools for working with unary functor combinators.
+--   
+--   These are types <tt>f</tt> that take a functor <tt>f</tt> and return a
+--   new functor <tt>t f</tt>, enhancing <tt>f</tt> with new structure and
+--   abilities.
+--   
+--   The main operations these combinators support are:
+--   
+--   <pre>
+--   <a>hmap</a> :: (forall x. f x -&gt; g x) -&gt; t f a -&gt; t g a
+--   </pre>
+--   
+--   which lets you "swap out" the functor being transformed,
+--   
+--   <pre>
+--   <a>inject</a> :: f a -&gt; t f a
+--   </pre>
+--   
+--   which lets you "lift" an <tt>f a</tt> into its transformed version,
+--   and also:
+--   
+--   <pre>
+--   <a>interpret</a>
+--       :: C t g
+--       =&gt; (forall x. f a -&gt; g a)
+--       -&gt; t f a
+--       -&gt; g a
+--   </pre>
+--   
+--   that lets you "interpret" a <tt>t f a</tt> into a context <tt>g
+--   a</tt>, essentially "running" the computaiton that it encodes. The
+--   context is required to have a typeclass constraints that reflects what
+--   is "required" to be able to run a functor combinator.
+--   
+--   Every single instance provides different tools. Check out the instance
+--   list for a nice list of useful combinators, or also the README for a
+--   high-level rundown.
+--   
+--   See <a>Data.Functor.Tensor</a> for binary functor combinators that mix
+--   together two or more different functors.
 module Data.Functor.HFunctor
 
 -- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
@@ -570,10 +611,10 @@ fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
 --   For example, we have:
 --   
 --   <pre>
---   <a>toFinal</a> :: <tt>Steps</tt> f ~&gt; <a>Final</a> <a>Alt</a> f
+--   <a>toFinal</a> :: <a>Steps</a> f ~&gt; <a>Final</a> <a>Alt</a> f
 --   </pre>
 --   
---   In this process, we lose the "positional" structure of <tt>Steps</tt>.
+--   In this process, we lose the "positional" structure of <a>Steps</a>.
 --   
 --   In the case where <a>toFinal</a> doesn't lose any information, this
 --   will form an isomorphism with <a>fromFinal</a>, and <tt>t</tt> is
@@ -662,7 +703,7 @@ module Data.Functor.Apply.Free
 --   <pre>
 --   <a>Ap1</a> f
 --       ~ f                            -- one f
---     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
+--     <a>:+:</a> (f `'Day'\` f)          -- two f's
 --     :+: (f `Day` f `Day` f)           -- three f's
 --     :+: (f `Day` f `Day` f `Day` f)  -- four f's
 --     :+: ...                          -- etc.
@@ -715,7 +756,7 @@ instance Data.Functor.HFunctor.Interpret Data.Functor.Apply.Free.Ap1
 --   
 --   <a>Data.Functor.HFunctor</a> deals with <i>single</i> functor
 --   combinators (transforming a single functor). This module provides
---   tools for working with combinators that combine two functors
+--   tools for working with combinators that combine and mix two functors
 --   "together".
 --   
 --   The binary analog of <a>HFunctor</a> is <a>HBifunctor</a>: we can map
@@ -1030,8 +1071,8 @@ extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
 --   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
 --   
 --   <ul>
---   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <tt>Unconstrained</tt>,
---   there are no constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Unconstrained</a>, there
+--   are no constraints on <tt>b</tt></li>
 --   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
 --   needs to be an instance of <a>Semigroup</a></li>
 --   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Applicative</a>,
@@ -1062,7 +1103,7 @@ infixr 5 !*!
 --   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
 --   a</tt>.
 --   
---   This will work if <tt><a>C</a> t</tt> is <tt>Unconstrained</tt>,
+--   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
 --   <a>Apply</a>, or <a>Applicative</a>.
 collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
@@ -1470,8 +1511,8 @@ extractT :: (Monoidal t, C (TM t) f, Copointed f) => t f f a -> a
 --   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
 --   
 --   <ul>
---   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <tt>Unconstrained</tt>,
---   there are no constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Unconstrained</a>, there
+--   are no constraints on <tt>b</tt></li>
 --   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
 --   needs to be an instance of <a>Semigroup</a></li>
 --   <li>If <tt><a>C</a> (<a>TM</a> t)</tt> is <a>Applicative</a>,
@@ -1502,7 +1543,7 @@ infixr 5 !*!
 --   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
 --   a</tt>.
 --   
---   This will work if <tt><a>C</a> t</tt> is <tt>Unconstrained</tt>,
+--   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
 --   <a>Apply</a>, or <a>Applicative</a>.
 collectT :: (Monoidal t, C (TM t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
@@ -1558,7 +1599,7 @@ data Ap (f :: Type -> Type) a
 --   <pre>
 --   <a>Ap1</a> f
 --       ~ f                            -- one f
---     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
+--     <a>:+:</a> (f `'Day'\` f)          -- two f's
 --     :+: (f `Day` f `Day` f)           -- three f's
 --     :+: (f `Day` f `Day` f `Day` f)  -- four f's
 --     :+: ...                          -- etc.
