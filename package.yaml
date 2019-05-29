@@ -24,6 +24,7 @@ dependencies:
 - containers
 - deriving-compat
 - free
+- recursion-schemes
 - kan-extensions
 - mmorph
 - mtl

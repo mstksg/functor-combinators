@@ -55,6 +55,9 @@ import qualified Data.Map.NonEmpty          as NEM
 -- exactly one @f@ /somewhere/.  A @'Step' f a@ has that @f@, with
 -- a 'Natural' giving you "where" the @f@ is in the long chain.
 --
+-- Can be useful for using with the 'Data.Functor.Tensor.Monoidal' instance
+-- of ':+:'.
+--
 -- 'Data.Functor.HFunctor.interpret'ing it requires no constraint on the
 -- target context.
 data Step f a = Step { stepPos :: Natural, stepVal :: f a }
@@ -110,10 +113,12 @@ absurdT = \case {}
 -- A @'Steps' f a@ has potentially many @f@s, each stored at a different
 -- 'Natural' position, with the guaruntee that at least one @f@ exists.
 --
+-- Can be useful for using with the 'Data.Functor.Tensor.Monoidal' instance
+-- of 'Data.Functor.These.TheseT'.
+--
 -- 'Data.Functor.HFunctor.interpret'ing it requires at least an 'Alt'
 -- instance in the target context, since we have to handle potentially more
--- than one @f@.  However, we don't fully need 'Data.Functor.Plus.Plus',
--- since we know we always have at least one @f@.
+-- than one @f@.
 newtype Steps f a = Steps { getSteps :: NEM.NEMap Natural (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

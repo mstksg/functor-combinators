@@ -6,7 +6,22 @@
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
+-- |
+-- Module      : Data.Functor.HFunctor.Final
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- The free 'Apply'.  Provides 'Ap1' and various utility methods.  See
+-- 'Ap1' for more details.
+--
+-- Ideally 'Ap1' would be in the /free/ package.  However, it is defined
+-- here for now.
 module Data.Functor.HFunctor.Final (
     Final(..)
   , fromFinal, toFinal
@@ -27,6 +42,7 @@ import           Control.Monad.Reader
 import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Constraint.Trivial
+import           Data.Functor.Apply.Free
 import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor
 import           Data.Functor.Plus
@@ -36,9 +52,10 @@ import qualified Control.Applicative.Free.Fast as FAF
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --
--- In a way, this is the "ultimate" 'Interpret' instance.  You can use this
--- to inject an @f@ into a free structure of any typeclass.  If you want
--- @f@ to have a 'Monad' instance, for example, just use
+-- In a way, this is the "ultimate" multi-purpose 'Interpret' instance.
+-- You can use this to inject an @f@ into a free structure of any
+-- typeclass.  If you want @f@ to have a 'Monad' instance, for example,
+-- just use
 --
 -- @
 -- 'inject' :: f a -> 'Final' 'Monad' f a
@@ -52,6 +69,16 @@ import qualified Control.Applicative.Free.Fast as FAF
 --
 -- Essentially, @'Final' c@ is the "free c".  @'Final' 'Monad'@ is the free
 -- 'Monad', etc.
+--
+-- 'Final' can theoretically replace 'Ap', 'Ap1', 'ListF', 'NonEmptyF',
+-- 'MaybeF', 'Free', 'Data.Functor.Identity.Identity', 'Coyoneda', and
+-- other instances of 'FreeOf', if you don't care about being able to
+-- pattern match on explicit structure.
+--
+-- However, it cannot replace 'Interpret' instances that are not free
+-- structures, like 'Control.Applicative.Step.Step',
+-- 'Control.Applicative.Step.Steps',
+-- 'Control.Applicative.Backwards.Backwards', etc.
 --
 -- Note that this doesn't have instances for /all/ the typeclasses you
 -- could lift things into; you probably have to define your own if you want
@@ -179,6 +206,7 @@ instance Alt (Final Plus f) where
 instance Plus (Final Plus f) where
     zero = liftFinal0 zero
 
+-- | Re-interpret the context under a 'Final'.
 hoistFinalC
     :: (forall g x. (c g => g x) -> (d g => g x))
     -> Final c f a
@@ -212,10 +240,11 @@ instance Interpret (Final c) where
 -- we have:
 --
 -- @
--- 'toFinal' :: 'Steps' f ~> 'Final' 'Alt' f
+-- 'toFinal' :: 'Control.Applicative.Step.Steps' f ~> 'Final' 'Alt' f
 -- @
 --
--- In this process, we lose the "positional" structure of 'Steps'.
+-- In this process, we lose the "positional" structure of
+-- 'Control.Applicative.Step.Steps'.
 --
 -- In the case where 'toFinal' doesn't lose any information, this will form
 -- an isomorphism with 'fromFinal', and @t@ is known as the "Free @c@".
@@ -267,6 +296,7 @@ class Interpret t => FreeOf c t | t -> c where
 
 instance FreeOf Functor Coyoneda
 instance FreeOf Applicative Ap
+instance FreeOf Apply Ap1
 instance FreeOf Applicative FAF.Ap
 instance FreeOf Alternative Alt.Alt
 instance FreeOf Monad Free

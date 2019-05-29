@@ -1,15 +1,48 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 
+-- |
+-- Module      : Data.Functor.Combinator
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- Functor combinators and tools (typeclasses and utiility functions) to
+-- manipulate them.
+--
+-- Classes include:
+--
+-- *  'HFunctor' and 'HBifunctor', used to swap out the functors that the
+--    combinators modify
+-- *  'Interpret', 'Tensor', 'Monoidal', used to inject and interpret
+--    functor values with respect to their combinators.
+--
+-- We have some helpful utility functions, as well, built on top of these
+-- typeclasses.
+--
+-- The second half of this module exports the various useful functor
+-- combinators that can modify functors to add extra functionality, or join
+-- two functors together and mix them in different ways.  Use them to build
+-- your final structure by combining simpler ones in composable ways!
+--
+-- See README for a tutorial and a rundown on each different functor
+-- combinator.
+--
 module Data.Functor.Combinator (
-  -- ** Single Functors
+  -- * Classes
     type (~>)
+  -- ** Single Functors
   , HFunctor(..)
   , Interpret(..), interpretFor
+  -- *** Utility
   , extractI, getI, collectI
   -- ** Multi-Functors
   , HBifunctor(..)
   , Tensor(I)
   , Monoidal(TM, retractT, interpretT, pureT, toTM)
+  -- *** Utility
   , inL, inR
   , (!$!)
   , extractT, getT, (!*!), collectT

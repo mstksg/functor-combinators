@@ -9,6 +9,20 @@
 {-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 
+-- |
+-- Module      : Data.Functor.Apply.Free
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- The free 'Apply'.  Provides 'Ap1' and various utility methods.  See
+-- 'Ap1' for more details.
+--
+-- Ideally 'Ap1' would be in the /free/ package.  However, it is defined
+-- here for now.
 module Data.Functor.Apply.Free (
     Ap1(..)
   , toAp, fromAp
@@ -35,11 +49,17 @@ import           GHC.Generics
 -- @
 -- 'Ap1' f
 --     ~ f                            -- one f
---   ':+:' (f \`'Day'` f)          -- two f's
+--   ':+:' (f \`'Day'\\` f)          -- two f's
 --   :+: (f \`Day\` f \`Day\` f)           -- three f's
 --   :+: (f \`Day\` f \`Day\` f \`Day\` f)  -- four f's
 --   :+: ...                          -- etc.
 -- @
+--
+-- Useful if you want to promote an @f@ to a situation with "at least one
+-- @f@ sequenced with itself".
+--
+-- Mostly useful for its 'HFunctor' and 'Interpret' instance, along with
+-- its relationship with 'Ap' and 'Day'.
 --
 -- This is the free 'Apply' ---  Basically a "non-empty" 'Ap'.
 --

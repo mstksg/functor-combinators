@@ -40,7 +40,7 @@
 --
 -- "Data.Functor.HFunctor" deals with /single/ functor combinators
 -- (transforming a single functor).  This module provides tools for working
--- with combinators that combine two functors "together".
+-- with combinators that combine and mix two functors "together".
 --
 -- The binary analog of 'HFunctor' is 'HBifunctor': we can map
 -- a structure-transforming function over both of the transformed functors.
@@ -373,7 +373,8 @@ extractT = copoint . retractT
 -- Note that depending on the constraints on the interpretation of @t@, you
 -- may have extra constraints on @b@.
 --
--- *    If @'C' ('TM' t)@ is 'Unconstrained', there are no constraints on @b@
+-- *    If @'C' ('TM' t)@ is 'Data.Constraint.Trivial.Unconstrained', there
+--      are no constraints on @b@
 -- *    If @'C' ('TM' t)@ is 'Apply', @b@ needs to be an instance of 'Semigroup'
 -- *    If @'C' ('TM' t)@ is 'Applicative', @b@ needs to be an instance of 'Monoid'
 --
@@ -422,7 +423,8 @@ infixr 5 !*!
 -- | Useful wrapper over 'getT' to allow you to collect a @b@ from all
 -- instances of @f@ and @g@ inside a @t f g a@.
 --
--- This will work if @'C' t@ is 'Unconstrained', 'Apply', or 'Applicative'.
+-- This will work if @'C' t@ is 'Data.Constraint.Trivial.Unconstrained',
+-- 'Apply', or 'Applicative'.
 collectT
     :: (Monoidal t, C (TM t) (Const [b]))
     => (forall x. f x -> b)
