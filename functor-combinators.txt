@@ -161,6 +161,9 @@ module Control.Applicative.Step
 --   has that <tt>f</tt>, with a <a>Natural</a> giving you "where" the
 --   <tt>f</tt> is in the long chain.
 --   
+--   Can be useful for using with the <a>Monoidal</a> instance of
+--   <a>:+:</a>.
+--   
 --   <a>interpret</a>ing it requires no constraint on the target context.
 data Step f a
 Step :: Natural -> f a -> Step f a
@@ -186,10 +189,12 @@ Step :: Natural -> f a -> Step f a
 --   stored at a different <a>Natural</a> position, with the guaruntee that
 --   at least one <tt>f</tt> exists.
 --   
+--   Can be useful for using with the <a>Monoidal</a> instance of
+--   <a>TheseT</a>.
+--   
 --   <a>interpret</a>ing it requires at least an <a>Alt</a> instance in the
 --   target context, since we have to handle potentially more than one
---   <tt>f</tt>. However, we don't fully need <a>Plus</a>, since we know we
---   always have at least one <tt>f</tt>.
+--   <tt>f</tt>.
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
@@ -559,14 +564,88 @@ instance Data.Functor.HFunctor.Interpret Data.Functor.Bind.Class.WrappedApplicat
 instance Data.Functor.HFunctor.Interpret (Control.Monad.Trans.Reader.ReaderT r)
 instance Data.Functor.HFunctor.Interpret Data.Functor.Reverse.Reverse
 
+
+-- | The free <a>Apply</a>. Provides <a>Ap1</a> and various utility
+--   methods. See <a>Ap1</a> for more details.
+--   
+--   Ideally <a>Ap1</a> would be in the <i>free</i> package. However, it is
+--   defined here for now.
+module Data.Functor.Apply.Free
+
+-- | One or more <tt>f</tt>s convolved with itself.
+--   
+--   Essentially:
+--   
+--   <pre>
+--   <a>Ap1</a> f
+--       ~ f                            -- one f
+--     <a>:+:</a> (f `'Day'\\` f)          -- two f's
+--     :+: (f `Day` f `Day` f)           -- three f's
+--     :+: (f `Day` f `Day` f `Day` f)  -- four f's
+--     :+: ...                          -- etc.
+--   </pre>
+--   
+--   Useful if you want to promote an <tt>f</tt> to a situation with "at
+--   least one <tt>f</tt> sequenced with itself".
+--   
+--   Mostly useful for its <a>HFunctor</a> and <a>Interpret</a> instance,
+--   along with its relationship with <a>Ap</a> and <a>Day</a>.
+--   
+--   This is the free <a>Apply</a> --- Basically a "non-empty" <a>Ap</a>.
+--   
+--   The construction here is based on <a>Ap</a>, similar to now
+--   <a>NonEmpty</a> is built on list.
+data Ap1 :: (Type -> Type) -> Type -> Type
+[Ap1] :: f a -> Ap f (a -> b) -> Ap1 f b
+
+-- | An <a>Ap1</a> is a "non-empty" <a>Ap</a>; this function "forgets" the
+--   non-empty property and turns it back into a normal <a>Ap</a>.
+toAp :: Ap1 f ~> Ap f
+
+-- | Convert an <a>Ap</a> into an <a>Ap1</a> if possible. If the <a>Ap</a>
+--   was "empty", return the <a>Pure</a> value instead.
+fromAp :: Ap f ~> (Identity :+: Ap1 f)
+
+-- | Embed an <tt>f</tt> into <a>Ap1</a>.
+liftAp1 :: f ~> Ap1 f
+
+-- | Extract the <tt>f</tt> out of the <a>Ap1</a>.
+--   
+--   <pre>
+--   <a>retractAp1</a> . <a>liftAp1</a> == id
+--   </pre>
+retractAp1 :: Apply f => Ap1 f ~> f
+
+-- | Interpret an <tt><a>Ap</a> f</tt> into some <a>Apply</a> context
+--   <tt>g</tt>.
+runAp1 :: Apply g => (f ~> g) -> Ap1 f ~> g
+
+-- | An <tt><a>Ap1</a> f</tt> is just a <tt><a>Day</a> f (<a>Ap</a>
+--   f)</tt>. This brings provides the forward trip of the isomorphism.
+ap1Day :: Ap1 f ~> Day f (Ap f)
+
+-- | An <tt><a>Ap1</a> f</tt> is just a <tt><a>Day</a> f (<a>Ap</a>
+--   f)</tt>. This brings provides the return trip of the isomorphism.
+dayAp1 :: Functor f => Day f (Ap f) ~> Ap1 f
+instance GHC.Base.Functor (Data.Functor.Apply.Free.Ap1 f)
+instance Data.Functor.Bind.Class.Apply (Data.Functor.Apply.Free.Ap1 f)
+instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Apply.Free.Ap1
+instance Data.Functor.HFunctor.Interpret Data.Functor.Apply.Free.Ap1
+
+
+-- | The free <a>Apply</a>. Provides <a>Ap1</a> and various utility
+--   methods. See <a>Ap1</a> for more details.
+--   
+--   Ideally <a>Ap1</a> would be in the <i>free</i> package. However, it is
+--   defined here for now.
 module Data.Functor.HFunctor.Final
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --   
---   In a way, this is the "ultimate" <a>Interpret</a> instance. You can
---   use this to inject an <tt>f</tt> into a free structure of any
---   typeclass. If you want <tt>f</tt> to have a <a>Monad</a> instance, for
---   example, just use
+--   In a way, this is the "ultimate" multi-purpose <a>Interpret</a>
+--   instance. You can use this to inject an <tt>f</tt> into a free
+--   structure of any typeclass. If you want <tt>f</tt> to have a
+--   <a>Monad</a> instance, for example, just use
 --   
 --   <pre>
 --   <a>inject</a> :: f a -&gt; <a>Final</a> <a>Monad</a> f a
@@ -580,6 +659,16 @@ module Data.Functor.HFunctor.Final
 --   
 --   Essentially, <tt><a>Final</a> c</tt> is the "free c". <tt><a>Final</a>
 --   <a>Monad</a></tt> is the free <a>Monad</a>, etc.
+--   
+--   <a>Final</a> can theoretically replace <a>Ap</a>, <a>Ap1</a>,
+--   <a>ListF</a>, <a>NonEmptyF</a>, <a>MaybeF</a>, <a>Free</a>,
+--   <a>Identity</a>, <a>Coyoneda</a>, and other instances of
+--   <a>FreeOf</a>, if you don't care about being able to pattern match on
+--   explicit structure.
+--   
+--   However, it cannot replace <a>Interpret</a> instances that are not
+--   free structures, like <a>Step</a>, <a>Steps</a>, <a>Backwards</a>,
+--   etc.
 --   
 --   Note that this doesn't have instances for <i>all</i> the typeclasses
 --   you could lift things into; you probably have to define your own if
@@ -641,6 +730,8 @@ fromFree :: FreeOf c t => t f ~> Final c f
 toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
 fromFree :: (FreeOf c t, C t (Final c f)) => t f ~> Final c f
 toFree :: (FreeOf c t, c (t f)) => Final c f ~> t f
+
+-- | Re-interpret the context under a <a>Final</a>.
 hoistFinalC :: (forall g x. (c g => g x) -> d g => g x) -> Final c f a -> Final d f a
 
 -- | Lift an action into a <a>Final</a>.
@@ -653,6 +744,7 @@ liftFinal1 :: (forall g. c g => g a -> g b) -> Final c f a -> Final c f b
 liftFinal2 :: (forall g. c g => g a -> g b -> g d) -> Final c f a -> Final c f b -> Final c f d
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Functor Data.Functor.Coyoneda.Coyoneda
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Ap
+instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Bind.Class.Apply Data.Functor.Apply.Free.Ap1
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Fast.Ap
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Alternative Control.Alternative.Free.Alt
 instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Monad Control.Monad.Freer.Church.Free
@@ -693,62 +785,6 @@ instance Data.Functor.Alt.Alt (Data.Functor.HFunctor.Final.Final Data.Functor.Pl
 instance Data.Functor.Plus.Plus (Data.Functor.HFunctor.Final.Final Data.Functor.Plus.Plus f)
 instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.Final.Final c)
 instance Data.Functor.HFunctor.Interpret (Data.Functor.HFunctor.Final.Final c)
-
-module Data.Functor.Apply.Free
-
--- | One or more <tt>f</tt>s convolved with itself.
---   
---   Essentially:
---   
---   <pre>
---   <a>Ap1</a> f
---       ~ f                            -- one f
---     <a>:+:</a> (f `'Day'\\` f)          -- two f's
---     :+: (f `Day` f `Day` f)           -- three f's
---     :+: (f `Day` f `Day` f `Day` f)  -- four f's
---     :+: ...                          -- etc.
---   </pre>
---   
---   This is the free <a>Apply</a> --- Basically a "non-empty" <a>Ap</a>.
---   
---   The construction here is based on <a>Ap</a>, similar to now
---   <a>NonEmpty</a> is built on list.
-data Ap1 :: (Type -> Type) -> Type -> Type
-[Ap1] :: f a -> Ap f (a -> b) -> Ap1 f b
-
--- | An <a>Ap1</a> is a "non-empty" <a>Ap</a>; this function "forgets" the
---   non-empty property and turns it back into a normal <a>Ap</a>.
-toAp :: Ap1 f ~> Ap f
-
--- | Convert an <a>Ap</a> into an <a>Ap1</a> if possible. If the <a>Ap</a>
---   was "empty", return the <a>Pure</a> value instead.
-fromAp :: Ap f ~> (Identity :+: Ap1 f)
-
--- | Embed an <tt>f</tt> into <a>Ap1</a>.
-liftAp1 :: f ~> Ap1 f
-
--- | Extract the <tt>f</tt> out of the <a>Ap1</a>.
---   
---   <pre>
---   <a>retractAp1</a> . <a>liftAp1</a> == id
---   </pre>
-retractAp1 :: Apply f => Ap1 f ~> f
-
--- | Interpret an <tt><a>Ap</a> f</tt> into some <a>Apply</a> context
---   <tt>g</tt>.
-runAp1 :: Apply g => (f ~> g) -> Ap1 f ~> g
-
--- | An <tt><a>Ap1</a> f</tt> is just a <tt><a>Day</a> f (<a>Ap</a>
---   f)</tt>. This brings provides the forward trip of the isomorphism.
-ap1Day :: Ap1 f ~> Day f (Ap f)
-
--- | An <tt><a>Ap1</a> f</tt> is just a <tt><a>Day</a> f (<a>Ap</a>
---   f)</tt>. This brings provides the return trip of the isomorphism.
-dayAp1 :: Functor f => Day f (Ap f) ~> Ap1 f
-instance GHC.Base.Functor (Data.Functor.Apply.Free.Ap1 f)
-instance Data.Functor.Bind.Class.Apply (Data.Functor.Apply.Free.Ap1 f)
-instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Apply.Free.Ap1
-instance Data.Functor.HFunctor.Interpret Data.Functor.Apply.Free.Ap1
 
 
 -- | This module provides tools for working with binary functor
@@ -1167,6 +1203,30 @@ instance Data.Functor.Tensor.Tensor Data.Functor.Day.Day
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:+:)
 instance Data.Functor.Tensor.Tensor Control.Monad.Freer.Church.Comp
 
+
+-- | Functor combinators and tools (typeclasses and utiility functions) to
+--   manipulate them.
+--   
+--   Classes include:
+--   
+--   <ul>
+--   <li><a>HFunctor</a> and <a>HBifunctor</a>, used to swap out the
+--   functors that the combinators modify</li>
+--   <li><a>Interpret</a>, <a>Tensor</a>, <a>Monoidal</a>, used to inject
+--   and interpret functor values with respect to their combinators.</li>
+--   </ul>
+--   
+--   We have some helpful utility functions, as well, built on top of these
+--   typeclasses.
+--   
+--   The second half of this module exports the various useful functor
+--   combinators that can modify functors to add extra functionality, or
+--   join two functors together and mix them in different ways. Use them to
+--   build your final structure by combining simpler ones in composable
+--   ways!
+--   
+--   See README for a tutorial and a rundown on each different functor
+--   combinator.
 module Data.Functor.Combinator
 
 -- | A natural transformation from <tt>f</tt> to <tt>g</tt>.
@@ -1605,6 +1665,12 @@ data Ap (f :: Type -> Type) a
 --     :+: ...                          -- etc.
 --   </pre>
 --   
+--   Useful if you want to promote an <tt>f</tt> to a situation with "at
+--   least one <tt>f</tt> sequenced with itself".
+--   
+--   Mostly useful for its <a>HFunctor</a> and <a>Interpret</a> instance,
+--   along with its relationship with <a>Ap</a> and <a>Day</a>.
+--   
 --   This is the free <a>Apply</a> --- Basically a "non-empty" <a>Ap</a>.
 --   
 --   The construction here is based on <a>Ap</a>, similar to now
@@ -1652,6 +1718,9 @@ data Free f a
 --   has that <tt>f</tt>, with a <a>Natural</a> giving you "where" the
 --   <tt>f</tt> is in the long chain.
 --   
+--   Can be useful for using with the <a>Monoidal</a> instance of
+--   <a>:+:</a>.
+--   
 --   <a>interpret</a>ing it requires no constraint on the target context.
 data Step f a
 Step :: Natural -> f a -> Step f a
@@ -1677,10 +1746,12 @@ Step :: Natural -> f a -> Step f a
 --   stored at a different <a>Natural</a> position, with the guaruntee that
 --   at least one <tt>f</tt> exists.
 --   
+--   Can be useful for using with the <a>Monoidal</a> instance of
+--   <a>TheseT</a>.
+--   
 --   <a>interpret</a>ing it requires at least an <a>Alt</a> instance in the
 --   target context, since we have to handle potentially more than one
---   <tt>f</tt>. However, we don't fully need <a>Plus</a>, since we know we
---   always have at least one <tt>f</tt>.
+--   <tt>f</tt>.
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
@@ -1739,10 +1810,10 @@ pattern Comp :: Functor f => f (g a) -> Comp f g a
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --   
---   In a way, this is the "ultimate" <a>Interpret</a> instance. You can
---   use this to inject an <tt>f</tt> into a free structure of any
---   typeclass. If you want <tt>f</tt> to have a <a>Monad</a> instance, for
---   example, just use
+--   In a way, this is the "ultimate" multi-purpose <a>Interpret</a>
+--   instance. You can use this to inject an <tt>f</tt> into a free
+--   structure of any typeclass. If you want <tt>f</tt> to have a
+--   <a>Monad</a> instance, for example, just use
 --   
 --   <pre>
 --   <a>inject</a> :: f a -&gt; <a>Final</a> <a>Monad</a> f a
@@ -1756,6 +1827,16 @@ pattern Comp :: Functor f => f (g a) -> Comp f g a
 --   
 --   Essentially, <tt><a>Final</a> c</tt> is the "free c". <tt><a>Final</a>
 --   <a>Monad</a></tt> is the free <a>Monad</a>, etc.
+--   
+--   <a>Final</a> can theoretically replace <a>Ap</a>, <a>Ap1</a>,
+--   <a>ListF</a>, <a>NonEmptyF</a>, <a>MaybeF</a>, <a>Free</a>,
+--   <a>Identity</a>, <a>Coyoneda</a>, and other instances of
+--   <a>FreeOf</a>, if you don't care about being able to pattern match on
+--   explicit structure.
+--   
+--   However, it cannot replace <a>Interpret</a> instances that are not
+--   free structures, like <a>Step</a>, <a>Steps</a>, <a>Backwards</a>,
+--   etc.
 --   
 --   Note that this doesn't have instances for <i>all</i> the typeclasses
 --   you could lift things into; you probably have to define your own if
