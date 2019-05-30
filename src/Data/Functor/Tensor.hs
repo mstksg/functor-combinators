@@ -55,40 +55,46 @@
 -- 'toTM' :: 'Day' f f a -> 'Ap' f a
 -- @
 module Data.Functor.Tensor (
-    HBifunctor(..)
+    Associative(..)
+  , Semigroupoidal(..)
   , Tensor(..)
   , Monoidal(..)
-  , F(..)
+    -- HBifunctor(..)
+  -- , Tensor(..)
+  -- , Monoidal(..)
+  -- , F(..)
   , (!$!)
   , inL, inR
   , reconsTM
   , extractT
   , getT, (!*!)
   , collectT
-  , injectF
-  , WrappedHBifunctor(..)
-  , JoinT(..)
-  , TannenT(..)
-  , BiffT(..)
-  , ClownT(..)
-  , JokerT(..)
+  -- , injectF
+  -- , WrappedHBifunctor(..)
+  -- , JoinT(..)
+  -- , TannenT(..)
+  -- , BiffT(..)
+  -- , ClownT(..)
+  -- , JokerT(..)
   ) where
 
+-- import           Control.Applicative.Lift
+-- import           Data.Coerce
+-- import           Data.Constraint.Trivial
 import           Control.Applicative
 import           Control.Applicative.Free
-import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
-import           Data.Coerce
-import           Data.Constraint.Trivial
 import           Data.Copointed
 import           Data.Functor.Apply.Free
+import           Data.Functor.Associative
 import           Data.Functor.Day               (Day(..))
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Identity
+import           Data.Functor.Interpret
 import           Data.Functor.Plus
 import           Data.Kind
 import           Data.Proxy
@@ -110,7 +116,7 @@ import qualified Data.Functor.Day               as D
 -- Realistically, there won't be any 'Tensor' instances that are not also
 -- 'Monoidal' instances.  The two classes are separated only to help
 -- organize functionality into cleaner sub-divisions.
-class HBifunctor t => Tensor t where
+class Associative t => Tensor t where
     -- | The identity of @'Tensor' t@.  If you "combine" @f@ with the
     -- identity, it leaves @f@ unchanged.
     --
@@ -135,28 +141,57 @@ class HBifunctor t => Tensor t where
     elim1  :: Functor f => t f (I t) ~> f
     elim2  :: Functor g => t (I t) g ~> g
 
-    assoc    :: (Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
-    disassoc :: (Functor f, Functor g, Functor h) => t (t f g) h ~> t f (t g h)
+    -- {-# MINIMAL intro1, intro2, elim1, elim2, assoc, disassoc #-}
 
-    {-# MINIMAL intro1, intro2, elim1, elim2, assoc, disassoc #-}
 
--- | A useful construction that works like a "linked list" of @t f@ applied
--- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
--- @t f (t f (t f f))@, etc.
---
--- If @t@ is 'Monoidal', then it means we can "collapse" this linked list
--- into some final type @'TM' t@ ('fromF'), and also extract it back into a linked
--- list ('toF').
-data F t i f a = Done (i a)
-               | More (t f (F t i f) a)
+class (Associative t, Interpret (TM t)) => Semigroupoidal t where
+    type TM t :: (Type -> Type) -> Type -> Type
 
-instance (Functor i, Functor (t f (F t i f))) => Functor (F t i f) where
-    fmap f = \case
-      Done x  -> Done (fmap f x)
-      More xs -> More (fmap f xs)
+    -- | Prepend an application of @t f@ to the front of a @'TM' t f@.
+    --
+    -- Together with 'nilTM', forms an inverse with 'unconsTM'.
+    consTM   :: t f (TM t f) ~> TM t f
+    -- consTM     = fromF . More . hright toF
 
-deriving instance (Show (i a), Show (t f (F t i f) a)) => Show (F t i f a)
-deriving instance (Read (i a), Read (t f (F t i f) a)) => Read (F t i f a)
+    -- | If a @'TM' t f@ represents multiple applications of @t f@ to
+    -- itself, then we can also "append" two @'TM' t f@s applied to
+    -- themselves into one giant @'TM' t f@ containing all of the @t f@s.
+    appendTM :: t (TM t f) (TM t f) ~> TM t f
+    -- appendTM = fromF . appendF . hbimap toF toF
+
+    -- | Embed a direct application of @f@ to itself into a @'TM' t f@.
+    toTM     :: t f f ~> TM t f
+    -- toTM     = fromF . More . hright (More . hright Done . intro1)
+
+    -- | A version of 'retract' that works for a 'Tensor'.  It retracts
+    -- /both/ @f@s into a single @f@.
+    retractT :: C (TM t) f => t f f ~> f
+    retractT = retract . toTM
+
+    -- | A version of 'interpret' that works for a 'Tensor'.  It takes two
+    -- interpreting functions, and interprets both joined functors one
+    -- after the other into @h@.
+    interpretT :: C (TM t) h => (f ~> h) -> (g ~> h) -> t f g ~> h
+    -- interpretT f g = retractT . hbimap f g
+
+
+---- | A useful construction that works like a "linked list" of @t f@ applied
+---- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
+---- @t f (t f (t f f))@, etc.
+----
+---- If @t@ is 'Monoidal', then it means we can "collapse" this linked list
+---- into some final type @'TM' t@ ('fromF'), and also extract it back into a linked
+---- list ('toF').
+--data F t i f a = Done (i a)
+--               | More (t f (F t i f) a)
+
+--instance (Functor i, Functor (t f (F t i f))) => Functor (F t i f) where
+--    fmap f = \case
+--      Done x  -> Done (fmap f x)
+--      More xs -> More (fmap f xs)
+
+--deriving instance (Show (i a), Show (t f (F t i f) a)) => Show (F t i f a)
+--deriving instance (Read (i a), Read (t f (F t i f) a)) => Read (F t i f a)
 
 -- | For some tensors @t@, you can represt the act of repeatedly combining
 -- the same functor an arbitrary amount of times:
@@ -197,9 +232,7 @@ deriving instance (Read (i a), Read (t f (F t i f) a)) => Read (F t i f a)
 --
 -- See documentation of "Data.Functor.Tensor" for information on how to
 -- define instances of this typeclass.
-class (Tensor t, Interpret (TM t)) => Monoidal t where
-    type TM t :: (Type -> Type) -> Type -> Type
-
+class (Tensor t, Semigroupoidal t) => Monoidal t where
     -- | If @'TM' t f@ represents multiple applications of @t f@ with
     -- itself, then @nilTM@ gives us "zero applications of @f@".
     --
@@ -214,13 +247,7 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     --
     -- Together with 'consTM', forms an inverse with 'unconsTM'.
     nilTM    :: I t ~> TM t f
-    nilTM    = fromF @t . Done
-
-    -- | Prepend an application of @t f@ to the front of a @'TM' t f@.
-    --
-    -- Together with 'nilTM', forms an inverse with 'unconsTM'.
-    consTM   :: t f (TM t f) ~> TM t f
-    consTM     = fromF . More . hright toF
+    -- nilTM    = fromF @t . Done
 
     -- | If a @'TM' t f@ represents multiple applications of @t f@ to itself,
     -- 'unconsTM' lets us break it up into two possibilities:
@@ -239,69 +266,52 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     -- where 'reconsTM' is 'nilTM' on the left side of the ':+:', and
     -- 'consTM' on the right side of the ':+:'.
     unconsTM   :: TM t f ~> I t :+: t f (TM t f)
-    unconsTM m = case toF @t m of
-      Done x  -> L1 x
-      More xs -> R1 . hright fromF $ xs
+    -- unconsTM m = case toF @t m of
+    --   Done x  -> L1 x
+    --   More xs -> R1 . hright fromF $ xs
 
-    -- | If a @'TM' t f@ represents multiple applications of @t f@ to
-    -- itself, then we can also "append" two @'TM' t f@s applied to
-    -- themselves into one giant @'TM' t f@ containing all of the @t f@s.
-    appendTM :: t (TM t f) (TM t f) ~> TM t f
-    appendTM = fromF . appendF . hbimap toF toF
+    ---- | Convert a linked list of @t f@s applied to themselves (stored in
+    ---- the 'F' type) into @'TM' t f@, the data type representing multiple
+    ---- applications of @t f@ to itself.
+    ----
+    ---- @'F' i ('I' t)@ can be thought of as a "universal" representation of
+    ---- multiple-applications-to-self, and @'TM' t@ can be thought of as
+    ---- a tailor-made represenation for your specific @'Tensor' t@.
+    ----
+    ---- @
+    ---- 'fromF' . 'toF' == id
+    ---- 'toF' . 'fromF' == id
+    ---- @
+    ----
+    ---- 'fromF', 'toF', and 'appendF' are a way to completely define
+    ---- a 'Monoidal' instance; all other methods can be inferred from them.
+    ---- In some cases, it can be easier to define these instead of the other
+    ---- ones.
+    --fromF :: F t (I t) f ~> TM t f
+    --fromF = \case
+    --  Done x  -> nilTM @t x
+    --  More xs -> consTM . hright fromF $ xs
 
-    -- | Convert a linked list of @t f@s applied to themselves (stored in
-    -- the 'F' type) into @'TM' t f@, the data type representing multiple
-    -- applications of @t f@ to itself.
-    --
-    -- @'F' i ('I' t)@ can be thought of as a "universal" representation of
-    -- multiple-applications-to-self, and @'TM' t@ can be thought of as
-    -- a tailor-made represenation for your specific @'Tensor' t@.
-    --
-    -- @
-    -- 'fromF' . 'toF' == id
-    -- 'toF' . 'fromF' == id
-    -- @
-    --
-    -- 'fromF', 'toF', and 'appendF' are a way to completely define
-    -- a 'Monoidal' instance; all other methods can be inferred from them.
-    -- In some cases, it can be easier to define these instead of the other
-    -- ones.
-    fromF :: F t (I t) f ~> TM t f
-    fromF = \case
-      Done x  -> nilTM @t x
-      More xs -> consTM . hright fromF $ xs
+    ---- | The inverse of 'fromF': convert a @'TM' t f@ into a linked list of
+    ---- @t f@s applied to themselves.  See 'fromF' for more information.
+    ----
+    ---- 'fromF', 'toF', and 'appendF' are a way to completely define
+    ---- a 'Monoidal' instance; all other methods can be inferred from them.
+    ---- In some cases, it can be easier to define these instead of the other
+    ---- ones.
+    --toF :: TM t f ~> F t (I t) f
+    --toF x = case unconsTM x of
+    --  L1 y -> Done y
+    --  R1 z -> More . hright toF $ z
 
-    -- | The inverse of 'fromF': convert a @'TM' t f@ into a linked list of
-    -- @t f@s applied to themselves.  See 'fromF' for more information.
-    --
-    -- 'fromF', 'toF', and 'appendF' are a way to completely define
-    -- a 'Monoidal' instance; all other methods can be inferred from them.
-    -- In some cases, it can be easier to define these instead of the other
-    -- ones.
-    toF :: TM t f ~> F t (I t) f
-    toF x = case unconsTM x of
-      L1 y -> Done y
-      R1 z -> More . hright toF $ z
-
-    -- | Append two linked lists of @t f@ applied to itself together.
-    --
-    -- 'fromF', 'toF', and 'appendF' are a way to completely define
-    -- a 'Monoidal' instance; all other methods can be inferred from them.
-    -- In some cases, it can be easier to define these instead of the other
-    -- ones.
-    appendF  :: t (F t (I t) f) (F t (I t) f) ~> F t (I t) f
-    appendF = toF . appendTM . hbimap fromF fromF
-
-    -- | A version of 'retract' that works for a 'Tensor'.  It retracts
-    -- /both/ @f@s into a single @f@.
-    retractT :: C (TM t) f => t f f ~> f
-    retractT = retract . toTM
-
-    -- | A version of 'interpret' that works for a 'Tensor'.  It takes two
-    -- interpreting functions, and interprets both joined functors one
-    -- after the other into @h@.
-    interpretT :: C (TM t) h => (f ~> h) -> (g ~> h) -> t f g ~> h
-    interpretT f g = retractT . hbimap f g
+    ---- | Append two linked lists of @t f@ applied to itself together.
+    ----
+    ---- 'fromF', 'toF', and 'appendF' are a way to completely define
+    ---- a 'Monoidal' instance; all other methods can be inferred from them.
+    ---- In some cases, it can be easier to define these instead of the other
+    ---- ones.
+    --appendF  :: t (F t (I t) f) (F t (I t) f) ~> F t (I t) f
+    --appendF = toF . appendTM . hbimap fromF fromF
 
     -- | If we have an instance of @t@, we can generate an @f@ based on how
     -- it interacts with @t@.
@@ -314,44 +324,41 @@ class (Tensor t, Interpret (TM t)) => Monoidal t where
     -- 'pureT' \@(':*:') :: 'Plus' f => f a          -- 'zero'
     -- @
     pureT  :: C (TM t) f => I t ~> f
-    pureT  = retract . fromF @t . Done
+    -- pureT  = retract . fromF @t . Done
 
-    -- | Embed a direct application of @f@ to itself into a @'TM' t f@.
-    toTM     :: t f f ~> TM t f
-    toTM     = fromF . More . hright (More . hright Done . intro1)
+    -- {-# MINIMAL nilTM, consTM, unconsTM, appendTM | fromF, toF, appendF #-}
 
-    {-# MINIMAL nilTM, consTM, unconsTM, appendTM | fromF, toF, appendF #-}
+--instance HBifunctor t => HFunctor (F t i) where
+--    hmap f = \case
+--      Done x  -> Done x
+--      More xs -> More . hbimap f (hmap f) $ xs
 
-instance HBifunctor t => HFunctor (F t i) where
-    hmap f = \case
-      Done x  -> Done x
-      More xs -> More . hbimap f (hmap f) $ xs
-
--- | We can collapse and interpret an @'F' t i@ if we have @'Tensor' i@.
---
--- Note that 'inject' only requires @'Tensor' t@.  This is given as
--- 'injectF'.
-instance (Monoidal t, i ~ I t) => Interpret (F t i) where
-    type C (F t i) = C (TM t)
-    inject    = injectF
-    retract   = \case
-      Done x  -> pureT @t x
-      More xs -> retractT . hright retract $ xs
-    interpret f = \case
-      Done x  -> pureT @t x
-      More xs -> interpretT @t f (interpret f) xs
+---- | We can collapse and interpret an @'F' t i@ if we have @'Tensor' i@.
+----
+---- Note that 'inject' only requires @'Tensor' t@.  This is given as
+---- 'injectF'.
+--instance (Monoidal t, i ~ I t) => Interpret (F t i) where
+--    type C (F t i) = C (TM t)
+--    inject    = injectF
+--    retract   = \case
+--      Done x  -> pureT @t x
+--      More xs -> retractT . hright retract $ xs
+--    interpret f = \case
+--      Done x  -> pureT @t x
+--      More xs -> interpretT @t f (interpret f) xs
 
 -- | The inverse of 'unconsTM'.  Calls 'nilTM' on the left (nil) branch,
 -- and 'consTM' on the right (cons) branch.
 reconsTM :: forall t f. Monoidal t => I t :+: t f (TM t f) ~> TM t f
-reconsTM = interpretT (nilTM @t) (consTM @t)
+reconsTM = undefined
+-- reconsTM = interpretT (nilTM @t) (consTM @t)
 
--- | If we have @'Tensor' t@, we can make a singleton 'F'.
---
--- We can also 'retract' and 'interpret' an 'F' using its 'Interpret'
--- instance.
-injectF :: forall t f. Tensor t => f ~> F t (I t) f
-injectF = More . hright Done . intro1
+---- | If we have @'Tensor' t@, we can make a singleton 'F'.
+----
+---- We can also 'retract' and 'interpret' an 'F' using its 'Interpret'
+---- instance.
+--injectF :: forall t f. Tensor t => f ~> F t (I t) f
+--injectF = More . hright Done . intro1
 
 -- | Useful wrapper over 'retractT' to allow you to directly extract an @a@
 -- from a @t f f a@, if @f@ is a valid retraction from @t@, and @f@ is an
@@ -463,30 +470,10 @@ instance Tensor (:*:) where
     elim1 (x :*: _) = x
     elim2 (_ :*: y) = y
 
-    assoc (x :*: (y :*: z)) = (x :*: y) :*: z
-    disassoc ((x :*: y) :*: z) = x :*: (y :*: z)
-
 instance Monoidal (:*:) where
-    type TM (:*:) = ListF
-
     nilTM ~Proxy = ListF []
-    consTM (x :*: y) = ListF $ x : runListF y
     unconsTM = hright nonEmptyProd . fromListF
-    appendTM (ListF xs :*: ListF ys) = ListF (xs ++ ys)
-
-    fromF = \case
-      Done ~Proxy -> ListF []
-      More (x :*: y) -> ListF $ x : runListF (fromF y)
-    toF = (Done !*! More . hright toF . nonEmptyProd)
-        . fromListF
-    appendF (x :*: y) = case x of
-      Done ~Proxy       -> y
-      More (x' :*: x'') -> More (x' :*: appendF (x'' :*: y))
-
-    retractT (x :*: y) = x <!> y
-    interpretT f g (x :*: y) = f x <!> g y
-    toTM (x :*: y) = ListF [x, y]
-    pureT _ = zero
+    pureT _  = zero
 
 instance Tensor Day where
     type I Day = Identity
@@ -495,173 +482,174 @@ instance Tensor Day where
     intro2   = D.intro1
     elim1    = D.elim2
     elim2    = D.elim1
-    assoc    = D.assoc
-    disassoc = D.disassoc
 
-instance Monoidal Day where
-    type TM Day = Ap
+-- instance Semigroupoidal Day where
+--     type TM Day = Ap
 
-    nilTM              = pure . runIdentity
-    consTM (Day x y z) = z <$> liftAp x <*> y
-    unconsTM           = hright ap1Day . fromAp
-    appendTM (Day x y z) = z <$> x <*> y
+--instance Monoidal Day where
+--    type TM Day = Ap
 
-    fromF = \case
-      Done (Identity x) -> pure x
-      More (Day x y z)  -> z <$> liftAp x <*> fromF y
-    toF = (Done !*! More . hright toF . ap1Day )
-        . fromAp
-    appendF (Day x y f) = case x of
-      Done (Identity x')  -> f x' <$> y
-      More (Day x' y' f') -> More $ Day x' (appendF (Day y' y (,))) $
-        \a (b, c) -> f (f' a b) c
+--    nilTM              = pure . runIdentity
+--    consTM (Day x y z) = z <$> liftAp x <*> y
+--    unconsTM           = hright ap1Day . fromAp
+--    appendTM (Day x y z) = z <$> x <*> y
 
-    retractT (Day x y z) = z <$> x <*> y
-    interpretT f g (Day x y z) = z <$> f x <*> g y
-    toTM (Day x y z) = z <$> liftAp x <*> liftAp y
-    pureT = pure . runIdentity
+--    fromF = \case
+--      Done (Identity x) -> pure x
+--      More (Day x y z)  -> z <$> liftAp x <*> fromF y
+--    toF = (Done !*! More . hright toF . ap1Day )
+--        . fromAp
+--    appendF (Day x y f) = case x of
+--      Done (Identity x')  -> f x' <$> y
+--      More (Day x' y' f') -> More $ Day x' (appendF (Day y' y (,))) $
+--        \a (b, c) -> f (f' a b) c
 
-instance Tensor (:+:) where
-    type I (:+:) = Void1
+--    retractT (Day x y z) = z <$> x <*> y
+--    interpretT f g (Day x y z) = z <$> f x <*> g y
+--    toTM (Day x y z) = z <$> liftAp x <*> liftAp y
+--    pureT = pure . runIdentity
 
-    intro1 = L1
-    intro2 = R1
-    elim1  = \case
-      L1 x -> x
-      R1 y -> absurd1 y
-    elim2  = \case
-      L1 x -> absurd1 x
-      R1 y -> y
-    assoc = \case
-      L1 x      -> L1 (L1 x)
-      R1 (L1 y) -> L1 (R1 y)
-      R1 (R1 z) -> R1 z
-    disassoc = \case
-      L1 (L1 x) -> L1 x
-      L1 (R1 y) -> R1 (L1 y)
-      R1 z      -> R1 (R1 z)
+--instance Tensor (:+:) where
+--    type I (:+:) = Void1
 
-instance Monoidal (:+:) where
-    type TM (:+:) = Step
+--    intro1 = L1
+--    intro2 = R1
+--    elim1  = \case
+--      L1 x -> x
+--      R1 y -> absurd1 y
+--    elim2  = \case
+--      L1 x -> absurd1 x
+--      R1 y -> y
+--    assoc = \case
+--      L1 x      -> L1 (L1 x)
+--      R1 (L1 y) -> L1 (R1 y)
+--      R1 (R1 z) -> R1 z
+--    disassoc = \case
+--      L1 (L1 x) -> L1 x
+--      L1 (R1 y) -> R1 (L1 y)
+--      R1 z      -> R1 (R1 z)
 
-    nilTM = absurd1
-    consTM = \case
-      L1 x          -> Step 0       x
-      R1 (Step n y) -> Step (n + 1) y
-    unconsTM (Step n x) = R1 $ case minusNaturalMaybe n 1 of
-      Nothing -> L1 x
-      Just m  -> R1 (Step m x)
-    appendTM = \case
-      L1 x -> x
-      R1 y -> y
+--instance Monoidal (:+:) where
+--    type TM (:+:) = Step
 
-    fromF = \case
-      Done x      -> absurd1 x
-      More (L1 x) -> Step 0 x
-      More (R1 y) ->
-        let Step n z = fromF y
-        in  Step (n + 1) z
-    toF (Step n x) = go n
-      where
-        go (flip minusNaturalMaybe 1 -> i) = case i of
-          Nothing -> More (L1 x)
-          Just j  -> More (R1 (go j))
-    appendF = \case
-      L1 x -> x
-      R1 y -> y
+--    nilTM = absurd1
+--    consTM = \case
+--      L1 x          -> Step 0       x
+--      R1 (Step n y) -> Step (n + 1) y
+--    unconsTM (Step n x) = R1 $ case minusNaturalMaybe n 1 of
+--      Nothing -> L1 x
+--      Just m  -> R1 (Step m x)
+--    appendTM = \case
+--      L1 x -> x
+--      R1 y -> y
 
-    retractT = \case
-      L1 x -> x
-      R1 y -> y
-    interpretT f g = \case
-      L1 x -> f x
-      R1 y -> g y
-    toTM = \case
-      L1 x -> Step 0 x
-      R1 y -> Step 1 y
-    pureT = absurd1
+--    fromF = \case
+--      Done x      -> absurd1 x
+--      More (L1 x) -> Step 0 x
+--      More (R1 y) ->
+--        let Step n z = fromF y
+--        in  Step (n + 1) z
+--    toF (Step n x) = go n
+--      where
+--        go (flip minusNaturalMaybe 1 -> i) = case i of
+--          Nothing -> More (L1 x)
+--          Just j  -> More (R1 (go j))
+--    appendF = \case
+--      L1 x -> x
+--      R1 y -> y
 
-instance Tensor Comp where
-    type I Comp = Identity
+--    retractT = \case
+--      L1 x -> x
+--      R1 y -> y
+--    interpretT f g = \case
+--      L1 x -> f x
+--      R1 y -> g y
+--    toTM = \case
+--      L1 x -> Step 0 x
+--      R1 y -> Step 1 y
+--    pureT = absurd1
 
-    intro1 = (:>>= Identity)
-    intro2 = (Identity () :>>=) . const
+--instance Tensor Comp where
+--    type I Comp = Identity
 
-    elim1 (x :>>= y) = runIdentity . y <$> x
-    elim2 (x :>>= y) = y (runIdentity x)
+--    intro1 = (:>>= Identity)
+--    intro2 = (Identity () :>>=) . const
 
-    assoc (x :>>= y) = (x :>>= (unComp . y)) :>>= id
-    disassoc ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
+--    elim1 (x :>>= y) = runIdentity . y <$> x
+--    elim2 (x :>>= y) = y (runIdentity x)
 
-instance Monoidal Comp where
-    type TM Comp = Free
+--    assoc (x :>>= y) = (x :>>= (unComp . y)) :>>= id
+--    disassoc ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
 
-    nilTM  = pure . runIdentity
-    consTM (x :>>= y) = Free $ \p b -> b x $ \z -> runFree (y z) p b
+--instance Monoidal Comp where
+--    type TM Comp = Free
 
-    fromF = \case
-      Done x -> pure . runIdentity $ x
-      More (x :>>= y) -> Free $ \p b -> b x $ \z -> runFree (fromF (y z)) p b
-    toF x = runFree x (Done . Identity) $ \y z -> More (y :>>= z)
-    appendF (x :>>= y) = case x of
-      Done (Identity z)   -> y z
-      More (z :>>= q) -> More $ z :>>= (appendF . comp . fmap y . q)
+--    nilTM  = pure . runIdentity
+--    consTM (x :>>= y) = Free $ \p b -> b x $ \z -> runFree (y z) p b
 
-    retractT (x :>>= y) = x >>= y
-    pureT = pure . runIdentity
-    toTM (x :>>= y) = Free $ \p b -> b x (($ p) . b . y)
+--    fromF = \case
+--      Done x -> pure . runIdentity $ x
+--      More (x :>>= y) -> Free $ \p b -> b x $ \z -> runFree (fromF (y z)) p b
+--    toF x = runFree x (Done . Identity) $ \y z -> More (y :>>= z)
+--    appendF (x :>>= y) = case x of
+--      Done (Identity z)   -> y z
+--      More (z :>>= q) -> More $ z :>>= (appendF . comp . fmap y . q)
 
--- | Form an 'HFunctor' by applying the same input twice to an
--- 'HBifunctor'.
-newtype JoinT t f a = JoinT { runJoinT :: t f f a }
+--    retractT (x :>>= y) = x >>= y
+--    pureT = pure . runIdentity
+--    toTM (x :>>= y) = Free $ \p b -> b x (($ p) . b . y)
 
-deriving instance Functor (t f f) => Functor (JoinT t f)
+---- | Form an 'HFunctor' by applying the same input twice to an
+---- 'HBifunctor'.
+--newtype JoinT t f a = JoinT { runJoinT :: t f f a }
 
-instance HBifunctor t => HFunctor (JoinT t) where
-    hmap f (JoinT x) = JoinT $ hbimap f f x
+--deriving instance Functor (t f f) => Functor (JoinT t f)
 
--- | Form an 'HBifunctor' by wrapping another 'HBifunctor' in a 'HFunctor'.
-newtype TannenT t p f g a = TannenT { runTannenT :: t (p f g) a }
+--instance HBifunctor t => HFunctor (JoinT t) where
+--    hmap f (JoinT x) = JoinT $ hbimap f f x
 
-deriving instance Functor (t (p f g)) => Functor (TannenT t p f g)
+---- | Form an 'HBifunctor' by wrapping another 'HBifunctor' in a 'HFunctor'.
+--newtype TannenT t p f g a = TannenT { runTannenT :: t (p f g) a }
 
-instance (HFunctor t, HBifunctor p) => HBifunctor (TannenT t p) where
-    hbimap f g (TannenT x) = TannenT (hmap (hbimap f g) x)
+--deriving instance Functor (t (p f g)) => Functor (TannenT t p f g)
 
-deriving via (WrappedHBifunctor (TannenT (t :: (Type -> Type) -> Type -> Type) p) f)
-    instance (HFunctor t, HBifunctor p) => HFunctor (TannenT t p f)
+--instance (HFunctor t, HBifunctor p) => HBifunctor (TannenT t p) where
+--    hbimap f g (TannenT x) = TannenT (hmap (hbimap f g) x)
 
--- | Form an 'HBifunctor' over two 'HFunctor's.
-newtype BiffT p s t f g a = BiffT { runBiffT :: p (s f) (t g) a }
+--deriving via (WrappedHBifunctor (TannenT (t :: (Type -> Type) -> Type -> Type) p) f)
+--    instance (HFunctor t, HBifunctor p) => HFunctor (TannenT t p f)
 
-deriving instance Functor (p (s f) (t g)) => Functor (BiffT p s t f g)
+---- | Form an 'HBifunctor' over two 'HFunctor's.
+--newtype BiffT p s t f g a = BiffT { runBiffT :: p (s f) (t g) a }
 
-instance (HBifunctor p, HFunctor s, HFunctor t) => HBifunctor (BiffT p s t) where
-    hbimap f g (BiffT x) = BiffT (hbimap (hmap f) (hmap g) x)
+--deriving instance Functor (p (s f) (t g)) => Functor (BiffT p s t f g)
 
-deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) -> Type -> Type) s t) f)
-    instance (HBifunctor p, HFunctor s, HFunctor t) => HFunctor (BiffT p s t f)
+--instance (HBifunctor p, HFunctor s, HFunctor t) => HBifunctor (BiffT p s t) where
+--    hbimap f g (BiffT x) = BiffT (hbimap (hmap f) (hmap g) x)
 
--- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the second
--- argument.
-newtype ClownT t f g a = ClownT { runClownT :: t f a }
+--deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) -> Type -> Type) s t) f)
+--    instance (HBifunctor p, HFunctor s, HFunctor t) => HFunctor (BiffT p s t f)
 
-deriving instance Functor (t f) => Functor (ClownT t f g)
+---- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the second
+---- argument.
+--newtype ClownT t f g a = ClownT { runClownT :: t f a }
 
-instance HFunctor t => HBifunctor (ClownT t) where
-    hbimap f _ (ClownT x) = ClownT (hmap f x)
+--deriving instance Functor (t f) => Functor (ClownT t f g)
 
-deriving via (WrappedHBifunctor (ClownT t) f)
-    instance HFunctor t => HFunctor (ClownT t f)
+--instance HFunctor t => HBifunctor (ClownT t) where
+--    hbimap f _ (ClownT x) = ClownT (hmap f x)
 
--- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the first
--- argument.
-newtype JokerT t f g a = JokerT { runJokerT :: t g a }
+--deriving via (WrappedHBifunctor (ClownT t) f)
+--    instance HFunctor t => HFunctor (ClownT t f)
 
-deriving instance Functor (t g) => Functor (JokerT t f g)
+---- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the first
+---- argument.
+--newtype JokerT t f g a = JokerT { runJokerT :: t g a }
 
-instance HFunctor t => HBifunctor (JokerT t) where
-    hbimap _ g (JokerT x) = JokerT (hmap g x)
+--deriving instance Functor (t g) => Functor (JokerT t f g)
 
-deriving via (WrappedHBifunctor (JokerT t) f)
-    instance HFunctor t => HFunctor (JokerT t f)
+--instance HFunctor t => HBifunctor (JokerT t) where
+--    hbimap _ g (JokerT x) = JokerT (hmap g x)
+
+--deriving via (WrappedHBifunctor (JokerT t) f)
+--    instance HFunctor t => HFunctor (JokerT t f)

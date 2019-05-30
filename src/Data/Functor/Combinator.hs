@@ -102,6 +102,7 @@ import           Data.Functor.Coyoneda
 import           Data.Functor.Day
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Final
+import           Data.Functor.Interpret
 import           Data.Functor.Tensor
 import           Data.Functor.These
 import           GHC.Generics

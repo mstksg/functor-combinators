@@ -1,5 +1,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE PatternSynonyms           #-}
@@ -25,14 +27,22 @@
 -- 'Data.Functor.Tensor.Monoidal'.
 module Control.Monad.Freer.Church (
     Free(..), reFree
+  , Free1(..), toFree, fromFree
   , Comp(.., Comp, unComp), comp
   ) where
 
 import           Control.Applicative
 import           Control.Monad
+import           Control.Natural
+import           Data.Functor.Bind
 import           Data.Functor.Classes
+import           Data.Functor.Identity
+import           Data.Kind
+import           Data.Semigroup.Foldable
+import           Data.Semigroup.Traversable
+import           GHC.Generics
 import           Text.Read
-import qualified Control.Monad.Free             as M
+import qualified Control.Monad.Free         as M
 
 -- | A @'Free' f@ is @f@ enhanced with "sequential binding" capabilities.
 -- It allows you to sequence multiple @f@s one after the other, and also to
@@ -101,6 +111,63 @@ reFree
     -> m a
 reFree x = runFree x pure $ \y g -> M.wrap (g <$> y)
 
+data Free1 :: (Type -> Type) -> Type -> Type where
+    Free1 :: f a -> (a -> Free f b) -> Free1 f b
+
+toFree :: Free1 f ~> Free f
+toFree (Free1 x g) = Free $ \p b -> b x $ \y -> runFree (g y) p b
+
+(|+|) :: (f a -> b) -> (g a -> b) -> (f :+: g) a -> b
+f |+| g = \case
+  L1 x -> f x
+  R1 y -> g y
+infixr 5 |+|
+
+fromFree :: forall f. Free f ~> (Identity :+: Free1 f)
+fromFree x = runFree x (L1 . Identity) $ \y n -> R1 $
+        Free1 y ((pure . runIdentity |+| toFree) . n)
+
+instance Functor (Free1 f) where
+    fmap f (Free1 x g) = Free1 x (fmap f . g)
+
+instance Apply (Free1 f) where
+    (<.>) = apDefault
+
+instance Bind (Free1 f) where
+    Free1 x g >>- f = Free1 x (toFree . f <=< g)
+
+instance Foldable f => Foldable (Free1 f) where
+    foldMap f (Free1 x g) = foldMap (foldMap f . g) x
+
+instance Traversable f => Traversable (Free1 f) where
+    traverse f (Free1 x g) = (`Free1` (pure . runIdentity |+| toFree))
+                         <$> traverse (fmap fromFree . traverse f . g) x
+
+instance Foldable1 f => Foldable1 (Free1 f) where
+    foldMap1 f (Free1 x g) =
+        foldMap1 ( (f . runIdentity |+| foldMap1 f)
+                 . fromFree
+                 . g
+                 ) x
+
+instance Traversable1 f => Traversable1 (Free1 f) where
+    traverse1 f (Free1 x g) = (`Free1` id) <$> traverse1 (q . fromFree . g) x
+      where
+        q (L1 (Identity y)) = pure <$> f y
+        q (R1 y           ) = fmap toFree . traverse1 f $ y
+
+instance (Functor f, Eq1 f) => Eq1 (Free1 f) where
+    liftEq eq x y = liftEq @(Free f) eq (toFree x) (toFree y)
+
+instance (Functor f, Ord1 f) => Ord1 (Free1 f) where
+    liftCompare c x y = liftCompare @(Free f) c (toFree x) (toFree y)
+
+instance (Functor f, Eq1 f, Eq a) => Eq (Free1 f a) where
+    (==) = eq1
+
+instance (Functor f, Ord1 f, Ord a) => Ord (Free1 f a) where
+    compare = compare1
+
 -- | Functor composition.  @'Comp' f g a@ is equivalent to @f (g a)@, and
 -- the 'Comp' pattern synonym is a way of getting the @f (g a)@ in
 -- a @'Comp' f g a@.
@@ -119,7 +186,8 @@ reFree x = runFree x pure $ \y g -> M.wrap (g <$> y)
 -- a while will concretize a 'Comp' value (if you have @'Functor' f@)
 -- and remove some indirection if you have a lot of chained operations.
 --
--- The "free monoid" over 'Comp' is 'Free'.
+-- The "free monoid" over 'Comp' is 'Free', and the "free semigroup" over
+-- 'Comp' is 'Free1'.
 data Comp f g a =
     forall x. f x :>>= (x -> g a)
 
