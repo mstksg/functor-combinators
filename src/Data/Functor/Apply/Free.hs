@@ -26,13 +26,11 @@
 -- Ideally 'Ap1' would be in the /free/ package.  However, it is defined
 -- here for now.
 module Data.Functor.Apply.Free (
-    Ap1(..)
+    Ap1(.., DayAp1, ap1Day)
   , toAp, fromAp
   , liftAp1
   , retractAp1
   , runAp1
-  , pattern DayAp1
-  , ap1Day
   ) where
 
 import           Control.Applicative.Free

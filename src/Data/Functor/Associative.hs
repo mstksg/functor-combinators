@@ -168,3 +168,5 @@ instance Semigroupoidal Comp where
     retractS (x :>>= y) = x >>- y
     interpretS f g (x :>>= y) = f x >>- (g . y)
     toSF (x :>>= g) = Free1 x (inject . g)
+
+

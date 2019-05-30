@@ -8,6 +8,7 @@
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeApplications          #-}
+{-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE ViewPatterns              #-}
 
 -- |
@@ -27,7 +28,7 @@
 -- 'Data.Functor.Tensor.Monoidal'.
 module Control.Monad.Freer.Church (
     Free(..), reFree
-  , Free1(..), toFree, fromFree
+  , Free1(.., CompFree1, free1Comp), toFree, fromFree
   , Comp(.., Comp, unComp), comp
   ) where
 
@@ -117,15 +118,17 @@ data Free1 :: (Type -> Type) -> Type -> Type where
 toFree :: Free1 f ~> Free f
 toFree (Free1 x g) = Free $ \p b -> b x $ \y -> runFree (g y) p b
 
-(|+|) :: (f a -> b) -> (g a -> b) -> (f :+: g) a -> b
-f |+| g = \case
-  L1 x -> f x
-  R1 y -> g y
-infixr 5 |+|
-
 fromFree :: forall f. Free f ~> (Identity :+: Free1 f)
 fromFree x = runFree x (L1 . Identity) $ \y n -> R1 $
         Free1 y ((pure . runIdentity |+| toFree) . n)
+
+-- | An @'Free1' f@ is just a @'Comp' f ('Free' f)@.  This bidirectional pattern
+-- synonym lets you treat it as such.
+pattern CompFree1 :: Comp f (Free f) a -> Free1 f a
+pattern CompFree1 { free1Comp } <- ((\case Free1 x y -> x :>>= y) -> free1Comp)
+  where
+    CompFree1 (x :>>= y) = Free1 x y
+{-# COMPLETE CompFree1 #-}
 
 instance Functor (Free1 f) where
     fmap f (Free1 x g) = Free1 x (fmap f . g)
@@ -258,3 +261,10 @@ pattern Comp { unComp } <- ((\case x :>>= f -> f <$> x)->unComp)
   where
     Comp x = comp x
 {-# COMPLETE Comp #-}
+
+(|+|) :: (f a -> b) -> (g a -> b) -> (f :+: g) a -> b
+f |+| g = \case
+  L1 x -> f x
+  R1 y -> g y
+infixr 5 |+|
+
