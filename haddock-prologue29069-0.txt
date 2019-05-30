@@ -1,0 +1,1 @@
+Please see the README on GitHub at <https://github.com/mstksg/functor-combinators#readme>
