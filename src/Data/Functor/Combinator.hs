@@ -58,7 +58,7 @@ module Data.Functor.Combinator (
   -- functors together in some way.
   , HBifunctor(..)
   , Tensor(I)
-  , Monoidal(TM, retractT, interpretT, pureT, toTM)
+  -- , Monoidal(TM, retractT, interpretT, pureT, toTM)
   , inL, inR
   , (!$!)
   , extractT, getT, (!*!), collectT
@@ -101,6 +101,7 @@ import           Data.Functor.Apply.Free
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
 import           Data.Functor.HFunctor
+import           Data.Functor.HBifunctor
 import           Data.Functor.HFunctor.Final
 import           Data.Functor.Interpret
 import           Data.Functor.Tensor

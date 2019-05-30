@@ -162,11 +162,9 @@ instance Associative Comp where
 instance Semigroupoidal Comp where
     type SF Comp = Free1
 
-    consSF (x :>>= y) = Free1 x (toFree . y)
-    appendSF (Free1 x g :>>= h) = Free1 x (toFree . h <=< g)
+    consSF (x :>>= y) = liftFree1 x >>- y
+    appendSF (x :>>= y) = x >>- y
 
     retractS (x :>>= y) = x >>- y
     interpretS f g (x :>>= y) = f x >>- (g . y)
-    toSF (x :>>= g) = Free1 x (inject . g)
-
-
+    toSF (x :>>= g) = liftFree1 x >>- inject . g

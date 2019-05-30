@@ -59,19 +59,8 @@ instance HBifunctor These1 where
       That1    y -> That1        (g y)
       These1 x y -> These1 (f x) (g y)
 
-instance Tensor These1 where
-    type I These1 = Void1
 
-    intro1 = This1
-    intro2 = That1
-    elim1  = \case
-      This1  x   -> x
-      That1    y -> absurd1 y
-      These1 _ y -> absurd1 y
-    elim2  = \case
-      This1  x   -> absurd1 x
-      That1    y -> y
-      These1 x _ -> absurd1 x
+instance Associative These1 where
     assoc = \case
       This1  x              -> This1  (This1  x  )
       That1    (This1  y  ) -> This1  (That1    y)
@@ -89,67 +78,66 @@ instance Tensor These1 where
       These1 (That1    y) z -> That1    (These1 y z)
       These1 (These1 x y) z -> These1 x (These1 y z)
 
-instance Monoidal These1 where
-    type TM These1 = Steps
+instance Tensor These1 where
+    type I These1 = Void1
 
-    nilTM  = absurd1
-    consTM = \case
+    intro1 = This1
+    intro2 = That1
+    elim1  = \case
+      This1  x   -> x
+      That1    y -> absurd1 y
+      These1 _ y -> absurd1 y
+    elim2  = \case
+      This1  x   -> absurd1 x
+      That1    y -> y
+      These1 x _ -> absurd1 x
+
+instance Semigroupoidal These1 where
+    type SF These1 = Steps
+
+    consSF = \case
       This1  x            -> Steps $ NEM.singleton 0 x
       That1    (Steps xs) -> Steps $ NEM.mapKeysMonotonic (+ 1) xs
       These1 x (Steps xs) -> Steps . NEM.insertMapMin 0 x
                                    . NEM.toMap
                                    . NEM.mapKeysMonotonic (+ 1)
                                    $ xs
-    unconsTM = R1
-             . hbimap (getFirst . unComp1) (Steps . unComp1)
-             . decrAll
-             . getSteps
-    appendTM = \case
+    appendSF = \case
       This1  (Steps xs)            -> Steps xs
       That1             (Steps ys) -> Steps ys
       These1 (Steps xs) (Steps ys) -> Steps $
         let (k, _) = NEM.findMax xs
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
 
-    fromF = \case
-      Done x            -> absurd1 x
-      More (This1  x  ) -> Steps . NEM.singleton 0 $ x
-      More (That1    y) ->
-        let Steps ys = fromF y
-        in  Steps $ NEM.mapKeysMonotonic (+ 1) ys
-      More (These1 x y) ->
-        let Steps ys = fromF y
-        in  Steps
-              . NEM.insertMapMin 0 x
-              . NEM.toMap
-              . NEM.mapKeysMonotonic (+ 1)
-              $ ys
-    toF = More
-        . hbimap (getFirst . unComp1) (toF . Steps . unComp1)
-        . decrAll
-        . getSteps
-    appendF = \case
-      This1  xs    -> xs
-      That1     ys -> ys
-      These1 xs ys -> case xs of
-        Done x              -> absurd1 x
-        More (This1  x    ) -> More $ These1 x ys
-        More (That1    xs') -> More $ That1    (appendF (These1 xs' ys))
-        More (These1 x xs') -> More $ These1 x (appendF (These1 xs' ys))
-
-    retractT = \case
+    retractS = \case
       This1  x   -> x
       That1    y -> y
       These1 x y -> x <!> y
-    interpretT f g = \case
+    interpretS f g = \case
       This1  x   -> f x
       That1    y -> g y
       These1 x y -> f x <!> g y
-    toTM = \case
+    toSF = \case
       This1  x   -> Steps $ NEM.singleton 0 x
       That1    y -> Steps $ NEM.singleton 1 y
       These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
-    pureT = absurd1
+
+
+instance Monoidal These1 where
+    type MF These1 = Steps
+
+    nilMF      = absurd1
+    consMF     = consSF
+    unconsMF   = R1
+               . hbimap (getFirst . unComp1) (Steps . unComp1)
+               . decrAll
+               . getSteps
+    appendMF   = appendSF
+
+    retractT   = retractS
+    interpretT = interpretS
+    toMF       = toSF
+    pureT      = absurd1
 
 decrAll :: NEMap Natural (f x) -> These1 (First :.: f) (NEMap Natural :.: f) x
 decrAll = NEM.foldMapWithKey $ \i x ->

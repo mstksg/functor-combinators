@@ -504,27 +504,17 @@ instance Tensor (:+:) where
 instance Monoidal (:+:) where
     type MF (:+:) = Step
 
-    nilMF = absurd1
-    consMF = \case
-      L1 x          -> Step 0       x
-      R1 (Step n y) -> Step (n + 1) y
+    nilMF      = absurd1
+    consMF     = consSF
     unconsMF (Step n x) = R1 $ case minusNaturalMaybe n 1 of
       Nothing -> L1 x
       Just m  -> R1 (Step m x)
-    appendMF = \case
-      L1 x -> x
-      R1 y -> y
+    appendMF   = appendSF
 
-    retractT = \case
-      L1 x -> x
-      R1 y -> y
-    interpretT f g = \case
-      L1 x -> f x
-      R1 y -> g y
-    toMF = \case
-      L1 x -> Step 0 x
-      R1 y -> Step 1 y
-    pureT = absurd1
+    retractT   = retractS
+    interpretT = interpretS
+    toMF       = toSF
+    pureT      = absurd1
 
 instance Tensor Comp where
     type I Comp = Identity

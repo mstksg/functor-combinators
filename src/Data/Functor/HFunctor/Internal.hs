@@ -152,10 +152,10 @@ instance HFunctor Steps where
     hmap f (Steps xs) = Steps (f <$> xs)
 
 instance HFunctor Free where
-    hmap f x = Free $ \p b -> runFree x p $ \y z -> b (f y) z
+    hmap = hoistFree
 
 instance HFunctor Free1 where
-    hmap f (Free1 x g) = Free1 (f x) (hmap f . g)
+    hmap = hoistFree1
 
 instance HFunctor MC.F where
     hmap = MC.hoistF

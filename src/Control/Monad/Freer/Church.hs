@@ -28,8 +28,9 @@
 -- 'Data.Functor.Tensor.HBifunctor' and 'Data.Functor.Tensor.Tensor' and
 -- 'Data.Functor.Tensor.Monoidal'.
 module Control.Monad.Freer.Church (
-    Free(..), reFree
-  -- , Free1(.., CompFree1, free1Comp), toFree, fromFree
+    Free(..), reFree, liftFree, interpretFree, retractFree, hoistFree
+  , Free1(.., CompFree1, free1Comp), toFree, fromFree, liftFree1
+  , interpretFree1, retractFree1, hoistFree1
   , Comp(.., Comp, unComp), comp
   ) where
 
@@ -123,8 +124,74 @@ reFree x = runFree x pure $ \y g -> M.wrap (g <$> y)
 liftFree :: f ~> Free f
 liftFree x = Free $ \p b -> b x p
 
+interpretFree :: Monad g => (f ~> g) -> Free f ~> g
+interpretFree f x = runFree x pure ((>>=) . f)
+
+retractFree :: Monad f => Free f ~> f
+retractFree x = runFree x pure (>>=)
+
+hoistFree :: (f ~> g) -> Free f ~> Free g
+hoistFree f x = Free $ \p b -> runFree x p (b . f)
+
 -- data Free1 :: (Type -> Type) -> Type -> Type where
 --     Free1 :: f a -> (a -> Free f b) -> Free1 f b
+
+-- toFree :: Free1 f ~> Free f
+-- toFree (Free1 x g) = Free $ \p b -> b x $ \y -> runFree (g y) p b
+
+-- fromFree :: forall f. Free f ~> (Identity :+: Free1 f)
+-- fromFree x = runFree x (L1 . Identity) $ \y n -> R1 $
+--         Free1 y ((pure . runIdentity |+| toFree) . n)
+
+-- -- | An @'Free1' f@ is just a @'Comp' f ('Free' f)@.  This bidirectional pattern
+-- -- synonym lets you treat it as such.
+-- pattern CompFree1 :: Comp f (Free f) a -> Free1 f a
+-- pattern CompFree1 { free1Comp } <- ((\case Free1 x y -> x :>>= y) -> free1Comp)
+--   where
+--     CompFree1 (x :>>= y) = Free1 x y
+-- {-# COMPLETE CompFree1 #-}
+
+-- instance Functor (Free1 f) where
+--     fmap f (Free1 x g) = Free1 x (fmap f . g)
+
+-- instance Apply (Free1 f) where
+--     (<.>) = apDefault
+
+-- instance Bind (Free1 f) where
+--     Free1 x g >>- f = Free1 x (toFree . f <=< g)
+
+-- instance Foldable f => Foldable (Free1 f) where
+--     foldMap f (Free1 x g) = foldMap (foldMap f . g) x
+
+-- instance Traversable f => Traversable (Free1 f) where
+--     traverse f (Free1 x g) = (`Free1` (pure . runIdentity |+| toFree))
+--                          <$> traverse (fmap fromFree . traverse f . g) x
+
+-- instance Foldable1 f => Foldable1 (Free1 f) where
+--     foldMap1 f (Free1 x g) =
+--         foldMap1 ( (f . runIdentity |+| foldMap1 f)
+--                  . fromFree
+--                  . g
+--                  ) x
+
+-- instance Traversable1 f => Traversable1 (Free1 f) where
+--     traverse1 f (Free1 x g) = (`Free1` id) <$> traverse1 (q . fromFree . g) x
+--       where
+--         q (L1 (Identity y)) = pure <$> f y
+--         q (R1 y           ) = fmap toFree . traverse1 f $ y
+
+-- instance (Functor f, Eq1 f) => Eq1 (Free1 f) where
+--     liftEq eq x y = liftEq @(Free f) eq (toFree x) (toFree y)
+
+-- instance (Functor f, Ord1 f) => Ord1 (Free1 f) where
+--     liftCompare c x y = liftCompare @(Free f) c (toFree x) (toFree y)
+
+-- instance (Functor f, Eq1 f, Eq a) => Eq (Free1 f a) where
+--     (==) = eq1
+
+-- instance (Functor f, Ord1 f, Ord a) => Ord (Free1 f a) where
+--     compare = compare1
+
 newtype Free1 f a = Free1
     { runFree1 :: forall r. (forall s. f s -> (s -> a) -> r)
                          -> (forall s. f s -> (s -> r) -> r)
@@ -140,6 +207,9 @@ fromFree x = runFree x (L1 . Identity) $ \y n -> fromFree $ do
     case n z of
       L1 (Identity q) -> pure q
       R1 q            -> toFree q
+
+hoistFree1 :: (f ~> g) -> Free1 f ~> Free1 g
+hoistFree1 f x = Free1 $ \p b -> runFree1 x (p . f) (b . f)
 
 free1Comp_ :: Free1 f ~> Comp f (Free f)
 free1Comp_ x = runFree1 x (\y c -> y :>>= (pure . c)) $ \y n ->
@@ -173,6 +243,10 @@ liftFree1 x = Free1 $ \p _ -> p x id
 retractFree1 :: Bind f => Free1 f ~> f
 retractFree1 x = runFree1 x (<&>) (>>-)
 
+interpretFree1 :: Bind g => (f ~> g) -> Free1 f ~> g
+interpretFree1 f x = runFree1 x (\y c -> c <$> f y)
+                                (\y n -> f y >>- n)
+
 instance Functor (Free1 f) where
     fmap f x = Free1 $ \p b -> runFree1 x (\y c -> p y (f . c)) b
 
@@ -183,37 +257,37 @@ instance Bind (Free1 f) where
     x >>- f = Free1 $ \p b ->
         runFree1 x (\y c -> b y ((\q -> runFree1 q p b) . f . c)) b
 
--- instance Foldable f => Foldable (Free1 f) where
---     foldMap f (Free1 x g) = foldMap (foldMap f . g) x
+-- -- instance Foldable f => Foldable (Free1 f) where
+-- --     foldMap f (Free1 x g) = foldMap (foldMap f . g) x
 
--- instance Traversable f => Traversable (Free1 f) where
---     traverse f (Free1 x g) = (`Free1` (pure . runIdentity |+| toFree))
---                          <$> traverse (fmap fromFree . traverse f . g) x
+-- -- instance Traversable f => Traversable (Free1 f) where
+-- --     traverse f (Free1 x g) = (`Free1` (pure . runIdentity |+| toFree))
+-- --                          <$> traverse (fmap fromFree . traverse f . g) x
 
--- instance Foldable1 f => Foldable1 (Free1 f) where
---     foldMap1 f (Free1 x g) =
---         foldMap1 ( (f . runIdentity |+| foldMap1 f)
---                  . fromFree
---                  . g
---                  ) x
+-- -- instance Foldable1 f => Foldable1 (Free1 f) where
+-- --     foldMap1 f (Free1 x g) =
+-- --         foldMap1 ( (f . runIdentity |+| foldMap1 f)
+-- --                  . fromFree
+-- --                  . g
+-- --                  ) x
 
--- instance Traversable1 f => Traversable1 (Free1 f) where
---     traverse1 f (Free1 x g) = (`Free1` id) <$> traverse1 (q . fromFree . g) x
---       where
---         q (L1 (Identity y)) = pure <$> f y
---         q (R1 y           ) = fmap toFree . traverse1 f $ y
+-- -- instance Traversable1 f => Traversable1 (Free1 f) where
+-- --     traverse1 f (Free1 x g) = (`Free1` id) <$> traverse1 (q . fromFree . g) x
+-- --       where
+-- --         q (L1 (Identity y)) = pure <$> f y
+-- --         q (R1 y           ) = fmap toFree . traverse1 f $ y
 
--- instance (Functor f, Eq1 f) => Eq1 (Free1 f) where
---     liftEq eq x y = liftEq @(Free f) eq (toFree x) (toFree y)
+instance (Functor f, Eq1 f) => Eq1 (Free1 f) where
+    liftEq eq x y = liftEq @(Free f) eq (toFree x) (toFree y)
 
--- instance (Functor f, Ord1 f) => Ord1 (Free1 f) where
---     liftCompare c x y = liftCompare @(Free f) c (toFree x) (toFree y)
+instance (Functor f, Ord1 f) => Ord1 (Free1 f) where
+    liftCompare c x y = liftCompare @(Free f) c (toFree x) (toFree y)
 
--- instance (Functor f, Eq1 f, Eq a) => Eq (Free1 f a) where
---     (==) = eq1
+instance (Functor f, Eq1 f, Eq a) => Eq (Free1 f a) where
+    (==) = eq1
 
--- instance (Functor f, Ord1 f, Ord a) => Ord (Free1 f a) where
---     compare = compare1
+instance (Functor f, Ord1 f, Ord a) => Ord (Free1 f a) where
+    compare = compare1
 
 -- | Functor composition.  @'Comp' f g a@ is equivalent to @f (g a)@, and
 -- the 'Comp' pattern synonym is a way of getting the @f (g a)@ in
@@ -305,10 +379,4 @@ pattern Comp { unComp } <- ((\case x :>>= f -> f <$> x)->unComp)
   where
     Comp x = comp x
 {-# COMPLETE Comp #-}
-
-(|+|) :: (f a -> b) -> (g a -> b) -> (f :+: g) a -> b
-f |+| g = \case
-  L1 x -> f x
-  R1 y -> g y
-infixr 5 |+|
 

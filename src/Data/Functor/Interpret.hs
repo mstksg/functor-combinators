@@ -77,6 +77,7 @@ import           Control.Natural
 import           Data.Coerce
 import           Data.Constraint.Trivial
 import           Data.Copointed
+import           Data.Functor
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor.Internal
@@ -269,28 +270,26 @@ instance Interpret Alt.Alt where
 instance Interpret Free where
     type C Free = Monad
 
-    inject x = Free $ \p b -> b x p
-    retract x = runFree x pure (>>=)
-    interpret f x = runFree x pure ((>>=) . f)
+    inject    = liftFree
+    retract   = retractFree
+    interpret = interpretFree
 
 -- | A free 'Bind'
 instance Interpret Free1 where
     type C Free1 = Bind
 
-    inject = (`Free1` pure)
-    retract (Free1 x g) = x >>- \y -> _ $ g y
-    -- retract (Free1 x g) = x >>- (q . fromFree . g)
-    --   where
-    --     q (L1 (Identity y)) = y <$ x
-    --     q (R1 y           ) = retract y
+    inject    = liftFree1
+    retract   = retractFree1
+    interpret = interpretFree1
+    -- inject = (`Free1` pure)
+    -- retract f1@(Free1 x _) = case fromFree (toFree f1) of
+    --   L1 (Identity y) -> y <$ x
+    --   R1 y            -> retract y
     -- interpret f = go
     --   where
-    --     go (Free1 x g) = x' >>- (q . fromFree . g)
-    --       where
-    --         x' = f x
-    --         q (L1 (Identity y)) = y <$ x'           -- TODO: HEY THIS IS WRONG!!!
-    --         q (R1 y           ) = go y
-
+    --     go f1@(Free1 x _) = case fromFree (toFree f1) of
+    --       L1 (Identity y) -> y <$ f x
+    --       R1 y            -> go y
 
 -- | A free 'Applicative'
 instance Interpret FA.Ap where
