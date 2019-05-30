@@ -29,6 +29,8 @@
 
 
 module Data.Functor.Associative (
+    Associative(..)
+  , Semigroupoidal(..)
   ) where
 
 -- import           Control.Applicative.Lift
@@ -58,7 +60,6 @@ import           Data.Proxy
 import           GHC.Generics hiding            (C)
 import           GHC.Natural
 import qualified Data.Functor.Day               as D
-
 
 class HBifunctor t => Associative t where
     assoc    :: (Functor f, Functor g, Functor h) => t f (t g h) ~> t (t f g) h
@@ -94,7 +95,6 @@ class (Associative t, Interpret (SF t)) => Semigroupoidal t where
 
     -- | Embed a direct application of @f@ to itself into a @'SF' t f@.
     toSF     :: t f f ~> SF t f
-    -- toSF     = fromF . More . hright (More . hright Done . intro1)
 
 
 instance Associative (:*:) where

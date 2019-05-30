@@ -278,17 +278,18 @@ instance Interpret Free1 where
     type C Free1 = Bind
 
     inject = (`Free1` pure)
-    retract (Free1 x g) = x >>- (q . fromFree . g)
-      where
-        q (L1 (Identity y)) = y <$ x
-        q (R1 y           ) = retract y
-    interpret f = go
-      where
-        go (Free1 x g) = x' >>- (q . fromFree . g)
-          where
-            x' = f x
-            q (L1 (Identity y)) = y <$ x'
-            q (R1 y           ) = go y
+    retract (Free1 x g) = x >>- \y -> _ $ g y
+    -- retract (Free1 x g) = x >>- (q . fromFree . g)
+    --   where
+    --     q (L1 (Identity y)) = y <$ x
+    --     q (R1 y           ) = retract y
+    -- interpret f = go
+    --   where
+    --     go (Free1 x g) = x' >>- (q . fromFree . g)
+    --       where
+    --         x' = f x
+    --         q (L1 (Identity y)) = y <$ x'           -- TODO: HEY THIS IS WRONG!!!
+    --         q (R1 y           ) = go y
 
 
 -- | A free 'Applicative'
