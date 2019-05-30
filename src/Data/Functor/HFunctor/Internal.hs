@@ -199,6 +199,9 @@ instance (HFunctor s, HFunctor t) => HFunctor (ComposeT s t) where
 instance Functor f => HFunctor ((:.:) f) where
     hmap f (Comp1 x) = Comp1 (f <$> x)
 
+instance HFunctor Void2 where
+    hmap _ = coerce
+
 instance HBifunctor (:*:) where
     hleft  f (x :*: y) = f x :*:   y
     hright g (x :*: y) =   x :*: g y

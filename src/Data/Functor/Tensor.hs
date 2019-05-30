@@ -70,14 +70,19 @@ module Data.Functor.Tensor (
   , JoinT(..)
   , TannenT(..)
   , BiffT(..)
+  , ClownT(..)
+  , JokerT(..)
   ) where
 
 import           Control.Applicative
 import           Control.Applicative.Free
+import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
+import           Data.Coerce
+import           Data.Constraint.Trivial
 import           Data.Copointed
 import           Data.Functor.Apply.Free
 import           Data.Functor.Day               (Day(..))
@@ -517,15 +522,15 @@ instance Monoidal Day where
     pureT = pure . runIdentity
 
 instance Tensor (:+:) where
-    type I (:+:) = VoidT
+    type I (:+:) = Void1
 
     intro1 = L1
     intro2 = R1
     elim1  = \case
       L1 x -> x
-      R1 y -> absurdT y
+      R1 y -> absurd1 y
     elim2  = \case
-      L1 x -> absurdT x
+      L1 x -> absurd1 x
       R1 y -> y
     assoc = \case
       L1 x      -> L1 (L1 x)
@@ -539,7 +544,7 @@ instance Tensor (:+:) where
 instance Monoidal (:+:) where
     type TM (:+:) = Step
 
-    nilTM = absurdT
+    nilTM = absurd1
     consTM = \case
       L1 x          -> Step 0       x
       R1 (Step n y) -> Step (n + 1) y
@@ -551,7 +556,7 @@ instance Monoidal (:+:) where
       R1 y -> y
 
     fromF = \case
-      Done x      -> absurdT x
+      Done x      -> absurd1 x
       More (L1 x) -> Step 0 x
       More (R1 y) ->
         let Step n z = fromF y
@@ -574,7 +579,7 @@ instance Monoidal (:+:) where
     toTM = \case
       L1 x -> Step 0 x
       R1 y -> Step 1 y
-    pureT = absurdT
+    pureT = absurd1
 
 instance Tensor Comp where
     type I Comp = Identity
@@ -608,7 +613,7 @@ instance Monoidal Comp where
 
 -- | Form an 'HFunctor' by applying the same input twice to an
 -- 'HBifunctor'.
-data JoinT t f a = JoinT { runJoinT :: t f f a }
+newtype JoinT t f a = JoinT { runJoinT :: t f f a }
 
 deriving instance Functor (t f f) => Functor (JoinT t f)
 
@@ -636,3 +641,27 @@ instance (HBifunctor p, HFunctor s, HFunctor t) => HBifunctor (BiffT p s t) wher
 
 deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) -> Type -> Type) s t) f)
     instance (HBifunctor p, HFunctor s, HFunctor t) => HFunctor (BiffT p s t f)
+
+-- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the second
+-- argument.
+newtype ClownT t f g a = ClownT { runClownT :: t f a }
+
+deriving instance Functor (t f) => Functor (ClownT t f g)
+
+instance HFunctor t => HBifunctor (ClownT t) where
+    hbimap f _ (ClownT x) = ClownT (hmap f x)
+
+deriving via (WrappedHBifunctor (ClownT t) f)
+    instance HFunctor t => HFunctor (ClownT t f)
+
+-- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the first
+-- argument.
+newtype JokerT t f g a = JokerT { runJokerT :: t g a }
+
+deriving instance Functor (t g) => Functor (JokerT t f g)
+
+instance HFunctor t => HBifunctor (JokerT t) where
+    hbimap _ g (JokerT x) = JokerT (hmap g x)
+
+deriving via (WrappedHBifunctor (JokerT t) f)
+    instance HFunctor t => HFunctor (JokerT t f)

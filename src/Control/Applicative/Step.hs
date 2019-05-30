@@ -8,6 +8,7 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE TemplateHaskell            #-}
 
 -- |
@@ -29,8 +30,10 @@ module Control.Applicative.Step (
     Step(..)
   , Steps(..)
   -- * Void
-  , VoidT
-  , absurdT
+  , Void1
+  , absurd1
+  , Void2
+  , absurd2
   ) where
 
 import           Data.Deriving
@@ -81,19 +84,22 @@ instance Traversable1 f => Traversable1 (Step f) where
     traverse1 f (Step n x) = Step n <$> traverse1 f x
     sequence1 (Step n x) = Step n <$> sequence1 x
 
--- | The identity functor of ':+:' (and also 'Data.Functor.These.TheseT')
-data VoidT a
+-- | 'Void1' is a functor that is uninhabited for all inputs.  That is,
+-- @'Void1' a@ is uninhabited for all @a@.
+--
+-- The identity functor of ':+:' (and also 'Data.Functor.These.TheseT')
+data Void1 a
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
-deriveShow1 ''VoidT
-deriveRead1 ''VoidT
-deriveEq1 ''VoidT
-deriveOrd1 ''VoidT
+deriveShow1 ''Void1
+deriveRead1 ''Void1
+deriveEq1 ''Void1
+deriveOrd1 ''Void1
 
--- | We have a natural transformation between 'VoidT' and any other
+-- | We have a natural transformation between 'Void1' and any other
 -- functor @f@ with no constraints.
-absurdT :: VoidT a -> f a
-absurdT = \case {}
+absurd1 :: Void1 a -> f a
+absurd1 = \case {}
 
 -- | A non-empty map of 'Natural' to @f a@.  Basically, contains multiple
 -- @f a@s, each at a given 'Natural' index.
@@ -140,3 +146,18 @@ instance Functor f => Alt (Steps f) where
     Steps xs <!> Steps ys = Steps $
       let (k, _) = NEM.findMax xs
       in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+
+-- | @'Void2' a b@ is uninhabited for all @a@ and @b@.
+data Void2 a b
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''Void2
+deriveRead1 ''Void2
+deriveEq1 ''Void2
+deriveOrd1 ''Void2
+
+-- | If you treat a @'Void2' f a@ as a functor combinator, then 'absurd2'
+-- lets you convert from a @'Void2' f a@ into a @t f a@ for any functor
+-- combinator @t@.
+absurd2 :: Void2 f a -> t f a
+absurd2 = \case {}

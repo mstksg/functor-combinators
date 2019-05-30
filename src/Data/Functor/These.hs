@@ -60,18 +60,18 @@ instance HBifunctor These1 where
       These1 x y -> These1 (f x) (g y)
 
 instance Tensor These1 where
-    type I These1 = VoidT
+    type I These1 = Void1
 
     intro1 = This1
     intro2 = That1
     elim1  = \case
       This1  x   -> x
-      That1    y -> absurdT y
-      These1 _ y -> absurdT y
+      That1    y -> absurd1 y
+      These1 _ y -> absurd1 y
     elim2  = \case
-      This1  x   -> absurdT x
+      This1  x   -> absurd1 x
       That1    y -> y
-      These1 x _ -> absurdT x
+      These1 x _ -> absurd1 x
     assoc = \case
       This1  x              -> This1  (This1  x  )
       That1    (This1  y  ) -> This1  (That1    y)
@@ -92,7 +92,7 @@ instance Tensor These1 where
 instance Monoidal These1 where
     type TM These1 = Steps
 
-    nilTM  = absurdT
+    nilTM  = absurd1
     consTM = \case
       This1  x            -> Steps $ NEM.singleton 0 x
       That1    (Steps xs) -> Steps $ NEM.mapKeysMonotonic (+ 1) xs
@@ -112,7 +112,7 @@ instance Monoidal These1 where
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
 
     fromF = \case
-      Done x            -> absurdT x
+      Done x            -> absurd1 x
       More (This1  x  ) -> Steps . NEM.singleton 0 $ x
       More (That1    y) ->
         let Steps ys = fromF y
@@ -132,7 +132,7 @@ instance Monoidal These1 where
       This1  xs    -> xs
       That1     ys -> ys
       These1 xs ys -> case xs of
-        Done x              -> absurdT x
+        Done x              -> absurd1 x
         More (This1  x    ) -> More $ These1 x ys
         More (That1    xs') -> More $ That1    (appendF (These1 xs' ys))
         More (These1 x xs') -> More $ These1 x (appendF (These1 xs' ys))
@@ -149,7 +149,7 @@ instance Monoidal These1 where
       This1  x   -> Steps $ NEM.singleton 0 x
       That1    y -> Steps $ NEM.singleton 1 y
       These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
-    pureT = absurdT
+    pureT = absurd1
 
 decrAll :: NEMap Natural (f x) -> These1 (First :.: f) (NEMap Natural :.: f) x
 decrAll = NEM.foldMapWithKey $ \i x ->
