@@ -32,21 +32,29 @@
 --
 module Data.Functor.Combinator (
   -- * Classes
+  -- | A lot of type signatures are stated in terms of '~>'.  '~>'
+  -- represents a "natural transformation" between two functors: a value of
+  -- type @f '~>' g@ is a value of type 'f a -> g a@ that works for /any/
+  -- @a@.
     type (~>)
   -- ** Single Functors
+  -- | Classes that deal with single-functor combinators, that enhance
+  -- a single functor.
   , HFunctor(..)
   , Interpret(..), interpretFor
-  -- *** Utility
   , extractI, getI, collectI
   -- ** Multi-Functors
+  -- | Classes that deal with two-functor combinators, that "mix" two
+  -- functors together in some way.
   , HBifunctor(..)
   , Tensor(I)
   , Monoidal(TM, retractT, interpretT, pureT, toTM)
-  -- *** Utility
   , inL, inR
   , (!$!)
   , extractT, getT, (!*!), collectT
   -- * Combinators
+  -- | Functor combinators
+  -- ** Single
   , Coyoneda(..)
   , ListF(..)
   , NonEmptyF(..)
@@ -57,6 +65,7 @@ module Data.Functor.Combinator (
   , Free
   , Step(..)
   , Steps(..)
+  -- ** Multi
   , Day(..)
   , (:*:)(..)
   , (:+:)(..)
