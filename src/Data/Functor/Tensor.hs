@@ -213,9 +213,6 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
 
     splitSF  :: SF t f <~> t f (MF t f)
     splitMF  :: MF t f <~> I t :+: SF t f
-    -- splitMF = isoF
-    --     (hright (_ . consMF @t) . unconsMF @t)
-    --     (\case L1 x -> nilMF @t x; R1 y -> fromSF @t y)
     appendMF :: t (MF t f) (MF t f) ~> MF t f
 
     fromSF   :: SF t f ~> MF t f
@@ -558,7 +555,9 @@ instance Monoidal (:+:) where
     type MF (:+:) = Step
 
     splitSF  = shiftStep
-    splitMF  = isoF R1 (\case L1 v -> absurd1 v; R1 x -> x)
+    splitMF  = isoF R1 $ \case
+      L1 v -> absurd1 v
+      R1 x -> x
     appendMF = appendSF
 
     nilMF    = absurd1

@@ -11,6 +11,7 @@ module Data.Functor.These (
   ) where
 
 import           Control.Applicative.Step
+import           Control.Natural
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Associative
@@ -106,13 +107,7 @@ instance Semigroupoidal These1 where
         let (k, _) = NEM.findMax xs
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
 
-    consSF = \case
-      This1  x            -> Steps $ NEM.singleton 0 x
-      That1    (Steps xs) -> Steps $ NEM.mapKeysMonotonic (+ 1) xs
-      These1 x (Steps xs) -> Steps . NEM.insertMapMin 0 x
-                                   . NEM.toMap
-                                   . NEM.mapKeysMonotonic (+ 1)
-                                   $ xs
+    consSF = stepsUp
     toSF = \case
       This1  x   -> Steps $ NEM.singleton 0 x
       That1    y -> Steps $ NEM.singleton 1 y
@@ -130,37 +125,39 @@ instance Semigroupoidal These1 where
 instance Monoidal These1 where
     type MF These1 = Steps
 
-    -- splitSF = isoF _ _
-    -- nilMF      = absurd1
-    -- consMF     = consSF
-    -- unconsMF   = R1
-    --            . hbimap (getFirst . unComp1) (Steps . unComp1)
-    --            . decrAll
-    --            . getSteps
-    -- appendMF   = appendSF
+    splitSF = isoF stepsDown stepsUp
+    splitMF = isoF R1 $ \case
+      L1 v -> absurd1 v
+      R1 x -> x
+    appendMF = appendSF
 
-    -- retractT   = retractS
-    -- interpretT = interpretS
-    -- toMF       = toSF
-    -- pureT      = absurd1
+    nilMF      = absurd1
+    consMF     = consSF
+    unconsMF   = R1 . stepsDown
+    toMF       = toSF
 
-    -- type MF (:+:) = Step
+    retractT   = retractS
+    interpretT = interpretS
+    pureT      = absurd1
 
-    -- splitSF = shiftStep
-    -- splitMF = isoF R1 (\case L1 v -> absurd1 v; R1 x -> x)
-    -- appendMF   = appendSF
-
-    -- nilMF      = absurd1
-    -- consMF     = consSF
-    -- unconsMF   = R1 . stepDown
-    -- toMF       = toSF
-
-    -- retractT   = retractS
-    -- interpretT = interpretS
-    -- pureT      = absurd1
-
-decrAll :: NEMap Natural (f x) -> These1 (First :.: f) (NEMap Natural :.: f) x
-decrAll = NEM.foldMapWithKey $ \i x ->
-    case minusNaturalMaybe i 1 of
+decr :: Natural -> g a -> These1 (First :.: g) (NEMap Natural :.: g) a
+decr i x = case minusNaturalMaybe i 1 of
       Nothing -> This1 . Comp1 $ First x
       Just i' -> That1 . Comp1 $ NEM.singleton i' x
+
+stepsDown :: Steps f ~> These1 f (Steps f)
+stepsDown = hbimap (getFirst . unComp1) (Steps . unComp1)
+          . NEM.foldMapWithKey decr
+          . getSteps
+
+stepsUp :: These1 f (Steps f) ~> Steps f
+stepsUp = \case
+    This1  x    -> Steps $ NEM.singleton 0 x
+    That1    xs -> Steps . NEM.mapKeysMonotonic (+ 1)
+                         . getSteps
+                         $ xs
+    These1 x xs -> Steps . NEM.insertMapMin 0 x
+                         . NEM.toMap
+                         . NEM.mapKeysMonotonic (+ 1)
+                         . getSteps
+                         $ xs
