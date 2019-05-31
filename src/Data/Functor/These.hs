@@ -13,7 +13,9 @@ module Data.Functor.These (
 import           Control.Applicative.Step
 import           Data.Data
 import           Data.Deriving
+import           Data.Functor.Associative
 import           Data.Functor.HFunctor.Internal
+import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Plus
 import           Data.Functor.Tensor
 import           Data.List.NonEmpty             (NonEmpty(..))
@@ -61,22 +63,24 @@ instance HBifunctor These1 where
 
 
 instance Associative These1 where
-    assoc = \case
-      This1  x              -> This1  (This1  x  )
-      That1    (This1  y  ) -> This1  (That1    y)
-      That1    (That1    z) -> That1               z
-      That1    (These1 y z) -> These1 (That1    y) z
-      These1 x (This1  y  ) -> This1  (These1 x y)
-      These1 x (That1    z) -> These1 (This1  x  ) z
-      These1 x (These1 y z) -> These1 (These1 x y) z
-    disassoc = \case
-      This1  (This1  x  )   -> This1  x
-      This1  (That1    y)   -> That1    (This1  y  )
-      This1  (These1 x y)   -> These1 x (This1  y  )
-      That1               z -> That1    (That1    z)
-      These1 (This1  x  ) z -> These1 x (That1    z)
-      These1 (That1    y) z -> That1    (These1 y z)
-      These1 (These1 x y) z -> These1 x (These1 y z)
+    associative = isoF to_ from_
+      where
+        to_ = \case
+          This1  x              -> This1  (This1  x  )
+          That1    (This1  y  ) -> This1  (That1    y)
+          That1    (That1    z) -> That1               z
+          That1    (These1 y z) -> These1 (That1    y) z
+          These1 x (This1  y  ) -> This1  (These1 x y)
+          These1 x (That1    z) -> These1 (This1  x  ) z
+          These1 x (These1 y z) -> These1 (These1 x y) z
+        from_ = \case
+          This1  (This1  x  )   -> This1  x
+          This1  (That1    y)   -> That1    (This1  y  )
+          This1  (These1 x y)   -> These1 x (This1  y  )
+          That1               z -> That1    (That1    z)
+          These1 (This1  x  ) z -> These1 x (That1    z)
+          These1 (That1    y) z -> That1    (These1 y z)
+          These1 (These1 x y) z -> These1 x (These1 y z)
 
 instance Tensor These1 where
     type I These1 = Void1
@@ -87,13 +91,20 @@ instance Tensor These1 where
       This1  x   -> x
       That1    y -> absurd1 y
       These1 _ y -> absurd1 y
-    elim2  = \case
+    elim2 = \case
       This1  x   -> absurd1 x
       That1    y -> y
       These1 x _ -> absurd1 x
 
 instance Semigroupoidal These1 where
     type SF These1 = Steps
+
+    appendSF = \case
+      This1  (Steps xs)            -> Steps xs
+      That1             (Steps ys) -> Steps (NEM.mapKeysMonotonic (+ 1) ys)
+      These1 (Steps xs) (Steps ys) -> Steps $
+        let (k, _) = NEM.findMax xs
+        in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
 
     consSF = \case
       This1  x            -> Steps $ NEM.singleton 0 x
@@ -102,12 +113,10 @@ instance Semigroupoidal These1 where
                                    . NEM.toMap
                                    . NEM.mapKeysMonotonic (+ 1)
                                    $ xs
-    appendSF = \case
-      This1  (Steps xs)            -> Steps xs
-      That1             (Steps ys) -> Steps ys
-      These1 (Steps xs) (Steps ys) -> Steps $
-        let (k, _) = NEM.findMax xs
-        in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+    toSF = \case
+      This1  x   -> Steps $ NEM.singleton 0 x
+      That1    y -> Steps $ NEM.singleton 1 y
+      These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
 
     retractS = \case
       This1  x   -> x
@@ -117,27 +126,38 @@ instance Semigroupoidal These1 where
       This1  x   -> f x
       That1    y -> g y
       These1 x y -> f x <!> g y
-    toSF = \case
-      This1  x   -> Steps $ NEM.singleton 0 x
-      That1    y -> Steps $ NEM.singleton 1 y
-      These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
-
 
 instance Monoidal These1 where
     type MF These1 = Steps
 
-    nilMF      = absurd1
-    consMF     = consSF
-    unconsMF   = R1
-               . hbimap (getFirst . unComp1) (Steps . unComp1)
-               . decrAll
-               . getSteps
-    appendMF   = appendSF
+    -- splitSF = isoF _ _
+    -- nilMF      = absurd1
+    -- consMF     = consSF
+    -- unconsMF   = R1
+    --            . hbimap (getFirst . unComp1) (Steps . unComp1)
+    --            . decrAll
+    --            . getSteps
+    -- appendMF   = appendSF
 
-    retractT   = retractS
-    interpretT = interpretS
-    toMF       = toSF
-    pureT      = absurd1
+    -- retractT   = retractS
+    -- interpretT = interpretS
+    -- toMF       = toSF
+    -- pureT      = absurd1
+
+    -- type MF (:+:) = Step
+
+    -- splitSF = shiftStep
+    -- splitMF = isoF R1 (\case L1 v -> absurd1 v; R1 x -> x)
+    -- appendMF   = appendSF
+
+    -- nilMF      = absurd1
+    -- consMF     = consSF
+    -- unconsMF   = R1 . stepDown
+    -- toMF       = toSF
+
+    -- retractT   = retractS
+    -- interpretT = interpretS
+    -- pureT      = absurd1
 
 decrAll :: NEMap Natural (f x) -> These1 (First :.: f) (NEMap Natural :.: f) x
 decrAll = NEM.foldMapWithKey $ \i x ->

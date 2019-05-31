@@ -29,6 +29,9 @@ module Control.Applicative.Step (
   -- * Fixed Points
     Step(..)
   , Steps(..)
+  , stepUp
+  , stepDown
+  , shiftStep
   -- * Void
   , Void1
   , absurd1
@@ -36,12 +39,15 @@ module Control.Applicative.Step (
   , absurd2
   ) where
 
-import           Data.Deriving
+import           Control.Natural
 import           Data.Data
-import           GHC.Generics
+import           Data.Deriving
 import           Data.Functor.Alt
+import           Data.Functor.HFunctor.IsoF
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
+import           GHC.Generics
+import           GHC.Natural
 import           Numeric.Natural
 import qualified Data.Map.NonEmpty          as NEM
 
@@ -83,6 +89,19 @@ instance Foldable1 f => Foldable1 (Step f) where
 instance Traversable1 f => Traversable1 (Step f) where
     traverse1 f (Step n x) = Step n <$> traverse1 f x
     sequence1 (Step n x) = Step n <$> sequence1 x
+
+shiftStep :: Step f <~> f :+: Step f
+shiftStep = isoF stepDown stepUp
+
+stepDown :: Step f ~> f :+: Step f
+stepDown (Step n x) = case minusNaturalMaybe n 1 of
+    Nothing -> L1 x
+    Just m  -> R1 (Step m x)
+
+stepUp :: f :+: Step f ~> Step f
+stepUp = \case
+    L1 x          -> Step 0       x
+    R1 (Step n y) -> Step (n + 1) y
 
 -- | 'Void1' is a functor that is uninhabited for all inputs.  That is,
 -- @'Void1' a@ is uninhabited for all @a@.

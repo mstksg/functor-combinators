@@ -41,12 +41,9 @@ import           Data.Functor
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Identity
-import           Data.Kind
-import           Data.Semigroup.Foldable
-import           Data.Semigroup.Traversable
 import           GHC.Generics
 import           Text.Read
-import qualified Control.Monad.Free         as M
+import qualified Control.Monad.Free            as M
 
 -- | A @'Free' f@ is @f@ enhanced with "sequential binding" capabilities.
 -- It allows you to sequence multiple @f@s one after the other, and also to
@@ -215,14 +212,6 @@ free1Comp_ :: Free1 f ~> Comp f (Free f)
 free1Comp_ x = runFree1 x (\y c -> y :>>= (pure . c)) $ \y n ->
     y :>>= \z -> case n z of
       q :>>= m -> liftFree q >>= m
-
--- unconsFree :: Free f ~> (Identity :+: Comp f (Free f))
--- unconsFree x = runFree x (L1 . Identity) $ \y n -> R1 $
---     y :>>= ( ( pure . runIdentity
---            |+| (\case z :>>= h -> liftFree z >>= h)
---              )
---            . n
---            )
 
 compFree1_ :: f a -> (a -> Free f b) -> Free1 f b
 compFree1_ x f = case fromFree (liftFree x >>= f) of

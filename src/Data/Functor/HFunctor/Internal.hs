@@ -32,6 +32,7 @@ import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Reverse
 import           Data.Functor.Yoneda
 import           Data.Kind
+import           Data.Profunctor
 import           Data.Tagged
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
@@ -39,7 +40,6 @@ import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
 import qualified Control.Monad.Free.Church      as MC
 import qualified Data.Functor.Day               as D
-
 
 -- | An 'HFunctor' can be thought of a unary "functor transformer" ---
 -- a basic functor combinator.  It takes a functor as input and returns

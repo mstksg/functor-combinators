@@ -77,11 +77,9 @@ import           Control.Natural
 import           Data.Coerce
 import           Data.Constraint.Trivial
 import           Data.Copointed
-import           Data.Functor
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor.Internal
-import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Reverse
 import           Data.Kind
@@ -89,7 +87,6 @@ import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
-import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA

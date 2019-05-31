@@ -55,9 +55,9 @@
 -- 'toMF' :: 'Day' f f a -> 'Ap' f a
 -- @
 module Data.Functor.Tensor (
-    Associative(..)
-  , Semigroupoidal(..)
-  , Tensor(..)
+    Tensor(..)
+  , rightIdentity
+  , leftIdentity
   , Monoidal(..)
     -- HBifunctor(..)
   -- , Tensor(..)
@@ -81,6 +81,7 @@ module Data.Functor.Tensor (
 -- import           Control.Applicative.Lift
 -- import           Data.Coerce
 -- import           Data.Constraint.Trivial
+-- import           Data.Functor.HFunctor
 import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
@@ -91,8 +92,8 @@ import           Data.Copointed
 import           Data.Functor.Apply.Free
 import           Data.Functor.Associative
 import           Data.Functor.Day               (Day(..))
-import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Internal
+import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Identity
 import           Data.Functor.Interpret
 import           Data.Functor.Plus
@@ -138,10 +139,17 @@ class Associative t => Tensor t where
     intro1 :: f ~> t f (I t)
     intro2 :: g ~> t (I t) g
 
-    elim1  :: Functor f => t f (I t) ~> f
-    elim2  :: Functor g => t (I t) g ~> g
+    elim1 :: Functor f => t f (I t) ~> f
+    elim2 :: Functor g => t (I t) g ~> g
 
-    -- {-# MINIMAL intro1, intro2, elim1, elim2, assoc, disassoc #-}
+    {-# MINIMAL intro1, intro2, elim1, elim2 #-}
+
+rightIdentity :: (Tensor t, Functor f) => f <~> t f    (I t)
+rightIdentity = isoF intro1 elim1
+
+leftIdentity  :: (Tensor t, Functor g) => g <~> t (I t) g
+leftIdentity = isoF intro2 elim2
+
 
 ---- | A useful construction that works like a "linked list" of @t f@ applied
 ---- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
@@ -202,58 +210,105 @@ class Associative t => Tensor t where
 -- define instances of this typeclass.
 class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     type MF t :: (Type -> Type) -> Type -> Type
-    -- | If @'MF' t f@ represents multiple applications of @t f@ with
-    -- itself, then @nilMF@ gives us "zero applications of @f@".
-    --
-    -- Note that @t@ cannot be inferred from the type of 'nilMF', so this
-    -- function must always be called with -XTypeApplications:
-    --
-    -- @
-    -- 'nilMF' \@'Day' :: 'Identity' '~>' 'Ap' f
-    -- 'nilMF' \@'Comp' :: 'Identity' '~>' 'Free' f
-    -- 'nilMF' \@(':*:') :: 'Proxy' '~>' 'ListF' f
-    -- @
-    --
-    -- Together with 'consMF', forms an inverse with 'unconsMF'.
-    nilMF    :: I t ~> MF t f
-    consMF   :: t f (MF t f) ~> MF t f
 
-    -- | If a @'MF' t f@ represents multiple applications of @t f@ to itself,
-    -- 'unconsMF' lets us break it up into two possibilities:
-    --
-    -- 1.   The @'MF' t f@ had no applications of @f@
-    -- 2.   The @'MF' t f@ had at least one application of @f@; we return
-    --      the "first" @f@ applied to the rest of the @f@s.
-    --
-    -- Should form an inverse with 'reconsMF':
-    --
-    -- @
-    -- 'reconsMF' . 'unconsMF' == id
-    -- 'unconsMF' . 'reconsMF' == id
-    -- @
-    --
-    -- where 'reconsMF' is 'nilMF' on the left side of the ':+:', and
-    -- 'consMF' on the right side of the ':+:'.
-    unconsMF   :: MF t f ~> I t :+: t f (MF t f)
-    -- unconsMF m = case toF @t m of
-    --   Done x  -> L1 x
-    --   More xs -> R1 . hright fromF $ xs
-
+    splitSF  :: SF t f <~> t f (MF t f)
+    splitMF  :: MF t f <~> I t :+: SF t f
+    -- splitMF = isoF
+    --     (hright (_ . consMF @t) . unconsMF @t)
+    --     (\case L1 x -> nilMF @t x; R1 y -> fromSF @t y)
     appendMF :: t (MF t f) (MF t f) ~> MF t f
 
-    -- | A version of 'retract' that works for a 'Tensor'.  It retracts
-    -- /both/ @f@s into a single @f@.
+    fromSF   :: SF t f ~> MF t f
+    fromSF   = consMF @t . viewF (splitSF @t)
+    nilMF    :: I t ~> MF t f
+    nilMF    = reviewF (splitMF @t) . L1
+    consMF   :: t f (MF t f) ~> MF t f
+    consMF   = appendMF . hleft inject
+    unconsMF :: MF t f ~> I t :+: t f (MF t f)
+    unconsMF = hright (viewF (splitSF @t))
+             . viewF (splitMF @t)
+    toMF     :: t f f ~> MF t f
+    toMF     = appendMF @t . hbimap inject inject
+
     retractT :: C (MF t) f => t f f ~> f
     retractT = retract . toMF
-
-    -- | A version of 'interpret' that works for a 'Tensor'.  It takes two
-    -- interpreting functions, and interprets both joined functors one
-    -- after the other into @h@.
     interpretT :: C (MF t) h => (f ~> h) -> (g ~> h) -> t f g ~> h
-    interpretT f g = retractT . hbimap f g
+    interpretT f g = retract . toMF . hbimap f g
+    pureT  :: C (MF t) f => I t ~> f
+    pureT  = retract . nilMF @t
 
-    -- | Embed a direct application of @f@ to itself into a @'SF' t f@.
-    toMF     :: t f f ~> MF t f
+    {-# MINIMAL splitSF, splitMF, appendMF #-}
+
+    ---- | If @'MF' t f@ represents multiple applications of @t f@ with
+    ---- itself, then @nilMF@ gives us "zero applications of @f@".
+    ----
+    ---- Note that @t@ cannot be inferred from the type of 'nilMF', so this
+    ---- function must always be called with -XTypeApplications:
+    ----
+    ---- @
+    ---- 'nilMF' \@'Day' :: 'Identity' '~>' 'Ap' f
+    ---- 'nilMF' \@'Comp' :: 'Identity' '~>' 'Free' f
+    ---- 'nilMF' \@(':*:') :: 'Proxy' '~>' 'ListF' f
+    ---- @
+    ----
+    ---- Together with 'consMF', forms an inverse with 'unconsMF'.
+    --nilMF    :: I t ~> MF t f
+    --consMF   :: t f (MF t f) ~> MF t f
+
+    ---- | If a @'MF' t f@ represents multiple applications of @t f@ to itself,
+    ---- 'unconsMF' lets us break it up into two possibilities:
+    ----
+    ---- 1.   The @'MF' t f@ had no applications of @f@
+    ---- 2.   The @'MF' t f@ had at least one application of @f@; we return
+    ----      the "first" @f@ applied to the rest of the @f@s.
+    ----
+    ---- Should form an inverse with 'reconsMF':
+    ----
+    ---- @
+    ---- 'reconsMF' . 'unconsMF' == id
+    ---- 'unconsMF' . 'reconsMF' == id
+    ---- @
+    ----
+    ---- where 'reconsMF' is 'nilMF' on the left side of the ':+:', and
+    ---- 'consMF' on the right side of the ':+:'.
+    --unconsMF   :: MF t f ~> I t :+: t f (MF t f)
+    ---- unconsMF m = case toF @t m of
+    ----   Done x  -> L1 x
+    ----   More xs -> R1 . hright fromF $ xs
+
+    --appendMF :: t (MF t f) (MF t f) ~> MF t f
+
+    --fromSF   :: SF t f ~> t f (MF t f)
+    --unconsSF :: MF t f ~> I t :+: SF t f
+
+    ---- | A version of 'retract' that works for a 'Tensor'.  It retracts
+    ---- /both/ @f@s into a single @f@.
+    --retractT :: C (MF t) f => t f f ~> f
+    --retractT = retract . toMF
+
+    ---- | A version of 'interpret' that works for a 'Tensor'.  It takes two
+    ---- interpreting functions, and interprets both joined functors one
+    ---- after the other into @h@.
+    --interpretT :: C (MF t) h => (f ~> h) -> (g ~> h) -> t f g ~> h
+    --interpretT f g = retract . toMF . hbimap f g
+
+    ---- | Embed a direct application of @f@ to itself into a @'MF' t f@.
+    --toMF     :: t f f ~> MF t f
+    --toMF     = consMF . fromSF @t . toSF
+
+    ---- | If we have an instance of @t@, we can generate an @f@ based on how
+    ---- it interacts with @t@.
+    ----
+    ---- Specialized (and simplified), this type is:
+    ----
+    ---- @
+    ---- 'pureT' \@'Day'   :: 'Applicative' f => a -> f a  -- 'pure'
+    ---- 'pureT' \@'Comp'  :: 'Monad' f => a -> f a    -- 'return'
+    ---- 'pureT' \@(':*:') :: 'Plus' f => f a          -- 'zero'
+    ---- @
+    --pureT  :: C (MF t) f => I t ~> f
+    --pureT  = retract . nilMF @t
+
 
     ---- | Convert a linked list of @t f@s applied to themselves (stored in
     ---- the 'F' type) into @'MF' t f@, the data type representing multiple
@@ -298,19 +353,6 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     --appendF  :: t (F t (I t) f) (F t (I t) f) ~> F t (I t) f
     --appendF = toF . appendMF . hbimap fromF fromF
 
-    -- | If we have an instance of @t@, we can generate an @f@ based on how
-    -- it interacts with @t@.
-    --
-    -- Specialized (and simplified), this type is:
-    --
-    -- @
-    -- 'pureT' \@'Day'   :: 'Applicative' f => a -> f a  -- 'pure'
-    -- 'pureT' \@'Comp'  :: 'Monad' f => a -> f a    -- 'return'
-    -- 'pureT' \@(':*:') :: 'Plus' f => f a          -- 'zero'
-    -- @
-    pureT  :: C (MF t) f => I t ~> f
-    -- pureT  = retract . fromF @t . Done
-
     -- {-# MINIMAL nilMF, consMF, unconsMF, appendMF | fromF, toF, appendF #-}
 
 --instance HBifunctor t => HFunctor (F t i) where
@@ -335,8 +377,7 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
 -- | The inverse of 'unconsMF'.  Calls 'nilMF' on the left (nil) branch,
 -- and 'consMF' on the right (cons) branch.
 reconsMF :: forall t f. Monoidal t => I t :+: t f (MF t f) ~> MF t f
-reconsMF = undefined
--- reconsMF = interpretT (nilMF @t) (consMF @t)
+reconsMF = nilMF @t !*! consMF @t
 
 ---- | If we have @'Tensor' t@, we can make a singleton 'F'.
 ----
@@ -458,15 +499,20 @@ instance Tensor (:*:) where
 instance Monoidal (:*:) where
     type MF (:*:) = ListF
 
-    nilMF ~Proxy = ListF []
-    consMF (x :*: ListF xs)    = ListF $ x : xs
-    unconsMF = hright nonEmptyProd . fromListF
+    splitSF = isoF nonEmptyProd ProdNonEmpty
+    splitMF = isoF fromListF $ \case
+      L1 ~Proxy -> ListF []
+      R1 x      -> toListF x
     appendMF (ListF xs :*: ListF ys) = ListF (xs ++ ys)
+
+    nilMF ~Proxy            = ListF []
+    consMF (x :*: ListF xs) = ListF $ x : xs
+    unconsMF                = hright nonEmptyProd . fromListF
+    toMF   (x :*: y       ) = ListF [x, y]
 
     retractT       (x :*: y) = x <!> y
     interpretT f g (x :*: y) = f x <!> g y
-    toMF           (x :*: y) = ListF [x, y]
-    pureT _  = zero
+    pureT          _         = zero
 
 instance Tensor Day where
     type I Day = Identity
@@ -479,41 +525,49 @@ instance Tensor Day where
 instance Monoidal Day where
     type MF Day = Ap
 
-    nilMF    = pure . runIdentity
-    consMF (Day x y z) = z <$> inject x <*> y
-    unconsMF = hright ap1Day . fromAp
+    splitSF = isoF ap1Day DayAp1
+    splitMF = isoF fromAp $ \case
+      L1 (Identity x) -> pure x
+      R1 x            -> toAp x
     appendMF (Day x y z) = z <$> x <*> y
+
+    nilMF              = pure . runIdentity
+    consMF (Day x y z) = z <$> inject x <*> y
+    unconsMF           = hright ap1Day . fromAp
+    toMF   (Day x y z) = z <$> liftAp x <*> liftAp y
 
     retractT       (Day x y z) = z <$> x <*> y
     interpretT f g (Day x y z) = z <$> f x <*> g y
-    toMF           (Day x y z) = z <$> liftAp x <*> liftAp y
-    pureT = pure . runIdentity
+    pureT                      = pure . runIdentity
+
 
 instance Tensor (:+:) where
     type I (:+:) = Void1
 
     intro1 = L1
     intro2 = R1
-    elim1  = \case
+
+    elim1 = \case
       L1 x -> x
       R1 y -> absurd1 y
-    elim2  = \case
+    elim2 = \case
       L1 x -> absurd1 x
       R1 y -> y
 
 instance Monoidal (:+:) where
     type MF (:+:) = Step
 
-    nilMF      = absurd1
-    consMF     = consSF
-    unconsMF (Step n x) = R1 $ case minusNaturalMaybe n 1 of
-      Nothing -> L1 x
-      Just m  -> R1 (Step m x)
-    appendMF   = appendSF
+    splitSF  = shiftStep
+    splitMF  = isoF R1 (\case L1 v -> absurd1 v; R1 x -> x)
+    appendMF = appendSF
+
+    nilMF    = absurd1
+    consMF   = consSF
+    unconsMF = R1 . stepDown
+    toMF     = toSF
 
     retractT   = retractS
     interpretT = interpretS
-    toMF       = toSF
     pureT      = absurd1
 
 instance Tensor Comp where
@@ -528,16 +582,25 @@ instance Tensor Comp where
 instance Monoidal Comp where
     type MF Comp = Free
 
-    nilMF  = pure . runIdentity
-    consMF (x :>>= y) = Free $ \p b -> b x $ \z -> runFree (y z) p b
-    -- unconsMF x = runFree x (L1 . Identity) $ \y n -> R1 $
-    --     y :>>= ((pure . runIdentity !*! go) . n)
-    --   where
-    --     go (y :>>= z) = Free $ \p b -> b y (_ . z)
+    splitSF = isoF free1Comp CompFree1
+    splitMF = isoF fromFree $ \case
+      L1 (Identity x) -> pure x
+      R1 x            -> toFree x
+    appendMF (x :>>= y) = x >>= y
 
-    retractT (x :>>= y) = x >>= y
-    pureT = pure . runIdentity
-    toMF (x :>>= y) = Free $ \p b -> b x (($ p) . b . y)
+    nilMF             = pure . runIdentity
+    consMF (x :>>= y) = Free $ \p b -> b x $ \z -> runFree (y z) p b
+    unconsMF x        = runFree x (L1 . Identity) $ \y n -> R1 $
+      y :>>= ( ( pure . runIdentity
+             !*! (\case z :>>= h -> liftFree z >>= h)
+               )
+             . n
+             )
+    toMF   (x :>>= y) = liftFree x >>= (inject . y)
+
+    retractT       (x :>>= y) = x >>= y
+    interpretT f g (x :>>= y) = f x >>= (g . y)
+    pureT                     = pure . runIdentity
 
 ---- | Form an 'HFunctor' by applying the same input twice to an
 ---- 'HBifunctor'.
