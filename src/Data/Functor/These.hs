@@ -8,6 +8,8 @@
 
 module Data.Functor.These (
     These1(..)
+  , stepsUp
+  , stepsDown
   ) where
 
 import           Control.Applicative.Step
@@ -106,6 +108,9 @@ instance Semigroupoidal These1 where
       These1 (Steps xs) (Steps ys) -> Steps $
         let (k, _) = NEM.findMax xs
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+    unrollSF = More1  -- this will have to make sense with unrollMF
+             . hright unrollSF
+             . stepsDown
 
     consSF = stepsUp
     toSF = \case
@@ -126,7 +131,7 @@ instance Monoidal These1 where
     type MF These1 = Steps
 
     splitSF = isoF stepsDown stepsUp
-    splitMF = isoF R1 $ \case
+    matchMF = isoF R1 $ \case
       L1 v -> absurd1 v
       R1 x -> x
     appendMF = appendSF

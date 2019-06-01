@@ -69,6 +69,10 @@ module Data.Functor.Tensor (
   , extractT
   , getT, (!*!)
   , collectT
+  , F(..)
+  , unrollMF, rerollMF, unrolledMF
+  , splitF1, matchF
+  , injectF
   -- , injectF
   -- , WrappedHBifunctor(..)
   -- , JoinT(..)
@@ -92,6 +96,7 @@ import           Data.Copointed
 import           Data.Functor.Apply.Free
 import           Data.Functor.Associative
 import           Data.Functor.Day               (Day(..))
+import           Data.Functor.HBifunctor
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Identity
@@ -151,23 +156,23 @@ leftIdentity  :: (Tensor t, Functor g) => g <~> t (I t) g
 leftIdentity = isoF intro2 elim2
 
 
----- | A useful construction that works like a "linked list" of @t f@ applied
----- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
----- @t f (t f (t f f))@, etc.
-----
----- If @t@ is 'Monoidal', then it means we can "collapse" this linked list
----- into some final type @'MF' t@ ('fromF'), and also extract it back into a linked
----- list ('toF').
---data F t i f a = Done (i a)
---               | More (t f (F t i f) a)
+-- | A useful construction that works like a "linked list" of @t f@ applied
+-- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
+-- @t f (t f (t f f))@, etc.
+--
+-- If @t@ is 'Monoidal', then it means we can "collapse" this linked list
+-- into some final type @'MF' t@ ('fromF'), and also extract it back into a linked
+-- list ('toF').
+data F t i f a = Done (i a)
+               | More (t f (F t i f) a)
 
---instance (Functor i, Functor (t f (F t i f))) => Functor (F t i f) where
---    fmap f = \case
---      Done x  -> Done (fmap f x)
---      More xs -> More (fmap f xs)
+instance (Functor i, Functor (t f (F t i f))) => Functor (F t i f) where
+    fmap f = \case
+      Done x  -> Done (fmap f x)
+      More xs -> More (fmap f xs)
 
---deriving instance (Show (i a), Show (t f (F t i f) a)) => Show (F t i f a)
---deriving instance (Read (i a), Read (t f (F t i f) a)) => Read (F t i f a)
+deriving instance (Show (i a), Show (t f (F t i f) a)) => Show (F t i f a)
+deriving instance (Read (i a), Read (t f (F t i f) a)) => Read (F t i f a)
 
 -- | For some tensors @t@, you can represt the act of repeatedly combining
 -- the same functor an arbitrary amount of times:
@@ -212,18 +217,18 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     type MF t :: (Type -> Type) -> Type -> Type
 
     splitSF  :: SF t f <~> t f (MF t f)
-    splitMF  :: MF t f <~> I t :+: SF t f
+    matchMF  :: MF t f <~> I t :+: SF t f
     appendMF :: t (MF t f) (MF t f) ~> MF t f
 
     fromSF   :: SF t f ~> MF t f
     fromSF   = consMF @t . viewF (splitSF @t)
     nilMF    :: I t ~> MF t f
-    nilMF    = reviewF (splitMF @t) . L1
+    nilMF    = reviewF (matchMF @t) . L1
     consMF   :: t f (MF t f) ~> MF t f
     consMF   = appendMF . hleft inject
     unconsMF :: MF t f ~> I t :+: t f (MF t f)
     unconsMF = hright (viewF (splitSF @t))
-             . viewF (splitMF @t)
+             . viewF (matchMF @t)
     toMF     :: t f f ~> MF t f
     toMF     = appendMF @t . hbimap inject inject
 
@@ -234,7 +239,7 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     pureT  :: C (MF t) f => I t ~> f
     pureT  = retract . nilMF @t
 
-    {-# MINIMAL splitSF, splitMF, appendMF #-}
+    {-# MINIMAL splitSF, matchMF, appendMF #-}
 
     ---- | If @'MF' t f@ represents multiple applications of @t f@ with
     ---- itself, then @nilMF@ gives us "zero applications of @f@".
@@ -376,12 +381,38 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
 reconsMF :: forall t f. Monoidal t => I t :+: t f (MF t f) ~> MF t f
 reconsMF = nilMF @t !*! consMF @t
 
----- | If we have @'Tensor' t@, we can make a singleton 'F'.
-----
----- We can also 'retract' and 'interpret' an 'F' using its 'Interpret'
----- instance.
---injectF :: forall t f. Tensor t => f ~> F t (I t) f
---injectF = More . hright Done . intro1
+unrolledMF :: forall t f. Monoidal t => MF t f <~> F t (I t) f
+unrolledMF = isoF unrollMF rerollMF
+
+unrollMF :: forall t f. Monoidal t => MF t f ~> F t (I t) f
+unrollMF = (Done !*! More . hright (unrollMF @t) . viewF (splitSF @t))
+         . viewF (matchMF @t)
+
+rerollMF :: forall t f. Monoidal t => F t (I t) f ~> MF t f
+rerollMF = \case
+    Done x  -> nilMF @t x
+    More xs -> consMF . hright (rerollMF @t) $ xs
+
+splitF1
+    :: forall t f. (Monoidal t, Functor f)
+    => F1 t f <~> t f (F t (I t) f)
+splitF1 = fromF unrolledSF
+        . splitSF @t
+        . overHBifunctor id unrolledMF
+
+matchF
+    :: forall t f. (Monoidal t, Functor f)
+    => F t (I t) f <~> I t :+: F1 t f
+matchF = fromF unrolledMF
+       . matchMF @t
+       . overHBifunctor id unrolledSF
+
+-- | If we have @'Tensor' t@, we can make a singleton 'F'.
+--
+-- We can also 'retract' and 'interpret' an 'F' using its 'Interpret'
+-- instance.
+injectF :: forall t f. Tensor t => f ~> F t (I t) f
+injectF = More . hright Done . intro1
 
 -- | Useful wrapper over 'retractT' to allow you to directly extract an @a@
 -- from a @t f f a@, if @f@ is a valid retraction from @t@, and @f@ is an
@@ -497,7 +528,7 @@ instance Monoidal (:*:) where
     type MF (:*:) = ListF
 
     splitSF = isoF nonEmptyProd ProdNonEmpty
-    splitMF = isoF fromListF $ \case
+    matchMF = isoF fromListF $ \case
       L1 ~Proxy -> ListF []
       R1 x      -> toListF x
     appendMF (ListF xs :*: ListF ys) = ListF (xs ++ ys)
@@ -523,7 +554,7 @@ instance Monoidal Day where
     type MF Day = Ap
 
     splitSF = isoF ap1Day DayAp1
-    splitMF = isoF fromAp $ \case
+    matchMF = isoF fromAp $ \case
       L1 (Identity x) -> pure x
       R1 x            -> toAp x
     appendMF (Day x y z) = z <$> x <*> y
@@ -555,7 +586,7 @@ instance Monoidal (:+:) where
     type MF (:+:) = Step
 
     splitSF  = shiftStep
-    splitMF  = isoF R1 $ \case
+    matchMF  = isoF R1 $ \case
       L1 v -> absurd1 v
       R1 x -> x
     appendMF = appendSF
@@ -582,7 +613,7 @@ instance Monoidal Comp where
     type MF Comp = Free
 
     splitSF = isoF free1Comp CompFree1
-    splitMF = isoF fromFree $ \case
+    matchMF = isoF fromFree $ \case
       L1 (Identity x) -> pure x
       R1 x            -> toFree x
     appendMF (x :>>= y) = x >>= y
