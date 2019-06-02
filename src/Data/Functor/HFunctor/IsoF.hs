@@ -1,4 +1,6 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE TypeOperators      #-}
 
 module Data.Functor.HFunctor.IsoF (
     type (<~>)

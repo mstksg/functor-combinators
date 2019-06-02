@@ -33,37 +33,39 @@ module Data.Functor.Associative (
   , assoc
   , disassoc
   , Semigroupoidal(..)
+  , matchingSF
+  , extractT
+  , getT
+  , collectT
+  , (!*!)
+  , (!$!)
   , F1(..)
-  , unrolledSF
+  , unrollingSF
   , rerollSF
   , concatF1
   -- , toF1, fromF1, asF1
   ) where
 
-import           Control.Applicative.Lift
+import           Control.Applicative
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
+import           Data.Copointed
 import           Data.Foldable
-import           Data.Function
-import           Data.Functor
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
-import           Data.Functor.Day               (Day(..))
+import           Data.Functor.Day           (Day(..))
 import           Data.Functor.HBifunctor
-import           Data.Functor.HFunctor.Internal
 import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Identity
 import           Data.Functor.Interpret
 import           Data.Functor.Plus
 import           Data.Kind
-import           Data.List.NonEmpty             (NonEmpty(..))
-import           Data.Profunctor
+import           Data.List.NonEmpty         (NonEmpty(..))
 import           Data.Proxy
-import           Data.Tagged
-import           GHC.Generics hiding            (C)
-import qualified Data.Functor.Day               as D
+import           GHC.Generics hiding        (C)
+import qualified Data.Functor.Day           as D
 
 class HBifunctor t => Associative t where
     associative
@@ -95,16 +97,16 @@ deriving instance (Functor f, Functor (t f (F1 t f))) => Functor (F1 t f)
 
 -- newtype F1' t f a = F1' { runF1' :: t f (Lift (F1' t f)) a }
 
-newtype F1Free t f a = F1F
-    { runF1F :: forall g. Functor g => (f ~> g) -> (t f g ~> g) -> g a }
+-- newtype F1Free t f a = F1F
+--     { runF1F :: forall g. Functor g => (f ~> g) -> (t f g ~> g) -> g a }
 
-f1Free :: Semigroupoidal t => F1 t f ~> F1Free t f
-f1Free = \case
-    Done1 x  -> F1F $ \d _ -> d x
-    More1 xs -> F1F $ \d m -> m . hright ((\q -> runF1F q d m) . f1Free) $ xs
+-- f1Free :: Semigroupoidal t => F1 t f ~> F1Free t f
+-- f1Free = \case
+--     Done1 x  -> F1F $ \d _ -> d x
+--     More1 xs -> F1F $ \d m -> m . hright ((\q -> runF1F q d m) . f1Free) $ xs
 
-freeF1 :: (Semigroupoidal t, Functor f, Functor (t f (F1 t f))) => F1Free t f ~> F1 t f
-freeF1 x = runF1F x Done1 More1
+-- freeF1 :: (Semigroupoidal t, Functor f, Functor (t f (F1 t f))) => F1Free t f ~> F1 t f
+-- freeF1 x = runF1F x Done1 More1
 
 class (Associative t, Interpret (SF t)) => Semigroupoidal t where
     type SF t :: (Type -> Type) -> Type -> Type
@@ -113,11 +115,7 @@ class (Associative t, Interpret (SF t)) => Semigroupoidal t where
     -- itself, then we can also "append" two @'SF' t f@s applied to
     -- themselves into one giant @'SF' t f@ containing all of the @t f@s.
     appendSF :: t (SF t f) (SF t f) ~> SF t f
-    matchSF  :: Functor f => SF t f <~> f :+: t f (SF t f)
-    -- unrollSF :: Functor f => SF t f ~> F1 t f
-    -- unrollSF' :: SF t f ~> F1Free t f
-
-    -- matchSF :: SF t f <~> t f (Lift (SF t f))
+    matchSF  :: Functor f => SF t f ~> f :+: t f (SF t f)
 
     -- | Prepend an application of @t f@ to the front of a @'SF' t f@.
     consSF :: t f (SF t f) ~> SF t f
@@ -140,11 +138,14 @@ class (Associative t, Interpret (SF t)) => Semigroupoidal t where
 
     {-# MINIMAL appendSF, matchSF #-}
 
-unrolledSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f <~> F1 t f
-unrolledSF = isoF unrollSF rerollSF
+matchingSF :: (Semigroupoidal t, Functor f) => SF t f <~> f :+: t f (SF t f)
+matchingSF = isoF matchSF (inject !*! consSF)
+
+unrollingSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f <~> F1 t f
+unrollingSF = isoF unrollSF rerollSF
 
 unrollSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f ~> F1 t f
-unrollSF = (\case L1 x -> Done1 x; R1 xs -> More1 (hright unrollSF xs)) . viewF (matchSF @t)
+unrollSF = (Done1 !*! More1 . hright unrollSF) . matchSF @t
 
 rerollSF :: Semigroupoidal t => F1 t f ~> SF t f
 rerollSF = \case
@@ -156,6 +157,91 @@ concatF1 = \case
     Done1 x  -> unrollSF x
     More1 xs -> unrollSF . appendSF . hright (rerollSF . concatF1) $ xs
 
+-- | Useful wrapper over 'retractT' to allow you to directly extract an @a@
+-- from a @t f f a@, if @f@ is a valid retraction from @t@, and @f@ is an
+-- instance of 'Copointed'.
+--
+-- Useful @f@s include 'Identity' or related newtype wrappers from
+-- base:
+--
+-- @
+-- 'extractT'
+--     :: ('Monoidal' t, 'C' ('MF' t) 'Identity')
+--     => t 'Identity' 'Identity' a
+--     -> a
+-- @
+extractT
+    :: (Semigroupoidal t, C (SF t) f, Copointed f)
+    => t f f a
+    -> a
+extractT = copoint . retractS
+
+-- | Useful wrapper over 'interpret' to allow you to directly extract
+-- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
+--
+-- Note that depending on the constraints on the interpretation of @t@, you
+-- may have extra constraints on @b@.
+--
+-- *    If @'C' ('MF' t)@ is 'Data.Constraint.Trivial.Unconstrained', there
+--      are no constraints on @b@
+-- *    If @'C' ('MF' t)@ is 'Apply', @b@ needs to be an instance of 'Semigroup'
+-- *    If @'C' ('MF' t)@ is 'Applicative', @b@ needs to be an instance of 'Monoid'
+--
+-- For some constraints (like 'Monad'), this will not be usable.
+--
+-- @
+-- -- Return the length of either the list, or the Map, depending on which
+-- --   one s in the '+'
+-- length !*! length
+--     :: ([] :+: Map Int) Char
+--     -> Int
+--
+-- -- Return the length of both the list and the map, added together
+-- (Sum . length) !*! (Sum . length)
+--     :: Day [] (Map Int) Char
+--     -> Sum Int
+-- @
+getT
+    :: (Semigroupoidal t, C (SF t) (Const b))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> b
+getT f g = getConst . interpretS (Const . f) (Const . g)
+
+-- | Infix alias for 'getT'
+(!$!)
+    :: (Semigroupoidal t, C (SF t) (Const b))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> b
+(!$!) = getT
+infixr 5 !$!
+
+-- | Infix alias for 'interpretS'
+(!*!)
+    :: (Semigroupoidal t, C (SF t) h)
+    => (f ~> h)
+    -> (g ~> h)
+    -> t f g
+    ~> h
+(!*!) = interpretS
+infixr 5 !*!
+
+-- | Useful wrapper over 'getT' to allow you to collect a @b@ from all
+-- instances of @f@ and @g@ inside a @t f g a@.
+--
+-- This will work if @'C' t@ is 'Data.Constraint.Trivial.Unconstrained',
+-- 'Apply', or 'Applicative'.
+collectT
+    :: (Semigroupoidal t, C (SF t) (Const [b]))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> [b]
+collectT f g = getConst . interpretS (Const . (:[]) . f) (Const . (:[]) . g)
+
 instance Associative (:*:) where
     associative = isoF to_ from_
       where
@@ -165,17 +251,12 @@ instance Associative (:*:) where
 instance Semigroupoidal (:*:) where
     type SF (:*:) = NonEmptyF
 
-    -- unrollSF = shuffle
-    --          . hright (hright unrollSF . fromListF)
-    --          . nonEmptyProd
-    --   where
-    --     shuffle (x :*: L1 ~Proxy) = Done1 x
-    --     shuffle (x :*: R1 xs    ) = More1 (x :*: xs)
     appendSF (NonEmptyF xs :*: NonEmptyF ys) = NonEmptyF (xs <> ys)
-    -- matchSF = isoF to_ from_
-    --   where
-    --     to_   = hright ((\case L1 ~Proxy -> Pure _; R1 xs -> Other xs) . fromListF) . nonEmptyProd
-    --     from_ = undefined
+    matchSF x = case ys of
+        L1 ~Proxy -> L1 y
+        R1 zs     -> R1 $ y :*: zs
+      where
+        y :*: ys = fromListF `hright` nonEmptyProd x
 
     consSF (x :*: NonEmptyF xs) = NonEmptyF $ x :| toList xs
     toSF   (x :*: y           ) = NonEmptyF $ x :| [y]
@@ -189,24 +270,11 @@ instance Associative Day where
 instance Semigroupoidal Day where
     type SF Day = Ap1
 
-    -- unrollSF = shuffle
-    --          . hright (hright unrollSF . fromAp)
-    --          . ap1Day
-    --   where
-    --     shuffle (Day x (L1 (Identity y)) z) = Done1 ((`z` y) <$> x)
-    --     shuffle (Day x (R1 xs         )  z) = More1 (Day x xs z)
-    -- unrollSF' a = case ap1Day a of
-    --   Day x ys z -> case fromAp ys of
-    --     L1 (Identity y) -> F1F $ \d _ -> (`z` y) <$> d x
-    --     R1 xs           -> F1F $ \d m -> m (Day x (runF1F (unrollSF' xs) d m) z)
     appendSF (Day x y z) = z <$> x <.> y
-    -- matchSF = isoF ap1Day DayAp1
-    --         . overHBifunctor id ( isoF fromAp (\case L1 (Identity x) -> pure x; R1 xs -> toAp xs)
-    --                             . isoF (\case L1 (Identity x) -> Pure x; R1 xs -> Other xs)
-    --                                    (\case Pure x -> L1 (Identity x); Other xs -> R1 xs)
-    --                             )
-    -- matchSF = isoF (hright ((\case L1 (Identity x) -> Pure x; R1 xs -> Other xs) . fromAp) . ap1Day)
-    --                (DayAp1 . hright (\case Pure x -> pure x; Other xs -> toAp xs))
+    matchSF a = case fromAp `hright` ap1Day a of
+      Day x y z -> case y of
+        L1 (Identity y') -> L1 $ (`z` y') <$> x
+        R1 ys            -> R1 $ Day x ys z
 
     consSF (Day x y z) = Ap1 x $ flip z <$> toAp y
     toSF   (Day x y z) = z <$> inject x <.> inject y
@@ -232,9 +300,7 @@ instance Semigroupoidal (:+:) where
     appendSF = \case
       L1 x          -> x
       R1 (Step n y) -> Step (n + 1) y
-    -- unrollSF = More1
-    --          . hright (unrollSF @(:+:))
-    --          . stepDown
+    matchSF = hright R1 . stepDown
 
     consSF = \case
       L1 x          -> Step 0       x
@@ -259,25 +325,13 @@ instance Associative Comp where
 instance Semigroupoidal Comp where
     type SF Comp = Free1
 
-    -- unrollSF x = runFree1 x (\y n -> Done1 (y  <&> n))
-    --                         (\y n -> More1 (y :>>= n))
     appendSF (x :>>= y) = x >>- y
-    matchSF = isoF to_ from_
-      where
-        to_ :: Functor f => Free1 f ~> f :+: Comp f (Free1 f)
-        to_ x = runFree1 x
-            (\y n -> L1 (n <$> y))
-            (\y n -> R1 (y :>>= ((\case L1 z -> inject z; R1 zs -> consSF zs) . n)))
-        from_ :: f :+: Comp f (Free1 f) ~> Free1 f
-        from_ = \case
-          L1 x  -> inject x
-          R1 xs -> consSF xs
+    matchSF x = runFree1 x
+        (\y n -> L1 (n <$> y))
+        (\y n -> R1 (y :>>= ((\case L1 z -> inject z; R1 zs -> consSF zs) . n)))
 
     consSF (x :>>= y) = liftFree1 x >>- y
     toSF   (x :>>= g) = liftFree1 x >>- inject . g
 
     retractS       (x :>>= y) = x >>- y
     interpretS f g (x :>>= y) = f x >>- (g . y)
-
-    -- matchSF :: SF t f <~> t f (Lift (SF t f))
-    -- f :+: t f (SF t f)

@@ -10,6 +10,7 @@ module Data.Functor.These (
     These1(..)
   , stepsUp
   , stepsDown
+  , steppings
   ) where
 
 import           Control.Applicative.Step
@@ -108,9 +109,7 @@ instance Semigroupoidal These1 where
       These1 (Steps xs) (Steps ys) -> Steps $
         let (k, _) = NEM.findMax xs
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
-    -- unrollSF = More1  -- this will have to make sense with unrollMF
-    --          . hright unrollSF
-    --          . stepsDown
+    matchSF = R1 . stepsDown
 
     consSF = stepsUp
     toSF = \case
@@ -130,25 +129,22 @@ instance Semigroupoidal These1 where
 instance Monoidal These1 where
     type MF These1 = Steps
 
-    splitSF = isoF stepsDown stepsUp
-    matchMF = isoF R1 $ \case
-      L1 v -> absurd1 v
-      R1 x -> x
+    splittingSF = isoF stepsDown stepsUp
     appendMF = appendSF
 
-    nilMF      = absurd1
-    consMF     = consSF
-    unconsMF   = R1 . stepsDown
-    toMF       = toSF
+    matchingMF  = voidLeftIdentity
+    splittingMF = steppings . voidLeftIdentity
 
-    -- retractT   = retractS
-    -- interpretT = interpretS
+    toMF       = toSF
     pureT      = absurd1
 
 decr :: Natural -> g a -> These1 (First :.: g) (NEMap Natural :.: g) a
 decr i x = case minusNaturalMaybe i 1 of
       Nothing -> This1 . Comp1 $ First x
       Just i' -> That1 . Comp1 $ NEM.singleton i' x
+
+steppings :: Steps f <~> These1 f (Steps f)
+steppings = isoF stepsDown stepsUp
 
 stepsDown :: Steps f ~> These1 f (Steps f)
 stepsDown = hbimap (getFirst . unComp1) (Steps . unComp1)

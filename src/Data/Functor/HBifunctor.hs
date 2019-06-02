@@ -25,4 +25,3 @@ overHBifunctor
 overHBifunctor (cloneIsoF' -> f) (cloneIsoF' -> g) =
         isoF (hbimap (viewF   f) (viewF   g))
              (hbimap (reviewF f) (reviewF g))
-

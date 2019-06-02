@@ -98,10 +98,11 @@ import           Data.Constraint.Trivial
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Apply.Free
+import           Data.Functor.Associative
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
-import           Data.Functor.HFunctor
 import           Data.Functor.HBifunctor
+import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Final
 import           Data.Functor.Interpret
 import           Data.Functor.Tensor

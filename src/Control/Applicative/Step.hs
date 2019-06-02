@@ -10,6 +10,7 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeOperators              #-}
 
 -- |
 -- Module      : Control.Applicative.Step
@@ -31,7 +32,7 @@ module Control.Applicative.Step (
   , Steps(..)
   , stepUp
   , stepDown
-  , shiftStep
+  , stepping
   -- * Void
   , Void1
   , absurd1
@@ -48,7 +49,6 @@ import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           GHC.Generics
 import           GHC.Natural
-import           Numeric.Natural
 import qualified Data.Map.NonEmpty          as NEM
 
 -- | An @f a@, along with a 'Natural' index.
@@ -90,8 +90,8 @@ instance Traversable1 f => Traversable1 (Step f) where
     traverse1 f (Step n x) = Step n <$> traverse1 f x
     sequence1 (Step n x) = Step n <$> sequence1 x
 
-shiftStep :: Step f <~> f :+: Step f
-shiftStep = isoF stepDown stepUp
+stepping :: Step f <~> f :+: Step f
+stepping = isoF stepDown stepUp
 
 stepDown :: Step f ~> f :+: Step f
 stepDown (Step n x) = case minusNaturalMaybe n 1 of

@@ -32,7 +32,6 @@ import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Reverse
 import           Data.Functor.Yoneda
 import           Data.Kind
-import           Data.Profunctor
 import           Data.Tagged
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
