@@ -108,9 +108,9 @@ instance Semigroupoidal These1 where
       These1 (Steps xs) (Steps ys) -> Steps $
         let (k, _) = NEM.findMax xs
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
-    unrollSF = More1  -- this will have to make sense with unrollMF
-             . hright unrollSF
-             . stepsDown
+    -- unrollSF = More1  -- this will have to make sense with unrollMF
+    --          . hright unrollSF
+    --          . stepsDown
 
     consSF = stepsUp
     toSF = \case
@@ -141,8 +141,8 @@ instance Monoidal These1 where
     unconsMF   = R1 . stepsDown
     toMF       = toSF
 
-    retractT   = retractS
-    interpretT = interpretS
+    -- retractT   = retractS
+    -- interpretT = interpretS
     pureT      = absurd1
 
 decr :: Natural -> g a -> These1 (First :.: g) (NEMap Natural :.: g) a

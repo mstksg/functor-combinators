@@ -3,7 +3,7 @@
 module Data.Functor.HFunctor.IsoF (
     type (<~>)
   , isoF
-  , viewF, reviewF
+  , viewF, reviewF, overF
   , fromF
   , AnIsoF'
   , cloneIsoF'
@@ -28,6 +28,9 @@ viewF i = runForget (i (Forget id))
 
 reviewF :: f <~> g -> g ~> f
 reviewF i x = unTagged (i (Tagged x))
+
+overF :: (f <~> g) -> (g ~> g) -> (f ~> f)
+overF i f = i f
 
 fromF :: AnIsoF' f g -> (g <~> f)
 fromF i = isoF g f

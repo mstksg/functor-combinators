@@ -232,10 +232,10 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     toMF     :: t f f ~> MF t f
     toMF     = appendMF @t . hbimap inject inject
 
-    retractT :: C (MF t) f => t f f ~> f
-    retractT = retract . toMF
-    interpretT :: C (MF t) h => (f ~> h) -> (g ~> h) -> t f g ~> h
-    interpretT f g = retract . toMF . hbimap f g
+    -- retractT :: C (MF t) f => t f f ~> f
+    -- retractT = retract . toMF
+    -- interpretT :: C (MF t) h => (f ~> h) -> (g ~> h) -> t f g ~> h
+    -- interpretT f g = retract . toMF . hbimap f g
     pureT  :: C (MF t) f => I t ~> f
     pureT  = retract . nilMF @t
 
@@ -428,10 +428,10 @@ injectF = More . hright Done . intro1
 --     -> a
 -- @
 extractT
-    :: (Monoidal t, C (MF t) f, Copointed f)
+    :: (Monoidal t, C (SF t) f, Copointed f)
     => t f f a
     -> a
-extractT = copoint . retractT
+extractT = copoint . retractS
 
 -- | Useful wrapper over 'interpret' to allow you to directly extract
 -- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
@@ -459,16 +459,16 @@ extractT = copoint . retractT
 --     -> Sum Int
 -- @
 getT
-    :: (Monoidal t, C (MF t) (Const b))
+    :: (Monoidal t, C (SF t) (Const b))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> b
-getT f g = getConst . interpretT (Const . f) (Const . g)
+getT f g = getConst . interpretS (Const . f) (Const . g)
 
 -- | Infix alias for 'getT'
 (!$!)
-    :: (Monoidal t, C (MF t) (Const b))
+    :: (Monoidal t, C (SF t) (Const b))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
@@ -476,14 +476,14 @@ getT f g = getConst . interpretT (Const . f) (Const . g)
 (!$!) = getT
 infixr 5 !$!
 
--- | Infix alias for 'interpretT'
+-- | Infix alias for 'interpretS'
 (!*!)
-    :: (Monoidal t, C (MF t) h)
+    :: (Monoidal t, C (SF t) h)
     => (f ~> h)
     -> (g ~> h)
     -> t f g
     ~> h
-(!*!) = interpretT
+(!*!) = interpretS
 infixr 5 !*!
 
 -- | Useful wrapper over 'getT' to allow you to collect a @b@ from all
@@ -492,12 +492,12 @@ infixr 5 !*!
 -- This will work if @'C' t@ is 'Data.Constraint.Trivial.Unconstrained',
 -- 'Apply', or 'Applicative'.
 collectT
-    :: (Monoidal t, C (MF t) (Const [b]))
+    :: (Monoidal t, C (SF t) (Const [b]))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> [b]
-collectT f g = getConst . interpretT (Const . (:[]) . f) (Const . (:[]) . g)
+collectT f g = getConst . interpretS (Const . (:[]) . f) (Const . (:[]) . g)
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
 -- functor @g@ to the right of an @f@.
@@ -538,8 +538,8 @@ instance Monoidal (:*:) where
     unconsMF                = hright nonEmptyProd . fromListF
     toMF   (x :*: y       ) = ListF [x, y]
 
-    retractT       (x :*: y) = x <!> y
-    interpretT f g (x :*: y) = f x <!> g y
+    -- retractT       (x :*: y) = x <!> y
+    -- interpretT f g (x :*: y) = f x <!> g y
     pureT          _         = zero
 
 instance Tensor Day where
@@ -564,8 +564,8 @@ instance Monoidal Day where
     unconsMF           = hright ap1Day . fromAp
     toMF   (Day x y z) = z <$> liftAp x <*> liftAp y
 
-    retractT       (Day x y z) = z <$> x <*> y
-    interpretT f g (Day x y z) = z <$> f x <*> g y
+    -- retractT       (Day x y z) = z <$> x <*> y
+    -- interpretT f g (Day x y z) = z <$> f x <*> g y
     pureT                      = pure . runIdentity
 
 
@@ -596,8 +596,8 @@ instance Monoidal (:+:) where
     unconsMF = R1 . stepDown
     toMF     = toSF
 
-    retractT   = retractS
-    interpretT = interpretS
+    -- retractT   = retractS
+    -- interpretT = interpretS
     pureT      = absurd1
 
 instance Tensor Comp where
@@ -628,8 +628,8 @@ instance Monoidal Comp where
              )
     toMF   (x :>>= y) = liftFree x >>= (inject . y)
 
-    retractT       (x :>>= y) = x >>= y
-    interpretT f g (x :>>= y) = f x >>= (g . y)
+    -- retractT       (x :>>= y) = x >>= y
+    -- interpretT f g (x :>>= y) = f x >>= (g . y)
     pureT                     = pure . runIdentity
 
 ---- | Form an 'HFunctor' by applying the same input twice to an
