@@ -11,6 +11,7 @@
 {-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs               #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -29,21 +30,26 @@
 
 
 module Data.Functor.Associative (
+  -- * 'Associative'
     Associative(..)
   , assoc
   , disassoc
+  -- * 'Semigroupoidal'
   , Semigroupoidal(..)
   , matchingSF
+  -- ** Utility
   , extractT
   , getT
   , collectT
   , (!*!)
   , (!$!)
-  , F1(..)
+  -- * 'Chain1'
+  , Chain1(..)
+  , foldChain1
+  , unfoldChain1
   , unrollingSF
+  , unrollSF
   , rerollSF
-  , concatF1
-  -- , toF1, fromF1, asF1
   ) where
 
 import           Control.Applicative
@@ -67,46 +73,38 @@ import           Data.Proxy
 import           GHC.Generics hiding        (C)
 import qualified Data.Functor.Day           as D
 
+-- | An 'HBifunctor' where it doesn't matter which binds first is
+-- 'Associative'.  Knowing this gives us a lot of power to rearrange the
+-- internals of our 'HFunctor' at will.
+--
+-- For example, for the functor product:
+--
+-- @
+-- data (f ':*:' g) a = f a :*: g a
+-- @
+--
+-- We know that @f :*: (g :*: h)@ is the same as @(f :*: g) :*: h@.
 class HBifunctor t => Associative t where
-    associative
+    -- | The isomorphism between @t f (t g h) a@ and @t (t f g) h a@.  To
+    -- use this isomorphism, see 'assoc' and 'disassoc'.
+    associating
         :: (Functor f, Functor g, Functor h)
         => t f (t g h) <~> t (t f g) h
-    {-# MINIMAL associative #-}
+    {-# MINIMAL associating #-}
 
+-- | Reassociate an application of @t@.
 assoc
     :: (Associative t, Functor f, Functor g, Functor h)
     => t f (t g h)
     ~> t (t f g) h
-assoc = viewF associative
+assoc = viewF associating
 
+-- | Reassociate an application of @t@.
 disassoc
     :: (Associative t, Functor f, Functor g, Functor h)
     => t (t f g) h
     ~> t f (t g h)
-disassoc = reviewF associative
-
-data F1 t f a = Done1 (f a)
-              | More1 (t f (F1 t f) a)
-
-deriving instance (Show (t f (F1 t f) a), Show (f a)) => Show (F1 t f a)
-
-
-deriving instance (Functor f, Functor (t f (F1 t f))) => Functor (F1 t f)
-
--- data LiftT
-
--- newtype F1' t f a = F1' { runF1' :: t f (Lift (F1' t f)) a }
-
--- newtype F1Free t f a = F1F
---     { runF1F :: forall g. Functor g => (f ~> g) -> (t f g ~> g) -> g a }
-
--- f1Free :: Semigroupoidal t => F1 t f ~> F1Free t f
--- f1Free = \case
---     Done1 x  -> F1F $ \d _ -> d x
---     More1 xs -> F1F $ \d m -> m . hright ((\q -> runF1F q d m) . f1Free) $ xs
-
--- freeF1 :: (Semigroupoidal t, Functor f, Functor (t f (F1 t f))) => F1Free t f ~> F1 t f
--- freeF1 x = runF1F x Done1 More1
+disassoc = reviewF associating
 
 class (Associative t, Interpret (SF t)) => Semigroupoidal t where
     type SF t :: (Type -> Type) -> Type -> Type
@@ -123,39 +121,93 @@ class (Associative t, Interpret (SF t)) => Semigroupoidal t where
 
     -- | Embed a direct application of @f@ to itself into a @'SF' t f@.
     toSF :: t f f ~> SF t f
-    toSF = appendSF . hbimap inject inject
+    toSF = consSF . hright inject
 
     -- | A version of 'retract' that works for a 'Tensor'.  It retracts
     -- /both/ @f@s into a single @f@.
-    retractS :: C (SF t) f => t f f ~> f
-    retractS = retract . toSF
+    biretract :: C (SF t) f => t f f ~> f
+    biretract = retract . toSF
 
     -- | A version of 'interpret' that works for a 'Tensor'.  It takes two
     -- interpreting functions, and interprets both joined functors one
     -- after the other into @h@.
-    interpretS :: C (SF t) h => (f ~> h) -> (g ~> h) -> t f g ~> h
-    interpretS f g = retract . toSF . hbimap f g
+    binterpret
+        :: C (SF t) h
+        => f ~> h
+        -> g ~> h
+        -> t f g ~> h
+    binterpret f g = retract . toSF . hbimap f g
 
     {-# MINIMAL appendSF, matchSF #-}
 
+data Chain1 t f a = Done1 (f a)
+              | More1 (t f (Chain1 t f) a)
+
+deriving instance (Show (t f (Chain1 t f) a), Show (f a)) => Show (Chain1 t f a)
+deriving instance (Functor f, Functor (t f (Chain1 t f))) => Functor (Chain1 t f)
+
+foldChain1 :: forall t f g. HBifunctor t => f ~> g -> t f g ~> g -> Chain1 t f ~> g
+foldChain1 f g = go
+  where
+    go :: Chain1 t f ~> g
+    go = \case
+      Done1 x  -> f x
+      More1 xs -> g (hright go xs)
+
+unfoldChain1 :: forall t f g. HBifunctor t => (g ~> f :+: t f g) -> g ~> Chain1 t f
+unfoldChain1 f = go
+  where
+    go :: g ~> Chain1 t f
+    go = (Done1 !*! More1 . hright go) . f
+
+instance HBifunctor t => HFunctor (Chain1 t) where
+    hmap f = foldChain1 (Done1 . f) (More1 . hleft f)
+
+instance (HBifunctor t, Semigroupoidal t) => Interpret (Chain1 t) where
+    type C (Chain1 t) = C (SF t)
+    inject  = Done1
+    retract = \case
+      Done1 x  -> x
+      More1 xs -> binterpret id retract xs
+    interpret :: forall f g. C (SF t) g => f ~> g -> Chain1 t f ~> g
+    interpret f = go
+      where
+        go :: Chain1 t f ~> g
+        go = \case
+          Done1 x  -> f x
+          More1 xs -> binterpret f go xs
+
+-- | An @'SF' t f@ represents the successive application of @t@ to @f@,
+-- over and over again.   So, that means that an @'SF' t f@ must either be
+-- a single @f@, or an @t f (SF t f)@.
+--
+-- 'matchingSF' states that these two are isomorphic.  Use 'matchSF' and
+-- @'inject' '!*!' 'consSF'@ to convert between one and the other.
 matchingSF :: (Semigroupoidal t, Functor f) => SF t f <~> f :+: t f (SF t f)
 matchingSF = isoF matchSF (inject !*! consSF)
 
-unrollingSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f <~> F1 t f
+-- | A type @'SF' t@ is supposed to represent the successive application of
+-- @t@s to itself.  The type @'Chain1' t f@ is an actual concrete ADT that contains
+-- successive applications of @t@ to itself, and you can pattern match on
+-- each layer.
+--
+-- 'unrollingSF' states that the two types are isormorphic.  Use 'runollSF'
+-- and 'rerollSF' to convert between the two.
+unrollingSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f <~> Chain1 t f
 unrollingSF = isoF unrollSF rerollSF
 
-unrollSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f ~> F1 t f
-unrollSF = (Done1 !*! More1 . hright unrollSF) . matchSF @t
+-- | A type @'SF' t@ is supposed to represent the successive application of
+-- @t@s to itself.  'unrollSF' makes that successive application explicit,
+-- buy converting it to a literal 'Chain1' of applications of @t@ to
+-- itself.
+unrollSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f ~> Chain1 t f
+unrollSF = unfoldChain1 (matchSF @t)
 
-rerollSF :: Semigroupoidal t => F1 t f ~> SF t f
-rerollSF = \case
-    Done1 x  -> inject x
-    More1 xs -> consSF . hright rerollSF $ xs
-
-concatF1 :: (Semigroupoidal t, Functor f) => F1 t (SF t f) ~> F1 t f
-concatF1 = \case
-    Done1 x  -> unrollSF x
-    More1 xs -> unrollSF . appendSF . hright (rerollSF . concatF1) $ xs
+-- | A type @'SF' t@ is supposed to represent the successive application of
+-- @t@s to itself.  'rerollSF' takes an explicit 'Chain1' of applications
+-- of @t@ to itself and rolls it back up into an @'SF' t@.
+rerollSF :: Semigroupoidal t => Chain1 t f ~> SF t f
+rerollSF = foldChain1 inject consSF
 
 -- | Useful wrapper over 'retractT' to allow you to directly extract an @a@
 -- from a @t f f a@, if @f@ is a valid retraction from @t@, and @f@ is an
@@ -174,7 +226,7 @@ extractT
     :: (Semigroupoidal t, C (SF t) f, Copointed f)
     => t f f a
     -> a
-extractT = copoint . retractS
+extractT = copoint . biretract
 
 -- | Useful wrapper over 'interpret' to allow you to directly extract
 -- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
@@ -207,7 +259,7 @@ getT
     -> (forall x. g x -> b)
     -> t f g a
     -> b
-getT f g = getConst . interpretS (Const . f) (Const . g)
+getT f g = getConst . binterpret (Const . f) (Const . g)
 
 -- | Infix alias for 'getT'
 (!$!)
@@ -219,14 +271,14 @@ getT f g = getConst . interpretS (Const . f) (Const . g)
 (!$!) = getT
 infixr 5 !$!
 
--- | Infix alias for 'interpretS'
+-- | Infix alias for 'binterpret'
 (!*!)
     :: (Semigroupoidal t, C (SF t) h)
     => (f ~> h)
     -> (g ~> h)
     -> t f g
     ~> h
-(!*!) = interpretS
+(!*!) = binterpret
 infixr 5 !*!
 
 -- | Useful wrapper over 'getT' to allow you to collect a @b@ from all
@@ -240,10 +292,10 @@ collectT
     -> (forall x. g x -> b)
     -> t f g a
     -> [b]
-collectT f g = getConst . interpretS (Const . (:[]) . f) (Const . (:[]) . g)
+collectT f g = getConst . binterpret (Const . (:[]) . f) (Const . (:[]) . g)
 
 instance Associative (:*:) where
-    associative = isoF to_ from_
+    associating = isoF to_ from_
       where
         to_   (x :*: (y :*: z)) = (x :*: y) :*: z
         from_ ((x :*: y) :*: z) = x :*: (y :*: z)
@@ -261,11 +313,11 @@ instance Semigroupoidal (:*:) where
     consSF (x :*: NonEmptyF xs) = NonEmptyF $ x :| toList xs
     toSF   (x :*: y           ) = NonEmptyF $ x :| [y]
 
-    retractS (x :*: y) = x <!> y
-    interpretS f g (x :*: y) = f x <!> g y
+    biretract (x :*: y) = x <!> y
+    binterpret f g (x :*: y) = f x <!> g y
 
 instance Associative Day where
-    associative = isoF D.assoc D.disassoc
+    associating = isoF D.assoc D.disassoc
 
 instance Semigroupoidal Day where
     type SF Day = Ap1
@@ -279,11 +331,11 @@ instance Semigroupoidal Day where
     consSF (Day x y z) = Ap1 x $ flip z <$> toAp y
     toSF   (Day x y z) = z <$> inject x <.> inject y
 
-    retractS (Day x y z) = z <$> x <.> y
-    interpretS f g (Day x y z) = z <$> f x <.> g y
+    biretract (Day x y z) = z <$> x <.> y
+    binterpret f g (Day x y z) = z <$> f x <.> g y
 
 instance Associative (:+:) where
-    associative = isoF to_ from_
+    associating = isoF to_ from_
       where
         to_ = \case
           L1 x      -> L1 (L1 x)
@@ -309,15 +361,15 @@ instance Semigroupoidal (:+:) where
       L1 x -> Step 0 x
       R1 y -> Step 1 y
 
-    retractS = \case
+    biretract = \case
       L1 x -> x
       R1 y -> y
-    interpretS f g = \case
+    binterpret f g = \case
       L1 x -> f x
       R1 y -> g y
 
 instance Associative Comp where
-    associative = isoF to_ from_
+    associating = isoF to_ from_
       where
         to_   (x :>>= y) = (x :>>= (unComp . y)) :>>= id
         from_ ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
@@ -333,5 +385,5 @@ instance Semigroupoidal Comp where
     consSF (x :>>= y) = liftFree1 x >>- y
     toSF   (x :>>= g) = liftFree1 x >>- inject . g
 
-    retractS       (x :>>= y) = x >>- y
-    interpretS f g (x :>>= y) = f x >>- (g . y)
+    biretract      (x :>>= y) = x >>- y
+    binterpret f g (x :>>= y) = f x >>- (g . y)

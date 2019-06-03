@@ -67,7 +67,7 @@ instance HBifunctor These1 where
 
 
 instance Associative These1 where
-    associative = isoF to_ from_
+    associating = isoF to_ from_
       where
         to_ = \case
           This1  x              -> This1  (This1  x  )
@@ -117,11 +117,11 @@ instance Semigroupoidal These1 where
       That1    y -> Steps $ NEM.singleton 1 y
       These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
 
-    retractS = \case
+    biretract = \case
       This1  x   -> x
       That1    y -> y
       These1 x y -> x <!> y
-    interpretS f g = \case
+    binterpret f g = \case
       This1  x   -> f x
       That1    y -> g y
       These1 x y -> f x <!> g y

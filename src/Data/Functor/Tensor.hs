@@ -11,6 +11,7 @@
 {-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs               #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -55,33 +56,34 @@
 -- 'toMF' :: 'Day' f f a -> 'Ap' f a
 -- @
 module Data.Functor.Tensor (
+  -- * 'Tensor'
     Tensor(..)
   , rightIdentity
   , leftIdentity
+  , voidLeftIdentity
+  , voidRightIdentity
+  -- * 'Monoidal'
   , Monoidal(..)
-    -- HBifunctor(..)
-  -- , Tensor(..)
-  -- , Monoidal(..)
-  -- , F(..)
-  -- , (!$!)
-  , inL, inR
-  , reconsMF
-  -- , extractT
-  -- , getT, (!*!)
-  -- , collectT
-  , F(..)
-  , unrollMF, rerollMF, unrollingMF
-  , splitF1, matchF
-  , injectF
+  -- ** Utility
+  , inL
+  , inR
   , fromSF
   , nilMF
   , consMF
   , unconsMF
   , matchMF
   , unmatchMF
-  , voidLeftIdentity, voidRightIdentity
-  -- , injectF
-  -- , WrappedHBifunctor(..)
+  -- * 'Chain'
+  , Chain(..)
+  , foldChain
+  , unfoldChain
+  , matchChain
+  , splitChain1
+  , injectChain
+  , unrollMF
+  , rerollMF
+  , unrollingMF
+
   -- , JoinT(..)
   -- , TannenT(..)
   -- , BiffT(..)
@@ -163,16 +165,69 @@ leftIdentity = isoF intro2 elim2
 -- If @t@ is 'Monoidal', then it means we can "collapse" this linked list
 -- into some final type @'MF' t@ ('fromF'), and also extract it back into a linked
 -- list ('toF').
-data F t i f a = Done (i a)
-               | More (t f (F t i f) a)
+data Chain t i f a = Done (i a)
+               | More (t f (Chain t i f) a)
 
-instance (Functor i, Functor (t f (F t i f))) => Functor (F t i f) where
+instance (Functor i, Functor (t f (Chain t i f))) => Functor (Chain t i f) where
     fmap f = \case
       Done x  -> Done (fmap f x)
       More xs -> More (fmap f xs)
 
-deriving instance (Show (i a), Show (t f (F t i f) a)) => Show (F t i f a)
-deriving instance (Read (i a), Read (t f (F t i f) a)) => Read (F t i f a)
+deriving instance (Show (i a), Show (t f (Chain t i f) a)) => Show (Chain t i f a)
+deriving instance (Read (i a), Read (t f (Chain t i f) a)) => Read (Chain t i f a)
+
+foldChain
+    :: forall t i f g. HBifunctor t
+    => (i ~> g)
+    -> (t f g ~> g)
+    -> Chain t i f ~> g
+foldChain f g = go
+  where
+    go :: Chain t i f ~> g
+    go = \case
+      Done x  -> f x
+      More xs -> g (hright go xs)
+
+unfoldChain
+    :: forall t f g i. HBifunctor t
+    => (g ~> i :+: t f g)
+    -> g ~> Chain t i f
+unfoldChain f = go
+  where
+    go :: g ~> Chain t i f
+    go = (Done !*! More . hright go) . f
+
+instance HBifunctor t => HFunctor (Chain t i) where
+    hmap f = foldChain Done (More . hleft f)
+
+-- | We can collapse and interpret an @'Chain' t i@ if we have @'Tensor' t@.
+--
+-- Note that 'inject' only requires @'Tensor' t@.  This is given as
+-- 'injectChain'.
+instance (Monoidal t, i ~ I t) => Interpret (Chain t i) where
+    type C (Chain t i) = AndC (C (SF t)) (C (MF t))
+    inject  = injectChain
+    retract = \case
+      Done x  -> pureT @t x
+      More xs -> binterpret id retract xs
+    interpret
+        :: forall f g. (C (SF t) g, C (MF t) g)
+        => f ~> g
+        -> Chain t i f ~> g
+    interpret f = go
+      where
+        go :: Chain t i f ~> g
+        go = \case
+          Done x  -> pureT @t x
+          More xs -> binterpret f go xs
+
+-- | If we have @'Tensor' t@, we can make a singleton 'Chain'.
+--
+-- We can also 'retract' and 'interpret' an 'Chain' using its 'Interpret'
+-- instance.
+injectChain :: forall t f. Tensor t => f ~> Chain t (I t) f
+injectChain = More . hright Done . intro1
+
 
 -- | For some tensors @t@, you can represt the act of repeatedly combining
 -- the same functor an arbitrary amount of times:
@@ -306,10 +361,10 @@ unconsMF = viewF splittingMF
 
 
     ---- | Convert a linked list of @t f@s applied to themselves (stored in
-    ---- the 'F' type) into @'MF' t f@, the data type representing multiple
+    ---- the 'Chain' type) into @'MF' t f@, the data type representing multiple
     ---- applications of @t f@ to itself.
     ----
-    ---- @'F' i ('I' t)@ can be thought of as a "universal" representation of
+    ---- @'Chain' i ('I' t)@ can be thought of as a "universal" representation of
     ---- multiple-applications-to-self, and @'MF' t@ can be thought of as
     ---- a tailor-made represenation for your specific @'Tensor' t@.
     ----
@@ -322,7 +377,7 @@ unconsMF = viewF splittingMF
     ---- a 'Monoidal' instance; all other methods can be inferred from them.
     ---- In some cases, it can be easier to define these instead of the other
     ---- ones.
-    --fromF :: F t (I t) f ~> MF t f
+    --fromF :: Chain t (I t) f ~> MF t f
     --fromF = \case
     --  Done x  -> nilMF @t x
     --  More xs -> consMF . hright fromF $ xs
@@ -334,7 +389,7 @@ unconsMF = viewF splittingMF
     ---- a 'Monoidal' instance; all other methods can be inferred from them.
     ---- In some cases, it can be easier to define these instead of the other
     ---- ones.
-    --toF :: MF t f ~> F t (I t) f
+    --toF :: MF t f ~> Chain t (I t) f
     --toF x = case unconsMF x of
     --  L1 y -> Done y
     --  R1 z -> More . hright toF $ z
@@ -345,46 +400,19 @@ unconsMF = viewF splittingMF
     ---- a 'Monoidal' instance; all other methods can be inferred from them.
     ---- In some cases, it can be easier to define these instead of the other
     ---- ones.
-    --appendF  :: t (F t (I t) f) (F t (I t) f) ~> F t (I t) f
+    --appendF  :: t (Chain t (I t) f) (Chain t (I t) f) ~> Chain t (I t) f
     --appendF = toF . appendMF . hbimap fromF fromF
 
     -- {-# MINIMAL nilMF, consMF, unconsMF, appendMF | fromF, toF, appendF #-}
 
---instance HBifunctor t => HFunctor (F t i) where
---    hmap f = \case
---      Done x  -> Done x
---      More xs -> More . hbimap f (hmap f) $ xs
-
----- | We can collapse and interpret an @'F' t i@ if we have @'Tensor' i@.
-----
----- Note that 'inject' only requires @'Tensor' t@.  This is given as
----- 'injectF'.
---instance (Monoidal t, i ~ I t) => Interpret (F t i) where
---    type C (F t i) = C (MF t)
---    inject    = injectF
---    retract   = \case
---      Done x  -> pureT @t x
---      More xs -> retractT . hright retract $ xs
---    interpret f = \case
---      Done x  -> pureT @t x
---      More xs -> interpretT @t f (interpret f) xs
-
--- | The inverse of 'unconsMF'.  Calls 'nilMF' on the left (nil) branch,
--- and 'consMF' on the right (cons) branch.
-reconsMF :: forall t f. Monoidal t => I t :+: t f (MF t f) ~> MF t f
-reconsMF = nilMF @t !*! consMF @t
-
-unrollingMF :: forall t f. Monoidal t => MF t f <~> F t (I t) f
+unrollingMF :: forall t f. Monoidal t => MF t f <~> Chain t (I t) f
 unrollingMF = isoF unrollMF rerollMF
 
-unrollMF :: forall t f. Monoidal t => MF t f ~> F t (I t) f
-unrollMF = (Done !*! More . hright (unrollMF @t) . viewF (splittingSF @t))
-         . viewF (matchingMF @t)
+unrollMF :: forall t f. Monoidal t => MF t f ~> Chain t (I t) f
+unrollMF = unfoldChain (unconsMF @t)
 
-rerollMF :: forall t f. Monoidal t => F t (I t) f ~> MF t f
-rerollMF = \case
-    Done x  -> nilMF @t x
-    More xs -> consMF . hright (rerollMF @t) $ xs
+rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
+rerollMF = foldChain (nilMF @t) consMF
 
 matchMF :: forall t f. Monoidal t => MF t f ~> I t :+: SF t f
 matchMF = viewF (matchingMF @t)
@@ -392,26 +420,19 @@ matchMF = viewF (matchingMF @t)
 unmatchMF :: forall t f. Monoidal t => I t :+: SF t f ~> MF t f
 unmatchMF = reviewF (matchingMF @t)
 
-splitF1
+splitChain1
     :: forall t f. (Monoidal t, Functor f)
-    => F1 t f <~> t f (F t (I t) f)
-splitF1 = fromF unrollingSF
+    => Chain1 t f <~> t f (Chain t (I t) f)
+splitChain1 = fromF unrollingSF
         . splittingSF @t
         . overHBifunctor id unrollingMF
 
-matchF
+matchChain
     :: forall t f. (Monoidal t, Functor f)
-    => F t (I t) f <~> I t :+: F1 t f
-matchF = fromF unrollingMF
-       . matchingMF @t
-       . overHBifunctor id unrollingSF
-
--- | If we have @'Tensor' t@, we can make a singleton 'F'.
---
--- We can also 'retract' and 'interpret' an 'F' using its 'Interpret'
--- instance.
-injectF :: forall t f. Tensor t => f ~> F t (I t) f
-injectF = More . hright Done . intro1
+    => Chain t (I t) f <~> I t :+: Chain1 t f
+matchChain = fromF unrollingMF
+           . matchingMF @t
+           . overHBifunctor id unrollingSF
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
 -- functor @g@ to the right of an @f@.
