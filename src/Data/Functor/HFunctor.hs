@@ -69,6 +69,7 @@ import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Identity
 import           Control.Natural
+import           Data.Coerce
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor.Internal
@@ -144,3 +145,6 @@ instance HBind WrappedApplicative where
 
 instance HBind Reverse where
     hbind f = f . getReverse
+
+instance HBind Void2 where
+    hbind _ = coerce

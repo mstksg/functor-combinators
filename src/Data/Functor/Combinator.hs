@@ -132,6 +132,9 @@ deriveOrd1 ''ProxyF
 instance HFunctor ProxyF where
     hmap _ = coerce
 
+instance HBind ProxyF where
+    hbind _ = coerce
+
 instance Interpret ProxyF where
     type C ProxyF = Impossible
     inject _ = ProxyF

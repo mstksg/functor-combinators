@@ -109,6 +109,11 @@ instance Semigroupoidal These1 where
       These1 (Steps xs) (Steps ys) -> Steps $
         let (k, _) = NEM.findMax xs
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+    -- this breaks isomorphism with matchingSF
+    -- maybe we need an either-or SF
+    --
+    -- actually in all of these methods we cannot distinguish L1 and R1
+    -- . This1.
     matchSF = R1 . stepsDown
 
     consSF = stepsUp

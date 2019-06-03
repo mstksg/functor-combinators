@@ -69,6 +69,7 @@ deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) ->
 -- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the second
 -- argument.
 newtype ClownT t f g a = ClownT { runClownT :: t f a }
+    deriving (Eq, Ord, Show, Read)
 
 deriving instance Functor (t f) => Functor (ClownT t f g)
 
@@ -81,6 +82,7 @@ deriving via (WrappedHBifunctor (ClownT t) f)
 -- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the first
 -- argument.
 newtype JokerT t f g a = JokerT { runJokerT :: t g a }
+    deriving (Eq, Ord, Show, Read)
 
 deriving instance Functor (t g) => Functor (JokerT t f g)
 

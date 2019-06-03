@@ -574,4 +574,3 @@ instance Monoidal Comp where
     toMF   (x :>>= y) = liftFree x >>= (inject . y)
 
     pureT                     = pure . runIdentity
-

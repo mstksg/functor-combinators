@@ -56,12 +56,13 @@ import           Control.Applicative
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Data.Copointed
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
-import           Data.Functor.Day           (Day(..))
+import           Data.Functor.Day            (Day(..))
 import           Data.Functor.HBifunctor
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.IsoF
@@ -69,10 +70,10 @@ import           Data.Functor.Identity
 import           Data.Functor.Interpret
 import           Data.Functor.Plus
 import           Data.Kind
-import           Data.List.NonEmpty         (NonEmpty(..))
+import           Data.List.NonEmpty          (NonEmpty(..))
 import           Data.Proxy
-import           GHC.Generics hiding        (C)
-import qualified Data.Functor.Day           as D
+import           GHC.Generics hiding         (C)
+import qualified Data.Functor.Day            as D
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -398,6 +399,9 @@ instance (Interpret t, HBind t) => Semigroupoidal (ClownT t) where
     type SF (ClownT t) = t
 
     appendSF = hbind id . runClownT
+    -- same problem with matchSF for ClownT, it makes matchingSF not an
+    -- isormophism. it conerts all L1s to R1s
+    -- maybe we need an either-or SF
     matchSF  = R1 . ClownT
 
 instance (Interpret t, HBind t) => Associative (JokerT t) where
@@ -405,8 +409,59 @@ instance (Interpret t, HBind t) => Associative (JokerT t) where
                 . isoF (hbind runJokerT) (hmap (JokerT . inject))
                 . isoF JokerT            runJokerT
 
+-- | A 'Chain1' unrolled from a @'JokerT' t@ is always infinitely long.
 instance (Interpret t, HBind t) => Semigroupoidal (JokerT t) where
-    type SF (JokerT t) = t
+    type SF (JokerT t) = t  -- we have to be able to instantly retract!
 
     appendSF = hbind id . runJokerT
+    -- hm, this is a problem, because rerollSF is not infinitely long. this
+    -- has to be an inverse with inject !*! consSF
+    --
+    -- yeah, this is illegal, because this breaks with unrolling, and also
+    -- even matching
+    --
+    -- overF (fromF (matchingSF @(Joker ListF))) id /= id
+    --
+    -- it's because we need to be able to retract from t, but we can't.
+    -- t is bad!
     matchSF  = R1 . JokerT . hmap inject
+
+-- newtype MaybeClownT t f g a = MaybeClownT { runMaybeClownT :: ComposeT MaybeF t f a }
+
+-- deriving instance Functor (t f) => Functor (MaybeClownT t f g)
+
+-- instance HFunctor t => HBifunctor (MaybeClownT t) where
+--     hbimap f _ (MaybeClownT x) = MaybeClownT (hmap f x)
+
+-- deriving via (WrappedHBifunctor (MaybeClownT t) f)
+--     instance HFunctor t => HFunctor (MaybeClownT t f)
+
+-- instance (Interpret t, HBind t, forall f. C t (MaybeF (t f))) => Associative (MaybeClownT t) where
+--     associating = isoF runMaybeClownT MaybeClownT
+--                 . isoF (hmap (MaybeClownT . ComposeT . MaybeF . Just . inject @t))
+--                        (ComposeT . from_ . getComposeT)
+--                 . isoF MaybeClownT    runMaybeClownT
+--       where
+--         from_ :: (Functor f, C t (MaybeF (t f))) => MaybeF (t (MaybeClownT t f g)) ~> MaybeF (t f)
+--         from_ = MaybeF
+--               . (=<<) (runMaybeF . interpret (getComposeT . runMaybeClownT))
+--               . runMaybeF
+--         -- from_ :: ComposeT MaybeF t (MaybeClownT t f g) ~> ComposeT MaybeF t f
+--         -- from_ = ComposeT
+--         --       . hbind (MaybeF . fmap _ . interpret @t (_ . getComposeT . runMaybeClownT))
+--         --       . getComposeT
+--         -- hmap (_ . runMaybeF . getComposeT . runMaybeClownT)
+-- --       where
+-- --         to_   :: MaybeClownT t f (MaybeClownT t g h) ~> MaybeClownT t (MaybeClownT t f g) h
+-- --         to_ = MaybeClownT
+-- --             . fmap (hmap (MaybeClownT . Just . inject))
+-- --             . runMaybeClownT
+-- --         from_ :: MaybeClownT t (MaybeClownT t f g) h ~> MaybeClownT t f (MaybeClownT t g h)
+-- --         from_ = MaybeClownT
+-- --               -- . runMaybeF
+-- --               -- . hbind (MaybeF . _ . runMaybeF)
+-- --               -- . MaybeF
+-- --               . join
+-- --               . fmap (_ . hbind (maybe _ id . runMaybeF) . hmap (MaybeF . runMaybeClownT))
+-- --               -- . fmap (hbind (maybe _ id . runMaybeF) . hmap (MaybeF . runMaybeClownT))
+-- --               . runMaybeClownT
