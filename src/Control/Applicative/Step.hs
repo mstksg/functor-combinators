@@ -161,10 +161,13 @@ instance Traversable1 f => Traversable1 (Steps f) where
     traverse1 f = fmap Steps . (traverse1 . traverse1) f . getSteps
     sequence1   = fmap Steps . traverse1 sequence1 . getSteps
 
-instance Functor f => Alt (Steps f) where
-    Steps xs <!> Steps ys = Steps $
+instance Semigroup (Steps f a) where
+    Steps xs <> Steps ys = Steps $
       let (k, _) = NEM.findMax xs
       in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+
+instance Functor f => Alt (Steps f) where
+    (<!>) = (<>)
 
 -- | @'Void2' a b@ is uninhabited for all @a@ and @b@.
 data Void2 a b

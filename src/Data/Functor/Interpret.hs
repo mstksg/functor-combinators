@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DefaultSignatures       #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE PolyKinds               #-}
@@ -124,7 +125,7 @@ class HFunctor t => Interpret t where
 
     -- | Lift an @f@ into the enhanced @t f@ structure.
     -- Analogous to 'lift' from 'MonadTrans'.
-    inject  :: f ~> t f
+    inject :: f ~> t f
 
     -- | Remove the @f@ out of the enhanced @t f@ structure, provided that
     -- @f@ satisfies the necessary constraints.  If it doesn't, it needs to
@@ -278,15 +279,6 @@ instance Interpret Free1 where
     inject    = liftFree1
     retract   = retractFree1
     interpret = interpretFree1
-    -- inject = (`Free1` pure)
-    -- retract f1@(Free1 x _) = case fromFree (toFree f1) of
-    --   L1 (Identity y) -> y <$ x
-    --   R1 y            -> retract y
-    -- interpret f = go
-    --   where
-    --     go f1@(Free1 x _) = case fromFree (toFree f1) of
-    --       L1 (Identity y) -> y <$ f x
-    --       R1 y            -> go y
 
 -- | A free 'Applicative'
 instance Interpret FA.Ap where
@@ -314,7 +306,7 @@ instance Interpret Lift where
     type C Lift = Pointed
     inject = Other
     retract = elimLift point id
-    interpret f = elimLift point f
+    interpret = elimLift point
 
 -- | A free 'Pointed'
 instance Interpret MaybeApply where

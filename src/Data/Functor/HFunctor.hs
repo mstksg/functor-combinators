@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE ViewPatterns            #-}
 
 -- |
 -- Module      : Data.Functor.HFunctor
@@ -56,6 +57,90 @@
 -- together two or more different functors.
 module Data.Functor.HFunctor (
     HFunctor(..)
+  , overHFunctor
+  , HBind(..)
   ) where
 
+import           Control.Applicative.Backwards
+import           Control.Applicative.Free
+import           Control.Applicative.Lift
+import           Control.Applicative.ListF
+import           Control.Applicative.Step
+import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Identity
+import           Control.Natural
+import           Data.Functor.Bind
+import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor.Internal
+import           Data.Functor.HFunctor.IsoF
+import           Data.Functor.Reverse
+import           Data.Pointed
+import           Data.Semigroup.Foldable
+import qualified Control.Alternative.Free       as Alt
+import qualified Control.Applicative.Free.Fast  as FAF
+import qualified Control.Applicative.Free.Final as FA
+
+overHFunctor
+    :: HFunctor t
+    => AnIsoF' f g
+    -> t f <~> t g
+overHFunctor (cloneIsoF' -> f) = isoF (hmap (viewF f)) (hmap (reviewF f))
+
+class HFunctor t => HBind t where
+    hbind :: (f ~> t g) -> t f ~> t g
+
+instance HBind Coyoneda where
+    hbind f (Coyoneda g x) = g <$> f x
+
+instance HBind Ap where
+    hbind = runAp
+
+instance HBind ListF where
+    hbind f = foldMap f . runListF
+
+instance HBind NonEmptyF where
+    hbind f = foldMap1 f . runNonEmptyF
+
+instance HBind MaybeF where
+    hbind f = foldMap f . runMaybeF
+
+instance HBind Step where
+    hbind f (Step n x) = Step (n + m) y
+      where
+        Step m y = f x
+
+instance HBind Steps where
+    hbind f = foldMap1 f . getSteps
+
+instance HBind Alt.Alt where
+    hbind = Alt.runAlt
+
+instance HBind Free where
+    hbind = interpretFree
+
+instance HBind Free1 where
+    hbind = interpretFree1
+
+instance HBind FA.Ap where
+    hbind = FA.runAp
+
+instance HBind FAF.Ap where
+    hbind = FAF.runAp
+
+instance HBind IdentityT where
+    hbind f = f . runIdentityT
+
+instance HBind Lift where
+    hbind = elimLift point
+
+instance HBind MaybeApply where
+    hbind f = either f point . runMaybeApply
+
+instance HBind Backwards where
+    hbind f = f . forwards
+
+instance HBind WrappedApplicative where
+    hbind f = f . unwrapApplicative
+
+instance HBind Reverse where
+    hbind f = f . getReverse

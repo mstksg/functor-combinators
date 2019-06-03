@@ -63,6 +63,7 @@ import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Day           (Day(..))
 import           Data.Functor.HBifunctor
+import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Identity
 import           Data.Functor.Interpret
@@ -387,3 +388,25 @@ instance Semigroupoidal Comp where
 
     biretract      (x :>>= y) = x >>- y
     binterpret f g (x :>>= y) = f x >>- (g . y)
+
+instance (Interpret t, HBind t) => Associative (ClownT t) where
+    associating = isoF runClownT                ClownT
+                . isoF (hmap (ClownT . inject)) (hbind runClownT)
+                . isoF ClownT                   runClownT
+
+instance (Interpret t, HBind t) => Semigroupoidal (ClownT t) where
+    type SF (ClownT t) = t
+
+    appendSF = hbind id . runClownT
+    matchSF  = R1 . ClownT
+
+instance (Interpret t, HBind t) => Associative (JokerT t) where
+    associating = isoF runJokerT         JokerT
+                . isoF (hbind runJokerT) (hmap (JokerT . inject))
+                . isoF JokerT            runJokerT
+
+instance (Interpret t, HBind t) => Semigroupoidal (JokerT t) where
+    type SF (JokerT t) = t
+
+    appendSF = hbind id . runJokerT
+    matchSF  = R1 . JokerT . hmap inject
