@@ -67,30 +67,18 @@ module Data.Functor.Tensor (
   , nilMF
   , consMF
   , unconsMF
-  -- , matchMF
-  -- , unmatchMF
+  , unmatchMF
   -- ** Utility
   , inL
   , inR
-  -- , fromSF
   -- * 'Chain'
   , Chain(..)
   , foldChain
   , unfoldChain
-  -- , matchingChain
-  -- , matchChain
-  -- , splitChain1
   , unrollMF
   , rerollMF
   , unrollingMF
-  -- * Combinators
-  , ClownT(..)
-
-  -- , JoinT(..)
-  -- , TannenT(..)
-  -- , BiffT(..)
-  -- , ClownT(..)
-  -- , JokerT(..)
+  , fromChain1
   ) where
 
 import           Control.Applicative.Free
@@ -232,6 +220,9 @@ instance (Monoidal t, i ~ I t) => Interpret (Chain t i) where
           Done x  -> pureT @t x
           More xs -> binterpret f go xs
 
+fromChain1 :: forall t f. (Monoidal t) => Chain1 t f ~> Chain t (I t) f
+fromChain1 = unrollMF @t . fromSF @t . rerollSF @t
+
 -- | For some tensors @t@, you can represt the act of repeatedly combining
 -- the same functor an arbitrary amount of times:
 --
@@ -308,8 +299,6 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
 
     {-# MINIMAL appendMF, splitSF, splittingMF #-}
 
--- fromSF   :: forall t f. Monoidal t => SF t f ~> MF t f
--- fromSF   = reviewF (matchingMF @t) . R1
 nilMF    :: forall t f. Monoidal t => I t ~> MF t f
 nilMF    = reviewF (splittingMF @t) . L1
 consMF   :: forall t f. Monoidal t => t f (MF t f) ~> MF t f
@@ -431,30 +420,8 @@ unrollMF = unfoldChain (unconsMF @t)
 rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
 rerollMF = foldChain (nilMF @t) consMF
 
--- matchMF :: forall t f. Monoidal t => MF t f ~> I t :+: SF t f
--- matchMF = viewF (matchingMF @t)
-
--- unmatchMF :: forall t f. Monoidal t => I t :+: SF t f ~> MF t f
--- unmatchMF = reviewF (matchingMF @t)
-
--- splitChain1
---     :: forall t f. (Monoidal t, Functor f)
---     => Chain1 t f <~> t f (Chain t (I t) f)
--- splitChain1 = fromF unrollingSF
---         . splittingSF @t
---         . overHBifunctor id unrollingMF
-
--- matchingChain
---     :: forall t f. (Monoidal t, Functor f)
---     => Chain t (I t) f <~> I t :+: Chain1 t f
--- matchingChain = fromF unrollingMF
---               . matchingMF @t
---               . overHBifunctor id unrollingSF
-
--- matchChain
---     :: (Monoidal t, Functor f)
---     => Chain t (I t) f ~> I t :+: Chain1 t f
--- matchChain = viewF matchingChain
+unmatchMF :: forall t f. Monoidal t => I t :+: SF t f ~> MF t f
+unmatchMF = nilMF @t !*! fromSF @t
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
 -- functor @g@ to the right of an @f@.
@@ -485,12 +452,7 @@ instance Monoidal (:*:) where
     type MF (:*:) = ListF
 
     appendMF (ListF xs :*: ListF ys) = ListF (xs ++ ys)
-    splitSF = nonEmptyProd
-    -- splittingSF = isoF nonEmptyProd ProdNonEmpty
-
-    -- matchingMF  = isoF fromListF $ \case
-    --   L1 ~Proxy -> ListF []
-    --   R1 x      -> toListF x
+    splitSF     = nonEmptyProd
     splittingMF = isoF to_ from_
       where
         to_ = \case
@@ -500,8 +462,8 @@ instance Monoidal (:*:) where
           L1 ~Proxy           -> ListF []
           R1 (x :*: ListF xs) -> ListF (x:xs)
 
-    toMF   (x :*: y       ) = ListF [x, y]
-    pureT          _         = zero
+    toMF (x :*: y) = ListF [x, y]
+    pureT _        = zero
 
 instance Tensor Day where
     type I Day = Identity
@@ -514,13 +476,8 @@ instance Tensor Day where
 instance Monoidal Day where
     type MF Day = Ap
 
-    -- splittingSF          = isoF ap1Day DayAp1
     appendMF (Day x y z) = z <$> x <*> y
-    splitSF = ap1Day
-
-    -- matchingMF  = isoF fromAp $ \case
-    --   L1 (Identity x) -> pure x
-    --   R1 x            -> toAp x
+    splitSF     = ap1Day
     splittingMF = isoF to_ from_
       where
         to_ = \case
@@ -530,8 +487,8 @@ instance Monoidal Day where
           L1 (Identity x) -> Pure x
           R1 (Day x xs f) -> Ap x (flip f <$> xs)
 
-    toMF   (Day x y z) = z <$> liftAp x <*> liftAp y
-    pureT                      = pure . runIdentity
+    toMF (Day x y z) = z <$> liftAp x <*> liftAp y
+    pureT            = pure . runIdentity
 
 
 instance Tensor (:+:) where
@@ -550,15 +507,12 @@ instance Tensor (:+:) where
 instance Monoidal (:+:) where
     type MF (:+:) = Step
 
-    -- splittingSF = stepping
-    appendMF = appendSF
-    splitSF  = viewF stepping
-
-    -- matchingMF  = voidLeftIdentity
+    appendMF    = appendSF
+    splitSF     = stepDown
     splittingMF = stepping . voidLeftIdentity
 
-    toMF     = toSF
-    pureT      = absurd1
+    toMF  = toSF
+    pureT = absurd1
 
 voidLeftIdentity :: f <~> Void1 :+: f
 voidLeftIdentity = isoF R1 (absurd1 !*! id)
@@ -578,13 +532,8 @@ instance Tensor Comp where
 instance Monoidal Comp where
     type MF Comp = Free
 
-    -- splittingSF         = isoF free1Comp CompFree1
     appendMF (x :>>= y) = x >>= y
     splitSF             = free1Comp
-
-    -- matchingMF  = isoF fromFree $ \case
-    --   L1 (Identity x) -> pure x
-    --   R1 x            -> toFree x
     splittingMF = isoF to_ from_
       where
         to_ :: Free f ~> Identity :+: Comp f (Free f)
@@ -594,6 +543,5 @@ instance Monoidal Comp where
         from_ = pure . runIdentity
             !*! (\case x :>>= f -> liftFree x >>= f)
 
-    toMF   (x :>>= y) = liftFree x >>= (inject . y)
-
-    pureT                     = pure . runIdentity
+    toMF (x :>>= y) = liftFree x >>= (inject . y)
+    pureT           = pure . runIdentity
