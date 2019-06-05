@@ -185,6 +185,8 @@ hoistFree :: (f ~> g) -> Free f ~> Free g
 newtype Free1 f a
 Free1 :: (forall r. (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free1 f a
 [runFree1] :: Free1 f a -> forall r. (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> r
+pattern DoneF1 :: Functor f => f a -> Free1 f a
+pattern MoreF1 :: Functor f => f (Free1 f a) -> Free1 f a
 toFree :: Free1 f ~> Free f
 liftFree1 :: f ~> Free1 f
 free1Comp :: Free1 f ~> Comp f (Free f)
@@ -244,6 +246,8 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f) => Data.Functor.Classe
 instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Control.Monad.Freer.Church.Free1 f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f, GHC.Classes.Eq a) => GHC.Classes.Eq (Control.Monad.Freer.Church.Free1 f a)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, GHC.Classes.Ord a) => GHC.Classes.Ord (Control.Monad.Freer.Church.Free1 f a)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Monad.Freer.Church.Free1 f)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Control.Monad.Freer.Church.Free1 f a)
 instance GHC.Base.Functor (Control.Monad.Freer.Church.Free f)
 instance Data.Functor.Bind.Class.Apply (Control.Monad.Freer.Church.Free f)
 instance GHC.Base.Applicative (Control.Monad.Freer.Church.Free f)
