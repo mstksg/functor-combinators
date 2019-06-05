@@ -182,18 +182,60 @@ liftFree :: f ~> Free f
 interpretFree :: Monad g => (f ~> g) -> Free f ~> g
 retractFree :: Monad f => Free f ~> f
 hoistFree :: (f ~> g) -> Free f ~> Free g
+foldFree :: Functor f => (a -> r) -> (f r -> r) -> Free f a -> r
+foldFree' :: (a -> r) -> (forall s. f s -> (s -> r) -> r) -> Free f a -> r
+foldFreeC :: (a -> r) -> (Coyoneda f r -> r) -> Free f a -> r
 newtype Free1 f a
 Free1 :: (forall r. (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free1 f a
 [runFree1] :: Free1 f a -> forall r. (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> r
+
+-- | Constructor matching on the case that a <tt><a>Free1</a> f</tt>
+--   consists of just a single un-nested <tt>f</tt>. Used as a part of the
+--   <a>Show</a> and <a>Read</a> instances.
 pattern DoneF1 :: Functor f => f a -> Free1 f a
+
+-- | Constructor matching on the case that a <tt><a>Free1</a> f</tt> is a
+--   nested <tt>f (<a>Free1</a> f a)</tt>. Used as a part of the
+--   <a>Show</a> and <a>Read</a> instances.
 pattern MoreF1 :: Functor f => f (Free1 f a) -> Free1 f a
+
+-- | <tt><a>Free1</a> f</tt> is a special subset of <tt><a>Free</a> f</tt>
+--   that consists of at least one nested <tt>f</tt>. This converts it back
+--   into the "bigger" type.
+--   
+--   See <a>free1Comp</a> for a version that preserves the "one nested
+--   layer" property.
 toFree :: Free1 f ~> Free f
+
+-- | Inject an <tt>f</tt> into a <tt><a>Free1</a> f</tt>
 liftFree1 :: f ~> Free1 f
+
+-- | Because a <tt><a>Free1</a> f</tt> is just a <tt><a>Free</a> f</tt>
+--   with at least one nested layer of <tt>f</tt>, this function converts
+--   it back into the one-nested-<tt>f</tt> format.
 free1Comp :: Free1 f ~> Comp f (Free f)
-matchFree1 :: Functor f => Free1 f ~> (f :+: Comp f (Free1 f))
+
+-- | A <tt><a>Free1</a> f</tt> is either a single un-nested <tt>f</tt>, or
+--   a <tt>f</tt> nested with another <tt><a>Free1</a> f</tt>. This decides
+--   which is the case.
+matchFree1 :: forall f. Functor f => Free1 f ~> (f :+: Comp f (Free1 f))
+
+-- | Interpret the <tt><a>Free1</a> f</tt> in some context <tt>g</tt>,
+--   provided that <tt>g</tt> has a <a>Bind</a> instance. Since we always
+--   have at least one <tt>f</tt>, we will always have at least one
+--   <tt>g</tt>, so we do not need a full <a>Monad</a> constraint.
 interpretFree1 :: Bind g => (f ~> g) -> Free1 f ~> g
+
+-- | Retract the <tt>f</tt> out of a <tt><a>Free1</a> f</tt>, as long as
+--   the <tt>f</tt> implements <a>Bind</a>. Since we always have at least
+--   one <tt>f</tt>, we do not need a full <a>Monad</a> constraint.
 retractFree1 :: Bind f => Free1 f ~> f
+
+-- | Map the underlying functor under a <a>Free1</a>.
 hoistFree1 :: (f ~> g) -> Free1 f ~> Free1 g
+foldFree1 :: Functor f => (f a -> r) -> (f r -> r) -> Free1 f a -> r
+foldFree1' :: (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> Free1 f a -> r
+foldFree1C :: (Coyoneda f a -> r) -> (Coyoneda f r -> r) -> Free1 f a -> r
 
 -- | Functor composition. <tt><a>Comp</a> f g a</tt> is equivalent to <tt>f
 --   (g a)</tt>, and the <a>Comp</a> pattern synonym is a way of getting
@@ -242,12 +284,18 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, Data.Functor.Classes.
 instance GHC.Base.Functor (Control.Monad.Freer.Church.Free1 f)
 instance Data.Functor.Bind.Class.Apply (Control.Monad.Freer.Church.Free1 f)
 instance Data.Functor.Bind.Class.Bind (Control.Monad.Freer.Church.Free1 f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Monad.Freer.Church.Free1 f)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Monad.Freer.Church.Free1 f)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Monad.Freer.Church.Free1 f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Monad.Freer.Church.Free1 f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Control.Monad.Freer.Church.Free1 f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Control.Monad.Freer.Church.Free1 f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f, GHC.Classes.Eq a) => GHC.Classes.Eq (Control.Monad.Freer.Church.Free1 f a)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, GHC.Classes.Ord a) => GHC.Classes.Ord (Control.Monad.Freer.Church.Free1 f a)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Monad.Freer.Church.Free1 f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Control.Monad.Freer.Church.Free1 f a)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f) => Data.Functor.Classes.Read1 (Control.Monad.Freer.Church.Free1 f)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f, GHC.Read.Read a) => GHC.Read.Read (Control.Monad.Freer.Church.Free1 f a)
 instance GHC.Base.Functor (Control.Monad.Freer.Church.Free f)
 instance Data.Functor.Bind.Class.Apply (Control.Monad.Freer.Church.Free f)
 instance GHC.Base.Applicative (Control.Monad.Freer.Church.Free f)
@@ -262,6 +310,8 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Eq1 f, GHC.Classes.Eq a) => G
 instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, GHC.Classes.Ord a) => GHC.Classes.Ord (Control.Monad.Freer.Church.Free f a)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Monad.Freer.Church.Free f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Control.Monad.Freer.Church.Free f a)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f) => Data.Functor.Classes.Read1 (Control.Monad.Freer.Church.Free f)
+instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f, GHC.Read.Read a) => GHC.Read.Read (Control.Monad.Freer.Church.Free f a)
 
 module Data.HFunctor.IsoF
 type f <~> g = forall p a. Profunctor p => p (g a) (g a) -> p (f a) (f a)
