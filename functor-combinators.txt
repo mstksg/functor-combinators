@@ -1458,7 +1458,7 @@ instance Data.Functor.Tensor.Tensor Data.Functor.Day.Day
 instance Data.Functor.Tensor.Tensor (GHC.Generics.:+:)
 instance Data.Functor.Tensor.Tensor Control.Monad.Freer.Church.Comp
 
-module Data.Functor.Matchable
+module Data.Functor.Tensor.Matchable
 class Monoidal t => Matchable t
 unsplitSF :: Matchable t => t f (MF t f) ~> SF t f
 matchMF :: Matchable t => MF t f ~> (I t :+: SF t f)
@@ -1470,9 +1470,9 @@ splittingChain1 :: forall t f. (Matchable t, Functor f) => Chain1 t f <~> t f (C
 matchChain :: forall t f. (Matchable t, Functor f) => Chain t (I t) f ~> (I t :+: Chain1 t f)
 unmatchChain :: forall t f. Matchable t => (I t :+: Chain1 t f) ~> Chain t (I t) f
 matchingChain :: forall t f. (Matchable t, Functor f) => Chain t (I t) f <~> (I t :+: Chain1 t f)
-instance Data.Functor.Matchable.Matchable (GHC.Generics.:*:)
-instance Data.Functor.Matchable.Matchable Data.Functor.Day.Day
-instance Data.Functor.Matchable.Matchable (GHC.Generics.:+:)
+instance Data.Functor.Tensor.Matchable.Matchable (GHC.Generics.:*:)
+instance Data.Functor.Tensor.Matchable.Matchable Data.Functor.Day.Day
+instance Data.Functor.Tensor.Matchable.Matchable (GHC.Generics.:+:)
 
 
 -- | Functor combinators and tools (typeclasses and utiility functions) to
