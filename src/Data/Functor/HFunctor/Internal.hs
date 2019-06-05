@@ -255,3 +255,4 @@ deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
 deriving via (WrappedHBifunctor Comp f)   instance HFunctor (Comp f)
 
+

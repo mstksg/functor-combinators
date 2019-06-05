@@ -114,7 +114,6 @@ instance Semigroupoidal These1 where
     --
     -- actually in all of these methods we cannot distinguish L1 and R1
     -- . This1.
-    matchSF = R1 . stepsDown
 
     consSF = stepsUp
     toSF = \case
@@ -134,10 +133,15 @@ instance Semigroupoidal These1 where
 instance Monoidal These1 where
     type MF These1 = Steps
 
-    splittingSF = isoF stepsDown stepsUp
-    appendMF = appendSF
+    -- appendMF (Day x y z) = z <$> x <*> y
+    -- splitSF = ap1Day
+    -- matchSF = R1 . stepsDown
 
-    matchingMF  = voidLeftIdentity
+    appendMF = appendSF
+    splitSF  = stepsDown
+    -- splittingSF = isoF stepsDown stepsUp
+
+    -- matchingMF  = voidLeftIdentity
     splittingMF = steppings . voidLeftIdentity
 
     toMF       = toSF

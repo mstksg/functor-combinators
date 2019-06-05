@@ -1,9 +1,11 @@
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DefaultSignatures       #-}
 {-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE InstanceSigs            #-}
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE PolyKinds               #-}
 {-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -80,6 +82,7 @@ import           Data.Constraint.Trivial
 import           Data.Copointed
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
+import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Plus
 import           Data.Functor.Reverse
@@ -350,3 +353,13 @@ instance (Interpret s, Interpret t) => Interpret (ComposeT s t) where
     inject = ComposeT . inject . inject
     retract = interpret retract . getComposeT
     interpret f = interpret (interpret f) . getComposeT
+
+instance Interpret t => Interpret (HFix t) where
+    type C (HFix t) = C t
+    inject = HFix . hmap inject . inject
+    retract = interpret @t (retract @(HFix t)) . unHFix
+    interpret :: forall f g. C t g => (f ~> g) -> HFix t f ~> g
+    interpret _ = go
+      where
+        go :: HFix t f ~> g
+        go = interpret @t go . unHFix

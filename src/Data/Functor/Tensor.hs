@@ -67,18 +67,19 @@ module Data.Functor.Tensor (
   , nilMF
   , consMF
   , unconsMF
-  , matchMF
-  , unmatchMF
+  -- , matchMF
+  -- , unmatchMF
   -- ** Utility
   , inL
   , inR
-  , fromSF
+  -- , fromSF
   -- * 'Chain'
   , Chain(..)
   , foldChain
   , unfoldChain
-  , matchChain
-  , splitChain1
+  -- , matchingChain
+  -- , matchChain
+  -- , splitChain1
   , injectChain
   , unrollMF
   , rerollMF
@@ -101,6 +102,7 @@ import           Control.Natural
 import           Data.Function
 import           Data.Functor.Apply.Free
 import           Data.Functor.Associative
+import           Data.Functor.Classes
 import           Data.Functor.Day           (Day(..))
 import           Data.Functor.HBifunctor
 import           Data.Functor.HFunctor
@@ -176,8 +178,16 @@ instance (Functor i, Functor (t f (Chain t i f))) => Functor (Chain t i f) where
       Done x  -> Done (fmap f x)
       More xs -> More (fmap f xs)
 
-deriving instance (Show (i a), Show (t f (Chain t i f) a)) => Show (Chain t i f a)
-deriving instance (Read (i a), Read (t f (Chain t i f) a)) => Read (Chain t i f a)
+-- deriving instance (Show (i a), Show (t f (Chain t i f) a)) => Show (Chain t i f a)
+-- deriving instance (Read (i a), Read (t f (Chain t i f) a)) => Read (Chain t i f a)
+
+instance (Show1 (t f (Chain t i f)), Show1 i) => Show1 (Chain t i f) where
+    liftShowsPrec sp sl d = \case
+        Done x  -> showsUnaryWith (liftShowsPrec sp sl) "Done" d x
+        More xs -> showsUnaryWith (liftShowsPrec sp sl) "More" d xs
+
+instance (Show1 (t f (Chain t i f)), Show1 i, Show a) => Show (Chain t i f a) where
+    showsPrec = liftShowsPrec showsPrec showList
 
 foldChain
     :: forall t i f g. HBifunctor t
@@ -274,30 +284,44 @@ injectChain = More . hright Done . intro1
 class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     type MF t :: (Type -> Type) -> Type -> Type
 
-    splittingSF :: SF t f <~> t f (MF t f)
+    -- so our situation here:
+    --
+    -- splittingSF: we can only go forwards
+    -- splitSF :: SF t f ~> t f (MF t f)
+    --
+    -- matchingMF: we can only go backwards
+    -- I t :+: SF t f ~> MF t f
+    -- looks like that's nilMF, and fromSF
+    --
+    -- splittingMF, we have both
+    --
+
     appendMF    :: t (MF t f) (MF t f) ~> MF t f
-
-    matchingMF  :: MF t f <~> I t :+: SF t f
-    matchingMF  = splittingMF @t . overHBifunctor id (fromF (splittingSF @t))
-
+    splitSF     :: SF t f ~> t f (MF t f)
     splittingMF :: MF t f <~> I t :+: t f (MF t f)
-    splittingMF = matchingMF @t . overHBifunctor id (splittingSF @t)
 
-    toMF     :: t f f ~> MF t f
-    toMF     = reviewF (matchingMF @t)
-             . R1
-             . reviewF (splittingSF @t)
-             . hright (inject @(MF t))
+    -- splittingSF :: SF t f <~> t f (MF t f)
+    -- matchingMF  :: MF t f <~> I t :+: SF t f
+    -- matchingMF  = splittingMF @t . overHBifunctor id (fromF (splittingSF @t))
+    -- splittingMF = matchingMF @t . overHBifunctor id (splittingSF @t)
+
+    toMF   :: t f f ~> MF t f
+    toMF   = reviewF (splittingMF @t)
+           . R1
+           . hright (inject @(MF t))
+
+    fromSF :: SF t f ~> MF t f
+    fromSF = reviewF (splittingMF @t) . R1 . splitSF @t
 
     pureT  :: C (MF t) f => I t ~> f
-    pureT  = retract . reviewF (matchingMF @t) . L1
+    pureT  = retract . reviewF (splittingMF @t) . L1
 
-    {-# MINIMAL splittingSF, appendMF, (matchingMF | splittingMF) #-}
+    {-# MINIMAL appendMF, splitSF, splittingMF #-}
 
-fromSF   :: forall t f. Monoidal t => SF t f ~> MF t f
-fromSF   = reviewF (matchingMF @t) . R1
+-- fromSF   :: forall t f. Monoidal t => SF t f ~> MF t f
+-- fromSF   = reviewF (matchingMF @t) . R1
 nilMF    :: forall t f. Monoidal t => I t ~> MF t f
-nilMF    = reviewF (matchingMF @t) . L1
+nilMF    = reviewF (splittingMF @t) . L1
 consMF   :: forall t f. Monoidal t => t f (MF t f) ~> MF t f
 consMF   = reviewF (splittingMF @t) . R1
 unconsMF :: forall t f. Monoidal t => MF t f ~> I t :+: t f (MF t f)
@@ -417,25 +441,30 @@ unrollMF = unfoldChain (unconsMF @t)
 rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
 rerollMF = foldChain (nilMF @t) consMF
 
-matchMF :: forall t f. Monoidal t => MF t f ~> I t :+: SF t f
-matchMF = viewF (matchingMF @t)
+-- matchMF :: forall t f. Monoidal t => MF t f ~> I t :+: SF t f
+-- matchMF = viewF (matchingMF @t)
 
-unmatchMF :: forall t f. Monoidal t => I t :+: SF t f ~> MF t f
-unmatchMF = reviewF (matchingMF @t)
+-- unmatchMF :: forall t f. Monoidal t => I t :+: SF t f ~> MF t f
+-- unmatchMF = reviewF (matchingMF @t)
 
-splitChain1
-    :: forall t f. (Monoidal t, Functor f)
-    => Chain1 t f <~> t f (Chain t (I t) f)
-splitChain1 = fromF unrollingSF
-        . splittingSF @t
-        . overHBifunctor id unrollingMF
+-- splitChain1
+--     :: forall t f. (Monoidal t, Functor f)
+--     => Chain1 t f <~> t f (Chain t (I t) f)
+-- splitChain1 = fromF unrollingSF
+--         . splittingSF @t
+--         . overHBifunctor id unrollingMF
 
-matchChain
-    :: forall t f. (Monoidal t, Functor f)
-    => Chain t (I t) f <~> I t :+: Chain1 t f
-matchChain = fromF unrollingMF
-           . matchingMF @t
-           . overHBifunctor id unrollingSF
+-- matchingChain
+--     :: forall t f. (Monoidal t, Functor f)
+--     => Chain t (I t) f <~> I t :+: Chain1 t f
+-- matchingChain = fromF unrollingMF
+--               . matchingMF @t
+--               . overHBifunctor id unrollingSF
+
+-- matchChain
+--     :: (Monoidal t, Functor f)
+--     => Chain t (I t) f ~> I t :+: Chain1 t f
+-- matchChain = viewF matchingChain
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
 -- functor @g@ to the right of an @f@.
@@ -465,12 +494,13 @@ instance Tensor (:*:) where
 instance Monoidal (:*:) where
     type MF (:*:) = ListF
 
-    splittingSF = isoF nonEmptyProd ProdNonEmpty
     appendMF (ListF xs :*: ListF ys) = ListF (xs ++ ys)
+    splitSF = nonEmptyProd
+    -- splittingSF = isoF nonEmptyProd ProdNonEmpty
 
-    matchingMF  = isoF fromListF $ \case
-      L1 ~Proxy -> ListF []
-      R1 x      -> toListF x
+    -- matchingMF  = isoF fromListF $ \case
+    --   L1 ~Proxy -> ListF []
+    --   R1 x      -> toListF x
     splittingMF = isoF to_ from_
       where
         to_ = \case
@@ -494,12 +524,13 @@ instance Tensor Day where
 instance Monoidal Day where
     type MF Day = Ap
 
-    splittingSF          = isoF ap1Day DayAp1
+    -- splittingSF          = isoF ap1Day DayAp1
     appendMF (Day x y z) = z <$> x <*> y
+    splitSF = ap1Day
 
-    matchingMF  = isoF fromAp $ \case
-      L1 (Identity x) -> pure x
-      R1 x            -> toAp x
+    -- matchingMF  = isoF fromAp $ \case
+    --   L1 (Identity x) -> pure x
+    --   R1 x            -> toAp x
     splittingMF = isoF to_ from_
       where
         to_ = \case
@@ -529,10 +560,11 @@ instance Tensor (:+:) where
 instance Monoidal (:+:) where
     type MF (:+:) = Step
 
-    splittingSF = stepping
-    appendMF    = appendSF
+    -- splittingSF = stepping
+    appendMF = appendSF
+    splitSF  = viewF stepping
 
-    matchingMF  = voidLeftIdentity
+    -- matchingMF  = voidLeftIdentity
     splittingMF = stepping . voidLeftIdentity
 
     toMF     = toSF
@@ -556,12 +588,13 @@ instance Tensor Comp where
 instance Monoidal Comp where
     type MF Comp = Free
 
-    splittingSF         = isoF free1Comp CompFree1
+    -- splittingSF         = isoF free1Comp CompFree1
     appendMF (x :>>= y) = x >>= y
+    splitSF             = free1Comp
 
-    matchingMF  = isoF fromFree $ \case
-      L1 (Identity x) -> pure x
-      R1 x            -> toFree x
+    -- matchingMF  = isoF fromFree $ \case
+    --   L1 (Identity x) -> pure x
+    --   R1 x            -> toFree x
     splittingMF = isoF to_ from_
       where
         to_ :: Free f ~> Identity :+: Comp f (Free f)

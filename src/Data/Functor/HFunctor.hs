@@ -1,10 +1,13 @@
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE InstanceSigs            #-}
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE PolyKinds               #-}
 {-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns            #-}
 
@@ -58,6 +61,7 @@
 module Data.Functor.HFunctor (
     HFunctor(..)
   , overHFunctor
+  , HFix(..)
   , HBind(..)
   ) where
 
@@ -71,6 +75,7 @@ import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
 import           Data.Functor.Bind
+import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.HFunctor.IsoF
@@ -86,6 +91,18 @@ overHFunctor
     => AnIsoF' f g
     -> t f <~> t g
 overHFunctor (cloneIsoF' -> f) = isoF (hmap (viewF f)) (hmap (reviewF f))
+
+data HFix t f a = HFix { unHFix :: t (HFix t f) a }
+
+instance HFunctor t => HFunctor (HFix t) where
+    hmap f (HFix x) = HFix (hmap (hmap f) x)
+
+instance Show1 (t (HFix t f)) => Show1 (HFix t f) where
+    liftShowsPrec sp sl d (HFix x) =
+        showsUnaryWith (liftShowsPrec sp sl) "HFix" d x
+
+instance (Show1 (t (HFix t f)), Show a) => Show (HFix t f a) where
+    showsPrec = liftShowsPrec showsPrec showList
 
 class HFunctor t => HBind t where
     hbind :: (f ~> t g) -> t f ~> t g
@@ -148,3 +165,10 @@ instance HBind Reverse where
 
 instance HBind Void2 where
     hbind _ = coerce
+
+instance HBind t => HBind (HFix t) where
+    hbind :: forall f g. (f ~> HFix t g) -> HFix t f ~> HFix t g
+    hbind _ = go
+      where
+        go :: HFix t f ~> HFix t g
+        go = HFix . hbind @t (unHFix . go) . unHFix

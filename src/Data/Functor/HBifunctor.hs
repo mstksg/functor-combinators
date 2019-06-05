@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE StandaloneDeriving   #-}
+{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeInType           #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -22,6 +23,8 @@ module Data.Functor.HBifunctor (
   , JokerT(..)
   ) where
 
+import           Data.Deriving
+import           Data.Functor.Classes
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.HFunctor.IsoF
 import           Data.Kind
@@ -73,6 +76,10 @@ newtype ClownT t f g a = ClownT { runClownT :: t f a }
 
 deriving instance Functor (t f) => Functor (ClownT t f g)
 
+instance Show1 (t f) => Show1 (ClownT t f g) where
+    liftShowsPrec sp sl d (ClownT x) =
+        showsUnaryWith (liftShowsPrec sp sl) "ClownT" d x
+
 instance HFunctor t => HBifunctor (ClownT t) where
     hbimap f _ (ClownT x) = ClownT (hmap f x)
 
@@ -85,6 +92,10 @@ newtype JokerT t f g a = JokerT { runJokerT :: t g a }
     deriving (Eq, Ord, Show, Read)
 
 deriving instance Functor (t g) => Functor (JokerT t f g)
+
+instance Show1 (t g) => Show1 (JokerT t f g) where
+    liftShowsPrec sp sl d (JokerT x) =
+        showsUnaryWith (liftShowsPrec sp sl) "JokerT" d x
 
 instance HFunctor t => HBifunctor (JokerT t) where
     hbimap _ g (JokerT x) = JokerT (hmap g x)

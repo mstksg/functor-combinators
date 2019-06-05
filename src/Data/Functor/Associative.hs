@@ -20,6 +20,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -34,6 +35,7 @@ module Data.Functor.Associative (
     Associative(..)
   , assoc
   , disassoc
+  , LiftT(..)
   -- * 'Semigroupoidal'
   , Semigroupoidal(..)
   , matchingSF
@@ -57,12 +59,15 @@ import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
+import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Copointed
+import           Data.Deriving
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
-import           Data.Functor.Day            (Day(..))
+import           Data.Functor.Classes
+import           Data.Functor.Day             (Day(..))
 import           Data.Functor.HBifunctor
 import           Data.Functor.HFunctor
 import           Data.Functor.HFunctor.IsoF
@@ -70,10 +75,10 @@ import           Data.Functor.Identity
 import           Data.Functor.Interpret
 import           Data.Functor.Plus
 import           Data.Kind
-import           Data.List.NonEmpty          (NonEmpty(..))
+import           Data.List.NonEmpty           (NonEmpty(..))
 import           Data.Proxy
-import           GHC.Generics hiding         (C)
-import qualified Data.Functor.Day            as D
+import           GHC.Generics hiding          (C)
+import qualified Data.Functor.Day             as D
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -143,10 +148,18 @@ class (Associative t, Interpret (SF t)) => Semigroupoidal t where
     {-# MINIMAL appendSF, matchSF #-}
 
 data Chain1 t f a = Done1 (f a)
-              | More1 (t f (Chain1 t f) a)
+                  | More1 (t f (Chain1 t f) a)
 
-deriving instance (Show (t f (Chain1 t f) a), Show (f a)) => Show (Chain1 t f a)
 deriving instance (Functor f, Functor (t f (Chain1 t f))) => Functor (Chain1 t f)
+
+instance (Show1 (t f (Chain1 t f)), Show1 f) => Show1 (Chain1 t f) where
+    liftShowsPrec sp sl d = \case
+        Done1 x  -> showsUnaryWith (liftShowsPrec sp sl) "Done1" d x
+        More1 xs -> showsUnaryWith (liftShowsPrec sp sl) "More1" d xs
+
+instance (Show1 (t f (Chain1 t f)), Show1 f, Show a) => Show (Chain1 t f a) where
+    showsPrec = liftShowsPrec showsPrec showList
+
 
 foldChain1 :: forall t f g. HBifunctor t => f ~> g -> t f g ~> g -> Chain1 t f ~> g
 foldChain1 f g = go
@@ -380,9 +393,7 @@ instance Semigroupoidal Comp where
     type SF Comp = Free1
 
     appendSF (x :>>= y) = x >>- y
-    matchSF x = runFree1 x
-        (\y n -> L1 (n <$> y))
-        (\y n -> R1 (y :>>= ((\case L1 z -> inject z; R1 zs -> consSF zs) . n)))
+    matchSF = matchFree1
 
     consSF (x :>>= y) = liftFree1 x >>- y
     toSF   (x :>>= g) = liftFree1 x >>- inject . g
@@ -395,14 +406,50 @@ instance (Interpret t, HBind t) => Associative (ClownT t) where
                 . isoF (hmap (ClownT . inject)) (hbind runClownT)
                 . isoF ClownT                   runClownT
 
-instance (Interpret t, HBind t) => Semigroupoidal (ClownT t) where
-    type SF (ClownT t) = t
+data LiftT t f a = PureT   (f a)
+                 | ImpureT (t f a)
+  deriving Show
 
-    appendSF = hbind id . runClownT
-    -- same problem with matchSF for ClownT, it makes matchingSF not an
-    -- isormophism. it conerts all L1s to R1s
-    -- maybe we need an either-or SF
-    matchSF  = R1 . ClownT
+instance (Show1 (t f), Show1 f) => Show1 (LiftT t f) where
+    liftShowsPrec sp sl d = \case
+      PureT x -> showsUnaryWith (liftShowsPrec sp sl) "PureT" d x
+      ImpureT x -> showsUnaryWith (liftShowsPrec sp sl) "ImpureT" d x
+
+
+instance HFunctor t => HFunctor (LiftT t) where
+    hmap f = \case
+      PureT   x -> PureT   (f x)
+      ImpureT x -> ImpureT (hmap f x)
+
+instance Interpret t => Interpret (LiftT t) where
+    type C (LiftT t) = C t
+    inject  = PureT
+    retract = \case
+      PureT   x -> x
+      ImpureT x -> retract x
+
+instance (HBind t, Interpret t) => HBind (LiftT t) where
+    hbind f = \case
+      PureT   x -> f x
+      ImpureT x -> ImpureT $ hbind ((\case PureT y -> inject y; ImpureT y -> y) . f) x
+
+instance (Interpret t, HBind t) => Semigroupoidal (ClownT t) where
+    type SF (ClownT t) = LiftT t
+
+    appendSF = hbind id . ImpureT . runClownT
+    matchSF  = \case
+      PureT   x -> L1 x
+      ImpureT x -> R1 $ ClownT x
+
+-- data JokerChain1 t f a = JokerDone1 (f a)
+--                        | JokerMore1 (JokerT t f (JokerChain1 t f) a)
+
+-- data FreeI t f a = PureI (f a)
+--                  | MoreI (t (FreeI t f) a)
+
+-- data JokerChain1 t f a = JokerDone1 (f a)
+--                        | JokerMore1 (t (JokerChain1 t f) a)
+
 
 instance (Interpret t, HBind t) => Associative (JokerT t) where
     associating = isoF runJokerT         JokerT
@@ -411,9 +458,14 @@ instance (Interpret t, HBind t) => Associative (JokerT t) where
 
 -- | A 'Chain1' unrolled from a @'JokerT' t@ is always infinitely long.
 instance (Interpret t, HBind t) => Semigroupoidal (JokerT t) where
-    type SF (JokerT t) = t  -- we have to be able to instantly retract!
+    type SF (JokerT t) = HFix (LiftT t)
+    -- t  -- we have to be able to instantly retract!
 
-    appendSF = hbind id . runJokerT
+    appendSF = HFix . ImpureT . runJokerT
+    matchSF  (HFix x) = case x of
+      PureT y   -> matchSF y
+      ImpureT y -> R1 . JokerT $ y
+    -- appendSF = hbind id . runJokerT
     -- hm, this is a problem, because rerollSF is not infinitely long. this
     -- has to be an inverse with inject !*! consSF
     --
@@ -424,7 +476,7 @@ instance (Interpret t, HBind t) => Semigroupoidal (JokerT t) where
     --
     -- it's because we need to be able to retract from t, but we can't.
     -- t is bad!
-    matchSF  = R1 . JokerT . hmap inject
+    -- matchSF  = R1 . JokerT . hmap inject
 
 -- newtype MaybeClownT t f g a = MaybeClownT { runMaybeClownT :: ComposeT MaybeF t f a }
 
