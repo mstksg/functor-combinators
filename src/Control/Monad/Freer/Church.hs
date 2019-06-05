@@ -1,11 +1,15 @@
+{-# LANGUAGE EmptyCase                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE PatternSynonyms           #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeApplications          #-}
+{-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE ViewPatterns              #-}
 
 -- |
@@ -24,15 +28,31 @@
 -- 'Data.Functor.Tensor.HBifunctor' and 'Data.Functor.Tensor.Tensor' and
 -- 'Data.Functor.Tensor.Monoidal'.
 module Control.Monad.Freer.Church (
-    Free(..), reFree
+  -- * 'Free'
+    Free(..)
+  , reFree, liftFree, interpretFree, retractFree, hoistFree
+  , foldFree, foldFree', foldFreeC
+  -- * 'Free1'
+  , Free1(.., DoneF1, MoreF1), toFree, liftFree1, free1Comp, matchFree1
+  , interpretFree1, retractFree1, hoistFree1
+  , foldFree1, foldFree1', foldFree1C
+  -- * 'Comp'
   , Comp(.., Comp, unComp), comp
   ) where
 
 import           Control.Applicative
 import           Control.Monad
+import           Control.Natural
+import           Data.Foldable
+import           Data.Functor
+import           Data.Functor.Bind
 import           Data.Functor.Classes
+import           Data.Functor.Coyoneda
+import           Data.Semigroup.Foldable
+import           Data.Semigroup.Traversable
+import           GHC.Generics
 import           Text.Read
-import qualified Control.Monad.Free             as M
+import qualified Control.Monad.Free         as M
 
 -- | A @'Free' f@ is @f@ enhanced with "sequential binding" capabilities.
 -- It allows you to sequence multiple @f@s one after the other, and also to
@@ -65,22 +85,29 @@ newtype Free f a = Free
 instance Functor (Free f) where
     fmap f x = Free $ \p b -> runFree x (p . f) b
 
+instance Apply (Free f) where
+    (<.>) = ap
+
 instance Applicative (Free f) where
     pure  = return
-    (<*>) = ap
+    (<*>) = (<.>)
+
+instance Bind (Free f) where
+    x >>- f  = Free $ \p b -> runFree x (\y -> runFree (f y) p b) b
 
 instance Monad (Free f) where
     return x = Free $ \p _ -> p x
-    x >>= f  = Free $ \p b -> runFree x (\y -> runFree (f y) p b) b
+    (>>=)    = (>>-)
 
 instance M.MonadFree f (Free f) where
     wrap x = Free $ \p b -> b x $ \y -> runFree y p b
 
 instance Foldable f => Foldable (Free f) where
-    foldMap f x = runFree x f (flip foldMap)
+    foldMap f = foldFreeC f fold
 
 instance Traversable f => Traversable (Free f) where
-    traverse f x = runFree x (fmap pure . f) $ \xs g -> M.wrap <$> traverse g xs
+    traverse f = foldFree (fmap pure   . f        )
+                          (fmap M.wrap . sequenceA)
 
 instance (Functor f, Eq1 f) => Eq1 (Free f) where
     liftEq eq x y = liftEq @(M.Free f) eq (reFree x) (reFree y)
@@ -94,12 +121,225 @@ instance (Functor f, Eq1 f, Eq a) => Eq (Free f a) where
 instance (Functor f, Ord1 f, Ord a) => Ord (Free f a) where
     compare = compare1
 
+instance (Functor f, Show1 f) => Show1 (Free f) where
+    liftShowsPrec sp sl d x = case reFree x of
+        M.Pure y  -> showsUnaryWith sp "pure" d y
+        M.Free ys -> showsUnaryWith (liftShowsPrec sp' sl') "wrap" d ys
+      where
+        sp' = liftShowsPrec sp sl
+        sl' = liftShowList sp sl
+
+-- | Show in terms of 'pure' and 'wrap'.
+instance (Functor f, Show1 f, Show a) => Show (Free f a) where
+    showsPrec = liftShowsPrec showsPrec showList
+
+instance (Functor f, Read1 f) => Read1 (Free f) where
+    liftReadsPrec rp rl = go
+      where
+        go = readsData $
+            readsUnaryWith rp "pure" pure
+         <> readsUnaryWith (liftReadsPrec go (liftReadList rp rl)) "wrap" M.wrap
+
+-- | Read in terms of 'pure' and 'wrap'.
+instance (Functor f, Read1 f, Read a) => Read (Free f a) where
+    readPrec = readPrec1
+    readListPrec = readListPrecDefault
+    readList = readListDefault
+
 -- | Convert a @'Free' f@ into any instance of @'M.MonadFree' f@.
 reFree
     :: (M.MonadFree f m, Functor f)
     => Free f a
     -> m a
-reFree x = runFree x pure $ \y g -> M.wrap (g <$> y)
+reFree = foldFree pure M.wrap
+
+liftFree :: f ~> Free f
+liftFree x = Free $ \p b -> b x p
+
+interpretFree :: Monad g => (f ~> g) -> Free f ~> g
+interpretFree f = foldFree' pure ((>>=) . f)
+
+retractFree :: Monad f => Free f ~> f
+retractFree = foldFree' pure (>>=)
+
+hoistFree :: (f ~> g) -> Free f ~> Free g
+hoistFree f x = Free $ \p b -> runFree x p (b . f)
+
+foldFree'
+    :: (a -> r)
+    -> (forall s. f s -> (s -> r) -> r)
+    -> Free f a
+    -> r
+foldFree' f g x = runFree x f g
+
+foldFreeC
+    :: (a -> r)
+    -> (Coyoneda f r -> r)
+    -> Free f a
+    -> r
+foldFreeC f g = foldFree' f (\y n -> g (Coyoneda n y))
+
+foldFree
+    :: Functor f
+    => (a -> r)
+    -> (f r -> r)
+    -> Free f a
+    -> r
+foldFree f g = foldFreeC f (g . lowerCoyoneda)
+
+newtype Free1 f a = Free1
+    { runFree1 :: forall r. (forall s. f s -> (s -> a) -> r)
+                         -> (forall s. f s -> (s -> r) -> r)
+                         -> r
+    }
+
+instance Functor (Free1 f) where
+    fmap f x = Free1 $ \p b -> runFree1 x (\y c -> p y (f . c)) b
+
+instance Apply (Free1 f) where
+    (<.>) = apDefault
+
+instance Bind (Free1 f) where
+    x >>- f = Free1 $ \p b ->
+        runFree1 x (\y c -> b y ((\q -> runFree1 q p b) . f . c)) b
+
+instance Foldable f => Foldable (Free1 f) where
+    foldMap f = foldFree1C (foldMap f) fold
+
+instance Traversable f => Traversable (Free1 f) where
+    traverse f = foldFree1 (fmap DoneF1 . traverse f)
+                           (fmap MoreF1 . sequenceA )
+
+instance Foldable1 f => Foldable1 (Free1 f) where
+    foldMap1 f = foldFree1C (foldMap1 f) fold1
+
+instance Traversable1 f => Traversable1 (Free1 f) where
+    traverse1 f = foldFree1 (fmap DoneF1 . traverse1 f)
+                            (fmap MoreF1 . sequence1  )
+
+instance (Functor f, Eq1 f) => Eq1 (Free1 f) where
+    liftEq eq x y = liftEq @(Free f) eq (toFree x) (toFree y)
+
+instance (Functor f, Ord1 f) => Ord1 (Free1 f) where
+    liftCompare c x y = liftCompare @(Free f) c (toFree x) (toFree y)
+
+instance (Functor f, Eq1 f, Eq a) => Eq (Free1 f a) where
+    (==) = eq1
+
+instance (Functor f, Ord1 f, Ord a) => Ord (Free1 f a) where
+    compare = compare1
+
+instance (Functor f, Show1 f) => Show1 (Free1 f) where
+    liftShowsPrec sp sl d = \case
+        DoneF1 x -> showsUnaryWith (liftShowsPrec sp  sl ) "DoneF1" d x
+        MoreF1 x -> showsUnaryWith (liftShowsPrec sp' sl') "MoreF1" d x
+      where
+        sp' = liftShowsPrec sp sl
+        sl' = liftShowList sp sl
+
+-- | Show in terms of 'DoneF1' and 'MoreF1'.
+instance (Functor f, Show1 f, Show a) => Show (Free1 f a) where
+    showsPrec = liftShowsPrec showsPrec showList
+
+instance (Functor f, Read1 f) => Read1 (Free1 f) where
+    liftReadsPrec rp rl = go
+      where
+        go = readsData $
+            readsUnaryWith (liftReadsPrec rp rl) "DoneF1" DoneF1
+         <> readsUnaryWith (liftReadsPrec go (liftReadList rp rl)) "MoreF1" MoreF1
+
+-- | Read in terms of 'DoneF1' and 'MoreF1'.
+instance (Functor f, Read1 f, Read a) => Read (Free1 f a) where
+    readPrec = readPrec1
+    readListPrec = readListPrecDefault
+    readList = readListDefault
+
+-- | Constructor matching on the case that a @'Free1' f@ consists of just
+-- a single un-nested @f@.  Used as a part of the 'Show' and 'Read'
+-- instances.
+pattern DoneF1 :: Functor f => f a -> Free1 f a
+pattern DoneF1 x <- (matchFree1 -> L1 x)
+  where
+    DoneF1 x = liftFree1 x
+
+-- | Constructor matching on the case that a @'Free1' f@ is a nested @f
+-- ('Free1' f a)@.  Used as a part of the 'Show' and 'Read' instances.
+pattern MoreF1 :: Functor f => f (Free1 f a) -> Free1 f a
+pattern MoreF1 x <- (matchFree1 -> R1 (Comp x))
+  where
+    MoreF1 x = liftFree1 x >>- id
+{-# COMPLETE DoneF1, MoreF1 #-}
+
+-- | @'Free1' f@ is a special subset of @'Free' f@ that consists of at least one
+-- nested @f@.  This converts it back into the "bigger" type.
+--
+-- See 'free1Comp' for a version that preserves the "one nested layer"
+-- property.
+toFree :: Free1 f ~> Free f
+toFree x = Free $ \p b -> runFree1 x (\y c -> b y (p . c)) b
+
+-- | Map the underlying functor under a 'Free1'.
+hoistFree1 :: (f ~> g) -> Free1 f ~> Free1 g
+hoistFree1 f x = Free1 $ \p b -> runFree1 x (p . f) (b . f)
+
+-- | Because a @'Free1' f@ is just a @'Free' f@ with at least one nested
+-- layer of @f@, this function converts it back into the one-nested-@f@
+-- format.
+free1Comp :: Free1 f ~> Comp f (Free f)
+free1Comp = foldFree1' (\y c -> y :>>= (pure . c)) $ \y n ->
+    y :>>= \z -> case n z of
+      q :>>= m -> liftFree q >>= m
+
+-- | Inject an @f@ into a @'Free1' f@
+liftFree1 :: f ~> Free1 f
+liftFree1 x = Free1 $ \p _ -> p x id
+
+-- | Retract the @f@ out of a @'Free1' f@, as long as the @f@ implements
+-- 'Bind'.  Since we always have at least one @f@, we do not need a full
+-- 'Monad' constraint.
+retractFree1 :: Bind f => Free1 f ~> f
+retractFree1 = foldFree1' (<&>) (>>-)
+
+-- | Interpret the @'Free1' f@ in some context @g@, provided that @g@ has
+-- a 'Bind' instance.  Since we always have at least one @f@, we will
+-- always have at least one @g@, so we do not need a full 'Monad'
+-- constraint.
+interpretFree1 :: Bind g => (f ~> g) -> Free1 f ~> g
+interpretFree1 f = foldFree1' (\y c -> c <$> f y)
+                              (\y n -> f y >>- n)
+
+-- | A @'Free1' f@ is either a single un-nested @f@, or a @f@ nested with
+-- another @'Free1' f@.  This decides which is the case.
+matchFree1 :: forall f. Functor f => Free1 f ~> f :+: Comp f (Free1 f)
+matchFree1 = foldFree1 L1 (R1 . Comp . fmap shuffle)
+  where
+    shuffle :: f :+: Comp f (Free1 f) ~> Free1 f
+    shuffle (L1 y         ) = liftFree1 y
+    shuffle (R1 (y :>>= n)) = liftFree1 y >>- n
+
+foldFree1'
+    :: (forall s. f s -> (s -> a) -> r)
+    -> (forall s. f s -> (s -> r) -> r)
+    -> Free1 f a
+    -> r
+foldFree1' f g x = runFree1 x f g
+
+foldFree1C
+    :: (Coyoneda f a -> r)
+    -> (Coyoneda f r -> r)
+    -> Free1 f a
+    -> r
+foldFree1C f g = foldFree1' (\y c -> f (Coyoneda c y))
+                            (\y n -> g (Coyoneda n y))
+
+foldFree1
+    :: Functor f
+    => (f a -> r)
+    -> (f r -> r)
+    -> Free1 f a
+    -> r
+foldFree1 f g = foldFree1C (f . lowerCoyoneda)
+                           (g . lowerCoyoneda)
 
 -- | Functor composition.  @'Comp' f g a@ is equivalent to @f (g a)@, and
 -- the 'Comp' pattern synonym is a way of getting the @f (g a)@ in
@@ -119,7 +359,8 @@ reFree x = runFree x pure $ \y g -> M.wrap (g <$> y)
 -- a while will concretize a 'Comp' value (if you have @'Functor' f@)
 -- and remove some indirection if you have a lot of chained operations.
 --
--- The "free monoid" over 'Comp' is 'Free'.
+-- The "free monoid" over 'Comp' is 'Free', and the "free semigroup" over
+-- 'Comp' is 'Free1'.
 data Comp f g a =
     forall x. f x :>>= (x -> g a)
 
@@ -190,3 +431,4 @@ pattern Comp { unComp } <- ((\case x :>>= f -> f <$> x)->unComp)
   where
     Comp x = comp x
 {-# COMPLETE Comp #-}
+

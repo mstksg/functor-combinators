@@ -46,5 +46,5 @@ ghc-options:
 library:
   source-dirs: src
   other-modules:
-  - Data.Functor.HFunctor.Internal
+  - Data.HFunctor.Internal
   - Data.Functor.These

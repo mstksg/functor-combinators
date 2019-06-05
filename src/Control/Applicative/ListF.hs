@@ -29,10 +29,8 @@ module Control.Applicative.ListF (
   -- * 'ListF'
     ListF(..), mapListF
   -- * 'NonEmptyF'
-  , NonEmptyF(..), mapNonEmptyF
+  , NonEmptyF(.., ProdNonEmpty, nonEmptyProd), mapNonEmptyF
   , toListF, fromListF
-  , pattern ProdNonEmpty
-  , nonEmptyProd
   -- * 'MaybeF'
   , MaybeF(..), mapMaybeF
   , listToMaybeF, maybeToListF

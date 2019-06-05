@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies       #-}
 {-# LANGUAGE TypeOperators      #-}
 
-module Data.Functor.HFunctor.Internal (
+module Data.HFunctor.Internal (
     HFunctor(..)
   , HBifunctor(..)
   , WrappedHBifunctor(..)
@@ -39,7 +39,6 @@ import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
 import qualified Control.Monad.Free.Church      as MC
 import qualified Data.Functor.Day               as D
-
 
 -- | An 'HFunctor' can be thought of a unary "functor transformer" ---
 -- a basic functor combinator.  It takes a functor as input and returns
@@ -152,7 +151,10 @@ instance HFunctor Steps where
     hmap f (Steps xs) = Steps (f <$> xs)
 
 instance HFunctor Free where
-    hmap f x = Free $ \p b -> runFree x p $ \y z -> b (f y) z
+    hmap = hoistFree
+
+instance HFunctor Free1 where
+    hmap = hoistFree1
 
 instance HFunctor MC.F where
     hmap = MC.hoistF
@@ -252,4 +254,5 @@ deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
 deriving via (WrappedHBifunctor Comp f)   instance HFunctor (Comp f)
+
 

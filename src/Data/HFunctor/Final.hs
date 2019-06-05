@@ -22,7 +22,7 @@
 --
 -- Ideally 'Ap1' would be in the /free/ package.  However, it is defined
 -- here for now.
-module Data.Functor.HFunctor.Final (
+module Data.HFunctor.Final (
     Final(..)
   , fromFinal, toFinal
   , FreeOf(..)
@@ -43,9 +43,11 @@ import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Constraint.Trivial
 import           Data.Functor.Apply.Free
+import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
-import           Data.Functor.HFunctor
 import           Data.Functor.Plus
+import           Data.HFunctor
+import           Data.HFunctor.Interpret
 import           Data.Pointed
 import qualified Control.Alternative.Free      as Alt
 import qualified Control.Applicative.Free.Fast as FAF
@@ -116,6 +118,14 @@ instance Functor (Final Apply f) where
 instance Apply (Final Apply f) where
     (<.>) = liftFinal2 (<.>)
     liftF2 f = liftFinal2 (liftF2 f)
+
+instance Functor (Final Bind f) where
+    fmap f = liftFinal1 (fmap f)
+instance Apply (Final Bind f) where
+    (<.>) = liftFinal2 (<.>)
+    liftF2 f = liftFinal2 (liftF2 f)
+instance Bind (Final Bind f) where
+    x >>- f = Final $ \r -> runFinal x r >>- \y -> runFinal (f y) r
 
 instance Functor (Final Applicative f) where
     fmap f = liftFinal1 (fmap f)
@@ -216,10 +226,12 @@ hoistFinalC f (Final x) = Final $ \r -> f (x (\y -> f (r y)))
 instance HFunctor (Final c) where
     hmap f x = Final $ \r -> runFinal x (r . f)
 
+instance Inject (Final c) where
+    inject x = Final ($ x)
+
 instance Interpret (Final c) where
     type C (Final c) = c
 
-    inject x = Final ($ x)
     retract x = runFinal x id
     interpret f x = runFinal x f
 
@@ -300,6 +312,7 @@ instance FreeOf Apply Ap1
 instance FreeOf Applicative FAF.Ap
 instance FreeOf Alternative Alt.Alt
 instance FreeOf Monad Free
+instance FreeOf Bind Free1
 instance FreeOf Pointed Lift
 instance FreeOf Pointed MaybeApply
 instance FreeOf Alt NonEmptyF

@@ -1,8 +1,12 @@
 {-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DefaultSignatures       #-}
 {-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE InstanceSigs            #-}
+{-# LANGUAGE LambdaCase              #-}
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE PolyKinds               #-}
 {-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -54,7 +58,7 @@
 --
 -- See "Data.Functor.Tensor" for binary functor combinators that mix
 -- together two or more different functors.
-module Data.Functor.HFunctor (
+module Data.HFunctor.Interpret (
     HFunctor(..)
   , Interpret(..), interpretFor
   , extractI
@@ -65,7 +69,6 @@ module Data.Functor.HFunctor (
 
 import           Control.Applicative
 import           Control.Applicative.Backwards
-import           Control.Applicative.Free
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
@@ -77,16 +80,17 @@ import           Control.Natural
 import           Data.Coerce
 import           Data.Constraint.Trivial
 import           Data.Copointed
+import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
-import           Data.Functor.HFunctor.Internal
 import           Data.Functor.Plus
 import           Data.Functor.Reverse
+import           Data.HFunctor
 import           Data.Kind
-import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import qualified Control.Alternative.Free       as Alt
+import qualified Control.Applicative.Free       as Ap
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
 import qualified Data.Map.NonEmpty              as NEM
@@ -117,13 +121,9 @@ import qualified Data.Map.NonEmpty              as NEM
 --
 -- That is, if we lift a value into our structure, then immediately
 -- interpret it out as itself, it should lave the value unchanged.
-class HFunctor t => Interpret t where
+class Inject t => Interpret t where
     -- | The constraint on the target context of 'interpret'.
     type C t :: (Type -> Type) -> Constraint
-
-    -- | Lift an @f@ into the enhanced @t f@ structure.
-    -- Analogous to 'lift' from 'MonadTrans'.
-    inject  :: f ~> t f
 
     -- | Remove the @f@ out of the enhanced @t f@ structure, provided that
     -- @f@ satisfies the necessary constraints.  If it doesn't, it needs to
@@ -136,7 +136,7 @@ class HFunctor t => Interpret t where
     interpret :: C t g => (f ~> g) -> t f ~> g
     interpret f = retract . hmap f
 
-    {-# MINIMAL inject, (retract | interpret) #-}
+    {-# MINIMAL retract | interpret #-}
 
 -- | A convenient flipped version of 'interpret'.
 interpretFor
@@ -208,28 +208,31 @@ collectI f = getConst . interpret (Const . (:[]) . f)
 -- | A free 'Functor'
 instance Interpret Coyoneda where
     type C Coyoneda = Functor
-    inject  = liftCoyoneda
-    retract = lowerCoyoneda
+
+    retract                    = lowerCoyoneda
     interpret f (Coyoneda g x) = g <$> f x
 
 -- | A free 'Applicative'
-instance Interpret Ap where
-    type C Ap = Applicative
-    inject    = liftAp
-    interpret = runAp
+instance Interpret Ap.Ap where
+    type C Ap.Ap = Applicative
+
+    retract   = \case
+      Ap.Pure x  -> pure x
+      Ap.Ap x xs -> x <**> retract xs
+    interpret = Ap.runAp
 
 -- | A free 'Plus'
 instance Interpret ListF where
     type C ListF = Plus
-    inject = ListF . (:[])
-    retract = foldr (<!>) zero . runListF
+
+    retract     = foldr (<!>) zero . runListF
     interpret f = foldr ((<!>) . f) zero . runListF
 
 -- | A free 'Alt'
 instance Interpret NonEmptyF where
     type C NonEmptyF = Alt
-    inject = NonEmptyF . (:| [])
-    retract = asum1 . runNonEmptyF
+
+    retract     = asum1 . runNonEmptyF
     interpret f = asum1 . fmap f . runNonEmptyF
 
 -- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
@@ -240,94 +243,100 @@ instance Interpret NonEmptyF where
 -- 'Control.Monad.MonadPlus'.
 instance Interpret MaybeF where
     type C MaybeF = Plus
-    inject = MaybeF . Just
-    retract = fromMaybe zero . runMaybeF
+
+    retract     = fromMaybe zero . runMaybeF
     interpret f = maybe zero f . runMaybeF
 
 instance Interpret Step where
     type C Step = Unconstrained
-    inject = Step 0
+
     retract (Step _ x)     = x
     interpret f (Step _ x) = f x
 
 instance Interpret Steps where
     type C Steps = Alt
-    inject      = Steps . NEM.singleton 0
+
     retract     = asum1 . getSteps
     interpret f = asum1 . NEM.map f . getSteps
 
 -- | A free 'Alternative'
 instance Interpret Alt.Alt where
     type C Alt.Alt = Alternative
-    inject = Alt.liftAlt
+
     interpret = Alt.runAlt
 
 -- | A free 'Monad'
 instance Interpret Free where
     type C Free = Monad
 
-    inject x = Free $ \p b -> b x p
-    retract x = runFree x pure (>>=)
-    interpret f x = runFree x pure ((>>=) . f)
+    retract   = retractFree
+    interpret = interpretFree
+
+-- | A free 'Bind'
+instance Interpret Free1 where
+    type C Free1 = Bind
+
+    retract   = retractFree1
+    interpret = interpretFree1
 
 -- | A free 'Applicative'
 instance Interpret FA.Ap where
     type C FA.Ap = Applicative
-    inject = FA.liftAp
-    retract = FA.retractAp
+
+    retract   = FA.retractAp
     interpret = FA.runAp
 
 -- | A free 'Applicative'
 instance Interpret FAF.Ap where
     type C FAF.Ap = Applicative
-    inject = FAF.liftAp
-    retract = FAF.retractAp
+
+    retract   = FAF.retractAp
     interpret = FAF.runAp
 
 -- | A free 'Unconstrained'
 instance Interpret IdentityT where
     type C IdentityT = Unconstrained
-    inject = coerce
+
     retract = coerce
     interpret f = f . runIdentityT
 
 -- | A free 'Pointed'
 instance Interpret Lift where
     type C Lift = Pointed
-    inject = Other
-    retract = elimLift point id
-    interpret f = elimLift point f
+
+    retract   = elimLift point id
+    interpret = elimLift point
 
 -- | A free 'Pointed'
 instance Interpret MaybeApply where
     type C MaybeApply = Pointed
-    inject = MaybeApply . Left
-    retract = either id point . runMaybeApply
+
+    retract     = either id point . runMaybeApply
     interpret f = either f point . runMaybeApply
 
 instance Interpret Backwards where
     type C Backwards = Unconstrained
-    inject = Backwards
-    retract = forwards
+
+    retract     = forwards
     interpret f = f . forwards
 
 instance Interpret WrappedApplicative where
     type C WrappedApplicative = Unconstrained
-    inject = WrapApplicative
-    retract = unwrapApplicative
+
+    retract     = unwrapApplicative
     interpret f = f . unwrapApplicative
 
 -- | A free 'MonadReader', but only when applied to a 'Monad'.
 instance Interpret (ReaderT r) where
     type C (ReaderT r) = MonadReader r
-    inject = ReaderT . const
-    retract x = runReaderT x =<< ask
+
+    retract     x = runReaderT x =<< ask
     interpret f x = f . runReaderT x =<< ask
 
 instance Interpret Reverse where
     type C Reverse = Unconstrained
-    inject = Reverse
-    retract = getReverse
+
+    retract     = getReverse
     interpret f = f . getReverse
 
 -- | A constraint on @a@ for both @c a@ and @d a@.  Requiring @'AndC'
@@ -337,6 +346,23 @@ instance (c a, d a) => AndC c d a
 
 instance (Interpret s, Interpret t) => Interpret (ComposeT s t) where
     type C (ComposeT s t) = AndC (C s) (C t)
-    inject = ComposeT . inject . inject
-    retract = interpret retract . getComposeT
+
+    retract     = interpret retract . getComposeT
     interpret f = interpret (interpret f) . getComposeT
+
+-- | Never uses 'inject'
+instance Interpret t => Interpret (HLift t) where
+    type C (HLift t) = C t
+    retract = \case
+      HPure  x -> x
+      HOther x -> retract x
+    interpret f = \case
+      HPure  x -> f x
+      HOther x -> interpret f x
+
+-- | Never uses 'inject'
+instance Interpret t => Interpret (HFree t) where
+    type C (HFree t) = C t
+    retract = \case
+      HReturn x -> x
+      HJoin   x -> interpret retract x

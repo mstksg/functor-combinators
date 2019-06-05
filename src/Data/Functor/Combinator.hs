@@ -58,7 +58,7 @@ module Data.Functor.Combinator (
   -- functors together in some way.
   , HBifunctor(..)
   , Tensor(I)
-  , Monoidal(TM, retractT, interpretT, pureT, toTM)
+  -- , Monoidal(TM, retractT, interpretT, pureT, toTM)
   , inL, inR
   , (!$!)
   , extractT, getT, (!*!), collectT
@@ -100,10 +100,13 @@ import           Data.Deriving
 import           Data.Functor.Apply.Free
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
-import           Data.Functor.HFunctor
-import           Data.Functor.HFunctor.Final
-import           Data.Functor.Tensor
 import           Data.Functor.These
+import           Data.HBifunctor
+import           Data.HBifunctor.Associative
+import           Data.HBifunctor.Tensor
+import           Data.HFunctor
+import           Data.HFunctor.Final
+import           Data.HFunctor.Interpret
 import           GHC.Generics
 
 -- | The functor combinator that forgets all structure in the input.
@@ -129,9 +132,14 @@ deriveOrd1 ''ProxyF
 instance HFunctor ProxyF where
     hmap _ = coerce
 
+instance HBind ProxyF where
+    hbind _ = coerce
+
+instance Inject ProxyF where
+    inject _ = ProxyF
+
 instance Interpret ProxyF where
     type C ProxyF = Impossible
-    inject _ = ProxyF
     retract  = absurdible . fromProxyF
 
 fromProxyF :: ProxyF f a -> Proxy f

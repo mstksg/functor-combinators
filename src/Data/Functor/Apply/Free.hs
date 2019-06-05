@@ -2,12 +2,14 @@
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE PatternSynonyms     #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 -- |
 -- Module      : Data.Functor.Apply.Free
@@ -24,12 +26,11 @@
 -- Ideally 'Ap1' would be in the /free/ package.  However, it is defined
 -- here for now.
 module Data.Functor.Apply.Free (
-    Ap1(..)
+    Ap1(.., DayAp1, ap1Day)
   , toAp, fromAp
   , liftAp1
   , retractAp1
   , runAp1
-  , ap1Day, dayAp1
   ) where
 
 import           Control.Applicative.Free
@@ -37,8 +38,9 @@ import           Control.Natural
 import           Data.Function
 import           Data.Functor.Apply
 import           Data.Functor.Day
-import           Data.Functor.HFunctor
 import           Data.Functor.Identity
+import           Data.HFunctor
+import           Data.HFunctor.Interpret
 import           Data.Kind
 import           GHC.Generics
 
@@ -80,15 +82,13 @@ fromAp = \case
     Pure x  -> L1 $ Identity x
     Ap x xs -> R1 $ Ap1 x xs
 
--- | An @'Ap1' f@ is just a @'Day' f ('Ap' f)@.  This brings provides the
--- forward trip of the isomorphism.
-ap1Day :: Ap1 f ~> Day f (Ap f)
-ap1Day (Ap1 x y) = Day x y (&)
-
--- | An @'Ap1' f@ is just a @'Day' f ('Ap' f)@.  This brings provides the
--- return trip of the isomorphism.
-dayAp1 :: Functor f => Day f (Ap f) ~> Ap1 f
-dayAp1 (Day x y f) = Ap1 (f <$> x) ((&) <$> y)
+-- | An @'Ap1' f@ is just a @'Day' f ('Ap' f)@.  This bidirectional pattern
+-- synonym lets you treat it as such.
+pattern DayAp1 :: Day f (Ap f) a -> Ap1 f a
+pattern DayAp1 { ap1Day } <- ((\case Ap1 x y -> Day x y (&)) -> ap1Day)
+  where
+    DayAp1 (Day x y f) = Ap1 x (flip f <$> y)
+{-# COMPLETE DayAp1 #-}
 
 deriving instance Functor (Ap1 f)
 
@@ -117,10 +117,15 @@ runAp1 f (Ap1 x xs) = runAp1_ f x xs
 instance HFunctor Ap1 where
     hmap f (Ap1 x xs) = Ap1 (f x) (hmap f xs)
 
+instance Inject Ap1 where
+    inject = liftAp1
+
+instance HBind Ap1 where
+    hbind = runAp1
+
 instance Interpret Ap1 where
     type C Ap1 = Apply
 
-    inject = liftAp1
     retract = retractAp1
     interpret = runAp1
 
