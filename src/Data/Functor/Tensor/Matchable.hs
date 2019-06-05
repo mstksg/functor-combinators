@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Functor.Matchable (
+module Data.Functor.Tensor.Matchable (
     Matchable(..)
   , splittingSF
   , matchingMF

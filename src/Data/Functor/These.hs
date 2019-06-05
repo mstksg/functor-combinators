@@ -18,6 +18,7 @@ import           Control.Natural
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Associative
+import           Data.Functor.Tensor.Matchable
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Plus
@@ -137,19 +138,16 @@ instance Semigroupoidal These1 where
 instance Monoidal These1 where
     type MF These1 = Steps
 
-    -- appendMF (Day x y z) = z <$> x <*> y
-    -- splitSF = ap1Day
-    -- matchSF = R1 . stepsDown
-
-    appendMF = appendSF
-    splitSF  = stepsDown
-    -- splittingSF = isoF stepsDown stepsUp
-
-    -- matchingMF  = voidLeftIdentity
+    appendMF    = appendSF
+    splitSF     = stepsDown
     splittingMF = steppings . voidLeftIdentity
 
-    toMF       = toSF
-    pureT      = absurd1
+    toMF  = toSF
+    pureT = absurd1
+
+instance Matchable These1 where
+    unsplitSF = stepsUp
+    matchMF   = R1
 
 decr :: Natural -> g a -> These1 (First :.: g) (NEMap Natural :.: g) a
 decr i x = case minusNaturalMaybe i 1 of

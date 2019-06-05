@@ -29,12 +29,13 @@
 -- 'Data.Functor.Tensor.Monoidal'.
 module Control.Monad.Freer.Church (
     Free(..), reFree, liftFree, interpretFree, retractFree, hoistFree
-  , Free1(..), toFree, liftFree1, free1Comp, matchFree1
+  , Free1(.., DoneF1, MoreF1), toFree, liftFree1, free1Comp, matchFree1
   , interpretFree1, retractFree1, hoistFree1
   , Comp(.., Comp, unComp), comp
   ) where
 
 import           Control.Applicative
+import           Control.Applicative.ListF
 import           Control.Monad
 import           Control.Natural
 import           Data.Functor
@@ -42,7 +43,7 @@ import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           GHC.Generics
 import           Text.Read
-import qualified Control.Monad.Free            as M
+import qualified Control.Monad.Free        as M
 
 -- | A @'Free' f@ is @f@ enhanced with "sequential binding" capabilities.
 -- It allows you to sequence multiple @f@s one after the other, and also to
@@ -149,14 +150,16 @@ newtype Free1 f a = Free1
 toFree :: Free1 f ~> Free f
 toFree x = Free $ \p b -> runFree1 x (\y c -> b y (p . c)) b
 
--- -- HEY This lasts forever?  oops.  it looks like it does.
--- -- the recusive call to fromFree probably is what is doing it.
--- fromFree :: forall f. Free f ~> (Identity :+: Free1 f)
--- fromFree x = runFree x (L1 . Identity) $ \y n -> fromFree $ do
---     z <- liftFree y
---     case n z of
---       L1 (Identity q) -> pure q
---       R1 q            -> toFree q
+pattern DoneF1 :: Functor f => f a -> Free1 f a
+pattern DoneF1 x <- (matchFree1 -> L1 x)
+  where
+    DoneF1 x = liftFree1 x
+
+pattern MoreF1 :: Functor f => f (Free1 f a) -> Free1 f a
+pattern MoreF1 x <- (matchFree1 -> R1 (Comp x))
+  where
+    MoreF1 x = liftFree1 x >>- id
+{-# COMPLETE DoneF1, MoreF1 #-}
 
 hoistFree1 :: (f ~> g) -> Free1 f ~> Free1 g
 hoistFree1 f x = Free1 $ \p b -> runFree1 x (p . f) (b . f)
@@ -165,19 +168,6 @@ free1Comp :: Free1 f ~> Comp f (Free f)
 free1Comp x = runFree1 x (\y c -> y :>>= (pure . c)) $ \y n ->
     y :>>= \z -> case n z of
       q :>>= m -> liftFree q >>= m
-
--- compFree1_ :: f a -> (a -> Free f b) -> Free1 f b
--- compFree1_ x f = case fromFree (liftFree x >>= f) of
---     L1 (Identity y) -> y <$ liftFree1 x
---     R1 y            -> y
-
--- -- | An @'Free1' f@ is just a @'Comp' f ('Free' f)@.  This bidirectional pattern
--- -- synonym lets you treat it as such.
--- pattern CompFree1 :: Comp f (Free f) a -> Free1 f a
--- pattern CompFree1 { free1Comp } <- (free1Comp_ -> free1Comp)
---   where
---     CompFree1 (x :>>= f) = compFree1_ x f
--- {-# COMPLETE CompFree1 #-}
 
 liftFree1 :: f ~> Free1 f
 liftFree1 x = Free1 $ \p _ -> p x id
@@ -239,12 +229,16 @@ instance (Functor f, Eq1 f, Eq a) => Eq (Free1 f a) where
 instance (Functor f, Ord1 f, Ord a) => Ord (Free1 f a) where
     compare = compare1
 
--- instance (Functor f, Show1 f) => Show1 (Free1 f) where
---     liftShowsPrec sp sl d (CompFree1 x) =
---         showsUnaryWith (liftShowsPrec sp sl) "CompFree1" d x
+instance (Functor f, Show1 f) => Show1 (Free1 f) where
+    liftShowsPrec sp sl d = \case
+        DoneF1 x -> showsUnaryWith (liftShowsPrec sp  sl ) "DoneF1" d x
+        MoreF1 x -> showsUnaryWith (liftShowsPrec sp' sl') "MoreF1" d x
+      where
+        sp' = liftShowsPrec sp sl
+        sl' = liftShowList sp sl
 
--- instance (Functor f, Show1 f, Show a) => Show (Free1 f a) where
---     showsPrec = liftShowsPrec showsPrec showList
+instance (Functor f, Show1 f, Show a) => Show (Free1 f a) where
+    showsPrec = liftShowsPrec showsPrec showList
 
 -- | Functor composition.  @'Comp' f g a@ is equivalent to @f (g a)@, and
 -- the 'Comp' pattern synonym is a way of getting the @f (g a)@ in
