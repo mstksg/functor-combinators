@@ -226,10 +226,12 @@ hoistFinalC f (Final x) = Final $ \r -> f (x (\y -> f (r y)))
 instance HFunctor (Final c) where
     hmap f x = Final $ \r -> runFinal x (r . f)
 
+instance Inject (Final c) where
+    inject x = Final ($ x)
+
 instance Interpret (Final c) where
     type C (Final c) = c
 
-    inject x = Final ($ x)
     retract x = runFinal x id
     interpret f x = runFinal x f
 

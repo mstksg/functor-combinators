@@ -40,7 +40,6 @@ import           Control.Natural
 import           Data.Functor
 import           Data.Functor.Bind
 import           Data.Functor.Classes
-import           Data.Functor.Identity
 import           GHC.Generics
 import           Text.Read
 import qualified Control.Monad.Free            as M

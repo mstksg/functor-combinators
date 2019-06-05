@@ -117,10 +117,15 @@ runAp1 f (Ap1 x xs) = runAp1_ f x xs
 instance HFunctor Ap1 where
     hmap f (Ap1 x xs) = Ap1 (f x) (hmap f xs)
 
+instance Inject Ap1 where
+    inject = liftAp1
+
+instance HBind Ap1 where
+    hbind = runAp1
+
 instance Interpret Ap1 where
     type C Ap1 = Apply
 
-    inject = liftAp1
     retract = retractAp1
     interpret = runAp1
 

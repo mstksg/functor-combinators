@@ -135,9 +135,11 @@ instance HFunctor ProxyF where
 instance HBind ProxyF where
     hbind _ = coerce
 
+instance Inject ProxyF where
+    inject _ = ProxyF
+
 instance Interpret ProxyF where
     type C ProxyF = Impossible
-    inject _ = ProxyF
     retract  = absurdible . fromProxyF
 
 fromProxyF :: ProxyF f a -> Proxy f

@@ -109,11 +109,15 @@ instance Semigroupoidal These1 where
       These1 (Steps xs) (Steps ys) -> Steps $
         let (k, _) = NEM.findMax xs
         in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
-    -- this breaks isomorphism with matchingSF
-    -- maybe we need an either-or SF
+    -- yeah, we cannot distinguish between L1 and R1.This1
+    -- matchSF = R1 . stepsDown
     --
-    -- actually in all of these methods we cannot distinguish L1 and R1
-    -- . This1.
+    -- a more fundamental problem because tehre is no difference between
+    -- Done1 "bye" and More1 (This1 "bye")
+    matchSF x = case stepsDown x of
+      This1  y   -> L1 y
+      That1    z -> R1 (That1    z)
+      These1 y z -> R1 (These1 y z)
 
     consSF = stepsUp
     toSF = \case

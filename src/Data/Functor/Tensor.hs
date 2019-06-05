@@ -80,7 +80,6 @@ module Data.Functor.Tensor (
   -- , matchingChain
   -- , matchChain
   -- , splitChain1
-  , injectChain
   , unrollMF
   , rerollMF
   , unrollingMF
@@ -213,13 +212,12 @@ unfoldChain f = go
 instance HBifunctor t => HFunctor (Chain t i) where
     hmap f = foldChain Done (More . hleft f)
 
+instance (Tensor t, i ~ I t) => Inject (Chain t i) where
+    inject = More . hright Done . intro1
+
 -- | We can collapse and interpret an @'Chain' t i@ if we have @'Tensor' t@.
---
--- Note that 'inject' only requires @'Tensor' t@.  This is given as
--- 'injectChain'.
 instance (Monoidal t, i ~ I t) => Interpret (Chain t i) where
     type C (Chain t i) = AndC (C (SF t)) (C (MF t))
-    inject  = injectChain
     retract = \case
       Done x  -> pureT @t x
       More xs -> binterpret id retract xs
@@ -233,14 +231,6 @@ instance (Monoidal t, i ~ I t) => Interpret (Chain t i) where
         go = \case
           Done x  -> pureT @t x
           More xs -> binterpret f go xs
-
--- | If we have @'Tensor' t@, we can make a singleton 'Chain'.
---
--- We can also 'retract' and 'interpret' an 'Chain' using its 'Interpret'
--- instance.
-injectChain :: forall t f. Tensor t => f ~> Chain t (I t) f
-injectChain = More . hright Done . intro1
-
 
 -- | For some tensors @t@, you can represt the act of repeatedly combining
 -- the same functor an arbitrary amount of times:

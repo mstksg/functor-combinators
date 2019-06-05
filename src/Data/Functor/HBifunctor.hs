@@ -23,7 +23,6 @@ module Data.Functor.HBifunctor (
   , JokerT(..)
   ) where
 
-import           Data.Deriving
 import           Data.Functor.Classes
 import           Data.Functor.HFunctor.Internal
 import           Data.Functor.HFunctor.IsoF
