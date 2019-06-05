@@ -537,7 +537,7 @@ instance Monoidal Comp where
     splittingMF = isoF to_ from_
       where
         to_ :: Free f ~> Identity :+: Comp f (Free f)
-        to_ x = runFree x (L1 . Identity) $ \y n -> R1 $
+        to_ = foldFree' (L1 . Identity) $ \y n -> R1 $
             y :>>= (from_ . n)
         from_ :: Identity :+: Comp f (Free f) ~> Free f
         from_ = pure . runIdentity
