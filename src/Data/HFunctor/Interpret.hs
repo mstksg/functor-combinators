@@ -58,7 +58,7 @@
 --
 -- See "Data.Functor.Tensor" for binary functor combinators that mix
 -- together two or more different functors.
-module Data.Functor.Interpret (
+module Data.HFunctor.Interpret (
     HFunctor(..)
   , Interpret(..), interpretFor
   , extractI
@@ -82,18 +82,18 @@ import           Data.Constraint.Trivial
 import           Data.Copointed
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
-import           Data.Functor.HFunctor
 import           Data.Functor.Plus
 import           Data.Functor.Reverse
+import           Data.HFunctor
 import           Data.Kind
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
-import qualified Control.Alternative.Free          as Alt
-import qualified Control.Applicative.Free          as Ap
-import qualified Control.Applicative.Free.Fast     as FAF
-import qualified Control.Applicative.Free.Final    as FA
-import qualified Data.Map.NonEmpty                 as NEM
+import qualified Control.Alternative.Free       as Alt
+import qualified Control.Applicative.Free       as Ap
+import qualified Control.Applicative.Free.Fast  as FAF
+import qualified Control.Applicative.Free.Final as FA
+import qualified Data.Map.NonEmpty              as NEM
 
 -- | An 'Interpret' lets us move in and out of the "enhanced" 'Functor'.
 --

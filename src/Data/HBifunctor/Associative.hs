@@ -29,8 +29,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE ViewPatterns               #-}
 
-
-module Data.Functor.Associative (
+module Data.HBifunctor.Associative (
   -- * 'Associative'
     Associative(..)
   , assoc
@@ -63,18 +62,18 @@ import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
-import           Data.Functor.Day                (Day(..))
-import           Data.Functor.HBifunctor
-import           Data.Functor.HFunctor
-import           Data.Functor.HFunctor.IsoF
+import           Data.Functor.Day           (Day(..))
 import           Data.Functor.Identity
-import           Data.Functor.Interpret
 import           Data.Functor.Plus
+import           Data.HBifunctor
+import           Data.HFunctor
+import           Data.HFunctor.Interpret
+import           Data.HFunctor.IsoF
 import           Data.Kind
-import           Data.List.NonEmpty              (NonEmpty(..))
+import           Data.List.NonEmpty         (NonEmpty(..))
 import           Data.Proxy
-import           GHC.Generics hiding             (C)
-import qualified Data.Functor.Day                as D
+import           GHC.Generics hiding        (C)
+import qualified Data.Functor.Day           as D
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the

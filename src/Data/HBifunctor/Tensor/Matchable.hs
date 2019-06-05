@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Data.Functor.Tensor.Matchable (
+module Data.HBifunctor.Tensor.Matchable (
     Matchable(..)
   , splittingSF
   , matchingMF
@@ -16,12 +16,12 @@ import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Natural
 import           Data.Functor.Apply.Free
-import           Data.Functor.Associative
 import           Data.Functor.Day
-import           Data.Functor.HBifunctor
-import           Data.Functor.HFunctor.IsoF
-import           Data.Functor.Tensor
-import           GHC.Generics hiding        (C)
+import           Data.HBifunctor
+import           Data.HBifunctor.Associative
+import           Data.HBifunctor.Tensor
+import           Data.HFunctor.IsoF
+import           GHC.Generics hiding         (C)
 
 class Monoidal t => Matchable t where
     unsplitSF :: t f (MF t f) ~> SF t f

@@ -17,18 +17,18 @@ import           Control.Applicative.Step
 import           Control.Natural
 import           Data.Data
 import           Data.Deriving
-import           Data.Functor.Associative
-import           Data.Functor.Tensor.Matchable
-import           Data.Functor.HFunctor.Internal
-import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Plus
-import           Data.Functor.Tensor
-import           Data.List.NonEmpty             (NonEmpty(..))
-import           Data.Map.NonEmpty              (NEMap)
+import           Data.HBifunctor.Associative
+import           Data.HBifunctor.Tensor
+import           Data.HBifunctor
+import           Data.HBifunctor.Tensor.Matchable
+import           Data.HFunctor.IsoF
+import           Data.List.NonEmpty               (NonEmpty(..))
+import           Data.Map.NonEmpty                (NEMap)
 import           Data.Semigroup
-import           GHC.Generics hiding            (C)
+import           GHC.Generics hiding              (C)
 import           GHC.Natural
-import qualified Data.Map.NonEmpty              as NEM
+import qualified Data.Map.NonEmpty                as NEM
 
 -- | A @These f g a@ has either an @f a@, a @g a@, or both.
 --

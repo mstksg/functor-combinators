@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes         #-}
 {-# LANGUAGE TypeOperators      #-}
 
-module Data.Functor.HFunctor.IsoF (
+module Data.HFunctor.IsoF (
     type (<~>)
   , isoF
   , viewF, reviewF, overF

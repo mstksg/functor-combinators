@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies       #-}
 {-# LANGUAGE TypeOperators      #-}
 
-module Data.Functor.HFunctor.Internal (
+module Data.HFunctor.Internal (
     HFunctor(..)
   , HBifunctor(..)
   , WrappedHBifunctor(..)

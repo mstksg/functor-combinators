@@ -22,7 +22,7 @@
 --
 -- Ideally 'Ap1' would be in the /free/ package.  However, it is defined
 -- here for now.
-module Data.Functor.HFunctor.Final (
+module Data.HFunctor.Final (
     Final(..)
   , fromFinal, toFinal
   , FreeOf(..)
@@ -45,9 +45,9 @@ import           Data.Constraint.Trivial
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
-import           Data.Functor.HFunctor
-import           Data.Functor.Interpret
 import           Data.Functor.Plus
+import           Data.HFunctor
+import           Data.HFunctor.Interpret
 import           Data.Pointed
 import qualified Control.Alternative.Free      as Alt
 import qualified Control.Applicative.Free.Fast as FAF

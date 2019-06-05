@@ -44,7 +44,7 @@ import           Control.Natural
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Alt
-import           Data.Functor.HFunctor.IsoF
+import           Data.HFunctor.IsoF
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           GHC.Generics

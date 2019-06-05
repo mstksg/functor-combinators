@@ -55,7 +55,7 @@
 -- 'toMF' :: 'Comp' f f a -> 'Free' f a
 -- 'toMF' :: 'Day' f f a -> 'Ap' f a
 -- @
-module Data.Functor.Tensor (
+module Data.HBifunctor.Tensor (
   -- * 'Tensor'
     Tensor(..)
   , rightIdentity
@@ -88,19 +88,19 @@ import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Data.Function
 import           Data.Functor.Apply.Free
-import           Data.Functor.Associative
 import           Data.Functor.Classes
-import           Data.Functor.Day           (Day(..))
-import           Data.Functor.HBifunctor
-import           Data.Functor.HFunctor
-import           Data.Functor.HFunctor.IsoF
+import           Data.Functor.Day            (Day(..))
 import           Data.Functor.Identity
-import           Data.Functor.Interpret
 import           Data.Functor.Plus
+import           Data.HBifunctor
+import           Data.HBifunctor.Associative
+import           Data.HFunctor
+import           Data.HFunctor.Interpret
+import           Data.HFunctor.IsoF
 import           Data.Kind
 import           Data.Proxy
-import           GHC.Generics hiding        (C)
-import qualified Data.Functor.Day           as D
+import           GHC.Generics hiding         (C)
+import qualified Data.Functor.Day            as D
 
 -- | A 'HBifunctor' can be a 'Tensor' if:
 --

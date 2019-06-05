@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns         #-}
 
-module Data.Functor.HBifunctor (
+module Data.HBifunctor (
     HBifunctor(..)
   , WrappedHBifunctor(..)
   , overHBifunctor
@@ -24,8 +24,8 @@ module Data.Functor.HBifunctor (
   ) where
 
 import           Data.Functor.Classes
-import           Data.Functor.HFunctor.Internal
-import           Data.Functor.HFunctor.IsoF
+import           Data.HFunctor.Internal
+import           Data.HFunctor.IsoF
 import           Data.Kind
 
 overHBifunctor

@@ -61,7 +61,7 @@
 --
 -- See "Data.Functor.Tensor" for binary functor combinators that mix
 -- together two or more different functors.
-module Data.Functor.HFunctor (
+module Data.HFunctor (
     HFunctor(..)
   , overHFunctor
   , Inject(..)
@@ -84,9 +84,9 @@ import           Data.Coerce
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
-import           Data.Functor.HFunctor.Internal
-import           Data.Functor.HFunctor.IsoF
 import           Data.Functor.Reverse
+import           Data.HFunctor.Internal
+import           Data.HFunctor.IsoF
 import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable

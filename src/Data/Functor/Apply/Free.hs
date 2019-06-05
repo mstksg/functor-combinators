@@ -38,9 +38,9 @@ import           Control.Natural
 import           Data.Function
 import           Data.Functor.Apply
 import           Data.Functor.Day
-import           Data.Functor.HFunctor
 import           Data.Functor.Identity
-import           Data.Functor.Interpret
+import           Data.HFunctor
+import           Data.HFunctor.Interpret
 import           Data.Kind
 import           GHC.Generics
 
