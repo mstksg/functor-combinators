@@ -263,7 +263,7 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Ord1 f, GHC.Classes.Ord a) =>
 instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Monad.Freer.Church.Free f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Control.Monad.Freer.Church.Free f a)
 
-module Data.Functor.HFunctor.IsoF
+module Data.HFunctor.IsoF
 type f <~> g = forall p a. Profunctor p => p (g a) (g a) -> p (f a) (f a)
 infixr 0 <~>
 isoF :: (f ~> g) -> (g ~> f) -> f <~> g
@@ -275,7 +275,7 @@ type AnIsoF' f g = forall a. Exchange (g a) (g a) (g a) (g a) -> Exchange (g a) 
 cloneIsoF' :: AnIsoF' f g -> f <~> g
 data Exchange a b s t
 Exchange :: (s -> a) -> (b -> t) -> Exchange a b s t
-instance Data.Profunctor.Unsafe.Profunctor (Data.Functor.HFunctor.IsoF.Exchange a b)
+instance Data.Profunctor.Unsafe.Profunctor (Data.HFunctor.IsoF.Exchange a b)
 
 
 -- | This module provides functor combinators that are the fixed points of
@@ -417,7 +417,7 @@ instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq
 instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Step f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
 
-module Data.Functor.HBifunctor
+module Data.HBifunctor
 
 -- | A <a>HBifunctor</a> is like an <a>HFunctor</a>, but it enhances
 --   <i>two</i> different functors instead of just one.
@@ -504,30 +504,30 @@ ClownT :: t f a -> ClownT t f g a
 newtype JokerT t f g a
 JokerT :: t g a -> JokerT t f g a
 [runJokerT] :: JokerT t f g a -> t g a
-instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Read.Read (t g a) => GHC.Read.Read (Data.Functor.HBifunctor.JokerT t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Show.Show (t g a) => GHC.Show.Show (Data.Functor.HBifunctor.JokerT t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Classes.Ord (t g a) => GHC.Classes.Ord (Data.Functor.HBifunctor.JokerT t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Classes.Eq (t g a) => GHC.Classes.Eq (Data.Functor.HBifunctor.JokerT t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Read.Read (t f a) => GHC.Read.Read (Data.Functor.HBifunctor.ClownT t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Show.Show (t f a) => GHC.Show.Show (Data.Functor.HBifunctor.ClownT t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Classes.Ord (t f a) => GHC.Classes.Ord (Data.Functor.HBifunctor.ClownT t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Classes.Eq (t f a) => GHC.Classes.Eq (Data.Functor.HBifunctor.ClownT t f g a)
-instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.Functor.HBifunctor.JoinT t f)
-instance forall k1 k2 k3 (t :: k3 -> * -> *) (p :: k1 -> k2 -> k3) (f :: k1) (g :: k2). GHC.Base.Functor (t (p f g)) => GHC.Base.Functor (Data.Functor.HBifunctor.TannenT t p f g)
-instance (Data.Functor.HFunctor.Internal.HFunctor t, Data.Functor.HFunctor.Internal.HBifunctor p) => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HBifunctor.TannenT t p f)
-instance forall k1 k2 k3 k4 (p :: k3 -> k4 -> * -> *) (s :: k2 -> k3) (f :: k2) (t :: k1 -> k4) (g :: k1). GHC.Base.Functor (p (s f) (t g)) => GHC.Base.Functor (Data.Functor.HBifunctor.BiffT p s t f g)
-instance (Data.Functor.HFunctor.Internal.HBifunctor p, Data.Functor.HFunctor.Internal.HFunctor s, Data.Functor.HFunctor.Internal.HFunctor t) => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HBifunctor.BiffT p s t f)
-instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). GHC.Base.Functor (t f) => GHC.Base.Functor (Data.Functor.HBifunctor.ClownT t f g)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HBifunctor.ClownT t f)
-instance forall k1 k2 (t :: k2 -> * -> *) (g :: k2) (f :: k1). GHC.Base.Functor (t g) => GHC.Base.Functor (Data.Functor.HBifunctor.JokerT t f g)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HBifunctor.JokerT t f)
-instance forall k1 k2 (t :: k2 -> * -> *) (g :: k2) (f :: k1). Data.Functor.Classes.Show1 (t g) => Data.Functor.Classes.Show1 (Data.Functor.HBifunctor.JokerT t f g)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Internal.HBifunctor (Data.Functor.HBifunctor.JokerT t)
-instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). Data.Functor.Classes.Show1 (t f) => Data.Functor.Classes.Show1 (Data.Functor.HBifunctor.ClownT t f g)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Internal.HBifunctor (Data.Functor.HBifunctor.ClownT t)
-instance (Data.Functor.HFunctor.Internal.HBifunctor p, Data.Functor.HFunctor.Internal.HFunctor s, Data.Functor.HFunctor.Internal.HFunctor t) => Data.Functor.HFunctor.Internal.HBifunctor (Data.Functor.HBifunctor.BiffT p s t)
-instance (Data.Functor.HFunctor.Internal.HFunctor t, Data.Functor.HFunctor.Internal.HBifunctor p) => Data.Functor.HFunctor.Internal.HBifunctor (Data.Functor.HBifunctor.TannenT t p)
-instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HBifunctor.JoinT t)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Read.Read (t g a) => GHC.Read.Read (Data.HBifunctor.JokerT t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Show.Show (t g a) => GHC.Show.Show (Data.HBifunctor.JokerT t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Classes.Ord (t g a) => GHC.Classes.Ord (Data.HBifunctor.JokerT t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Classes.Eq (t g a) => GHC.Classes.Eq (Data.HBifunctor.JokerT t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Read.Read (t f a) => GHC.Read.Read (Data.HBifunctor.ClownT t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Show.Show (t f a) => GHC.Show.Show (Data.HBifunctor.ClownT t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Classes.Ord (t f a) => GHC.Classes.Ord (Data.HBifunctor.ClownT t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Classes.Eq (t f a) => GHC.Classes.Eq (Data.HBifunctor.ClownT t f g a)
+instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.HBifunctor.JoinT t f)
+instance forall k1 k2 k3 (t :: k3 -> * -> *) (p :: k1 -> k2 -> k3) (f :: k1) (g :: k2). GHC.Base.Functor (t (p f g)) => GHC.Base.Functor (Data.HBifunctor.TannenT t p f g)
+instance (Data.HFunctor.Internal.HFunctor t, Data.HFunctor.Internal.HBifunctor p) => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.TannenT t p f)
+instance forall k1 k2 k3 k4 (p :: k3 -> k4 -> * -> *) (s :: k2 -> k3) (f :: k2) (t :: k1 -> k4) (g :: k1). GHC.Base.Functor (p (s f) (t g)) => GHC.Base.Functor (Data.HBifunctor.BiffT p s t f g)
+instance (Data.HFunctor.Internal.HBifunctor p, Data.HFunctor.Internal.HFunctor s, Data.HFunctor.Internal.HFunctor t) => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.BiffT p s t f)
+instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). GHC.Base.Functor (t f) => GHC.Base.Functor (Data.HBifunctor.ClownT t f g)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.ClownT t f)
+instance forall k1 k2 (t :: k2 -> * -> *) (g :: k2) (f :: k1). GHC.Base.Functor (t g) => GHC.Base.Functor (Data.HBifunctor.JokerT t f g)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.JokerT t f)
+instance forall k1 k2 (t :: k2 -> * -> *) (g :: k2) (f :: k1). Data.Functor.Classes.Show1 (t g) => Data.Functor.Classes.Show1 (Data.HBifunctor.JokerT t f g)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.JokerT t)
+instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). Data.Functor.Classes.Show1 (t f) => Data.Functor.Classes.Show1 (Data.HBifunctor.ClownT t f g)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.ClownT t)
+instance (Data.HFunctor.Internal.HBifunctor p, Data.HFunctor.Internal.HFunctor s, Data.HFunctor.Internal.HFunctor t) => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.BiffT p s t)
+instance (Data.HFunctor.Internal.HFunctor t, Data.HFunctor.Internal.HBifunctor p) => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.TannenT t p)
+instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.JoinT t)
 
 
 -- | This module provides tools for working with unary functor combinators.
@@ -570,7 +570,7 @@ instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.In
 --   
 --   See <a>Data.Functor.Tensor</a> for binary functor combinators that mix
 --   together two or more different functors.
-module Data.Functor.HFunctor
+module Data.HFunctor
 
 -- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
 --   a basic functor combinator. It takes a functor as input and returns a
@@ -629,56 +629,56 @@ HOther :: t f a -> HLift t f a
 data HFree t f a
 HReturn :: f a -> HFree t f a
 HJoin :: t (HFree t f) a -> HFree t f a
-instance (GHC.Base.Functor f, GHC.Base.Functor (t f)) => GHC.Base.Functor (Data.Functor.HFunctor.HLift t f)
-instance (GHC.Base.Functor f, GHC.Base.Functor (t (Data.Functor.HFunctor.HFree t f))) => GHC.Base.Functor (Data.Functor.HFunctor.HFree t f)
-instance Data.Functor.HFunctor.HBind Data.Functor.Coyoneda.Coyoneda
-instance Data.Functor.HFunctor.HBind Control.Applicative.Free.Ap
-instance Data.Functor.HFunctor.HBind Control.Applicative.ListF.ListF
-instance Data.Functor.HFunctor.HBind Control.Applicative.ListF.NonEmptyF
-instance Data.Functor.HFunctor.HBind Control.Applicative.ListF.MaybeF
-instance Data.Functor.HFunctor.HBind Control.Applicative.Step.Step
-instance Data.Functor.HFunctor.HBind Control.Applicative.Step.Steps
-instance Data.Functor.HFunctor.HBind Control.Alternative.Free.Alt
-instance Data.Functor.HFunctor.HBind Control.Monad.Freer.Church.Free
-instance Data.Functor.HFunctor.HBind Control.Monad.Freer.Church.Free1
-instance Data.Functor.HFunctor.HBind Control.Applicative.Free.Final.Ap
-instance Data.Functor.HFunctor.HBind Control.Applicative.Free.Fast.Ap
-instance Data.Functor.HFunctor.HBind Control.Monad.Trans.Identity.IdentityT
-instance Data.Functor.HFunctor.HBind Control.Applicative.Lift.Lift
-instance Data.Functor.HFunctor.HBind Data.Functor.Bind.Class.MaybeApply
-instance Data.Functor.HFunctor.HBind Control.Applicative.Backwards.Backwards
-instance Data.Functor.HFunctor.HBind Data.Functor.Bind.Class.WrappedApplicative
-instance Data.Functor.HFunctor.HBind Data.Functor.Reverse.Reverse
-instance Data.Functor.HFunctor.HBind Control.Applicative.Step.Void2
-instance (Data.Functor.HFunctor.HBind t, Data.Functor.HFunctor.Inject t) => Data.Functor.HFunctor.HBind (Data.Functor.HFunctor.HLift t)
-instance Data.Functor.HFunctor.Inject Data.Functor.Coyoneda.Coyoneda
-instance Data.Functor.HFunctor.Inject Control.Applicative.Free.Ap
-instance Data.Functor.HFunctor.Inject Control.Applicative.ListF.ListF
-instance Data.Functor.HFunctor.Inject Control.Applicative.ListF.NonEmptyF
-instance Data.Functor.HFunctor.Inject Control.Applicative.ListF.MaybeF
-instance Data.Functor.HFunctor.Inject Control.Applicative.Step.Step
-instance Data.Functor.HFunctor.Inject Control.Applicative.Step.Steps
-instance Data.Functor.HFunctor.Inject Control.Alternative.Free.Alt
-instance Data.Functor.HFunctor.Inject Control.Monad.Freer.Church.Free
-instance Data.Functor.HFunctor.Inject Control.Monad.Freer.Church.Free1
-instance Data.Functor.HFunctor.Inject Control.Applicative.Free.Final.Ap
-instance Data.Functor.HFunctor.Inject Control.Applicative.Free.Fast.Ap
-instance Data.Functor.HFunctor.Inject Control.Monad.Trans.Identity.IdentityT
-instance Data.Functor.HFunctor.Inject Control.Applicative.Lift.Lift
-instance Data.Functor.HFunctor.Inject Data.Functor.Bind.Class.MaybeApply
-instance Data.Functor.HFunctor.Inject Control.Applicative.Backwards.Backwards
-instance Data.Functor.HFunctor.Inject Data.Functor.Bind.Class.WrappedApplicative
-instance Data.Functor.HFunctor.Inject (Control.Monad.Trans.Reader.ReaderT r)
-instance Data.Functor.HFunctor.Inject Data.Functor.Reverse.Reverse
-instance (Data.Functor.HFunctor.Inject s, Data.Functor.HFunctor.Inject t) => Data.Functor.HFunctor.Inject (Control.Monad.Trans.Compose.ComposeT s t)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Inject (Data.Functor.HFunctor.HLift t)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Inject (Data.Functor.HFunctor.HFree t)
-instance (Data.Functor.Classes.Show1 (t (Data.Functor.HFunctor.HFree t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.Functor.HFunctor.HFree t f)
-instance (Data.Functor.Classes.Show1 (t (Data.Functor.HFunctor.HFree t f)), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.Functor.HFunctor.HFree t f a)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.HFree t)
-instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.Functor.HFunctor.HLift t f)
-instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.Functor.HFunctor.HLift t f a)
-instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.HLift t)
+instance (GHC.Base.Functor f, GHC.Base.Functor (t f)) => GHC.Base.Functor (Data.HFunctor.HLift t f)
+instance (GHC.Base.Functor f, GHC.Base.Functor (t (Data.HFunctor.HFree t f))) => GHC.Base.Functor (Data.HFunctor.HFree t f)
+instance Data.HFunctor.HBind Data.Functor.Coyoneda.Coyoneda
+instance Data.HFunctor.HBind Control.Applicative.Free.Ap
+instance Data.HFunctor.HBind Control.Applicative.ListF.ListF
+instance Data.HFunctor.HBind Control.Applicative.ListF.NonEmptyF
+instance Data.HFunctor.HBind Control.Applicative.ListF.MaybeF
+instance Data.HFunctor.HBind Control.Applicative.Step.Step
+instance Data.HFunctor.HBind Control.Applicative.Step.Steps
+instance Data.HFunctor.HBind Control.Alternative.Free.Alt
+instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free
+instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free1
+instance Data.HFunctor.HBind Control.Applicative.Free.Final.Ap
+instance Data.HFunctor.HBind Control.Applicative.Free.Fast.Ap
+instance Data.HFunctor.HBind Control.Monad.Trans.Identity.IdentityT
+instance Data.HFunctor.HBind Control.Applicative.Lift.Lift
+instance Data.HFunctor.HBind Data.Functor.Bind.Class.MaybeApply
+instance Data.HFunctor.HBind Control.Applicative.Backwards.Backwards
+instance Data.HFunctor.HBind Data.Functor.Bind.Class.WrappedApplicative
+instance Data.HFunctor.HBind Data.Functor.Reverse.Reverse
+instance Data.HFunctor.HBind Control.Applicative.Step.Void2
+instance (Data.HFunctor.HBind t, Data.HFunctor.Inject t) => Data.HFunctor.HBind (Data.HFunctor.HLift t)
+instance Data.HFunctor.Inject Data.Functor.Coyoneda.Coyoneda
+instance Data.HFunctor.Inject Control.Applicative.Free.Ap
+instance Data.HFunctor.Inject Control.Applicative.ListF.ListF
+instance Data.HFunctor.Inject Control.Applicative.ListF.NonEmptyF
+instance Data.HFunctor.Inject Control.Applicative.ListF.MaybeF
+instance Data.HFunctor.Inject Control.Applicative.Step.Step
+instance Data.HFunctor.Inject Control.Applicative.Step.Steps
+instance Data.HFunctor.Inject Control.Alternative.Free.Alt
+instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free
+instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free1
+instance Data.HFunctor.Inject Control.Applicative.Free.Final.Ap
+instance Data.HFunctor.Inject Control.Applicative.Free.Fast.Ap
+instance Data.HFunctor.Inject Control.Monad.Trans.Identity.IdentityT
+instance Data.HFunctor.Inject Control.Applicative.Lift.Lift
+instance Data.HFunctor.Inject Data.Functor.Bind.Class.MaybeApply
+instance Data.HFunctor.Inject Control.Applicative.Backwards.Backwards
+instance Data.HFunctor.Inject Data.Functor.Bind.Class.WrappedApplicative
+instance Data.HFunctor.Inject (Control.Monad.Trans.Reader.ReaderT r)
+instance Data.HFunctor.Inject Data.Functor.Reverse.Reverse
+instance (Data.HFunctor.Inject s, Data.HFunctor.Inject t) => Data.HFunctor.Inject (Control.Monad.Trans.Compose.ComposeT s t)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HLift t)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HFree t)
+instance (Data.Functor.Classes.Show1 (t (Data.HFunctor.HFree t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.HFree t f)
+instance (Data.Functor.Classes.Show1 (t (Data.HFunctor.HFree t f)), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.HFunctor.HFree t f a)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HFree t)
+instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.HLift t f)
+instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.HFunctor.HLift t f a)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HLift t)
 
 
 -- | This module provides tools for working with unary functor combinators.
@@ -721,7 +721,7 @@ instance Data.Functor.HFunctor.Internal.HFunctor t => Data.Functor.HFunctor.Inte
 --   
 --   See <a>Data.Functor.Tensor</a> for binary functor combinators that mix
 --   together two or more different functors.
-module Data.Functor.Interpret
+module Data.HFunctor.Interpret
 
 -- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
 --   a basic functor combinator. It takes a functor as input and returns a
@@ -874,29 +874,29 @@ collectI :: (Interpret t, C t (Const [b])) => (forall x. f x -> b) -> t f a -> [
 --   Requiring <tt><a>AndC</a> <a>Show</a> <a>Eq</a> a</tt> is the same as
 --   requiring <tt>(<a>Show</a> a, <a>Eq</a> a)</tt>.
 class (c a, d a) => AndC c d a
-instance forall k (c :: k -> GHC.Types.Constraint) (a :: k) (d :: k -> GHC.Types.Constraint). (c a, d a) => Data.Functor.Interpret.AndC c d a
-instance (Data.Functor.Interpret.Interpret s, Data.Functor.Interpret.Interpret t) => Data.Functor.Interpret.Interpret (Control.Monad.Trans.Compose.ComposeT s t)
-instance Data.Functor.Interpret.Interpret Data.Functor.Coyoneda.Coyoneda
-instance Data.Functor.Interpret.Interpret Control.Applicative.Free.Ap
-instance Data.Functor.Interpret.Interpret Control.Applicative.ListF.ListF
-instance Data.Functor.Interpret.Interpret Control.Applicative.ListF.NonEmptyF
-instance Data.Functor.Interpret.Interpret Control.Applicative.ListF.MaybeF
-instance Data.Functor.Interpret.Interpret Control.Applicative.Step.Step
-instance Data.Functor.Interpret.Interpret Control.Applicative.Step.Steps
-instance Data.Functor.Interpret.Interpret Control.Alternative.Free.Alt
-instance Data.Functor.Interpret.Interpret Control.Monad.Freer.Church.Free
-instance Data.Functor.Interpret.Interpret Control.Monad.Freer.Church.Free1
-instance Data.Functor.Interpret.Interpret Control.Applicative.Free.Final.Ap
-instance Data.Functor.Interpret.Interpret Control.Applicative.Free.Fast.Ap
-instance Data.Functor.Interpret.Interpret Control.Monad.Trans.Identity.IdentityT
-instance Data.Functor.Interpret.Interpret Control.Applicative.Lift.Lift
-instance Data.Functor.Interpret.Interpret Data.Functor.Bind.Class.MaybeApply
-instance Data.Functor.Interpret.Interpret Control.Applicative.Backwards.Backwards
-instance Data.Functor.Interpret.Interpret Data.Functor.Bind.Class.WrappedApplicative
-instance Data.Functor.Interpret.Interpret (Control.Monad.Trans.Reader.ReaderT r)
-instance Data.Functor.Interpret.Interpret Data.Functor.Reverse.Reverse
-instance Data.Functor.Interpret.Interpret t => Data.Functor.Interpret.Interpret (Data.Functor.HFunctor.HLift t)
-instance Data.Functor.Interpret.Interpret t => Data.Functor.Interpret.Interpret (Data.Functor.HFunctor.HFree t)
+instance forall k (c :: k -> GHC.Types.Constraint) (a :: k) (d :: k -> GHC.Types.Constraint). (c a, d a) => Data.HFunctor.Interpret.AndC c d a
+instance (Data.HFunctor.Interpret.Interpret s, Data.HFunctor.Interpret.Interpret t) => Data.HFunctor.Interpret.Interpret (Control.Monad.Trans.Compose.ComposeT s t)
+instance Data.HFunctor.Interpret.Interpret Data.Functor.Coyoneda.Coyoneda
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Free.Ap
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.ListF
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.NonEmptyF
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.MaybeF
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Step
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Steps
+instance Data.HFunctor.Interpret.Interpret Control.Alternative.Free.Alt
+instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free
+instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free1
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Free.Final.Ap
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Free.Fast.Ap
+instance Data.HFunctor.Interpret.Interpret Control.Monad.Trans.Identity.IdentityT
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Lift.Lift
+instance Data.HFunctor.Interpret.Interpret Data.Functor.Bind.Class.MaybeApply
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Backwards.Backwards
+instance Data.HFunctor.Interpret.Interpret Data.Functor.Bind.Class.WrappedApplicative
+instance Data.HFunctor.Interpret.Interpret (Control.Monad.Trans.Reader.ReaderT r)
+instance Data.HFunctor.Interpret.Interpret Data.Functor.Reverse.Reverse
+instance Data.HFunctor.Interpret.Interpret t => Data.HFunctor.Interpret.Interpret (Data.HFunctor.HLift t)
+instance Data.HFunctor.Interpret.Interpret t => Data.HFunctor.Interpret.Interpret (Data.HFunctor.HFree t)
 
 
 -- | The free <a>Apply</a>. Provides <a>Ap1</a> and various utility
@@ -959,10 +959,10 @@ retractAp1 :: Apply f => Ap1 f ~> f
 runAp1 :: Apply g => (f ~> g) -> Ap1 f ~> g
 instance GHC.Base.Functor (Data.Functor.Apply.Free.Ap1 f)
 instance Data.Functor.Bind.Class.Apply (Data.Functor.Apply.Free.Ap1 f)
-instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Apply.Free.Ap1
-instance Data.Functor.HFunctor.Inject Data.Functor.Apply.Free.Ap1
-instance Data.Functor.HFunctor.HBind Data.Functor.Apply.Free.Ap1
-instance Data.Functor.Interpret.Interpret Data.Functor.Apply.Free.Ap1
+instance Data.HFunctor.Internal.HFunctor Data.Functor.Apply.Free.Ap1
+instance Data.HFunctor.Inject Data.Functor.Apply.Free.Ap1
+instance Data.HFunctor.HBind Data.Functor.Apply.Free.Ap1
+instance Data.HFunctor.Interpret.Interpret Data.Functor.Apply.Free.Ap1
 
 
 -- | The free <a>Apply</a>. Provides <a>Ap1</a> and various utility
@@ -970,7 +970,7 @@ instance Data.Functor.Interpret.Interpret Data.Functor.Apply.Free.Ap1
 --   
 --   Ideally <a>Ap1</a> would be in the <i>free</i> package. However, it is
 --   defined here for now.
-module Data.Functor.HFunctor.Final
+module Data.HFunctor.Final
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --   
@@ -1074,56 +1074,56 @@ liftFinal1 :: (forall g. c g => g a -> g b) -> Final c f a -> Final c f b
 
 -- | Merge two <a>Final</a> actions.
 liftFinal2 :: (forall g. c g => g a -> g b -> g d) -> Final c f a -> Final c f b -> Final c f d
-instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Functor Data.Functor.Coyoneda.Coyoneda
-instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Ap
-instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Bind.Class.Apply Data.Functor.Apply.Free.Ap1
-instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Fast.Ap
-instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Alternative Control.Alternative.Free.Alt
-instance Data.Functor.HFunctor.Final.FreeOf GHC.Base.Monad Control.Monad.Freer.Church.Free
-instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Bind.Class.Bind Control.Monad.Freer.Church.Free1
-instance Data.Functor.HFunctor.Final.FreeOf Data.Pointed.Pointed Control.Applicative.Lift.Lift
-instance Data.Functor.HFunctor.Final.FreeOf Data.Pointed.Pointed Data.Functor.Bind.Class.MaybeApply
-instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Alt.Alt Control.Applicative.ListF.NonEmptyF
-instance Data.Functor.HFunctor.Final.FreeOf Data.Functor.Plus.Plus Control.Applicative.ListF.ListF
-instance Data.Functor.HFunctor.Final.FreeOf Data.Constraint.Trivial.Unconstrained Control.Monad.Trans.Identity.IdentityT
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Functor f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
-instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Bind f)
-instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Bind f)
-instance Data.Functor.Bind.Class.Bind (Data.Functor.HFunctor.Final.Final Data.Functor.Bind.Class.Bind f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Applicative f)
-instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final GHC.Base.Applicative f)
-instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.Applicative f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
-instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
-instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
-instance GHC.Base.Alternative (Data.Functor.HFunctor.Final.Final GHC.Base.Alternative f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
-instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
-instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
-instance GHC.Base.Monad (Data.Functor.HFunctor.Final.Final GHC.Base.Monad f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
-instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
-instance GHC.Base.Monad (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
-instance GHC.Base.Alternative (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
-instance GHC.Base.MonadPlus (Data.Functor.HFunctor.Final.Final GHC.Base.MonadPlus f)
-instance Data.Pointed.Pointed (Data.Functor.HFunctor.Final.Final Data.Pointed.Pointed f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
-instance GHC.Base.Applicative (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
-instance Data.Functor.Bind.Class.Apply (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
-instance GHC.Base.Monad (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
-instance Control.Monad.Reader.Class.MonadReader r (Data.Functor.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Alt.Alt f)
-instance Data.Functor.Alt.Alt (Data.Functor.HFunctor.Final.Final Data.Functor.Alt.Alt f)
-instance GHC.Base.Functor (Data.Functor.HFunctor.Final.Final Data.Functor.Plus.Plus f)
-instance Data.Functor.Alt.Alt (Data.Functor.HFunctor.Final.Final Data.Functor.Plus.Plus f)
-instance Data.Functor.Plus.Plus (Data.Functor.HFunctor.Final.Final Data.Functor.Plus.Plus f)
-instance Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.HFunctor.Final.Final c)
-instance Data.Functor.HFunctor.Inject (Data.Functor.HFunctor.Final.Final c)
-instance Data.Functor.Interpret.Interpret (Data.Functor.HFunctor.Final.Final c)
+instance Data.HFunctor.Final.FreeOf GHC.Base.Functor Data.Functor.Coyoneda.Coyoneda
+instance Data.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Ap
+instance Data.HFunctor.Final.FreeOf Data.Functor.Bind.Class.Apply Data.Functor.Apply.Free.Ap1
+instance Data.HFunctor.Final.FreeOf GHC.Base.Applicative Control.Applicative.Free.Fast.Ap
+instance Data.HFunctor.Final.FreeOf GHC.Base.Alternative Control.Alternative.Free.Alt
+instance Data.HFunctor.Final.FreeOf GHC.Base.Monad Control.Monad.Freer.Church.Free
+instance Data.HFunctor.Final.FreeOf Data.Functor.Bind.Class.Bind Control.Monad.Freer.Church.Free1
+instance Data.HFunctor.Final.FreeOf Data.Pointed.Pointed Control.Applicative.Lift.Lift
+instance Data.HFunctor.Final.FreeOf Data.Pointed.Pointed Data.Functor.Bind.Class.MaybeApply
+instance Data.HFunctor.Final.FreeOf Data.Functor.Alt.Alt Control.Applicative.ListF.NonEmptyF
+instance Data.HFunctor.Final.FreeOf Data.Functor.Plus.Plus Control.Applicative.ListF.ListF
+instance Data.HFunctor.Final.FreeOf Data.Constraint.Trivial.Unconstrained Control.Monad.Trans.Identity.IdentityT
+instance GHC.Base.Functor (Data.HFunctor.Final.Final GHC.Base.Functor f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Final.Final Data.Functor.Bind.Class.Apply f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final Data.Functor.Bind.Class.Bind f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Final.Final Data.Functor.Bind.Class.Bind f)
+instance Data.Functor.Bind.Class.Bind (Data.HFunctor.Final.Final Data.Functor.Bind.Class.Bind f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final GHC.Base.Applicative f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Final.Final GHC.Base.Applicative f)
+instance GHC.Base.Applicative (Data.HFunctor.Final.Final GHC.Base.Applicative f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final GHC.Base.Alternative f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Final.Final GHC.Base.Alternative f)
+instance GHC.Base.Applicative (Data.HFunctor.Final.Final GHC.Base.Alternative f)
+instance GHC.Base.Alternative (Data.HFunctor.Final.Final GHC.Base.Alternative f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final GHC.Base.Monad f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Final.Final GHC.Base.Monad f)
+instance GHC.Base.Applicative (Data.HFunctor.Final.Final GHC.Base.Monad f)
+instance GHC.Base.Monad (Data.HFunctor.Final.Final GHC.Base.Monad f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final GHC.Base.MonadPlus f)
+instance GHC.Base.Applicative (Data.HFunctor.Final.Final GHC.Base.MonadPlus f)
+instance GHC.Base.Monad (Data.HFunctor.Final.Final GHC.Base.MonadPlus f)
+instance GHC.Base.Alternative (Data.HFunctor.Final.Final GHC.Base.MonadPlus f)
+instance GHC.Base.MonadPlus (Data.HFunctor.Final.Final GHC.Base.MonadPlus f)
+instance Data.Pointed.Pointed (Data.HFunctor.Final.Final Data.Pointed.Pointed f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance GHC.Base.Applicative (Data.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance GHC.Base.Monad (Data.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance Control.Monad.Reader.Class.MonadReader r (Data.HFunctor.Final.Final (Control.Monad.Reader.Class.MonadReader r) f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final Data.Functor.Alt.Alt f)
+instance Data.Functor.Alt.Alt (Data.HFunctor.Final.Final Data.Functor.Alt.Alt f)
+instance GHC.Base.Functor (Data.HFunctor.Final.Final Data.Functor.Plus.Plus f)
+instance Data.Functor.Alt.Alt (Data.HFunctor.Final.Final Data.Functor.Plus.Plus f)
+instance Data.Functor.Plus.Plus (Data.HFunctor.Final.Final Data.Functor.Plus.Plus f)
+instance Data.HFunctor.Internal.HFunctor (Data.HFunctor.Final.Final c)
+instance Data.HFunctor.Inject (Data.HFunctor.Final.Final c)
+instance Data.HFunctor.Interpret.Interpret (Data.HFunctor.Final.Final c)
 
-module Data.Functor.Associative
+module Data.HBifunctor.Associative
 
 -- | An <a>HBifunctor</a> where it doesn't matter which binds first is
 --   <a>Associative</a>. Knowing this gives us a lot of power to rearrange
@@ -1275,24 +1275,24 @@ unrollSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f ~> Chain1 t f
 --   explicit <a>Chain1</a> of applications of <tt>t</tt> to itself and
 --   rolls it back up into an <tt><a>SF</a> t</tt>.
 rerollSF :: Semigroupoidal t => Chain1 t f ~> SF t f
-instance (GHC.Base.Functor f, GHC.Base.Functor (t f (Data.Functor.Associative.Chain1 t f))) => GHC.Base.Functor (Data.Functor.Associative.Chain1 t f)
-instance (Data.Functor.Classes.Show1 (t f (Data.Functor.Associative.Chain1 t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.Functor.Associative.Chain1 t f)
-instance (Data.Functor.Classes.Show1 (t f (Data.Functor.Associative.Chain1 t f)), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.Functor.Associative.Chain1 t f a)
-instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Associative.Chain1 t)
-instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Inject (Data.Functor.Associative.Chain1 t)
-instance (Data.Functor.HFunctor.Internal.HBifunctor t, Data.Functor.Associative.Semigroupoidal t) => Data.Functor.Interpret.Interpret (Data.Functor.Associative.Chain1 t)
-instance Data.Functor.Associative.Semigroupoidal (GHC.Generics.:*:)
-instance Data.Functor.Associative.Semigroupoidal Data.Functor.Day.Day
-instance Data.Functor.Associative.Semigroupoidal (GHC.Generics.:+:)
-instance Data.Functor.Associative.Semigroupoidal Control.Monad.Freer.Church.Comp
-instance (Data.Functor.Interpret.Interpret t, Data.Functor.HFunctor.HBind t) => Data.Functor.Associative.Semigroupoidal (Data.Functor.HBifunctor.ClownT t)
-instance (Data.Functor.Interpret.Interpret t, Data.Functor.HFunctor.HBind t) => Data.Functor.Associative.Semigroupoidal (Data.Functor.HBifunctor.JokerT t)
-instance Data.Functor.Associative.Associative (GHC.Generics.:*:)
-instance Data.Functor.Associative.Associative Data.Functor.Day.Day
-instance Data.Functor.Associative.Associative (GHC.Generics.:+:)
-instance Data.Functor.Associative.Associative Control.Monad.Freer.Church.Comp
-instance (Data.Functor.Interpret.Interpret t, Data.Functor.HFunctor.HBind t) => Data.Functor.Associative.Associative (Data.Functor.HBifunctor.ClownT t)
-instance (Data.Functor.Interpret.Interpret t, Data.Functor.HFunctor.HBind t) => Data.Functor.Associative.Associative (Data.Functor.HBifunctor.JokerT t)
+instance (GHC.Base.Functor f, GHC.Base.Functor (t f (Data.HBifunctor.Associative.Chain1 t f))) => GHC.Base.Functor (Data.HBifunctor.Associative.Chain1 t f)
+instance (Data.Functor.Classes.Show1 (t f (Data.HBifunctor.Associative.Chain1 t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HBifunctor.Associative.Chain1 t f)
+instance (Data.Functor.Classes.Show1 (t f (Data.HBifunctor.Associative.Chain1 t f)), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.HBifunctor.Associative.Chain1 t f a)
+instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.Associative.Chain1 t)
+instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Inject (Data.HBifunctor.Associative.Chain1 t)
+instance (Data.HFunctor.Internal.HBifunctor t, Data.HBifunctor.Associative.Semigroupoidal t) => Data.HFunctor.Interpret.Interpret (Data.HBifunctor.Associative.Chain1 t)
+instance Data.HBifunctor.Associative.Semigroupoidal (GHC.Generics.:*:)
+instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Day.Day
+instance Data.HBifunctor.Associative.Semigroupoidal (GHC.Generics.:+:)
+instance Data.HBifunctor.Associative.Semigroupoidal Control.Monad.Freer.Church.Comp
+instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.ClownT t)
+instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.JokerT t)
+instance Data.HBifunctor.Associative.Associative (GHC.Generics.:*:)
+instance Data.HBifunctor.Associative.Associative Data.Functor.Day.Day
+instance Data.HBifunctor.Associative.Associative (GHC.Generics.:+:)
+instance Data.HBifunctor.Associative.Associative Control.Monad.Freer.Church.Comp
+instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Associative (Data.HBifunctor.ClownT t)
+instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Associative (Data.HBifunctor.JokerT t)
 
 
 -- | This module provides tools for working with binary functor
@@ -1317,7 +1317,7 @@ instance (Data.Functor.Interpret.Interpret t, Data.Functor.HFunctor.HBind t) => 
 --   <a>toMF</a> :: <a>Comp</a> f f a -&gt; <a>Free</a> f a
 --   <a>toMF</a> :: <a>Day</a> f f a -&gt; <a>Ap</a> f a
 --   </pre>
-module Data.Functor.Tensor
+module Data.HBifunctor.Tensor
 
 -- | A <a>HBifunctor</a> can be a <a>Tensor</a> if:
 --   
@@ -1447,22 +1447,22 @@ unrollMF :: forall t f. Monoidal t => MF t f ~> Chain t (I t) f
 rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
 unrollingMF :: forall t f. Monoidal t => MF t f <~> Chain t (I t) f
 fromChain1 :: forall t f. Monoidal t => Chain1 t f ~> Chain t (I t) f
-instance (Data.Functor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.Functor.Tensor.I t) => Data.Functor.Interpret.Interpret (Data.Functor.Tensor.Chain t i)
-instance Data.Functor.Tensor.Monoidal (GHC.Generics.:*:)
-instance Data.Functor.Tensor.Monoidal Data.Functor.Day.Day
-instance Data.Functor.Tensor.Monoidal (GHC.Generics.:+:)
-instance Data.Functor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
-instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, GHC.Base.Functor (t f (Data.Functor.Tensor.Chain t i f))) => GHC.Base.Functor (Data.Functor.Tensor.Chain t i f)
-instance forall k (t :: k -> (* -> *) -> * -> *) (f :: k) (i :: * -> *). (Data.Functor.Classes.Show1 (t f (Data.Functor.Tensor.Chain t i f)), Data.Functor.Classes.Show1 i) => Data.Functor.Classes.Show1 (Data.Functor.Tensor.Chain t i f)
-instance forall k (t :: k -> (* -> *) -> * -> *) (f :: k) (i :: * -> *) a. (Data.Functor.Classes.Show1 (t f (Data.Functor.Tensor.Chain t i f)), Data.Functor.Classes.Show1 i, GHC.Show.Show a) => GHC.Show.Show (Data.Functor.Tensor.Chain t i f a)
-instance Data.Functor.HFunctor.Internal.HBifunctor t => Data.Functor.HFunctor.Internal.HFunctor (Data.Functor.Tensor.Chain t i)
-instance (Data.Functor.Tensor.Tensor t, i Data.Type.Equality.~ Data.Functor.Tensor.I t) => Data.Functor.HFunctor.Inject (Data.Functor.Tensor.Chain t i)
-instance Data.Functor.Tensor.Tensor (GHC.Generics.:*:)
-instance Data.Functor.Tensor.Tensor Data.Functor.Day.Day
-instance Data.Functor.Tensor.Tensor (GHC.Generics.:+:)
-instance Data.Functor.Tensor.Tensor Control.Monad.Freer.Church.Comp
+instance (Data.HBifunctor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.HBifunctor.Tensor.I t) => Data.HFunctor.Interpret.Interpret (Data.HBifunctor.Tensor.Chain t i)
+instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:*:)
+instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Day.Day
+instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:+:)
+instance Data.HBifunctor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
+instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, GHC.Base.Functor (t f (Data.HBifunctor.Tensor.Chain t i f))) => GHC.Base.Functor (Data.HBifunctor.Tensor.Chain t i f)
+instance forall k (t :: k -> (* -> *) -> * -> *) (f :: k) (i :: * -> *). (Data.Functor.Classes.Show1 (t f (Data.HBifunctor.Tensor.Chain t i f)), Data.Functor.Classes.Show1 i) => Data.Functor.Classes.Show1 (Data.HBifunctor.Tensor.Chain t i f)
+instance forall k (t :: k -> (* -> *) -> * -> *) (f :: k) (i :: * -> *) a. (Data.Functor.Classes.Show1 (t f (Data.HBifunctor.Tensor.Chain t i f)), Data.Functor.Classes.Show1 i, GHC.Show.Show a) => GHC.Show.Show (Data.HBifunctor.Tensor.Chain t i f a)
+instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.Tensor.Chain t i)
+instance (Data.HBifunctor.Tensor.Tensor t, i Data.Type.Equality.~ Data.HBifunctor.Tensor.I t) => Data.HFunctor.Inject (Data.HBifunctor.Tensor.Chain t i)
+instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:*:)
+instance Data.HBifunctor.Tensor.Tensor Data.Functor.Day.Day
+instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:+:)
+instance Data.HBifunctor.Tensor.Tensor Control.Monad.Freer.Church.Comp
 
-module Data.Functor.Tensor.Matchable
+module Data.HBifunctor.Tensor.Matchable
 class Monoidal t => Matchable t
 unsplitSF :: Matchable t => t f (MF t f) ~> SF t f
 matchMF :: Matchable t => MF t f ~> (I t :+: SF t f)
@@ -1474,9 +1474,9 @@ splittingChain1 :: forall t f. (Matchable t, Functor f) => Chain1 t f <~> t f (C
 matchChain :: forall t f. (Matchable t, Functor f) => Chain t (I t) f ~> (I t :+: Chain1 t f)
 unmatchChain :: forall t f. Matchable t => (I t :+: Chain1 t f) ~> Chain t (I t) f
 matchingChain :: forall t f. (Matchable t, Functor f) => Chain t (I t) f <~> (I t :+: Chain1 t f)
-instance Data.Functor.Tensor.Matchable.Matchable (GHC.Generics.:*:)
-instance Data.Functor.Tensor.Matchable.Matchable Data.Functor.Day.Day
-instance Data.Functor.Tensor.Matchable.Matchable (GHC.Generics.:+:)
+instance Data.HBifunctor.Tensor.Matchable.Matchable (GHC.Generics.:*:)
+instance Data.HBifunctor.Tensor.Matchable.Matchable Data.Functor.Day.Day
+instance Data.HBifunctor.Tensor.Matchable.Matchable (GHC.Generics.:+:)
 
 
 -- | Functor combinators and tools (typeclasses and utiility functions) to
@@ -2098,10 +2098,10 @@ toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
 fromFree :: (FreeOf c t, C t (Final c f)) => t f ~> Final c f
 toFree :: (FreeOf c t, c (t f)) => Final c f ~> t f
 instance forall k (f :: k). Data.Functor.Classes.Ord1 (Data.Functor.Combinator.ProxyF f)
-instance Data.Functor.HFunctor.Internal.HFunctor Data.Functor.Combinator.ProxyF
-instance Data.Functor.HFunctor.HBind Data.Functor.Combinator.ProxyF
-instance Data.Functor.HFunctor.Inject Data.Functor.Combinator.ProxyF
-instance Data.Functor.Interpret.Interpret Data.Functor.Combinator.ProxyF
+instance Data.HFunctor.Internal.HFunctor Data.Functor.Combinator.ProxyF
+instance Data.HFunctor.HBind Data.Functor.Combinator.ProxyF
+instance Data.HFunctor.Inject Data.Functor.Combinator.ProxyF
+instance Data.HFunctor.Interpret.Interpret Data.Functor.Combinator.ProxyF
 instance forall k (f :: k). Data.Functor.Classes.Eq1 (Data.Functor.Combinator.ProxyF f)
 instance forall k (f :: k). Data.Functor.Classes.Read1 (Data.Functor.Combinator.ProxyF f)
 instance forall k (f :: k). Data.Functor.Classes.Show1 (Data.Functor.Combinator.ProxyF f)
