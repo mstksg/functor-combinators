@@ -142,9 +142,12 @@ instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.ListF f
 
 -- | The church-encoded <a>Freer</a> Monad. Basically provides the free
 --   monad in a way that is compatible with <a>HFunctor</a> and
---   <a>Interpret</a>, and <a>:.:</a> or <a>Compose</a> in a way that is
---   compatible with <a>HBifunctor</a> and <a>Tensor</a> and
---   <a>Monoidal</a>.
+--   <a>Interpret</a>. We also have the "semigroup" version <a>Free1</a>,
+--   which is the free <a>Bind</a>.
+--   
+--   The module also provides a version of <a>:.:</a> (or <a>Compose</a>),
+--   <a>Comp</a>, in a way that is compatible with <a>HBifunctor</a> and
+--   the related typeclasses.
 module Control.Monad.Freer.Church
 
 -- | A <tt><a>Free</a> f</tt> is <tt>f</tt> enhanced with "sequential
@@ -168,6 +171,17 @@ module Control.Monad.Freer.Church
 --       -&gt; g a
 --   </pre>
 --   
+--   Structurally, this is equivalent to many "nested" f's. A value of type
+--   <tt><a>Free</a> f a</tt> is either:
+--   
+--   <ul>
+--   <li><pre>a</pre></li>
+--   <li><pre>f a</pre></li>
+--   <li><pre>f (f a)</pre></li>
+--   <li><pre>f (f (f a))</pre></li>
+--   <li>.. etc.</li>
+--   </ul>
+--   
 --   Under the hood, this is the Church-encoded Freer monad. It's
 --   <a>Free</a>, or <a>F</a>, but in a way that is compatible with
 --   <a>HFunctor</a> and <a>Interpret</a>.
@@ -178,13 +192,62 @@ Free :: (forall r. (a -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free f 
 -- | Convert a <tt><a>Free</a> f</tt> into any instance of
 --   <tt><a>MonadFree</a> f</tt>.
 reFree :: (MonadFree f m, Functor f) => Free f a -> m a
+
+-- | Lift an <tt>f</tt> into <tt><a>Free</a> f</tt>, so you can use it as a
+--   <a>Monad</a>.
+--   
+--   This is <a>inject</a>.
 liftFree :: f ~> Free f
+
+-- | Interpret a <tt><a>Free</a> f</tt> into a context <tt>g</tt>, provided
+--   that <tt>g</tt> has a <a>Monad</a> instance.
+--   
+--   This is <a>interpret</a>.
 interpretFree :: Monad g => (f ~> g) -> Free f ~> g
+
+-- | Extract the <tt>f</tt>s back "out" of a <tt><a>Free</a> f</tt>,
+--   utilizing its <a>Monad</a> instance.
+--   
+--   This is <a>retract</a>.
 retractFree :: Monad f => Free f ~> f
+
+-- | Swap out the underlying functor over a <a>Free</a>. This preserves all
+--   of the structure of the <a>Free</a>.
 hoistFree :: (f ~> g) -> Free f ~> Free g
+
+-- | Recursively fold down a <a>Free</a> by handling the <a>pure</a> case
+--   and the nested/wrapped case.
+--   
+--   This is a catamorphism.
+--   
+--   This requires <tt><a>Functor</a> f</tt>; see <a>foldFree'</a> and
+--   <a>foldFreeC</a> for a version that doesn't require <tt><a>Functor</a>
+--   f</tt>.
 foldFree :: Functor f => (a -> r) -> (f r -> r) -> Free f a -> r
+
+-- | A version of <a>foldFree</a> that doesn't require <tt><a>Functor</a>
+--   f</tt>, by taking a RankN folding function. This is essentially a
+--   flipped <a>runFree</a>.
 foldFree' :: (a -> r) -> (forall s. f s -> (s -> r) -> r) -> Free f a -> r
+
+-- | A version of <a>foldFree</a> that doesn't require <tt><a>Functor</a>
+--   f</tt>, by folding over a <a>Coyoneda</a> instead.
 foldFreeC :: (a -> r) -> (Coyoneda f r -> r) -> Free f a -> r
+
+-- | The Free <a>Bind</a>. Imbues any functor <tt>f</tt> with a <a>Bind</a>
+--   instance.
+--   
+--   Conceptually, this is "<a>Free</a> without pure". That is, while
+--   normally <tt><a>Free</a> f a</tt> is an <tt>a</tt>, a <tt>f a</tt>, a
+--   <tt>f (f a)</tt>, etc., a <tt><a>Free1</a> f a</tt> is an <tt>f
+--   a</tt>, <tt>f (f a)</tt>, <tt>f (f (f a))</tt>, etc. It's a
+--   <a>Free</a> with "at least one layer of <tt>f</tt>", excluding the
+--   <tt>a</tt> case.
+--   
+--   It can be useful as the semigroup formed by <a>:.:</a> (functor
+--   composition): Sometimes we want an <tt>f :.: f</tt>, or an <tt>f :.: f
+--   :.: f</tt>, or an <tt>f :.: f :.: f :.: f</tt>...just as long as we
+--   have at least one <tt>f</tt>.
 newtype Free1 f a
 Free1 :: (forall r. (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> r) -> Free1 f a
 [runFree1] :: Free1 f a -> forall r. (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> r
@@ -197,7 +260,13 @@ pattern DoneF1 :: Functor f => f a -> Free1 f a
 -- | Constructor matching on the case that a <tt><a>Free1</a> f</tt> is a
 --   nested <tt>f (<a>Free1</a> f a)</tt>. Used as a part of the
 --   <a>Show</a> and <a>Read</a> instances.
+--   
+--   As a constructor, this is equivalent to <a>wrap</a>.
 pattern MoreF1 :: Functor f => f (Free1 f a) -> Free1 f a
+
+-- | Convert a <tt><a>Free1</a> f</tt> into any instance of
+--   <tt><a>MonadFree</a> f</tt>.
+reFree1 :: (MonadFree f m, Functor f) => Free1 f a -> m a
 
 -- | <tt><a>Free1</a> f</tt> is a special subset of <tt><a>Free</a> f</tt>
 --   that consists of at least one nested <tt>f</tt>. This converts it back
@@ -209,16 +278,6 @@ toFree :: Free1 f ~> Free f
 
 -- | Inject an <tt>f</tt> into a <tt><a>Free1</a> f</tt>
 liftFree1 :: f ~> Free1 f
-
--- | Because a <tt><a>Free1</a> f</tt> is just a <tt><a>Free</a> f</tt>
---   with at least one nested layer of <tt>f</tt>, this function converts
---   it back into the one-nested-<tt>f</tt> format.
-free1Comp :: Free1 f ~> Comp f (Free f)
-
--- | A <tt><a>Free1</a> f</tt> is either a single un-nested <tt>f</tt>, or
---   a <tt>f</tt> nested with another <tt><a>Free1</a> f</tt>. This decides
---   which is the case.
-matchFree1 :: forall f. Functor f => Free1 f ~> (f :+: Comp f (Free1 f))
 
 -- | Interpret the <tt><a>Free1</a> f</tt> in some context <tt>g</tt>,
 --   provided that <tt>g</tt> has a <a>Bind</a> instance. Since we always
@@ -233,8 +292,34 @@ retractFree1 :: Bind f => Free1 f ~> f
 
 -- | Map the underlying functor under a <a>Free1</a>.
 hoistFree1 :: (f ~> g) -> Free1 f ~> Free1 g
+
+-- | Because a <tt><a>Free1</a> f</tt> is just a <tt><a>Free</a> f</tt>
+--   with at least one nested layer of <tt>f</tt>, this function converts
+--   it back into the one-nested-<tt>f</tt> format.
+free1Comp :: Free1 f ~> Comp f (Free f)
+
+-- | A <tt><a>Free1</a> f</tt> is either a single un-nested <tt>f</tt>, or
+--   a <tt>f</tt> nested with another <tt><a>Free1</a> f</tt>. This decides
+--   which is the case.
+matchFree1 :: forall f. Functor f => Free1 f ~> (f :+: Comp f (Free1 f))
+
+-- | Recursively fold down a <a>Free1</a> by handling the single <tt>f</tt>
+--   case and the nested/wrapped case.
+--   
+--   This is a catamorphism.
+--   
+--   This requires <tt><a>Functor</a> f</tt>; see <a>foldFree'</a> and
+--   <a>foldFreeC</a> for a version that doesn't require <tt><a>Functor</a>
+--   f</tt>.
 foldFree1 :: Functor f => (f a -> r) -> (f r -> r) -> Free1 f a -> r
+
+-- | A version of <a>foldFree1</a> that doesn't require <tt><a>Functor</a>
+--   f</tt>, by taking a RankN folding function. This is essentially a
+--   flipped <a>runFree</a>.
 foldFree1' :: (forall s. f s -> (s -> a) -> r) -> (forall s. f s -> (s -> r) -> r) -> Free1 f a -> r
+
+-- | A version of <a>foldFree1</a> that doesn't require <tt><a>Functor</a>
+--   f</tt>, by folding over a <a>Coyoneda</a> instead.
 foldFree1C :: (Coyoneda f a -> r) -> (Coyoneda f r -> r) -> Free1 f a -> r
 
 -- | Functor composition. <tt><a>Comp</a> f g a</tt> is equivalent to <tt>f
@@ -313,16 +398,90 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Show1 f, GHC.Show.Show a) => 
 instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f) => Data.Functor.Classes.Read1 (Control.Monad.Freer.Church.Free f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f, GHC.Read.Read a) => GHC.Read.Read (Control.Monad.Freer.Church.Free f a)
 
+
+-- | Types describing isomorphisms between two functors, and functions to
+--   manipulate them.
 module Data.HFunctor.IsoF
+
+-- | A natural transformation from <tt>f</tt> to <tt>g</tt>.
+type (~>) (f :: k -> Type) (g :: k -> Type) = forall (x :: k). () => f x -> g x
+infixr 0 ~>
+
+-- | The type of an isomorphism between two functors. <tt>f <a>~</a> g</tt>
+--   means that <tt>f</tt> and <tt>g</tt> are isomorphic to each other.
+--   
+--   We can effectively <i>use</i> an <tt>f <a>~</a> g</tt> with:
+--   
+--   <pre>
+--   <a>viewF</a>   :: (f <a>~</a> g) -&gt; f a -&gt; g a
+--   <a>reviewF</a> :: (f <a>~</a> g) -&gt; g a -&gt; a a
+--   </pre>
+--   
+--   Use <a>viewF</a> to extract the "<tt>f</tt> to <tt>g</tt>" function,
+--   and <a>reviewF</a> to extract the "<tt>g</tt> to <tt>f</tt>" function.
+--   Reviewing and viewing the same value (or vice versa) leaves the value
+--   unchanged.
+--   
+--   One nice thing is that we can compose isomorphisms using <a>.</a> from
+--   <a>Prelude</a>:
+--   
+--   <pre>
+--   (<a>.</a>) :: f <a>~</a> g
+--       -&gt; g <a>~</a> h
+--       -&gt; f <a>~</a> h
+--   </pre>
+--   
+--   One nice thing about this representation is that we have the
+--   "identity" isomorphism by using <a>id</a> from <a>Prelude</a>.
+--   
+--   <pre>
+--   <a>id</a> :: f <a>&lt;~&gt;</a> g
+--   </pre>
+--   
+--   As a convention, most isomorphisms have form "X-ing", where the
+--   forwards function is "ing". For example, we have:
+--   
+--   <pre>
+--   <a>splittingSF</a> :: <a>Monoidal</a> t =&gt; <a>SF</a> t a <a>&lt;~&gt;</a> t f (<a>MF</a> t f)
+--   <a>splitSF</a>     :: Monoidal t =&gt; SF t a  <a>~&gt;</a> t f (MF t f)
+--   </pre>
 type f <~> g = forall p a. Profunctor p => p (g a) (g a) -> p (f a) (f a)
 infixr 0 <~>
+
+-- | Create an <tt>f <a>&lt;~&gt;</a> g</tt> by providing both legs of the
+--   isomorphism (the <tt>f a -&gt; g a</tt> and the <tt>g a -&gt; f
+--   a</tt>.
 isoF :: (f ~> g) -> (g ~> f) -> f <~> g
+
+-- | Use a <a>&lt;~&gt;</a> by retrieving the "forward" function:
+--   
+--   <pre>
+--   <a>viewF</a>   :: (f <a>~</a> g) -&gt; f a -&gt; g a
+--   </pre>
 viewF :: (f <~> g) -> f ~> g
+
+-- | Use a <a>&lt;~&gt;</a> by retrieving the "backwards" function:
+--   
+--   <pre>
+--   <a>viewF</a>   :: (f <a>~</a> g) -&gt; f a -&gt; g a
+--   </pre>
 reviewF :: (f <~> g) -> g ~> f
+
+-- | Lift a function <tt>g a ~&gt; g a</tt> to be a function <tt>f a -&gt;
+--   f a</tt>, given an isomorphism between the two.
+--   
+--   One neat thing is that <tt><a>overF</a> i id == id</tt>.
 overF :: (f <~> g) -> (g ~> g) -> f ~> f
-fromF :: AnIsoF' f g -> g <~> f
-type AnIsoF' f g = forall a. Exchange (g a) (g a) (g a) (g a) -> Exchange (g a) (g a) (f a) (f a)
-cloneIsoF' :: AnIsoF' f g -> f <~> g
+
+-- | Reverse an isomorphism.
+--   
+--   <pre>
+--   <a>viewF</a>   (<a>fromF</a> i) == <a>reviewF</a> i
+--   <a>reviewF</a> (<a>fromF</a> i) == <a>viewF</a> i
+--   </pre>
+fromF :: (f <~> g) -> g <~> f
+
+-- | Profunctor that allows us to implement <a>fromF</a>.
 data Exchange a b s t
 Exchange :: (s -> a) -> (b -> t) -> Exchange a b s t
 instance Data.Profunctor.Unsafe.Profunctor (Data.HFunctor.IsoF.Exchange a b)
@@ -341,7 +500,8 @@ module Control.Applicative.Step
 --   Step f   ~ ((,) <a>Natural</a>) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
---   It is the fixed point of applications of <a>:+:</a> (functor sums).
+--   It is the fixed point of infinite applications of <a>:+:</a> (functor
+--   sums).
 --   
 --   Intuitively, in an infinite <tt>f :+: f :+: f :+: f ...</tt>, you have
 --   exactly one <tt>f</tt> <i>somewhere</i>. A <tt><a>Step</a> f a</tt>
@@ -385,8 +545,48 @@ Step :: Natural -> f a -> Step f a
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
+
+-- | Unshift an item into a <a>Step</a>. Because a <tt><a>Step</a> f</tt>
+--   is <tt>f :+: f :+: f :+: f :+: ...</tt> forever, this basically conses
+--   an additional possibility of <tt>f</tt> to the beginning of it all.
+--   
+--   You can think of it as reassociating
+--   
+--   <pre>
+--   f :+: ( f :+: f :+: f :+: ...)
+--   </pre>
+--   
+--   into
+--   
+--   <pre>
+--   f :+: f :+: f :+: f :+: ...
+--   </pre>
+--   
+--   Forms an isomorphism with <a>stepDown</a> (see <a>stepping</a>).
 stepUp :: (f :+: Step f) ~> Step f
+
+-- | Pop off the first iteem in a <a>Step</a>. Because a <tt><a>Step</a>
+--   f</tt> is <tt>f :+: f :+: f :+: ...</tt> forever, this matches on the
+--   first branch.
+--   
+--   You can think of it as reassociating
+--   
+--   <pre>
+--   f :+: f :+: f :+: f :+: ...
+--   </pre>
+--   
+--   into
+--   
+--   <pre>
+--   f :+: ( f :+: f :+: f :+: ...)
+--   </pre>
+--   
+--   Forms an isomorphism with <a>stepUp</a> (see <a>stepping</a>).
 stepDown :: Step f ~> (f :+: Step f)
+
+-- | "Uncons and cons" an <tt>f</tt> branch before a <a>Step</a>. This is
+--   basically a witness that <a>stepDown</a> and <a>stepUp</a> form an
+--   isomorphism.
 stepping :: Step f <~> (f :+: Step f)
 
 -- | <a>Void1</a> is a functor that is uninhabited for all inputs. That is,
@@ -467,6 +667,9 @@ instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq
 instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Step f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
 
+
+-- | This module provides an abstraction for "two-argument functor
+--   combinators", <a>HBifunctor</a>, as well as some useful combinators.
 module Data.HBifunctor
 
 -- | A <a>HBifunctor</a> is like an <a>HFunctor</a>, but it enhances
@@ -524,7 +727,14 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
 WrapHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
-overHBifunctor :: HBifunctor t => AnIsoF' f f' -> AnIsoF' g g' -> t f g <~> t f' g'
+
+-- | Lift two isomorphisms on each side of a bifunctor to become an
+--   isomorphism between the two bifunctor applications.
+--   
+--   Basically, if <tt>f</tt> and <tt>f'</tt> are isomorphic, and
+--   <tt>g</tt> and <tt>g'</tt> are isomorphic, then <tt>t f g</tt> is
+--   isomorphic to <tt>t f' g'</tt>.
+overHBifunctor :: HBifunctor t => (f <~> f') -> (g <~> g') -> t f g <~> t f' g'
 
 -- | Form an <a>HFunctor</a> by applying the same input twice to an
 --   <a>HBifunctor</a>.
@@ -580,46 +790,17 @@ instance (Data.HFunctor.Internal.HFunctor t, Data.HFunctor.Internal.HBifunctor p
 instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.JoinT t)
 
 
--- | This module provides tools for working with unary functor combinators.
+-- | This module provides abstractions for working with unary functor
+--   combinators.
 --   
---   These are types <tt>f</tt> that take a functor <tt>f</tt> and return a
---   new functor <tt>t f</tt>, enhancing <tt>f</tt> with new structure and
---   abilities.
+--   Principally, it defines the <a>HFunctor</a> itself, as well as some
+--   classes that expose extra functionality that some <a>HFunctor</a>s
+--   have (<a>Inject</a> and <a>HBind</a>).
 --   
---   The main operations these combinators support are:
---   
---   <pre>
---   <a>hmap</a> :: (forall x. f x -&gt; g x) -&gt; t f a -&gt; t g a
---   </pre>
---   
---   which lets you "swap out" the functor being transformed,
---   
---   <pre>
---   <a>inject</a> :: f a -&gt; t f a
---   </pre>
---   
---   which lets you "lift" an <tt>f a</tt> into its transformed version,
---   and also:
---   
---   <pre>
---   <tt>interpret</tt>
---       :: C t g
---       =&gt; (forall x. f a -&gt; g a)
---       -&gt; t f a
---       -&gt; g a
---   </pre>
---   
---   that lets you "interpret" a <tt>t f a</tt> into a context <tt>g
---   a</tt>, essentially "running" the computaiton that it encodes. The
---   context is required to have a typeclass constraints that reflects what
---   is "required" to be able to run a functor combinator.
---   
---   Every single instance provides different tools. Check out the instance
---   list for a nice list of useful combinators, or also the README for a
---   high-level rundown.
---   
---   See <a>Data.Functor.Tensor</a> for binary functor combinators that mix
---   together two or more different functors.
+--   See <a>Data.HFunctor.Interpret</a> for tools to use <a>HFunctor</a>s
+--   as functor combinators that can represent interpretable schemas, and
+--   <a>Data.HBifunctor</a> for an abstraction over <i>binary</i> functor
+--   combinators.
 module Data.HFunctor
 
 -- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
@@ -665,17 +846,81 @@ class HFunctor t
 --   The law <tt><a>hmap</a> <a>id</a> == id</tt> is a way of formalizing
 --   this informal property.
 hmap :: HFunctor t => (f ~> g) -> t f ~> t g
-overHFunctor :: HFunctor t => AnIsoF' f g -> t f <~> t g
+
+-- | Lift an isomorphism over an <a>HFunctor</a>.
+--   
+--   Essentailly, if <tt>f</tt> and <tt>g</tt> are isomorphic, then so are
+--   <tt>t f</tt> and <tt>t g</tt>.
+overHFunctor :: HFunctor t => (f <~> g) -> t f <~> t g
+
+-- | A typeclass for <a>HFunctor</a>s where you can "inject" an <tt>f
+--   a</tt> into a <tt>t f a</tt>:
+--   
+--   <pre>
+--   <a>inject</a> :: f a -&gt; t f a
+--   </pre>
+--   
+--   If you think of <tt>t f a</tt> as an "enhanced <tt>f</tt>", then
+--   <a>inject</a> allows you to use an <tt>f</tt> as its enhanced form.
+--   
+--   <a>inject</a> itself is not too useful without <a>Interpret</a> to
+--   allow us to interpret or retrieve back the <tt>f</tt>.
 class HFunctor t => Inject t
 
 -- | Lift an <tt>f</tt> into the enhanced <tt>t f</tt> structure. Analogous
 --   to <a>lift</a> from <a>MonadTrans</a>.
 inject :: Inject t => f ~> t f
-class HFunctor t => HBind t
+
+-- | A typeclass for <a>HFunctor</a>s that you can bind continuations to,
+--   without caring about what the contexts at play.
+--   
+--   It is very similar to <a>Interpret</a>, except <a>Interpret</a> has
+--   the ability to constrain the contexts to some typeclass.
+--   
+--   The main law is that binding <a>inject</a> should leave things
+--   unchanged:
+--   
+--   <pre>
+--   <a>hbind</a> <a>inject</a> == <a>id</a>
+--   </pre>
+--   
+--   But <a>hbind</a> should also be associatiatve, in a way that makes
+--   
+--   <pre>
+--   <a>hjoin</a> . hjoin
+--      = hjoin . <a>hmap</a> hjoin
+--   </pre>
+--   
+--   That is, squishing a <tt>t (t (t f)) a</tt> into a <tt>t f a</tt> can
+--   be done "inside" first, then "outside", or "outside" first, then
+--   "inside".
+class Inject t => HBind t
+
+-- | Bind a continuation to a <tt>t f</tt> into some context <tt>g</tt>.
 hbind :: HBind t => (f ~> t g) -> t f ~> t g
+
+-- | Collapse a nested <tt>t (t f)</tt> into a single <tt>t f</tt>.
+hjoin :: HBind t => t (t f) ~> t f
+
+-- | An "<a>HFunctor</a> combinator" that enhances an <a>HFunctor</a> with
+--   the ability to hold a single <tt>f a</tt>. This is the higher-order
+--   analogue of <a>Lift</a>.
+--   
+--   This is mostly used as the fixed-point of <a>ClownT</a>.
 data HLift t f a
 HPure :: f a -> HLift t f a
 HOther :: t f a -> HLift t f a
+
+-- | An "<a>HFunctor</a> combinator" that turns an <a>HFunctor</a> into
+--   potentially infinite nestings of that <a>HFunctor</a>.
+--   
+--   An <tt><a>HFree</a> t f a</tt> is either <tt>f a</tt>, <tt>t f a</tt>,
+--   <tt>t (t f) a</tt>, <tt>t (t (t f)) a</tt>, etc.
+--   
+--   This is the higher-oder analogue of <a>Free</a>.
+--   
+--   This is mostly used as the fixed-point of <a>JokerT</a>, but is also
+--   the free <a>HBind</a> for any <a>HFunctor</a> <tt>t</tt>.
 data HFree t f a
 HReturn :: f a -> HFree t f a
 HJoin :: t (HFree t f) a -> HFree t f a
@@ -699,8 +944,8 @@ instance Data.HFunctor.HBind Data.Functor.Bind.Class.MaybeApply
 instance Data.HFunctor.HBind Control.Applicative.Backwards.Backwards
 instance Data.HFunctor.HBind Data.Functor.Bind.Class.WrappedApplicative
 instance Data.HFunctor.HBind Data.Functor.Reverse.Reverse
-instance Data.HFunctor.HBind Control.Applicative.Step.Void2
 instance (Data.HFunctor.HBind t, Data.HFunctor.Inject t) => Data.HFunctor.HBind (Data.HFunctor.HLift t)
+instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.HBind (Data.HFunctor.HFree t)
 instance Data.HFunctor.Inject Data.Functor.Coyoneda.Coyoneda
 instance Data.HFunctor.Inject Control.Applicative.Free.Ap
 instance Data.HFunctor.Inject Control.Applicative.ListF.ListF
@@ -1954,6 +2199,17 @@ data Alt (f :: Type -> Type) a
 --       -&gt; g a
 --   </pre>
 --   
+--   Structurally, this is equivalent to many "nested" f's. A value of type
+--   <tt><a>Free</a> f a</tt> is either:
+--   
+--   <ul>
+--   <li><pre>a</pre></li>
+--   <li><pre>f a</pre></li>
+--   <li><pre>f (f a)</pre></li>
+--   <li><pre>f (f (f a))</pre></li>
+--   <li>.. etc.</li>
+--   </ul>
+--   
 --   Under the hood, this is the Church-encoded Freer monad. It's
 --   <a>Free</a>, or <a>F</a>, but in a way that is compatible with
 --   <a>HFunctor</a> and <a>Interpret</a>.
@@ -1966,7 +2222,8 @@ data Free f a
 --   Step f   ~ ((,) <a>Natural</a>) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
---   It is the fixed point of applications of <a>:+:</a> (functor sums).
+--   It is the fixed point of infinite applications of <a>:+:</a> (functor
+--   sums).
 --   
 --   Intuitively, in an infinite <tt>f :+: f :+: f :+: f ...</tt>, you have
 --   exactly one <tt>f</tt> <i>somewhere</i>. A <tt><a>Step</a> f a</tt>
