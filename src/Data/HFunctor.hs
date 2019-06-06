@@ -15,7 +15,7 @@
 {-# LANGUAGE ViewPatterns            #-}
 
 -- |
--- Module      : Data.Functor.HFunctor
+-- Module      : Data.HFunctor
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --
@@ -23,44 +23,15 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- This module provides tools for working with unary functor combinators.
+-- This module provides abstractions for working with unary functor combinators.
 --
--- These are types @f@ that take a functor @f@ and return a new functor @t
--- f@, enhancing @f@ with new structure and abilities.
+-- Principally, it defines the 'HFunctor' itself, as well as some classes
+-- that expose extra functionality that some 'HFunctor's have ('Inject' and
+-- 'HBind').
 --
--- The main operations these combinators support are:
---
--- @
--- 'hmap' :: (forall x. f x -> g x) -> t f a -> t g a
--- @
---
--- which lets you "swap out" the functor being transformed,
---
--- @
--- 'inject' :: f a -> t f a
--- @
---
--- which lets you "lift" an @f a@ into its transformed version, and also:
---
--- @
--- 'interpret'
---     :: C t g
---     => (forall x. f a -> g a)
---     -> t f a
---     -> g a
--- @
---
--- that lets you "interpret" a @t f a@ into a context @g a@, essentially
--- "running" the computaiton that it encodes.  The context is required to
--- have a typeclass constraints that reflects what is "required" to be able
--- to run a functor combinator.
---
--- Every single instance provides different tools.  Check out the instance
--- list for a nice list of useful combinators, or also the README for
--- a high-level rundown.
---
--- See "Data.Functor.Tensor" for binary functor combinators that mix
--- together two or more different functors.
+-- See "Data.HFunctor.Interpret" for tools to use 'HFunctor's as functor
+-- combinators that can represent interpretable schemas, and
+-- "Data.HBifunctor" for an abstraction over /binary/ functor combinators.
 module Data.HFunctor (
     HFunctor(..)
   , overHFunctor
@@ -95,12 +66,20 @@ import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
 import qualified Data.Map.NonEmpty              as NEM
 
+-- | Lift an isomorphism over an 'HFunctor'.
+--
+-- Essentailly, if @f@ and @g@ are isomorphic, then so are @t f@ and @t g@.
 overHFunctor
     :: HFunctor t
-    => AnIsoF' f g
+    => f <~> g
     -> t f <~> t g
-overHFunctor (cloneIsoF' -> f) = isoF (hmap (viewF f)) (hmap (reviewF f))
+overHFunctor f = isoF (hmap (viewF f)) (hmap (reviewF f))
 
+-- | An "'HFunctor' combinator" that enhances an 'HFunctor' with the
+-- ability to hold a single @f a@.  This is the higher-order analogue of
+-- 'Control.Applicative.Lift.Lift'.
+--
+-- This is mostly used as the fixed-point of 'Data.HBifunctor.ClownT'.
 data HLift t f a = HPure  (f a)
                  | HOther (t f a)
   deriving Functor
@@ -118,6 +97,16 @@ instance HFunctor t => HFunctor (HLift t) where
       HPure  x -> HPure  (f x)
       HOther x -> HOther (hmap f x)
 
+-- | An "'HFunctor' combinator" that turns an 'HFunctor' into potentially
+-- infinite nestings of that 'HFunctor'.
+--
+-- An @'HFree' t f a@ is either @f a@, @t f a@, @t (t f) a@, @t (t (t f))
+-- a@, etc.
+--
+-- This is the higher-oder analogue of 'Control.Monad.Free.Free'.
+--
+-- This is mostly used as the fixed-point of 'Data.HBifunctor.JokerT', but
+-- is also the free 'HBind' for any 'HFunctor' @t@.
 data HFree t f a = HReturn (f a)
                  | HJoin   (t (HFree t f) a)
 
@@ -140,6 +129,18 @@ instance HFunctor t => HFunctor (HFree t) where
           HReturn x -> HReturn (f x)
           HJoin   x -> HJoin (hmap go x)
 
+-- | A typeclass for 'HFunctor's where you can "inject" an @f a@ into a @t
+-- f a@:
+--
+-- @
+-- 'inject' :: f a -> t f a
+-- @
+--
+-- If you think of @t f a@ as an "enhanced @f@", then 'inject' allows you
+-- to use an @f@ as its enhanced form.
+--
+-- 'inject' itself is not too useful without 'Data.HFunctor.Interpret' to
+-- allow us to interpret or retrieve back the @f@.
 class HFunctor t => Inject t where
     -- | Lift an @f@ into the enhanced @t f@ structure.  Analogous to
     -- 'lift' from 'MonadTrans'.
@@ -147,10 +148,37 @@ class HFunctor t => Inject t where
 
     {-# MINIMAL inject #-}
 
-class HFunctor t => HBind t where
+-- | A typeclass for 'HFunctor's that you can bind continuations to,
+-- without caring about what the contexts at play.
+--
+-- It is very similar to 'Data.HFunctor.Interpret', except
+-- 'Data.HFunctor.Interpret' has the ability to constrain the contexts to
+-- some typeclass.
+--
+-- The main law is that binding 'inject' should leave things unchanged:
+--
+-- @
+-- 'hbind' 'inject' == 'id'
+-- @
+--
+-- But 'hbind' should also be associatiatve, in a way that makes
+--
+-- @
+-- 'hjoin' . hjoin
+--    = hjoin . 'hmap' hjoin
+-- @
+--
+-- That is, squishing a @t (t (t f)) a@ into a @t f a@ can be done "inside"
+-- first, then "outside", or "outside" first, then "inside".
+class Inject t => HBind t where
+    -- | Bind a continuation to a @t f@ into some context @g@.
     hbind :: (f ~> t g) -> t f ~> t g
+    hbind f = hjoin . hmap f
 
-    {-# MINIMAL hbind #-}
+    -- | Collapse a nested @t (t f)@ into a single @t f@.
+    hjoin :: t (t f) ~> t f
+    hjoin = hbind id
+    {-# MINIMAL hbind | hjoin #-}
 
 instance Inject Coyoneda where
     inject = liftCoyoneda
@@ -215,6 +243,7 @@ instance (Inject s, Inject t) => Inject (ComposeT s t) where
 instance HFunctor t => Inject (HLift t) where
     inject = HPure
 
+-- | 'HFree' is the "free 'HBind' and 'Inject'" for any 'HFunctor'
 instance HFunctor t => Inject (HFree t) where
     inject = HReturn
 
@@ -274,12 +303,15 @@ instance HBind WrappedApplicative where
 instance HBind Reverse where
     hbind f = f . getReverse
 
-instance HBind Void2 where
-    hbind _ = coerce
-
 instance (HBind t, Inject t) => HBind (HLift t) where
     hbind f = \case
       HPure   x -> f x
       HOther x -> HOther $ (`hbind` x) $ \y -> case f y of
         HPure  z -> inject z
         HOther z -> z
+
+-- | 'HFree' is the "free 'HBind'" for any 'HFunctor'
+instance HFunctor t => HBind (HFree t) where
+    hbind f = \case
+      HReturn x -> f x
+      HJoin   x -> HJoin $ hmap (hbind f) x

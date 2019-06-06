@@ -58,7 +58,7 @@ import qualified Data.Map.NonEmpty          as NEM
 -- Step f   ~ ((,) 'Natural') ':.:' f       -- functor composition
 -- @
 --
--- It is the fixed point of applications of ':+:' (functor sums).
+-- It is the fixed point of infinite applications of ':+:' (functor sums).
 --
 -- Intuitively, in an infinite @f :+: f :+: f :+: f ...@, you have
 -- exactly one @f@ /somewhere/.  A @'Step' f a@ has that @f@, with
@@ -90,14 +90,49 @@ instance Traversable1 f => Traversable1 (Step f) where
     traverse1 f (Step n x) = Step n <$> traverse1 f x
     sequence1 (Step n x) = Step n <$> sequence1 x
 
+-- | "Uncons and cons" an @f@ branch before a 'Step'.  This is basically
+-- a witness that 'stepDown' and 'stepUp' form an isomorphism.
 stepping :: Step f <~> f :+: Step f
 stepping = isoF stepDown stepUp
 
+-- | Pop off the first iteem in a 'Step'.  Because a @'Step' f@ is @f :+:
+-- f :+: f :+: ...@ forever, this matches on the first branch.
+--
+-- You can think of it as reassociating
+--
+-- @
+-- f :+: f :+: f :+: f :+: ...
+-- @
+--
+-- into
+--
+-- @
+-- f :+: ( f :+: f :+: f :+: ...)
+-- @
+--
+-- Forms an isomorphism with 'stepUp' (see 'stepping').
 stepDown :: Step f ~> f :+: Step f
 stepDown (Step n x) = case minusNaturalMaybe n 1 of
     Nothing -> L1 x
     Just m  -> R1 (Step m x)
 
+-- | Unshift an item into a 'Step'.  Because a @'Step' f@ is @f :+: f :+:
+-- f :+: f :+: ...@ forever, this basically conses an additional
+-- possibility of @f@ to the beginning of it all.
+--
+-- You can think of it as reassociating
+--
+-- @
+-- f :+: ( f :+: f :+: f :+: ...)
+-- @
+--
+-- into
+--
+-- @
+-- f :+: f :+: f :+: f :+: ...
+-- @
+--
+-- Forms an isomorphism with 'stepDown' (see 'stepping').
 stepUp :: f :+: Step f ~> Step f
 stepUp = \case
     L1 x          -> Step 0       x

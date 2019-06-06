@@ -23,18 +23,27 @@
 --
 -- The church-encoded "Freer" Monad.  Basically provides the free monad in
 -- a way that is compatible with 'Data.Functor.HFunctor.HFunctor' and
--- 'Data.Functor.HFunctor.Interpret', and 'GHC.Generisc.:.:' or
--- 'Data.Functor.Compose' in a way that is compatible with
--- 'Data.Functor.Tensor.HBifunctor' and 'Data.Functor.Tensor.Tensor' and
--- 'Data.Functor.Tensor.Monoidal'.
+-- 'Data.Functor.HFunctor.Interpret'.  We also have the "semigroup" version
+-- 'Free1', which is the free  'Bind'.
+--
+-- The module also provides a version of 'GHC.Generics.:.:' (or
+-- 'Data.Functor.Compose'), 'Comp', in a way that is compatible with
+-- 'Data.Functor.Tensor.HBifunctor' and the related typeclasses.
 module Control.Monad.Freer.Church (
   -- * 'Free'
-    Free(..)
-  , reFree, liftFree, interpretFree, retractFree, hoistFree
+    Free(..), reFree
+  -- ** Interpretation
+  , liftFree, interpretFree, retractFree, hoistFree
+  -- ** Folding
   , foldFree, foldFree', foldFreeC
   -- * 'Free1'
-  , Free1(.., DoneF1, MoreF1), toFree, liftFree1, free1Comp, matchFree1
-  , interpretFree1, retractFree1, hoistFree1
+  , Free1(.., DoneF1, MoreF1)
+  , reFree1, toFree
+  -- ** Interpretation
+  , liftFree1, interpretFree1, retractFree1, hoistFree1
+  -- ** Conversion
+  , free1Comp, matchFree1
+  -- ** Folding
   , foldFree1, foldFree1', foldFree1C
   -- * 'Comp'
   , Comp(.., Comp, unComp), comp
@@ -73,6 +82,15 @@ import qualified Control.Monad.Free         as M
 --     -> 'Free' f a
 --     -> g a
 -- @
+--
+-- Structurally, this is equivalent to many "nested" f's.  A value of type
+-- @'Free' f a@ is either:
+--
+-- *   @a@
+-- *   @f a@
+-- *   @f (f a)@
+-- *   @f (f (f a))@
+-- *   .. etc.
 --
 -- Under the hood, this is the Church-encoded Freer monad.  It's
 -- 'Control.Monad.Free.Free', or 'Control.Monad.Free.Church.F', but in
@@ -129,7 +147,7 @@ instance (Functor f, Show1 f) => Show1 (Free f) where
         sp' = liftShowsPrec sp sl
         sl' = liftShowList sp sl
 
--- | Show in terms of 'pure' and 'wrap'.
+-- | Show in terms of 'pure' and 'M.wrap'.
 instance (Functor f, Show1 f, Show a) => Show (Free f a) where
     showsPrec = liftShowsPrec showsPrec showList
 
@@ -140,7 +158,7 @@ instance (Functor f, Read1 f) => Read1 (Free f) where
             readsUnaryWith rp "pure" pure
          <> readsUnaryWith (liftReadsPrec go (liftReadList rp rl)) "wrap" M.wrap
 
--- | Read in terms of 'pure' and 'wrap'.
+-- | Read in terms of 'pure' and 'M.wrap'.
 instance (Functor f, Read1 f, Read a) => Read (Free f a) where
     readPrec = readPrec1
     readListPrec = readListPrecDefault
@@ -153,18 +171,33 @@ reFree
     -> m a
 reFree = foldFree pure M.wrap
 
+-- | Lift an @f@ into @'Free' f@, so you can use it as a 'Monad'.
+--
+-- This is 'Data.HFunctor.inject'.
 liftFree :: f ~> Free f
 liftFree x = Free $ \p b -> b x p
 
+-- | Interpret a @'Free' f@ into a context @g@, provided that @g@ has
+-- a 'Monad' instance.
+--
+-- This is 'Data.HFunctor.Interpret.interpret'.
 interpretFree :: Monad g => (f ~> g) -> Free f ~> g
 interpretFree f = foldFree' pure ((>>=) . f)
 
+-- | Extract the @f@s back "out" of a @'Free' f@, utilizing its 'Monad'
+-- instance.
+--
+-- This is 'Data.HFunctor.Interpret.retract'.
 retractFree :: Monad f => Free f ~> f
 retractFree = foldFree' pure (>>=)
 
+-- | Swap out the underlying functor over a 'Free'.  This preserves all of
+-- the structure of the 'Free'.
 hoistFree :: (f ~> g) -> Free f ~> Free g
 hoistFree f x = Free $ \p b -> runFree x p (b . f)
 
+-- | A version of 'foldFree' that doesn't require @'Functor' f@, by taking
+-- a RankN folding function.  This is essentially a flipped 'runFree'.
 foldFree'
     :: (a -> r)
     -> (forall s. f s -> (s -> r) -> r)
@@ -172,21 +205,40 @@ foldFree'
     -> r
 foldFree' f g x = runFree x f g
 
+-- | A version of 'foldFree' that doesn't require @'Functor' f@, by folding
+-- over a 'Coyoneda' instead.
 foldFreeC
-    :: (a -> r)
-    -> (Coyoneda f r -> r)
+    :: (a -> r)                 -- ^ handle 'pure'
+    -> (Coyoneda f r -> r)      -- ^ handle 'M.wrap'
     -> Free f a
     -> r
 foldFreeC f g = foldFree' f (\y n -> g (Coyoneda n y))
 
+-- | Recursively fold down a 'Free' by handling the 'pure' case and the
+-- nested/wrapped case.
+--
+-- This is a catamorphism.
+--
+-- This requires @'Functor' f@; see 'foldFree'' and 'foldFreeC' for
+-- a version that doesn't require @'Functor' f@.
 foldFree
     :: Functor f
-    => (a -> r)
-    -> (f r -> r)
+    => (a -> r)                 -- ^ handle 'pure'
+    -> (f r -> r)               -- ^ handle 'M.wrap'
     -> Free f a
     -> r
 foldFree f g = foldFreeC f (g . lowerCoyoneda)
 
+-- | The Free 'Bind'.  Imbues any functor @f@ with a 'Bind' instance.
+--
+-- Conceptually, this is "'Free' without pure".  That is, while normally
+-- @'Free' f a@ is an @a@, a @f a@, a @f (f a)@, etc., a @'Free1' f a@ is
+-- an @f a@, @f (f a)@, @f (f (f a))@, etc.  It's a 'Free' with "at least
+-- one layer of @f@", excluding the @a@ case.
+--
+-- It can be useful as the semigroup formed by ':.:' (functor composition):
+-- Sometimes we want an @f :.: f@, or an @f :.: f :.: f@, or an @f :.:
+-- f :.: f :.: f@...just as long as we have at least one @f@.
 newtype Free1 f a = Free1
     { runFree1 :: forall r. (forall s. f s -> (s -> a) -> r)
                          -> (forall s. f s -> (s -> r) -> r)
@@ -264,11 +316,20 @@ pattern DoneF1 x <- (matchFree1 -> L1 x)
 
 -- | Constructor matching on the case that a @'Free1' f@ is a nested @f
 -- ('Free1' f a)@.  Used as a part of the 'Show' and 'Read' instances.
+--
+-- As a constructor, this is equivalent to 'M.wrap'.
 pattern MoreF1 :: Functor f => f (Free1 f a) -> Free1 f a
 pattern MoreF1 x <- (matchFree1 -> R1 (Comp x))
   where
     MoreF1 x = liftFree1 x >>- id
 {-# COMPLETE DoneF1, MoreF1 #-}
+
+-- | Convert a @'Free1' f@ into any instance of @'M.MonadFree' f@.
+reFree1
+    :: (M.MonadFree f m, Functor f)
+    => Free1 f a
+    -> m a
+reFree1 = foldFree1 (M.wrap . fmap pure) M.wrap
 
 -- | @'Free1' f@ is a special subset of @'Free' f@ that consists of at least one
 -- nested @f@.  This converts it back into the "bigger" type.
@@ -317,6 +378,8 @@ matchFree1 = foldFree1 L1 (R1 . Comp . fmap shuffle)
     shuffle (L1 y         ) = liftFree1 y
     shuffle (R1 (y :>>= n)) = liftFree1 y >>- n
 
+-- | A version of 'foldFree1' that doesn't require @'Functor' f@, by taking
+-- a RankN folding function.  This is essentially a flipped 'runFree'.
 foldFree1'
     :: (forall s. f s -> (s -> a) -> r)
     -> (forall s. f s -> (s -> r) -> r)
@@ -324,6 +387,8 @@ foldFree1'
     -> r
 foldFree1' f g x = runFree1 x f g
 
+-- | A version of 'foldFree1' that doesn't require @'Functor' f@, by
+-- folding over a 'Coyoneda' instead.
 foldFree1C
     :: (Coyoneda f a -> r)
     -> (Coyoneda f r -> r)
@@ -332,10 +397,17 @@ foldFree1C
 foldFree1C f g = foldFree1' (\y c -> f (Coyoneda c y))
                             (\y n -> g (Coyoneda n y))
 
+-- | Recursively fold down a 'Free1' by handling the single @f@ case and
+-- the nested/wrapped case.
+--
+-- This is a catamorphism.
+--
+-- This requires @'Functor' f@; see 'foldFree'' and 'foldFreeC' for
+-- a version that doesn't require @'Functor' f@.
 foldFree1
     :: Functor f
-    => (f a -> r)
-    -> (f r -> r)
+    => (f a -> r)       -- ^ handle @'DoneF1'@.
+    -> (f r -> r)       -- ^ handle @'MoreF1'@.
     -> Free1 f a
     -> r
 foldFree1 f g = foldFree1C (f . lowerCoyoneda)

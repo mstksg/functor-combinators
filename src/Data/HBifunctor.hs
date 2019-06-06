@@ -11,6 +11,17 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns         #-}
 
+-- |
+-- Module      : Data.Functor.HBifunctor
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- This module provides an abstraction for "two-argument functor
+-- combinators", 'HBifunctor', as well as some useful combinators.
 module Data.HBifunctor (
     HBifunctor(..)
   , WrappedHBifunctor(..)
@@ -28,12 +39,17 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.IsoF
 import           Data.Kind
 
+-- | Lift two isomorphisms on each side of a bifunctor to become an
+-- isomorphism between the two bifunctor applications.
+--
+-- Basically, if @f@ and @f'@ are isomorphic, and @g@ and @g'@ are
+-- isomorphic, then @t f g@ is isomorphic to @t f' g'@.
 overHBifunctor
     :: HBifunctor t
-    => AnIsoF' f f'
-    -> AnIsoF' g g'
+    => (f <~> f')
+    -> (g <~> g')
     -> t f g <~> t f' g'
-overHBifunctor (cloneIsoF' -> f) (cloneIsoF' -> g) =
+overHBifunctor f g =
         isoF (hbimap (viewF   f) (viewF   g))
              (hbimap (reviewF f) (reviewF g))
 
