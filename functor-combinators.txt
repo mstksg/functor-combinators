@@ -790,6 +790,13 @@ data HLift t f a
 HPure :: f a -> HLift t f a
 HOther :: t f a -> HLift t f a
 
+-- | A higher-level <a>retract</a> to get a <tt>t f a</tt> back out of an
+--   <tt><a>HLift</a> t f a</tt>, provided <tt>t</tt> is an instance of
+--   <a>Inject</a>.
+--   
+--   This witnesses the fact that <a>HLift</a> is the "Free <a>Inject</a>".
+retractHLift :: Inject t => HLift t f a -> t f a
+
 -- | An "<a>HFunctor</a> combinator" that turns an <a>HFunctor</a> into
 --   potentially infinite nestings of that <a>HFunctor</a>.
 --   
@@ -803,6 +810,13 @@ HOther :: t f a -> HLift t f a
 data HFree t f a
 HReturn :: f a -> HFree t f a
 HJoin :: t (HFree t f) a -> HFree t f a
+
+-- | A higher-level <a>retract</a> to get a <tt>t f a</tt> back out of an
+--   <tt><a>HFree</a> t f a</tt>, provided <tt>t</tt> is an instance of
+--   <a>Bind</a>.
+--   
+--   This witnesses the fact that <a>HFree</a> is the "Free <a>Bind</a>".
+retractHFree :: HBind t => HFree t f a -> t f a
 instance (GHC.Base.Functor f, GHC.Base.Functor (t f)) => GHC.Base.Functor (Data.HFunctor.HLift t f)
 instance (GHC.Base.Functor f, GHC.Base.Functor (t (Data.HFunctor.HFree t f))) => GHC.Base.Functor (Data.HFunctor.HFree t f)
 instance Data.HFunctor.HBind Data.Functor.Coyoneda.Coyoneda
