@@ -37,7 +37,7 @@ import           Control.Applicative.Free
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Monad
-import           Control.Monad.Freer.Church
+import           Control.Monad.Freer.Church hiding (toFree)
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Identity
 import           Control.Natural
@@ -49,8 +49,8 @@ import           Data.Functor.Plus
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
 import           Data.Pointed
-import qualified Control.Alternative.Free      as Alt
-import qualified Control.Applicative.Free.Fast as FAF
+import qualified Control.Alternative.Free          as Alt
+import qualified Control.Applicative.Free.Fast     as FAF
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --

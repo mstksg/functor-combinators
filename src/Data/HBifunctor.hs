@@ -30,8 +30,8 @@ module Data.HBifunctor (
   , JoinT(..)
   , TannenT(..)
   , BiffT(..)
-  , ClownT(..)
-  , JokerT(..)
+  , HClown(..)
+  , HJoker(..)
   ) where
 
 import           Data.Functor.Classes
@@ -86,35 +86,35 @@ deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) ->
 
 -- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the second
 -- argument.
-newtype ClownT t f g a = ClownT { runClownT :: t f a }
+newtype HClown t f g a = HClown { runHClown :: t f a }
     deriving (Eq, Ord, Show, Read)
 
-deriving instance Functor (t f) => Functor (ClownT t f g)
+deriving instance Functor (t f) => Functor (HClown t f g)
 
-instance Show1 (t f) => Show1 (ClownT t f g) where
-    liftShowsPrec sp sl d (ClownT x) =
-        showsUnaryWith (liftShowsPrec sp sl) "ClownT" d x
+instance Show1 (t f) => Show1 (HClown t f g) where
+    liftShowsPrec sp sl d (HClown x) =
+        showsUnaryWith (liftShowsPrec sp sl) "HClown" d x
 
-instance HFunctor t => HBifunctor (ClownT t) where
-    hbimap f _ (ClownT x) = ClownT (hmap f x)
+instance HFunctor t => HBifunctor (HClown t) where
+    hbimap f _ (HClown x) = HClown (hmap f x)
 
-deriving via (WrappedHBifunctor (ClownT t) f)
-    instance HFunctor t => HFunctor (ClownT t f)
+deriving via (WrappedHBifunctor (HClown t) f)
+    instance HFunctor t => HFunctor (HClown t f)
 
 -- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the first
 -- argument.
-newtype JokerT t f g a = JokerT { runJokerT :: t g a }
+newtype HJoker t f g a = HJoker { runHJoker :: t g a }
     deriving (Eq, Ord, Show, Read)
 
-deriving instance Functor (t g) => Functor (JokerT t f g)
+deriving instance Functor (t g) => Functor (HJoker t f g)
 
-instance Show1 (t g) => Show1 (JokerT t f g) where
-    liftShowsPrec sp sl d (JokerT x) =
-        showsUnaryWith (liftShowsPrec sp sl) "JokerT" d x
+instance Show1 (t g) => Show1 (HJoker t f g) where
+    liftShowsPrec sp sl d (HJoker x) =
+        showsUnaryWith (liftShowsPrec sp sl) "HJoker" d x
 
-instance HFunctor t => HBifunctor (JokerT t) where
-    hbimap _ g (JokerT x) = JokerT (hmap g x)
+instance HFunctor t => HBifunctor (HJoker t) where
+    hbimap _ g (HJoker x) = HJoker (hmap g x)
 
-deriving via (WrappedHBifunctor (JokerT t) f)
-    instance HFunctor t => HFunctor (JokerT t f)
+deriving via (WrappedHBifunctor (HJoker t) f)
+    instance HFunctor t => HFunctor (HJoker t f)
 

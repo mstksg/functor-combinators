@@ -52,7 +52,7 @@ module Data.Functor.Combinator (
   -- a single functor.
   , HFunctor(..)
   , Interpret(..), interpretFor
-  , extractI, getI, collectI
+  , getI, collectI
   -- ** Multi-Functors
   -- | Classes that deal with two-functor combinators, that "mix" two
   -- functors together in some way.
@@ -61,7 +61,7 @@ module Data.Functor.Combinator (
   -- , Monoidal(TM, retractT, interpretT, pureT, toTM)
   , inL, inR
   , (!$!)
-  , extractT, getT, (!*!), collectT
+  , getS, (!*!), collectS
   -- * Combinators
   -- | Functor combinators
   -- ** Single
@@ -115,8 +115,8 @@ import           GHC.Generics
 -- Acts like the "zero" with respect to functor combinator composition.
 --
 -- @
--- 'ComposeT' ProxyF f      ~ ProxyF
--- 'ComposeT' f      ProxyF ~ ProxyF
+-- 'Control.Monad.Trans.Compose.ComposeT' ProxyF f      ~ ProxyF
+-- 'Control.Monad.Trans.Compose.ComposeT' f      ProxyF ~ ProxyF
 -- @
 --
 -- It can be 'inject'ed into (losing all information), but it is impossible

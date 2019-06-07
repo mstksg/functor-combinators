@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor      #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE RankNTypes         #-}
 {-# LANGUAGE TypeOperators      #-}
@@ -112,6 +113,7 @@ fromF i = isoF g f
 
 -- | Profunctor that allows us to implement 'fromF'.
 data Exchange a b s t = Exchange (s -> a) (b -> t)
+  deriving Functor
 
 instance Profunctor (Exchange a b) where
     dimap f g (Exchange x y) = Exchange (x . f) (g . y)

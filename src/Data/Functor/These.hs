@@ -21,7 +21,6 @@ import           Data.Functor.Plus
 import           Data.HBifunctor.Associative
 import           Data.HBifunctor.Tensor
 import           Data.HBifunctor
-import           Data.HBifunctor.Tensor.Matchable
 import           Data.HFunctor.IsoF
 import           Data.List.NonEmpty               (NonEmpty(..))
 import           Data.Map.NonEmpty                (NEMap)

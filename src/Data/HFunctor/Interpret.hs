@@ -12,7 +12,7 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 -- |
--- Module      : Data.Functor.HFunctor
+-- Module      : Data.HFunctor.Interpret
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --
@@ -20,18 +20,13 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- This module provides tools for working with unary functor combinators.
+-- This module provides tools for working with unary functor combinators
+-- that represent interpretable schemas.
 --
--- These are types @f@ that take a functor @f@ and return a new functor @t
+-- These are types @t@ that take a functor @f@ and return a new functor @t
 -- f@, enhancing @f@ with new structure and abilities.
 --
--- The main operations these combinators support are:
---
--- @
--- 'hmap' :: (forall x. f x -> g x) -> t f a -> t g a
--- @
---
--- which lets you "swap out" the functor being transformed,
+-- For these, we have:
 --
 -- @
 -- 'inject' :: f a -> t f a
@@ -61,7 +56,7 @@
 module Data.HFunctor.Interpret (
     HFunctor(..)
   , Interpret(..), interpretFor
-  , extractI
+  -- * Utilities
   , getI
   , collectI
   , AndC
@@ -79,7 +74,6 @@ import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
 import           Data.Constraint.Trivial
-import           Data.Copointed
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
@@ -146,22 +140,6 @@ interpretFor
     -> g a
 interpretFor x f = interpret f x
 
--- | Useful wrapper over 'retract' to allow you to directly extract an @a@
--- from a @t f a@, if @f@ is a valid retraction from @t@, and @f@ is an
--- instance of 'Copointed'.
---
--- Useful @f@s include 'Data.Functor.Identity' or related newtype wrappers from
--- base:
---
--- @
--- 'extractI'
---     :: ('Interpret' t, 'C' t 'Data.Functor.Identity')
---     => t 'Data.Functor.Identity' a
---     -> a
--- @
-extractI :: (Interpret t, C t f, Copointed f) => t f a -> a
-extractI = copoint . retract
-
 -- | Useful wrapper over 'interpret' to allow you to directly extract
 -- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
 --
@@ -178,7 +156,7 @@ extractI = copoint . retract
 -- -- get the length of the @Map String@ in the 'Step'.
 -- 'collectI' length
 --      :: Step (Map String) Bool
---      -> [Int]
+--      -> Int
 -- @
 getI
     :: (Interpret t, C t (Const b))
@@ -193,7 +171,7 @@ getI f = getConst . interpret (Const . f)
 -- This will work if @'C' t@ is 'Unconstrained', 'Apply', or 'Applicative'.
 --
 -- @
--- -- get the lengths of all @Map String@s in the 'Ap'.
+-- -- get the lengths of all @Map String@s in the 'Ap.Ap'.
 -- 'collectI' length
 --      :: Ap (Map String) Bool
 --      -> [Int]
@@ -203,7 +181,7 @@ collectI
     => (forall x. f x -> b)
     -> t f a
     -> [b]
-collectI f = getConst . interpret (Const . (:[]) . f)
+collectI f = getI ((:[]) . f)
 
 -- | A free 'Functor'
 instance Interpret Coyoneda where
