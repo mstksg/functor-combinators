@@ -79,7 +79,7 @@ overHFunctor f = isoF (hmap (viewF f)) (hmap (reviewF f))
 -- ability to hold a single @f a@.  This is the higher-order analogue of
 -- 'Control.Applicative.Lift.Lift'.
 --
--- This is mostly used as the fixed-point of 'Data.HBifunctor.ClownT'.
+-- This is mostly used as the semigroup fixed-point of 'Data.HBifunctor.ClownT'.
 data HLift t f a = HPure  (f a)
                  | HOther (t f a)
   deriving Functor
@@ -105,8 +105,9 @@ instance HFunctor t => HFunctor (HLift t) where
 --
 -- This is the higher-oder analogue of 'Control.Monad.Free.Free'.
 --
--- This is mostly used as the fixed-point of 'Data.HBifunctor.JokerT', but
--- is also the free 'HBind' for any 'HFunctor' @t@.
+-- This is mostly used as the semigroup fixed-point of
+-- 'Data.HBifunctor.JokerT', but is also the free 'HBind' for any
+-- 'HFunctor' @t@.
 data HFree t f a = HReturn (f a)
                  | HJoin   (t (HFree t f) a)
 

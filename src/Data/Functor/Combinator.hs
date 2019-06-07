@@ -51,6 +51,7 @@ module Data.Functor.Combinator (
   -- | Classes that deal with single-functor combinators, that enhance
   -- a single functor.
   , HFunctor(..)
+  , Inject(..)
   , Interpret(..)
   , forI
   , getI
