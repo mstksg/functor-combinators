@@ -108,6 +108,8 @@ import           Data.Functor.Classes
 import           Data.Functor.Day           (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
+import           Data.Functor.Product
+import           Data.Functor.Sum
 import           Data.HBifunctor
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
@@ -483,6 +485,56 @@ instance Associative (:*:) where
         to_   (x :*: (y :*: z)) = (x :*: y) :*: z
         from_ ((x :*: y) :*: z) = x :*: (y :*: z)
 
+instance Associative Product where
+    associating = isoF to_ from_
+      where
+        to_   (Pair x (Pair y z)) = Pair (Pair x y) z
+        from_ (Pair (Pair x y) z) = Pair x (Pair y z)
+
+instance Associative Day where
+    associating = isoF D.assoc D.disassoc
+
+instance Associative (:+:) where
+    associating = isoF to_ from_
+      where
+        to_ = \case
+          L1 x      -> L1 (L1 x)
+          R1 (L1 y) -> L1 (R1 y)
+          R1 (R1 z) -> R1 z
+        from_ = \case
+          L1 (L1 x) -> L1 x
+          L1 (R1 y) -> R1 (L1 y)
+          R1 z      -> R1 (R1 z)
+
+instance Associative Sum where
+    associating = isoF to_ from_
+      where
+        to_ = \case
+          InL x       -> InL (InL x)
+          InR (InL y) -> InL (InR y)
+          InR (InR z) -> InR z
+        from_ = \case
+          InL (InL x) -> InL x
+          InL (InR y) -> InR (InL y)
+          InR z       -> InR (InR z)
+
+instance Associative Comp where
+    associating = isoF to_ from_
+      where
+        to_   (x :>>= y) = (x :>>= (unComp . y)) :>>= id
+        from_ ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
+
+instance HBind t => Associative (HClown t) where
+    associating = isoF runHClown                HClown
+                . isoF (hmap (HClown . inject)) (hbind runHClown)
+                . isoF HClown                   runHClown
+
+
+instance HBind t => Associative (HJoker t) where
+    associating = isoF runHJoker         HJoker
+                . isoF (hbind runHJoker) (hmap (HJoker . inject))
+                . isoF HJoker            runHJoker
+
 instance Semigroupoidal (:*:) where
     type SF (:*:) = NonEmptyF
 
@@ -499,8 +551,21 @@ instance Semigroupoidal (:*:) where
     biretract (x :*: y) = x <!> y
     binterpret f g (x :*: y) = f x <!> g y
 
-instance Associative Day where
-    associating = isoF D.assoc D.disassoc
+instance Semigroupoidal Product where
+    type SF Product = NonEmptyF
+
+    appendSF (NonEmptyF xs `Pair` NonEmptyF ys) = NonEmptyF (xs <> ys)
+    matchSF x = case ys of
+        L1 ~Proxy -> L1 y
+        R1 zs     -> R1 $ Pair y zs
+      where
+        y :*: ys = fromListF `hright` nonEmptyProd x
+
+    consSF (x `Pair` NonEmptyF xs) = NonEmptyF $ x :| toList xs
+    toSF   (x `Pair` y           ) = NonEmptyF $ x :| [y]
+
+    biretract (Pair x y) = x <!> y
+    binterpret f g (Pair x y) = f x <!> g y
 
 instance Semigroupoidal Day where
     type SF Day = Ap1
@@ -516,18 +581,6 @@ instance Semigroupoidal Day where
 
     biretract (Day x y z) = z <$> x <.> y
     binterpret f g (Day x y z) = z <$> f x <.> g y
-
-instance Associative (:+:) where
-    associating = isoF to_ from_
-      where
-        to_ = \case
-          L1 x      -> L1 (L1 x)
-          R1 (L1 y) -> L1 (R1 y)
-          R1 (R1 z) -> R1 z
-        from_ = \case
-          L1 (L1 x) -> L1 x
-          L1 (R1 y) -> R1 (L1 y)
-          R1 z      -> R1 (R1 z)
 
 instance Semigroupoidal (:+:) where
     type SF (:+:) = Step
@@ -551,11 +604,27 @@ instance Semigroupoidal (:+:) where
       L1 x -> f x
       R1 y -> g y
 
-instance Associative Comp where
-    associating = isoF to_ from_
-      where
-        to_   (x :>>= y) = (x :>>= (unComp . y)) :>>= id
-        from_ ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
+instance Semigroupoidal Sum where
+    type SF Sum = Step
+
+    appendSF = \case
+      InL x          -> x
+      InR (Step n y) -> Step (n + 1) y
+    matchSF = hright InR . stepDown
+
+    consSF = \case
+      InL x          -> Step 0       x
+      InR (Step n y) -> Step (n + 1) y
+    toSF = \case
+      InL x -> Step 0 x
+      InR y -> Step 1 y
+
+    biretract = \case
+      InL x -> x
+      InR y -> y
+    binterpret f g = \case
+      InL x -> f x
+      InR y -> g y
 
 instance Semigroupoidal Comp where
     type SF Comp = Free1
@@ -569,12 +638,6 @@ instance Semigroupoidal Comp where
     biretract      (x :>>= y) = x >>- y
     binterpret f g (x :>>= y) = f x >>- (g . y)
 
-instance HBind t => Associative (HClown t) where
-    associating = isoF runHClown                HClown
-                . isoF (hmap (HClown . inject)) (hbind runHClown)
-                . isoF HClown                   runHClown
-
-
 instance (Interpret t, HBind t) => Semigroupoidal (HClown t) where
     type SF (HClown t) = HLift t
 
@@ -583,11 +646,6 @@ instance (Interpret t, HBind t) => Semigroupoidal (HClown t) where
       HPure  x -> L1 x
       HOther x -> R1 $ HClown x
 
-instance HBind t => Associative (HJoker t) where
-    associating = isoF runHJoker         HJoker
-                . isoF (hbind runHJoker) (hmap (HJoker . inject))
-                . isoF HJoker            runHJoker
-
 instance (Interpret t, HBind t) => Semigroupoidal (HJoker t) where
     type SF (HJoker t) = HFree t
 
@@ -595,3 +653,4 @@ instance (Interpret t, HBind t) => Semigroupoidal (HJoker t) where
     matchSF  = \case
       HReturn x -> L1 x
       HJoin   x -> R1 $ HJoker x
+

@@ -11,6 +11,7 @@ module Data.HFunctor.Internal (
     HFunctor(..)
   , HBifunctor(..)
   , WrappedHBifunctor(..)
+  , sumSum, prodProd
   ) where
 
 import           Control.Applicative.Backwards
@@ -29,8 +30,11 @@ import           Data.Coerce
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
+import           Data.Functor.Product
 import           Data.Functor.Reverse
+import           Data.Functor.Sum
 import           Data.Functor.Yoneda
+import           Data.HFunctor.IsoF
 import           Data.Kind
 import           Data.Tagged
 import           GHC.Generics hiding            (C)
@@ -209,6 +213,11 @@ instance HBifunctor (:*:) where
     hright g (x :*: y) =   x :*: g y
     hbimap f g (x :*: y) = f x :*: g y
 
+instance HBifunctor Product where
+    hleft  f (Pair x y)   = Pair (f x)    y
+    hright g (Pair x y)   = Pair    x  (g y)
+    hbimap f g (Pair x y) = Pair (f x) (g y)
+
 instance HBifunctor Day where
     hleft  = D.trans1
     hright = D.trans2
@@ -226,6 +235,19 @@ instance HBifunctor (:+:) where
     hbimap f g = \case
       L1 x -> L1 (f x)
       R1 y -> R1 (g y)
+
+instance HBifunctor Sum where
+    hleft f = \case
+      InL x -> InL (f x)
+      InR y -> InR y
+
+    hright g = \case
+      InL x -> InL x
+      InR y -> InR (g y)
+
+    hbimap f g = \case
+      InL x -> InL (f x)
+      InR y -> InR (g y)
 
 instance HBifunctor Comp where
     hleft  f   (x :>>= h) = f x :>>= h
@@ -255,4 +277,16 @@ deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
 deriving via (WrappedHBifunctor Comp f)   instance HFunctor (Comp f)
 
+sumSum :: (f :+: g) <~> Sum f g
+sumSum = isoF to_ from_
+  where
+    to_   (L1 x)  = InL x
+    to_   (R1 y)  = InR y
+    from_ (InL x) = L1 x
+    from_ (InR y) = R1 y
 
+prodProd :: (f :*: g) <~> Product f g
+prodProd = isoF to_ from_
+  where
+    to_   (x :*: y)  = Pair x y
+    from_ (Pair x y) = x :*: y

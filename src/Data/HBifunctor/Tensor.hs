@@ -102,9 +102,12 @@ import           Data.Functor.Classes
 import           Data.Functor.Day            (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
+import           Data.Functor.Product
+import           Data.Functor.Sum
 import           Data.HBifunctor
 import           Data.HBifunctor.Associative
 import           Data.HFunctor
+import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.HFunctor.IsoF
 import           Data.Kind
@@ -580,8 +583,17 @@ instance Tensor (:*:) where
     intro1 = (:*: Proxy)
     intro2 = (Proxy :*:)
 
-    elim1 (x :*: _) = x
-    elim2 (_ :*: y) = y
+    elim1 (x      :*: ~Proxy) = x
+    elim2 (~Proxy :*: y     ) = y
+
+instance Tensor Product where
+    type I Product = Proxy
+
+    intro1 = (`Pair` Proxy)
+    intro2 = (Proxy `Pair`)
+
+    elim1 (Pair x ~Proxy) = x
+    elim2 (Pair ~Proxy y) = y
 
 instance Tensor Day where
     type I Day = Identity
@@ -603,6 +615,19 @@ instance Tensor (:+:) where
     elim2 = \case
       L1 x -> absurd1 x
       R1 y -> y
+
+instance Tensor Sum where
+    type I Sum = Void1
+
+    intro1 = InL
+    intro2 = InR
+
+    elim1 = \case
+      InL x -> x
+      InR y -> absurd1 y
+    elim2 = \case
+      InL x -> absurd1 x
+      InR y -> y
 
 instance Tensor Comp where
     type I Comp = Identity
@@ -647,6 +672,23 @@ instance Monoidal (:*:) where
     toMF (x :*: y) = ListF [x, y]
     pureT _        = zero
 
+instance Monoidal Product where
+    type MF Product = ListF
+
+    appendMF (ListF xs `Pair` ListF ys) = ListF (xs ++ ys)
+    splitSF     = viewF prodProd . nonEmptyProd
+    splittingMF = isoF to_ from_
+      where
+        to_ = \case
+          ListF []     -> L1 Proxy
+          ListF (x:xs) -> R1 (x `Pair` ListF xs)
+        from_ = \case
+          L1 ~Proxy              -> ListF []
+          R1 (x `Pair` ListF xs) -> ListF (x:xs)
+
+    toMF (Pair x y) = ListF [x, y]
+    pureT _         = zero
+
 instance Monoidal Day where
     type MF Day = Ap
 
@@ -674,8 +716,22 @@ instance Monoidal (:+:) where
     toMF  = toSF
     pureT = absurd1
 
+instance Monoidal Sum where
+    type MF Sum = Step
+
+    appendMF    = appendSF
+    splitSF     = viewF sumSum . stepDown
+    splittingMF = stepping . voidLeftIdentity . overHBifunctor id sumSum
+
+    toMF  = toSF
+    pureT = absurd1
+
 instance Matchable (:*:) where
     unsplitSF = ProdNonEmpty
+    matchMF   = fromListF
+
+instance Matchable Product where
+    unsplitSF = ProdNonEmpty . reviewF prodProd
     matchMF   = fromListF
 
 instance Matchable Day where
@@ -684,4 +740,8 @@ instance Matchable Day where
 
 instance Matchable (:+:) where
     unsplitSF   = stepUp
+    matchMF     = R1
+
+instance Matchable Sum where
+    unsplitSF   = stepUp . reviewF sumSum
     matchMF     = R1
