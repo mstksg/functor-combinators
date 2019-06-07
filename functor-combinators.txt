@@ -1718,14 +1718,18 @@ instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor 
 instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Inject (Data.HBifunctor.Associative.Chain1 t)
 instance (Data.HFunctor.Internal.HBifunctor t, Data.HBifunctor.Associative.Semigroupoidal t) => Data.HFunctor.Interpret.Interpret (Data.HBifunctor.Associative.Chain1 t)
 instance Data.HBifunctor.Associative.Semigroupoidal (GHC.Generics.:*:)
+instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Product.Product
 instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Day.Day
 instance Data.HBifunctor.Associative.Semigroupoidal (GHC.Generics.:+:)
+instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Sum.Sum
 instance Data.HBifunctor.Associative.Semigroupoidal Control.Monad.Freer.Church.Comp
 instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.HClown t)
 instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.HJoker t)
 instance Data.HBifunctor.Associative.Associative (GHC.Generics.:*:)
+instance Data.HBifunctor.Associative.Associative Data.Functor.Product.Product
 instance Data.HBifunctor.Associative.Associative Data.Functor.Day.Day
 instance Data.HBifunctor.Associative.Associative (GHC.Generics.:+:)
+instance Data.HBifunctor.Associative.Associative Data.Functor.Sum.Sum
 instance Data.HBifunctor.Associative.Associative Control.Monad.Freer.Church.Comp
 instance Data.HFunctor.HBind t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.HClown t)
 instance Data.HFunctor.HBind t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.HJoker t)
@@ -2144,13 +2148,17 @@ instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Ba
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.Foldable.Foldable i, Data.Foldable.Foldable (t f (Data.HBifunctor.Tensor.Chain t i f))) => Data.Foldable.Foldable (Data.HBifunctor.Tensor.Chain t i f)
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.Traversable.Traversable i, Data.Traversable.Traversable (t f (Data.HBifunctor.Tensor.Chain t i f))) => Data.Traversable.Traversable (Data.HBifunctor.Tensor.Chain t i f)
 instance Data.HBifunctor.Tensor.Matchable (GHC.Generics.:*:)
+instance Data.HBifunctor.Tensor.Matchable Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Matchable (GHC.Generics.:+:)
+instance Data.HBifunctor.Tensor.Matchable Data.Functor.Sum.Sum
 instance (Data.HBifunctor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.HBifunctor.Tensor.I t) => Data.HFunctor.Interpret.Interpret (Data.HBifunctor.Tensor.Chain t i)
 instance Data.HBifunctor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:*:)
+instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:+:)
+instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Sum.Sum
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.Functor.Classes.Eq1 i, Data.Functor.Classes.Eq1 (t f (Data.HBifunctor.Tensor.Chain t i f))) => Data.Functor.Classes.Eq1 (Data.HBifunctor.Tensor.Chain t i f)
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.Functor.Classes.Ord1 i, Data.Functor.Classes.Ord1 (t f (Data.HBifunctor.Tensor.Chain t i f))) => Data.Functor.Classes.Ord1 (Data.HBifunctor.Tensor.Chain t i f)
 instance forall k (t :: k -> (* -> *) -> * -> *) (f :: k) (i :: * -> *). (Data.Functor.Classes.Show1 (t f (Data.HBifunctor.Tensor.Chain t i f)), Data.Functor.Classes.Show1 i) => Data.Functor.Classes.Show1 (Data.HBifunctor.Tensor.Chain t i f)
@@ -2158,8 +2166,10 @@ instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Ba
 instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.Tensor.Chain t i)
 instance (Data.HBifunctor.Tensor.Tensor t, i Data.Type.Equality.~ Data.HBifunctor.Tensor.I t) => Data.HFunctor.Inject (Data.HBifunctor.Tensor.Chain t i)
 instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:*:)
+instance Data.HBifunctor.Tensor.Tensor Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Tensor Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:+:)
+instance Data.HBifunctor.Tensor.Tensor Data.Functor.Sum.Sum
 instance Data.HBifunctor.Tensor.Tensor Control.Monad.Freer.Church.Comp
 
 
