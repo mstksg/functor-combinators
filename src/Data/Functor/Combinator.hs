@@ -98,6 +98,7 @@ import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
+import           Control.Natural.IsoF
 import           Data.Coerce
 import           Data.Constraint.Trivial
 import           Data.Data
@@ -112,7 +113,6 @@ import           Data.HBifunctor.Tensor
 import           Data.HFunctor
 import           Data.HFunctor.Final
 import           Data.HFunctor.Interpret
-import           Data.HFunctor.IsoF
 import           GHC.Generics
 
 -- | The functor combinator that forgets all structure in the input.

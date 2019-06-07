@@ -41,10 +41,10 @@ module Control.Applicative.Step (
   ) where
 
 import           Control.Natural
+import           Control.Natural.IsoF
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Alt
-import           Data.HFunctor.IsoF
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           GHC.Generics

@@ -25,6 +25,7 @@ import           Control.Monad.Trans.Identity
 import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Reader
 import           Control.Natural
+import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Coerce
 import           Data.Functor.Bind
@@ -34,7 +35,6 @@ import           Data.Functor.Product
 import           Data.Functor.Reverse
 import           Data.Functor.Sum
 import           Data.Functor.Yoneda
-import           Data.HFunctor.IsoF
 import           Data.Kind
 import           Data.Tagged
 import           GHC.Generics hiding            (C)

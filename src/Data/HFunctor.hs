@@ -57,7 +57,7 @@ import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
 import           Data.Functor.Reverse
 import           Data.HFunctor.Internal
-import           Data.HFunctor.IsoF
+import           Control.Natural.IsoF
 import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable

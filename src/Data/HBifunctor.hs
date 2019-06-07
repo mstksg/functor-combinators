@@ -34,9 +34,9 @@ module Data.HBifunctor (
   , HJoker(..)
   ) where
 
+import           Control.Natural.IsoF
 import           Data.Functor.Classes
 import           Data.HFunctor.Internal
-import           Data.HFunctor.IsoF
 import           Data.Kind
 
 -- | Lift two isomorphisms on each side of a bifunctor to become an

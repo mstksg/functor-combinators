@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators      #-}
 
 -- |
--- Module      : Data.HFunctor.IsoF
+-- Module      : Control.Natural.IsoF
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --
@@ -14,7 +14,7 @@
 --
 -- Types describing isomorphisms between two functors, and functions to
 -- manipulate them.
-module Data.HFunctor.IsoF (
+module Control.Natural.IsoF (
     type (~>)
   , type (<~>)
   , isoF

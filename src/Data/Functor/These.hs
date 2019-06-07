@@ -15,19 +15,19 @@ module Data.Functor.These (
 
 import           Control.Applicative.Step
 import           Control.Natural
+import           Control.Natural.IsoF
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Plus
+import           Data.HBifunctor
 import           Data.HBifunctor.Associative
 import           Data.HBifunctor.Tensor
-import           Data.HBifunctor
-import           Data.HFunctor.IsoF
-import           Data.List.NonEmpty               (NonEmpty(..))
-import           Data.Map.NonEmpty                (NEMap)
+import           Data.List.NonEmpty          (NonEmpty(..))
+import           Data.Map.NonEmpty           (NEMap)
 import           Data.Semigroup
-import           GHC.Generics hiding              (C)
+import           GHC.Generics hiding         (C)
 import           GHC.Natural
-import qualified Data.Map.NonEmpty                as NEM
+import qualified Data.Map.NonEmpty           as NEM
 
 -- | A @These f g a@ has either an @f a@, a @g a@, or both.
 --
