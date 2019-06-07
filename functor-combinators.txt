@@ -1702,12 +1702,20 @@ unrollingSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f <~> Chain1 t 
 --   application of <tt>t</tt>s to itself. <a>unrollSF</a> makes that
 --   successive application explicit, buy converting it to a literal
 --   <a>Chain1</a> of applications of <tt>t</tt> to itself.
-unrollSF :: forall t f. (Semigroupoidal t, Functor f) => SF t f ~> Chain1 t f
+--   
+--   <pre>
+--   <a>unrollSF</a> = <a>unfoldChain1</a> <a>matchSF</a>
+--   </pre>
+unrollSF :: (Semigroupoidal t, Functor f) => SF t f ~> Chain1 t f
 
 -- | A type <tt><a>SF</a> t</tt> is supposed to represent the successive
 --   application of <tt>t</tt>s to itself. <a>rerollSF</a> takes an
 --   explicit <a>Chain1</a> of applications of <tt>t</tt> to itself and
 --   rolls it back up into an <tt><a>SF</a> t</tt>.
+--   
+--   <pre>
+--   <a>rerollSF</a> = <a>foldChain1</a> <a>inject</a> <a>consSF</a>
+--   </pre>
 rerollSF :: Semigroupoidal t => Chain1 t f ~> SF t f
 instance forall k (t :: (k -> *) -> (k -> *) -> k -> *) (f :: k -> *) (a :: k). GHC.Generics.Generic (Data.HBifunctor.Associative.Chain1 t f a)
 instance forall k (f :: k -> *) (a :: k) (t :: (k -> *) -> (k -> *) -> k -> *). (GHC.Classes.Eq (f a), GHC.Classes.Eq (t f (Data.HBifunctor.Associative.Chain1 t f) a)) => GHC.Classes.Eq (Data.HBifunctor.Associative.Chain1 t f a)
@@ -2009,7 +2017,7 @@ nilMF :: forall t f. Monoidal t => I t ~> MF t f
 
 -- | Lets us "cons" an application of <tt>f</tt> to the front of an
 --   <tt><a>MF</a> t f</tt>.
-consMF :: forall t f. Monoidal t => t f (MF t f) ~> MF t f
+consMF :: Monoidal t => t f (MF t f) ~> MF t f
 
 -- | "Pattern match" on an <tt><a>MF</a> t</tt>
 --   
@@ -2018,7 +2026,7 @@ consMF :: forall t f. Monoidal t => t f (MF t f) ~> MF t f
 --   
 --   This is analogous to the function <tt><a>uncons</a> :: [a] -&gt; Maybe
 --   (a, [a])</tt>.
-unconsMF :: forall t f. Monoidal t => MF t f ~> (I t :+: t f (MF t f))
+unconsMF :: Monoidal t => MF t f ~> (I t :+: t f (MF t f))
 
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
@@ -2098,12 +2106,28 @@ unfoldChain :: forall t f g i. HBifunctor t => (g ~> (i :+: t f g)) -> g ~> Chai
 --   application of <tt>t</tt>s to itself. <a>unrollMF</a> makes that
 --   successive application explicit, buy converting it to a literal
 --   <a>Chain</a> of applications of <tt>t</tt> to itself.
-unrollMF :: forall t f. Monoidal t => MF t f ~> Chain t (I t) f
+--   
+--   <pre>
+--   <tt>unrollFM</tt> = <a>unfoldChain</a> <a>unconsMF</a>
+--   </pre>
+unrollMF :: Monoidal t => MF t f ~> Chain t (I t) f
 
 -- | A type <tt><a>MF</a> t</tt> is supposed to represent the successive
 --   application of <tt>t</tt>s to itself. <a>rerollSF</a> takes an
 --   explicit <a>Chain</a> of applications of <tt>t</tt> to itself and
 --   rolls it back up into an <tt><a>MF</a> t</tt>.
+--   
+--   <pre>
+--   <a>rerollMF</a> = <a>foldChain</a> <a>nilMF</a> <a>consMF</a>
+--   </pre>
+--   
+--   Because <tt>t</tt> cannot be inferred from the input or output, you
+--   should call this with <i>-XTypeApplications</i>:
+--   
+--   <pre>
+--   <tt>refollMF</tt> @<a>Day</a>
+--       :: <a>Chain</a> <a>Comp</a> <a>Identity</a> f a -&gt; <a>Free</a> f a
+--   </pre>
 rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
 
 -- | A type <tt><a>MF</a> t</tt> is supposed to represent the successive
@@ -2114,7 +2138,7 @@ rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
 --   
 --   <a>unrollingMF</a> states that the two types are isormorphic. Use
 --   <a>unrollMF</a> and <a>rerollMF</a> to convert between the two.
-unrollingMF :: forall t f. Monoidal t => MF t f <~> Chain t (I t) f
+unrollingMF :: Monoidal t => MF t f <~> Chain t (I t) f
 
 -- | A <a>Chain1</a> is "one or more linked <tt>f</tt>s", and a
 --   <a>Chain</a> is "zero or more linked <tt>f</tt>s". So, we can convert
