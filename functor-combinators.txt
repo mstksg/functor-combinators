@@ -2108,7 +2108,7 @@ unfoldChain :: forall t f g i. HBifunctor t => (g ~> (i :+: t f g)) -> g ~> Chai
 --   <a>Chain</a> of applications of <tt>t</tt> to itself.
 --   
 --   <pre>
---   <tt>unrollFM</tt> = <a>unfoldChain</a> <a>unconsMF</a>
+--   <a>unrollMF</a> = <a>unfoldChain</a> <a>unconsMF</a>
 --   </pre>
 unrollMF :: Monoidal t => MF t f ~> Chain t (I t) f
 
@@ -2125,7 +2125,7 @@ unrollMF :: Monoidal t => MF t f ~> Chain t (I t) f
 --   should call this with <i>-XTypeApplications</i>:
 --   
 --   <pre>
---   <tt>refollMF</tt> @<a>Comp</a>
+--   <a>rerollMF</a> @<a>Comp</a>
 --       :: <a>Chain</a> Comp <a>Identity</a> f a -&gt; <a>Free</a> f a
 --   </pre>
 rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
