@@ -1104,7 +1104,7 @@ retract :: (Interpret t, C t f) => t f ~> f
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
 
 -- | A convenient flipped version of <a>interpret</a>.
-interpretFor :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
+forI :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
 
 -- | Useful wrapper over <a>interpret</a> to allow you to directly extract
 --   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
@@ -1241,11 +1241,9 @@ instance Data.HFunctor.HBind Data.Functor.Apply.Free.Ap1
 instance Data.HFunctor.Interpret.Interpret Data.Functor.Apply.Free.Ap1
 
 
--- | The free <a>Apply</a>. Provides <a>Ap1</a> and various utility
---   methods. See <a>Ap1</a> for more details.
---   
---   Ideally <a>Ap1</a> would be in the <i>free</i> package. However, it is
---   defined here for now.
+-- | Provides <a>Final</a>, which can be considered the "free
+--   <a>Interpret</a> over a constraint": generate a handy <a>Interpret</a>
+--   instance for any constraint <tt>c</tt>.
 module Data.HFunctor.Final
 
 -- | A simple way to inject/reject into any eventual typeclass.
@@ -1596,30 +1594,30 @@ matchingSF :: (Semigroupoidal t, Functor f) => SF t f <~> (f :+: t f (SF t f))
 --   <pre>
 --   -- Return the length of either the list, or the Map, depending on which
 --   --   one s in the <a>+</a>
---   <a>getS</a> <a>length</a> length
+--   <a>biget</a> <a>length</a> length
 --       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
 --       -&gt; Int
 --   
 --   -- Return the length of both the list and the map, added together
---   <a>getS</a> (<a>Sum</a> . length) (Sum . length)
+--   <a>biget</a> (<a>Sum</a> . length) (Sum . length)
 --       :: <a>Day</a> [] (Map Int) Char
 --       -&gt; Sum Int
 --   </pre>
-getS :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+biget :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 
--- | Useful wrapper over <a>getS</a> to allow you to collect a <tt>b</tt>
+-- | Useful wrapper over <a>biget</a> to allow you to collect a <tt>b</tt>
 --   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
 --   a</tt>.
 --   
 --   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
 --   <a>Apply</a>, or <a>Applicative</a>.
-collectS :: (Semigroupoidal t, C (SF t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
+bicollect :: (Semigroupoidal t, C (SF t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
 -- | Infix alias for <a>binterpret</a>
 (!*!) :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 infixr 5 !*!
 
--- | Infix alias for <a>getS</a>
+-- | Infix alias for <a>biget</a>
 --   
 --   <pre>
 --   -- Return the length of either the list, or the Map, depending on which
@@ -2173,8 +2171,9 @@ instance Data.HBifunctor.Tensor.Tensor Control.Monad.Freer.Church.Comp
 --   <ul>
 --   <li><a>HFunctor</a> and <a>HBifunctor</a>, used to swap out the
 --   functors that the combinators modify</li>
---   <li><a>Interpret</a>, <a>Tensor</a>, <a>Monoidal</a>, used to inject
---   and interpret functor values with respect to their combinators.</li>
+--   <li><a>Interpret</a>, <a>Associative</a>, <a>Monoidal</a>, used to
+--   inject and interpret functor values with respect to their
+--   combinators.</li>
 --   </ul>
 --   
 --   We have some helpful utility functions, as well, built on top of these
@@ -2193,6 +2192,47 @@ module Data.Functor.Combinator
 -- | A natural transformation from <tt>f</tt> to <tt>g</tt>.
 type (~>) (f :: k -> Type) (g :: k -> Type) = forall (x :: k). () => f x -> g x
 infixr 0 ~>
+
+-- | The type of an isomorphism between two functors. <tt>f <a>~</a> g</tt>
+--   means that <tt>f</tt> and <tt>g</tt> are isomorphic to each other.
+--   
+--   We can effectively <i>use</i> an <tt>f <a>~</a> g</tt> with:
+--   
+--   <pre>
+--   <a>viewF</a>   :: (f <a>~</a> g) -&gt; f a -&gt; g a
+--   <a>reviewF</a> :: (f <a>~</a> g) -&gt; g a -&gt; a a
+--   </pre>
+--   
+--   Use <a>viewF</a> to extract the "<tt>f</tt> to <tt>g</tt>" function,
+--   and <a>reviewF</a> to extract the "<tt>g</tt> to <tt>f</tt>" function.
+--   Reviewing and viewing the same value (or vice versa) leaves the value
+--   unchanged.
+--   
+--   One nice thing is that we can compose isomorphisms using <a>.</a> from
+--   <a>Prelude</a>:
+--   
+--   <pre>
+--   (<a>.</a>) :: f <a>~</a> g
+--       -&gt; g <a>~</a> h
+--       -&gt; f <a>~</a> h
+--   </pre>
+--   
+--   One nice thing about this representation is that we have the
+--   "identity" isomorphism by using <a>id</a> from <a>Prelude</a>.
+--   
+--   <pre>
+--   <a>id</a> :: f <a>&lt;~&gt;</a> g
+--   </pre>
+--   
+--   As a convention, most isomorphisms have form "X-ing", where the
+--   forwards function is "ing". For example, we have:
+--   
+--   <pre>
+--   <a>splittingSF</a> :: <a>Monoidal</a> t =&gt; <a>SF</a> t a <a>&lt;~&gt;</a> t f (<a>MF</a> t f)
+--   <a>splitSF</a>     :: Monoidal t =&gt; SF t a  <a>~&gt;</a> t f (MF t f)
+--   </pre>
+type f <~> g = forall p a. Profunctor p => p (g a) (g a) -> p (f a) (f a)
+infixr 0 <~>
 
 -- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
 --   a basic functor combinator. It takes a functor as input and returns a
@@ -2284,7 +2324,7 @@ retract :: (Interpret t, C t f) => t f ~> f
 interpret :: (Interpret t, C t g) => (f ~> g) -> t f ~> g
 
 -- | A convenient flipped version of <a>interpret</a>.
-interpretFor :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
+forI :: (Interpret t, C t g) => t f a -> (f ~> g) -> g a
 
 -- | Useful wrapper over <a>interpret</a> to allow you to directly extract
 --   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
@@ -2366,6 +2406,109 @@ hright :: HBifunctor t => (g ~> k) -> t f g ~> t f k
 -- | Swap out both transformed functors at the same time.
 hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 
+-- | For some <tt>t</tt>s, you can represent the act of applying a functor
+--   <tt>f</tt> to <tt>t</tt> many times, as a single type. That is, there
+--   is some type <tt><a>SF</a> t f</tt> that is equivalent to one of:
+--   
+--   <ul>
+--   <li><tt>f a</tt> -- 1 time</li>
+--   <li><tt>t f f a</tt> -- 2 times</li>
+--   <li><tt>t f (t f f) a</tt> -- 3 times</li>
+--   <li><tt>t f (t f (t f f)) a</tt> -- 4 times</li>
+--   <li><tt>t f (t f (t f (t f f))) a</tt> -- 5 times</li>
+--   <li>.. etc</li>
+--   </ul>
+--   
+--   This typeclass associates each <tt>t</tt> with its "semigroupoidal
+--   functor combinator" <tt><a>SF</a> t</tt>.
+--   
+--   This is useful because sometimes you might want to describe a type
+--   that can be <tt>t f f</tt>, <tt>t f (t f f)</tt>, <tt>t f (t f (t f
+--   f))</tt>, etc.; "f applied to itself", with at least one <tt>f</tt>.
+--   This typeclass lets you use a type like <a>NonEmptyF</a> in terms of
+--   repeated applications of <a>:*:</a>, or <a>Ap1</a> in terms of
+--   repeated applications of <a>Day</a>, or <a>Free1</a> in terms of
+--   repeated applications of <a>Comp</a>, etc.
+--   
+--   For example, <tt>f <a>:*:</a> f</tt> can be interpreted as "a free
+--   selection of two <tt>f</tt>s", allowing you to specify "I have to
+--   <tt>f</tt>s that I can use". If you want to specify "I want 1, 2, or
+--   many different <tt>f</tt>s that I can use", you can use
+--   <tt><a>NonEmptyF</a> f</tt>.
+--   
+--   At the high level, the main way to <i>use</i> a <a>Semigroupoidal</a>
+--   is with <a>biretract</a> and <a>binterpret</a>:
+--   
+--   <pre>
+--   <a>biretract</a> :: t f f <a>~&gt;</a> f
+--   <a>binterpret</a> :: (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; t f g ~&gt; h
+--   </pre>
+--   
+--   which are like the <a>HBifunctor</a> versions of <a>retract</a> and
+--   <a>interpret</a>: they fully "mix" together the two inputs of
+--   <tt>t</tt>.
+--   
+--   Also useful is:
+--   
+--   <pre>
+--   <a>toSF</a> :: t f f a -&gt; SF t f a
+--   </pre>
+--   
+--   Which converts a <tt>t</tt> into its aggregate type <a>SF</a>
+class (Associative t, Interpret (SF t)) => Semigroupoidal t where {
+    
+    -- | The "semigroup functor combinator" generated by <tt>t</tt>.
+    --   
+    --   A value of type <tt>SF t f a</tt> is either:
+    --   
+    --   <ul>
+    --   <li><pre>f a</pre></li>
+    --   <li><pre>t f f a</pre></li>
+    --   <li><pre>t f (t f f) a</pre></li>
+    --   <li><pre>t f (t f (t f f)) a</pre></li>
+    --   <li><pre>t f (t f (t f (t f f))) a</pre></li>
+    --   <li>.. etc</li>
+    --   </ul>
+    --   
+    --   For example, for <a>:*:</a>, we have <a>NonEmptyF</a>. This is
+    --   because:
+    --   
+    --   <pre>
+    --   x             ~ NonEmptyF (x :| [])
+    --   x :*: y       ~ NonEmptyF (x :| [y])
+    --   x :*: y :*: z ~ NonEmptyF (x :| [y,z])
+    --   -- etc.
+    --   </pre>
+    --   
+    --   You can create an "singleton" one with <a>inject</a>, or else one from
+    --   a single <tt>t f f</tt> with <a>toSF</a>.
+    type family SF t :: (Type -> Type) -> Type -> Type;
+}
+
+-- | If a <tt><a>SF</a> t f</tt> represents multiple applications of <tt>t
+--   f</tt> to itself, then we can also "append" two <tt><a>SF</a> t
+--   f</tt>s applied to themselves into one giant <tt><a>SF</a> t f</tt>
+--   containing all of the <tt>t f</tt>s.
+appendSF :: Semigroupoidal t => t (SF t f) (SF t f) ~> SF t f
+
+-- | Prepend an application of <tt>t f</tt> to the front of a <tt><a>SF</a>
+--   t f</tt>.
+consSF :: Semigroupoidal t => t f (SF t f) ~> SF t f
+
+-- | Embed a direct application of <tt>f</tt> to itself into a
+--   <tt><a>SF</a> t f</tt>.
+toSF :: Semigroupoidal t => t f f ~> SF t f
+
+-- | The <a>HBifunctor</a> analogy of <a>retract</a>. It retracts
+--   <i>both</i> <tt>f</tt>s into a single <tt>f</tt>, effectively fully
+--   mixing them together.
+biretract :: (Semigroupoidal t, C (SF t) f) => t f f ~> f
+
+-- | The <a>HBifunctor</a> analogy of <a>interpret</a>. It takes two
+--   interpreting functions, and mixes them together into a target functor
+--   <tt>h</tt>.
+binterpret :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+
 -- | An <a>Associative</a> <a>HBifunctor</a> can be a <a>Tensor</a> if
 --   there is some identity <tt>i</tt> where <tt>t i f</tt> is equivalent
 --   to just <tt>f</tt>.
@@ -2415,6 +2558,153 @@ class Associative t => Tensor t where {
     type family I t :: Type -> Type;
 }
 
+-- | Because <tt>t f (I t)</tt> is equivalent to <tt>f</tt>, we can always
+--   "insert" <tt>f</tt> into <tt>t f (I t)</tt>.
+--   
+--   This is analogous to <a>inject</a> from <a>Inject</a>, but for
+--   <a>HBifunctor</a>s.
+intro1 :: Tensor t => f ~> t f (I t)
+
+-- | Because <tt>t (I t) g</tt> is equivalent to <tt>f</tt>, we can always
+--   "insert" <tt>g</tt> into <tt>t (I t) g</tt>.
+--   
+--   This is analogous to <a>inject</a> from <a>Inject</a>, but for
+--   <a>HBifunctor</a>s.
+intro2 :: Tensor t => g ~> t (I t) g
+
+-- | Witnesses the property that <tt><a>I</a> t</tt> is the identity of
+--   <tt>t</tt>: <tt>t f (I t)</tt> always leaves <tt>f</tt> unchanged, so
+--   we can always just drop the <tt><a>I</a> t</tt>.
+elim1 :: (Tensor t, Functor f) => t f (I t) ~> f
+
+-- | Witnesses the property that <tt><a>I</a> t</tt> is the identity of
+--   <tt>t</tt>: <tt>t (I t) g</tt> always leaves <tt>g</tt> unchanged, so
+--   we can always just drop the <tt><a>I</a> t</tt>.
+elim2 :: (Tensor t, Functor g) => t (I t) g ~> g
+
+-- | A <tt><a>Monoidal</a> t</tt> is a <a>Semigroupoidal</a>, in that it
+--   provides some type <tt><a>MF</a> t f</tt> that is equivalent to one
+--   of:
+--   
+--   <ul>
+--   <li><tt>I a</tt> -- 0 times</li>
+--   <li><tt>f a</tt> -- 1 time</li>
+--   <li><tt>t f f a</tt> -- 2 times</li>
+--   <li><tt>t f (t f f) a</tt> -- 3 times</li>
+--   <li><tt>t f (t f (t f f)) a</tt> -- 4 times</li>
+--   <li><tt>t f (t f (t f (t f f))) a</tt> -- 5 times</li>
+--   <li>.. etc</li>
+--   </ul>
+--   
+--   The difference is that unlike <tt><a>SF</a> t</tt>, <tt><a>MF</a>
+--   t</tt> has the "zero times" value.
+--   
+--   This typeclass lets you use a type like <a>ListF</a> in terms of
+--   repeated applications of <a>:*:</a>, or <a>Ap</a> in terms of repeated
+--   applications of <a>Day</a>, or <a>Free</a> in terms of repeated
+--   applications of <a>Comp</a>, etc.
+--   
+--   For example, <tt>f <a>:*:</a> f</tt> can be interpreted as "a free
+--   selection of two <tt>f</tt>s", allowing you to specify "I have to
+--   <tt>f</tt>s that I can use". If you want to specify "I want 0, 1, or
+--   many different <tt>f</tt>s that I can use", you can use
+--   <tt><a>ListF</a> f</tt>.
+--   
+--   At the high level, the thing that <a>Monoidal</a> adds to
+--   <a>Semigroupoidal</a> is <a>inL</a>, <a>inR</a>, and <a>nilMF</a>:
+--   
+--   <pre>
+--   <a>inL</a>    :: f a -&gt; t f g a
+--   <a>inR</a>    :: g a -&gt; t f g a
+--   <a>nilMF</a>  :: I a -&gt; MF t f a
+--   </pre>
+--   
+--   which are like the <a>HBifunctor</a> versions of <a>inject</a>: it
+--   lets you inject an <tt>f</tt> into <tt>t f g</tt>, so you can start
+--   doing useful mixing operations with it. <a>nilMF</a> lets you
+--   construct an "empty" <tt><a>MF</a> t</tt>.
+--   
+--   Also useful is:
+--   
+--   <pre>
+--   <a>toMF</a> :: t f f a -&gt; MF t f a
+--   </pre>
+--   
+--   Which converts a <tt>t</tt> into its aggregate type <a>MF</a>
+class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where {
+    
+    -- | The "monoidal functor combinator" generated by <tt>t</tt>.
+    --   
+    --   A value of type <tt>MF t f a</tt> is either:
+    --   
+    --   <ul>
+    --   <li><tt>I a</tt> -- zero fs</li>
+    --   <li><tt>f a</tt> -- one f</li>
+    --   <li><tt>t f f a</tt> -- two fs</li>
+    --   <li><tt>t f (t f f) a</tt> -- three fs</li>
+    --   <li><pre>t f (t f (t f f)) a</pre></li>
+    --   <li><pre>t f (t f (t f (t f f))) a</pre></li>
+    --   <li>.. etc</li>
+    --   </ul>
+    --   
+    --   For example, for <a>:*:</a>, we have <a>ListF</a>. This is because:
+    --   
+    --   <pre>
+    --   Proxy         ~ ListF []
+    --   x             ~ ListF [x]
+    --   x :*: y       ~ ListF [x,y]
+    --   x :*: y :*: z ~ ListF [x,y,z]
+    --   -- etc.
+    --   </pre>
+    --   
+    --   You can create an "empty" one with <a>nilMF</a>, a "singleton" one
+    --   with <a>inject</a>, or else one from a single <tt>t f f</tt> with
+    --   <a>toMF</a>.
+    type family MF t :: (Type -> Type) -> Type -> Type;
+}
+
+-- | If a <tt><a>MF</a> t f</tt> represents multiple applications of <tt>t
+--   f</tt> to itself, then we can also "append" two <tt><a>MF</a> t
+--   f</tt>s applied to themselves into one giant <tt><a>MF</a> t f</tt>
+--   containing all of the <tt>t f</tt>s.
+appendMF :: Monoidal t => t (MF t f) (MF t f) ~> MF t f
+
+-- | Lets you convert an <tt><a>SF</a> t f</tt> into a single application
+--   of <tt>f</tt> to <tt><a>MF</a> t f</tt>.
+--   
+--   Analogous to a function <tt><a>NonEmpty</a> a -&gt; (a, [a])</tt>
+--   
+--   Note that this is not reversible in general unless we have
+--   <tt><a>Matchable</a> t</tt>.
+splitSF :: Monoidal t => SF t f ~> t f (MF t f)
+
+-- | Embed a direct application of <tt>f</tt> to itself into a
+--   <tt><a>MF</a> t f</tt>.
+toMF :: Monoidal t => t f f ~> MF t f
+
+-- | <tt><a>SF</a> t f</tt> is "one or more <tt>f</tt>s", and <tt>'MF t
+--   f</tt> is "zero or more <tt>f</tt>s". This function lets us convert
+--   from one to the other.
+--   
+--   This is analogous to a function <tt><a>NonEmpty</a> a -&gt; [a]</tt>.
+fromSF :: Monoidal t => SF t f ~> MF t f
+
+-- | If we have an <tt><a>I</a> t</tt>, we can generate an <tt>f</tt> based
+--   on how it interacts with <tt>t</tt>.
+--   
+--   Specialized (and simplified), this type is:
+--   
+--   <pre>
+--   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; a -&gt; f a  -- <a>pure</a>
+--   <a>pureT</a> @<a>Comp</a>  :: <a>Monad</a> f =&gt; a -&gt; f a    -- <a>return</a>
+--   <a>pureT</a> @(<a>:*:</a>) :: <a>Plus</a> f =&gt; f a          -- <a>zero</a>
+--   </pre>
+--   
+--   Note that because <tt>t</tt> appears nowhere in the input or output
+--   types, you must always use this with explicit type application syntax
+--   (like <tt>pureT @Day</tt>)
+pureT :: (Monoidal t, C (MF t) f) => I t ~> f
+
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
 --   
@@ -2428,23 +2718,6 @@ inL :: forall t f g a. (Monoidal t, C (MF t) g) => f a -> t f g a
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
 inR :: forall t f g a. (Monoidal t, C (MF t) f) => g a -> t f g a
-
--- | Infix alias for <a>getS</a>
---   
---   <pre>
---   -- Return the length of either the list, or the Map, depending on which
---   --   one s in the <a>+</a>
---   <a>length</a> <a>!$!</a> length
---       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
---       -&gt; Int
---   
---   -- Return the length of both the list and the map, added together
---   <a>Sum</a> . length !$! Sum . length
---       :: <a>Day</a> [] (Map Int) Char
---       -&gt; Sum Int
---   </pre>
-(!$!) :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
-infixr 5 !$!
 
 -- | Useful wrapper over <a>binterpret</a> to allow you to directly extract
 --   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
@@ -2467,28 +2740,45 @@ infixr 5 !$!
 --   <pre>
 --   -- Return the length of either the list, or the Map, depending on which
 --   --   one s in the <a>+</a>
---   <a>getS</a> <a>length</a> length
+--   <a>biget</a> <a>length</a> length
 --       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
 --       -&gt; Int
 --   
 --   -- Return the length of both the list and the map, added together
---   <a>getS</a> (<a>Sum</a> . length) (Sum . length)
+--   <a>biget</a> (<a>Sum</a> . length) (Sum . length)
 --       :: <a>Day</a> [] (Map Int) Char
 --       -&gt; Sum Int
 --   </pre>
-getS :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+biget :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 
--- | Infix alias for <a>binterpret</a>
-(!*!) :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
-infixr 5 !*!
-
--- | Useful wrapper over <a>getS</a> to allow you to collect a <tt>b</tt>
+-- | Useful wrapper over <a>biget</a> to allow you to collect a <tt>b</tt>
 --   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
 --   a</tt>.
 --   
 --   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
 --   <a>Apply</a>, or <a>Applicative</a>.
-collectS :: (Semigroupoidal t, C (SF t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
+bicollect :: (Semigroupoidal t, C (SF t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
+
+-- | Infix alias for <a>binterpret</a>
+(!*!) :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+infixr 5 !*!
+
+-- | Infix alias for <a>biget</a>
+--   
+--   <pre>
+--   -- Return the length of either the list, or the Map, depending on which
+--   --   one s in the <a>+</a>
+--   <a>length</a> <a>!$!</a> length
+--       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
+--       -&gt; Int
+--   
+--   -- Return the length of both the list and the map, added together
+--   <a>Sum</a> . length !$! Sum . length
+--       :: <a>Day</a> [] (Map Int) Char
+--       -&gt; Sum Int
+--   </pre>
+(!$!) :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+infixr 5 !$!
 
 -- | A covariant <a>Functor</a> suitable for Yoneda reduction
 data Coyoneda (f :: Type -> Type) a
@@ -2676,65 +2966,6 @@ ProxyF :: ProxyF f a
 --   <tt>b</tt>.
 data Void2 a b
 
--- | The Day convolution of two covariant functors.
-data Day (f :: Type -> Type) (g :: Type -> Type) a
-[Day] :: forall (f :: Type -> Type) (g :: Type -> Type) a b c. () => f b -> g c -> (b -> c -> a) -> Day f g a
-
--- | Products: encode multiple arguments to constructors
-data (:*:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Type -> k -> Type -> k -> Type
-(:*:) :: f p -> g p -> (:*:)
-infixr 6 :*:
-infixr 6 :*:
-
--- | Sums: encode choice between constructors
-data (:+:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Type -> k -> Type -> k -> Type
-L1 :: f p -> (:+:)
-R1 :: g p -> (:+:)
-infixr 5 :+:
-
--- | <a>Void1</a> is a functor that is uninhabited for all inputs. That is,
---   <tt><a>Void1</a> a</tt> is uninhabited for all <tt>a</tt>.
---   
---   The identity functor of <a>:+:</a> (and also <a>TheseT</a>)
-data Void1 a
-
--- | A <tt>These f g a</tt> has either an <tt>f a</tt>, a <tt>g a</tt>, or
---   both.
---   
---   This is re-defined here from the <i>these</i> package, to avoid the
---   high dependency footprint.
-data These1 f g a
-This1 :: f a -> These1 f g a
-That1 :: g a -> These1 f g a
-These1 :: f a -> g a -> These1 f g a
-
--- | Functor composition. <tt><a>Comp</a> f g a</tt> is equivalent to <tt>f
---   (g a)</tt>, and the <a>Comp</a> pattern synonym is a way of getting
---   the <tt>f (g a)</tt> in a <tt><a>Comp</a> f g a</tt>.
---   
---   For example, <tt><a>Maybe</a> (<a>IO</a> <a>Bool</a>)</tt> is
---   <tt><a>Comp</a> <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
---   
---   This is mostly useful for its typeclass instances: in particular,
---   <a>Functor</a>, <a>Applicative</a>, <a>HBifunctor</a>, and
---   <a>Monoidal</a>.
---   
---   This is essentially a version of <a>:.:</a> and <a>Compose</a> that
---   allows for an <a>HBifunctor</a> instance.
---   
---   It is slightly less performant. Using <tt><a>comp</a> .
---   <a>unComp</a></tt> every once in a while will concretize a <a>Comp</a>
---   value (if you have <tt><a>Functor</a> f</tt>) and remove some
---   indirection if you have a lot of chained operations.
---   
---   The "free monoid" over <a>Comp</a> is <a>Free</a>, and the "free
---   semigroup" over <a>Comp</a> is <a>Free1</a>.
-data Comp f g a
-
--- | Pattern match on and construct a <tt><a>Comp</a> f g a</tt> as if it
---   were <tt>f (g a)</tt>.
-pattern Comp :: Functor f => f (g a) -> Comp f g a
-
 -- | A simple way to inject/reject into any eventual typeclass.
 --   
 --   In a way, this is the "ultimate" multi-purpose <a>Interpret</a>
@@ -2793,6 +3024,65 @@ fromFree :: FreeOf c t => t f ~> Final c f
 toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
 fromFree :: (FreeOf c t, C t (Final c f)) => t f ~> Final c f
 toFree :: (FreeOf c t, c (t f)) => Final c f ~> t f
+
+-- | The Day convolution of two covariant functors.
+data Day (f :: Type -> Type) (g :: Type -> Type) a
+[Day] :: forall (f :: Type -> Type) (g :: Type -> Type) a b c. () => f b -> g c -> (b -> c -> a) -> Day f g a
+
+-- | Products: encode multiple arguments to constructors
+data (:*:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Type -> k -> Type -> k -> Type
+(:*:) :: f p -> g p -> (:*:)
+infixr 6 :*:
+infixr 6 :*:
+
+-- | Sums: encode choice between constructors
+data (:+:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Type -> k -> Type -> k -> Type
+L1 :: f p -> (:+:)
+R1 :: g p -> (:+:)
+infixr 5 :+:
+
+-- | <a>Void1</a> is a functor that is uninhabited for all inputs. That is,
+--   <tt><a>Void1</a> a</tt> is uninhabited for all <tt>a</tt>.
+--   
+--   The identity functor of <a>:+:</a> (and also <a>TheseT</a>)
+data Void1 a
+
+-- | A <tt>These f g a</tt> has either an <tt>f a</tt>, a <tt>g a</tt>, or
+--   both.
+--   
+--   This is re-defined here from the <i>these</i> package, to avoid the
+--   high dependency footprint.
+data These1 f g a
+This1 :: f a -> These1 f g a
+That1 :: g a -> These1 f g a
+These1 :: f a -> g a -> These1 f g a
+
+-- | Functor composition. <tt><a>Comp</a> f g a</tt> is equivalent to <tt>f
+--   (g a)</tt>, and the <a>Comp</a> pattern synonym is a way of getting
+--   the <tt>f (g a)</tt> in a <tt><a>Comp</a> f g a</tt>.
+--   
+--   For example, <tt><a>Maybe</a> (<a>IO</a> <a>Bool</a>)</tt> is
+--   <tt><a>Comp</a> <a>Maybe</a> <a>IO</a> <a>Bool</a></tt>.
+--   
+--   This is mostly useful for its typeclass instances: in particular,
+--   <a>Functor</a>, <a>Applicative</a>, <a>HBifunctor</a>, and
+--   <a>Monoidal</a>.
+--   
+--   This is essentially a version of <a>:.:</a> and <a>Compose</a> that
+--   allows for an <a>HBifunctor</a> instance.
+--   
+--   It is slightly less performant. Using <tt><a>comp</a> .
+--   <a>unComp</a></tt> every once in a while will concretize a <a>Comp</a>
+--   value (if you have <tt><a>Functor</a> f</tt>) and remove some
+--   indirection if you have a lot of chained operations.
+--   
+--   The "free monoid" over <a>Comp</a> is <a>Free</a>, and the "free
+--   semigroup" over <a>Comp</a> is <a>Free1</a>.
+data Comp f g a
+
+-- | Pattern match on and construct a <tt><a>Comp</a> f g a</tt> as if it
+--   were <tt>f (g a)</tt>.
+pattern Comp :: Functor f => f (g a) -> Comp f g a
 instance forall k (f :: k). Data.Functor.Classes.Ord1 (Data.Functor.Combinator.ProxyF f)
 instance Data.HFunctor.Internal.HFunctor Data.Functor.Combinator.ProxyF
 instance Data.HFunctor.HBind Data.Functor.Combinator.ProxyF
