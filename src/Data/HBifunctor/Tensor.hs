@@ -31,7 +31,7 @@
 {-# LANGUAGE ViewPatterns               #-}
 
 -- |
--- Module      : Data.Functor.Tensor
+-- Module      : Data.HBifunctor.Tensor
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --

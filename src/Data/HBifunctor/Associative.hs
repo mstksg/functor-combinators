@@ -82,8 +82,8 @@ module Data.HBifunctor.Associative (
   , Semigroupoidal(..)
   , matchingSF
   -- ** Utility
-  , getS
-  , collectS
+  , biget
+  , bicollect
   , (!*!)
   , (!$!)
   -- * 'Chain1'
@@ -414,24 +414,24 @@ rerollSF = foldChain1 inject consSF
 -- @
 -- -- Return the length of either the list, or the Map, depending on which
 -- --   one s in the '+'
--- 'getS' 'length' length
+-- 'biget' 'length' length
 --     :: ([] :+: 'Data.Map.Map' 'Int') 'Char'
 --     -> Int
 --
 -- -- Return the length of both the list and the map, added together
--- 'getS' ('Data.Monoid.Sum' . length) (Sum . length)
+-- 'biget' ('Data.Monoid.Sum' . length) (Sum . length)
 --     :: 'Day' [] (Map Int) Char
 --     -> Sum Int
 -- @
-getS
+biget
     :: (Semigroupoidal t, C (SF t) (Const b))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> b
-getS f g = getConst . binterpret (Const . f) (Const . g)
+biget f g = getConst . binterpret (Const . f) (Const . g)
 
--- | Infix alias for 'getS'
+-- | Infix alias for 'biget'
 --
 -- @
 -- -- Return the length of either the list, or the Map, depending on which
@@ -451,7 +451,7 @@ getS f g = getConst . binterpret (Const . f) (Const . g)
     -> (forall x. g x -> b)
     -> t f g a
     -> b
-(!$!) = getS
+(!$!) = biget
 infixr 5 !$!
 
 -- | Infix alias for 'binterpret'
@@ -464,18 +464,18 @@ infixr 5 !$!
 (!*!) = binterpret
 infixr 5 !*!
 
--- | Useful wrapper over 'getS' to allow you to collect a @b@ from all
+-- | Useful wrapper over 'biget' to allow you to collect a @b@ from all
 -- instances of @f@ and @g@ inside a @t f g a@.
 --
 -- This will work if @'C' t@ is 'Data.Constraint.Trivial.Unconstrained',
 -- 'Apply', or 'Applicative'.
-collectS
+bicollect
     :: (Semigroupoidal t, C (SF t) (Const [b]))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> [b]
-collectS f g = getS ((:[]) . f) ((:[]) . g)
+bicollect f g = biget ((:[]) . f) ((:[]) . g)
 
 instance Associative (:*:) where
     associating = isoF to_ from_

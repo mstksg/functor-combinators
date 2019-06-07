@@ -55,7 +55,7 @@
 -- together two or more different functors.
 module Data.HFunctor.Interpret (
     HFunctor(..)
-  , Interpret(..), interpretFor
+  , Interpret(..), forI
   -- * Utilities
   , getI
   , collectI
@@ -133,12 +133,12 @@ class Inject t => Interpret t where
     {-# MINIMAL retract | interpret #-}
 
 -- | A convenient flipped version of 'interpret'.
-interpretFor
+forI
     :: (Interpret t, C t g)
     => t f a
     -> (f ~> g)
     -> g a
-interpretFor x f = interpret f x
+forI x f = interpret f x
 
 -- | Useful wrapper over 'interpret' to allow you to directly extract
 -- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.

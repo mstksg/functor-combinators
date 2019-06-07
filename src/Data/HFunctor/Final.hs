@@ -9,7 +9,7 @@
 {-# LANGUAGE UndecidableInstances   #-}
 
 -- |
--- Module      : Data.Functor.HFunctor.Final
+-- Module      : Data.HFunctor.Final
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --
@@ -17,11 +17,9 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- The free 'Apply'.  Provides 'Ap1' and various utility methods.  See
--- 'Ap1' for more details.
---
--- Ideally 'Ap1' would be in the /free/ package.  However, it is defined
--- here for now.
+-- Provides 'Final', which can be considered the "free 'Interpret' over
+-- a constraint": generate a handy 'Interpret' instance for any constraint
+-- @c@.
 module Data.HFunctor.Final (
     Final(..)
   , fromFinal, toFinal

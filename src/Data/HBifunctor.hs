@@ -12,7 +12,7 @@
 {-# LANGUAGE ViewPatterns         #-}
 
 -- |
--- Module      : Data.Functor.HBifunctor
+-- Module      : Data.HBifunctor
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --

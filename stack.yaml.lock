@@ -5,19 +5,12 @@
 
 packages:
 - completed:
-    size: 14511
-    url: https://github.com/mstksg/trivial-constraint/archive/1fda2a4d079f8a0e14b6a0275c0b6e7aceda0ecc.tar.gz
-    cabal-file:
-      size: 1679
-      sha256: 2a6366931e8d4fedb8f78738e80ff1f09741ad621aef9202e15be33341ac970c
-    name: trivial-constraint
-    version: 0.5.0.0
-    sha256: 1b5d47a22967b1b9fe8cb13dda6607913a7fbd8a023739c07eb1f4f0baf24c54
+    hackage: trivial-constraint-0.5.1.0@sha256:80f052aa9527ed23fe4bf5066535d5a393a1573b9c193a4cddd2c51ab12b310f,1767
     pantry-tree:
-      size: 331
-      sha256: 265c3dbf4eaf9765d662d42b5900f2d6c71e43e3478bf9d293341f7c227c52a8
+      size: 234
+      sha256: 92c37318759cbff761155e9d23f786a1e0b62f154cb3edfb6e87f91bc7bf821c
   original:
-    url: https://github.com/mstksg/trivial-constraint/archive/1fda2a4d079f8a0e14b6a0275c0b6e7aceda0ecc.tar.gz
+    hackage: trivial-constraint-0.5.1.0
 snapshots:
 - completed:
     size: 507794

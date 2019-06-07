@@ -39,9 +39,9 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-# - trivial-constraint-0.5.0.0
-- github: mstksg/trivial-constraint
-  commit: 1fda2a4d079f8a0e14b6a0275c0b6e7aceda0ecc
+- trivial-constraint-0.5.1.0
+# - github: mstksg/trivial-constraint
+#   commit: 1fda2a4d079f8a0e14b6a0275c0b6e7aceda0ecc
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

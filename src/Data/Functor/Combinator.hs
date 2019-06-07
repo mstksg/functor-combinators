@@ -26,8 +26,8 @@
 --
 -- *  'HFunctor' and 'HBifunctor', used to swap out the functors that the
 --    combinators modify
--- *  'Interpret', 'Tensor', 'Monoidal', used to inject and interpret
---    functor values with respect to their combinators.
+-- *  'Interpret', 'Associative', 'Monoidal', used to inject and interpret
+-- functor values with respect to their combinators.
 --
 -- We have some helpful utility functions, as well, built on top of these
 -- typeclasses.
@@ -39,7 +39,6 @@
 --
 -- See README for a tutorial and a rundown on each different functor
 -- combinator.
---
 module Data.Functor.Combinator (
   -- * Classes
   -- | A lot of type signatures are stated in terms of '~>'.  '~>'
@@ -47,21 +46,26 @@ module Data.Functor.Combinator (
   -- type @f '~>' g@ is a value of type 'f a -> g a@ that works for /any/
   -- @a@.
     type (~>)
+  , type (<~>)
   -- ** Single Functors
   -- | Classes that deal with single-functor combinators, that enhance
   -- a single functor.
   , HFunctor(..)
-  , Interpret(..), interpretFor
-  , getI, collectI
+  , Interpret(..)
+  , forI
+  , getI
+  , collectI
   -- ** Multi-Functors
   -- | Classes that deal with two-functor combinators, that "mix" two
   -- functors together in some way.
   , HBifunctor(..)
-  , Tensor(I)
-  -- , Monoidal(TM, retractT, interpretT, pureT, toTM)
+  , Semigroupoidal(SF, appendSF, consSF, toSF, biretract, binterpret)
+  , Tensor(..)
+  , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT)
   , inL, inR
+  , biget, bicollect
+  , (!*!)
   , (!$!)
-  , getS, (!*!), collectS
   -- * Combinators
   -- | Functor combinators
   -- ** Single
@@ -77,14 +81,14 @@ module Data.Functor.Combinator (
   , Steps(..)
   , ProxyF(..)
   , Void2
+  , Final(..)
+  , FreeOf(..)
   -- ** Multi
   , Day(..)
   , (:*:)(..)
   , (:+:)(..), Void1
   , These1(..)
   , Comp(Comp, unComp)
-  , Final(..)
-  , FreeOf(..)
   ) where
 
 import           Control.Alternative.Free
@@ -107,6 +111,7 @@ import           Data.HBifunctor.Tensor
 import           Data.HFunctor
 import           Data.HFunctor.Final
 import           Data.HFunctor.Interpret
+import           Data.HFunctor.IsoF
 import           GHC.Generics
 
 -- | The functor combinator that forgets all structure in the input.
