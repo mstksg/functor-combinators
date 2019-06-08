@@ -100,7 +100,6 @@ import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Coerce
-import           Data.Constraint.Trivial
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Apply.Free
@@ -114,6 +113,7 @@ import           Data.HFunctor
 import           Data.HFunctor.Final
 import           Data.HFunctor.Interpret
 import           GHC.Generics
+import qualified Data.Functor.Plus             as P
 
 -- | The functor combinator that forgets all structure in the input.
 -- Ignores the input structure and stores no information.
@@ -144,9 +144,12 @@ instance HBind ProxyF where
 instance Inject ProxyF where
     inject _ = ProxyF
 
+-- | Technically, 'Data.HFunctor.Interpret.C' is over-constrained: we only
+-- need @'P.zero' :: f a@, but we don't really have that typeclass in any
+-- standard hierarchies.  We use 'P.Plus' here instead, but we never use
+-- 'P.<!>'.  This would only go wrong in situations where your type
+-- supports 'P.zero' but not 'P.<!>', like instances of
+-- 'Control.Monad.Fail.MonadFail' without 'Control.Monad.MonadPlus'.
 instance Interpret ProxyF where
-    type C ProxyF = Impossible
-    retract  = absurdible . fromProxyF
-
-fromProxyF :: ProxyF f a -> Proxy f
-fromProxyF ~ProxyF = Proxy
+    type C ProxyF = P.Plus
+    retract _ = P.zero

@@ -35,7 +35,7 @@ dependencies:
 - semigroupoids
 - tagged
 - transformers
-- trivial-constraint >= 0.5.1
+- trivial-constraint >= 0.5
 
 ghc-options:
 - -Wall
