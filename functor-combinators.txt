@@ -609,6 +609,9 @@ data Void2 a b
 --   a <tt>t f a</tt> for any functor combinator <tt>t</tt>.
 absurd2 :: Void2 f a -> t f a
 instance forall k (a :: k). Data.Functor.Classes.Ord1 (Control.Applicative.Step.Void2 a)
+instance forall k (f :: k). Data.Functor.Alt.Alt (Control.Applicative.Step.Void2 f)
+instance forall k (f :: k). Data.Functor.Bind.Class.Bind (Control.Applicative.Step.Void2 f)
+instance forall k (f :: k). Data.Functor.Bind.Class.Apply (Control.Applicative.Step.Void2 f)
 instance forall k (a :: k). Data.Functor.Classes.Eq1 (Control.Applicative.Step.Void2 a)
 instance forall k (a :: k). Data.Functor.Classes.Read1 (Control.Applicative.Step.Void2 a)
 instance forall k (a :: k). Data.Functor.Classes.Show1 (Control.Applicative.Step.Void2 a)
@@ -639,6 +642,9 @@ instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq
 instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Steps f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Steps f a)
 instance Data.Functor.Classes.Ord1 Control.Applicative.Step.Void1
+instance Data.Functor.Alt.Alt Control.Applicative.Step.Void1
+instance Data.Functor.Bind.Class.Bind Control.Applicative.Step.Void1
+instance Data.Functor.Bind.Class.Apply Control.Applicative.Step.Void1
 instance Data.Functor.Classes.Eq1 Control.Applicative.Step.Void1
 instance Data.Functor.Classes.Read1 Control.Applicative.Step.Void1
 instance Data.Functor.Classes.Show1 Control.Applicative.Step.Void1
