@@ -384,12 +384,18 @@ instance Associative Comp where
         to_   (x :>>= y) = (x :>>= (unComp . y)) :>>= id
         from_ ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
 
+-- | This is only a true 'Associative' when @t f@ can fit at
+-- most one @f@ (like 'MaybeF', 'Lift').  Otherwise, 'disassoc' loses some
+-- of the nested structure.
 instance HBind t => Associative (HClown t) where
     associating = isoF runHClown                HClown
                 . isoF (hmap (HClown . inject)) (hbind runHClown)
                 . isoF HClown                   runHClown
 
 
+-- | This is only a true 'Associative' when @t f@ can fit at
+-- most one @f@ (like 'MaybeF', 'Lift').  Otherwise, 'assoc' loses some
+-- of the nested structure.
 instance HBind t => Associative (HJoker t) where
     associating = isoF runHJoker         HJoker
                 . isoF (hbind runHJoker) (hmap (HJoker . inject))
@@ -498,6 +504,8 @@ instance Semigroupoidal Comp where
     biretract      (x :>>= y) = x >>- y
     binterpret f g (x :>>= y) = f x >>- (g . y)
 
+-- | If @'HClown' t@ is a proper 'Associative', this implies that @'HLift'
+-- t@ is equivalent to @'HFree' t@.
 instance (Interpret t, HBind t) => Semigroupoidal (HClown t) where
     type SF (HClown t) = HLift t
 
@@ -506,6 +514,8 @@ instance (Interpret t, HBind t) => Semigroupoidal (HClown t) where
       HPure  x -> L1 x
       HOther x -> R1 $ HClown x
 
+-- | If @'HJoker' t@ is a proper 'Associative', this implies that @'HFree'
+-- t@ is equivalent to @'HLift' t@.
 instance (Interpret t, HBind t) => Semigroupoidal (HJoker t) where
     type SF (HJoker t) = HFree t
 

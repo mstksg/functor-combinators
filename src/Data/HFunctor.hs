@@ -37,8 +37,9 @@ module Data.HFunctor (
   , overHFunctor
   , Inject(..)
   , HBind(..)
-  , HLift(..)
-  , HFree(..)
+  -- * 'HFunctor' Combinators
+  , HLift(..), retractHLift
+  , HFree(..), retractHFree
   ) where
 
 import           Control.Applicative.Backwards
@@ -97,6 +98,18 @@ instance HFunctor t => HFunctor (HLift t) where
       HPure  x -> HPure  (f x)
       HOther x -> HOther (hmap f x)
 
+-- | A higher-level 'Data.HFunctor.Interpret.retract' to get a @t f a@ back
+-- out of an @'HLift' t f a@, provided @t@ is an instance of 'Inject'.
+--
+-- This witnesses the fact that 'HLift' is the "Free 'Inject'".
+retractHLift
+    :: Inject t
+    => HLift t f a
+    -> t f a
+retractHLift = \case
+    HPure  x -> inject x
+    HOther x -> x
+
 -- | An "'HFunctor' combinator" that turns an 'HFunctor' into potentially
 -- infinite nestings of that 'HFunctor'.
 --
@@ -112,6 +125,18 @@ data HFree t f a = HReturn (f a)
                  | HJoin   (t (HFree t f) a)
 
 deriving instance (Functor f, Functor (t (HFree t f))) => Functor (HFree t f)
+
+-- | A higher-level 'Data.HFunctor.Interpret.retract' to get a @t f a@ back
+-- out of an @'HFree' t f a@, provided @t@ is an instance of 'Bind'.
+--
+-- This witnesses the fact that 'HFree' is the "Free 'Bind'".
+retractHFree
+    :: HBind t
+    => HFree t f a
+    -> t f a
+retractHFree = \case
+    HReturn x -> inject x
+    HJoin   x -> hbind retractHFree x
 
 instance (Show1 (t (HFree t f)), Show1 f) => Show1 (HFree t f) where
     liftShowsPrec sp sl d = \case
