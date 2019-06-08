@@ -384,18 +384,18 @@ instance Associative Comp where
         to_   (x :>>= y) = (x :>>= (unComp . y)) :>>= id
         from_ ((x :>>= y) :>>= z) = x :>>= ((:>>= z) . y)
 
--- | This is only a true 'Associative' when @t f@ can fit at
--- most one @f@ (like 'MaybeF', 'Lift').  Otherwise, 'disassoc' loses some
--- of the nested structure.
+-- | This is only a true 'Associative' when @t f@ can fit at most one @f@
+-- (like 'MaybeF', 'Control.Applicative.Lift.Lift').  Otherwise, 'disassoc'
+-- loses some of the nested structure.
 instance HBind t => Associative (HClown t) where
     associating = isoF runHClown                HClown
                 . isoF (hmap (HClown . inject)) (hbind runHClown)
                 . isoF HClown                   runHClown
 
 
--- | This is only a true 'Associative' when @t f@ can fit at
--- most one @f@ (like 'MaybeF', 'Lift').  Otherwise, 'assoc' loses some
--- of the nested structure.
+-- | This is only a true 'Associative' when @t f@ can fit at most one @f@
+-- (like 'MaybeF', 'Control.Applicative.Lift.Lift').  Otherwise, 'assoc'
+-- loses some of the nested structure.
 instance HBind t => Associative (HJoker t) where
     associating = isoF runHJoker         HJoker
                 . isoF (hbind runHJoker) (hmap (HJoker . inject))

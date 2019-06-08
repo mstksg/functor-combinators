@@ -14,7 +14,7 @@ module Data.HFunctor.Internal (
   , HBifunctor(..)
   , WrappedHBifunctor(..)
   , sumSum, prodProd
-  , unsafeApply, unsafeBind
+  , unsafePlus, unsafeApply, unsafeBind
   ) where
 
 import           Control.Applicative
@@ -37,6 +37,7 @@ import           Data.Constraint.Unsafe
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
+import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
 import           Data.Functor.Sum
@@ -297,10 +298,41 @@ prodProd = isoF to_ from_
     to_   (x :*: y)  = Pair x y
     from_ (Pair x y) = x :*: y
 
-unsafeApply :: forall f p r. Applicative f => p f -> (Apply f => r) -> r
+-- | For any @'Alternative' f@, produce a value that would require @'Plus'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Plus' instance.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
+unsafePlus _ x = case unsafeCoerceConstraint @(Plus (WrappedApplicative f)) @(Plus f) of
+    Sub Dict -> x
+
+-- | For any @'Applicative' f@, produce a value that would require @'Apply'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Apply' instance.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
 unsafeApply _ x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(Apply f) of
     Sub Dict -> x
 
-unsafeBind :: forall f p r. Monad f => p f -> (Bind f => r) -> r
+-- | For any @'Monad' f@, produce a value that would require @'Bind'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Bind' instance.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 unsafeBind _ x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
     Sub Dict -> x

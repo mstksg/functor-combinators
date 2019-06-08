@@ -74,6 +74,10 @@ module Data.HBifunctor.Tensor (
   , inR
   , biretractT
   , binterpretT
+  -- ** Unsafe
+  , unsafePlus
+  , unsafeApply
+  , unsafeBind
   -- * 'Matchable'
   , Matchable(..)
   , splittingSF
@@ -358,7 +362,7 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     -- use:
     --
     -- @
-    -- 'upgradeC' ('Proxy' \@'Day') 'biretract'
+    -- 'upgradeC' @'Day' ('Proxy' \@Parser) 'biretract'
     --   :: Day Parser Parser a -> a
     -- @
     --
@@ -369,8 +373,11 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     --
     -- Note that you should only use this if @f@ doesn't already have the
     -- 'SF' constraint.  If it does, this could lead to conflicting
-    -- instances.
-    upgradeC :: C (MF t) f => p f -> (C (SF t) f => r) -> r
+    -- instances.  Only use this with /specific/, concrete @f@s.
+    --
+    -- The @proxy@ argument can be provided using something like @'Proxy'
+    -- \@f@, to specify which @f@ you want to upgrade.
+    upgradeC :: C (MF t) f => proxy f -> (C (SF t) f => r) -> r
 
     {-# MINIMAL appendMF, splitSF, splittingMF, upgradeC #-}
 
@@ -436,7 +443,8 @@ inR = hleft (pureT @t) . intro2
 -- Note that you should only use this if @f@ doesn't already have the 'SF'
 -- constraint (for example, for 'Day', if @f@ already has an 'Apply'
 -- instance).  If it does, this could lead to conflicting instances.  If
--- @f@ already has the 'SF' instance, just use 'biretract' directly.
+-- @f@ already has the 'SF' instance, just use 'biretract' directly.  Only
+-- use this with /specific/, concrete @f@s.
 biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
 biretractT = upgradeC @t (Proxy @f)
                biretract
@@ -453,7 +461,8 @@ biretractT = upgradeC @t (Proxy @f)
 -- Note that you should only use this if @f@ doesn't already have the 'SF'
 -- constraint (for example, for 'Day', if @f@ already has an 'Apply'
 -- instance).  If it does, this could lead to conflicting instances.  If
--- @f@ already has the 'SF' instance, just use 'biretract' directly.
+-- @f@ already has the 'SF' instance, just use 'biretract' directly.  Only
+-- use this with /specific/, concrete @f@s.
 binterpretT
     :: forall t f g h. (Monoidal t, C (MF t) h)
     => f ~> h
