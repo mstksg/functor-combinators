@@ -1934,6 +1934,57 @@ fromSF :: Monoidal t => SF t f ~> MF t f
 --   (like <tt>pureT @Day</tt>)
 pureT :: (Monoidal t, C (MF t) f) => I t ~> f
 
+-- | If we have a constraint on the <a>Monoidal</a> satisfied, it should
+--   also imply the constraint on the <a>Semigroupoidal</a>.
+--   
+--   This is basically saying that <tt><a>C</a> (<a>SF</a> t)</tt> should
+--   be a superclass of <tt><a>C</a> (<a>MF</a> t)</tt>.
+--   
+--   For example, for <a>:*:</a>, this type signature says that <a>Alt</a>
+--   is a superclass of <a>Plus</a>, so whenever you have <a>Plus</a>, you
+--   should always also have <a>Alt</a>.
+--   
+--   For <a>Day</a>, this type signature says that <a>Apply</a> is a
+--   superclass of <a>Applicative</a>, so whenever you have
+--   <a>Applicative</a>, you should always also have <a>Apply</a>.
+--   
+--   This is necessary because in the current class hierarchy, <a>Apply</a>
+--   isn't a true superclass of <a>Applicative</a>. <a>upgradeC</a>
+--   basically "imbues" <tt>f</tt> with an <a>Apply</a> instance based on
+--   its <a>Applicative</a> instance, so things can be easier to use.
+--   
+--   For example, let's say I have a type <tt>Parser</tt> that is an
+--   <a>Applicative</a> instance, but the source library does not define an
+--   <a>Apply</a> instance. I cannot use <a>biretract</a> or
+--   <a>binterpret</a> with it, even though I should be able to, because
+--   they require <a>Apply</a>.
+--   
+--   That is:
+--   
+--   <pre>
+--   <a>biretract</a> :: <a>Day</a> Parser Parser a -&gt; Parser a
+--   </pre>
+--   
+--   is a type error, because it requires <tt><a>Apply</a> Parser</tt>.
+--   
+--   But, if we know that <tt>Parser</tt> has an <a>Applicative</a>
+--   instance, we can use:
+--   
+--   <pre>
+--   x -&gt; <a>upgradeC</a> <a>Day</a> (<a>biretract</a> x)
+--     :: Day Parser Parser a -&gt; a
+--   </pre>
+--   
+--   and this will now typecheck properly.
+--   
+--   Ideally, <tt>Parser</tt> would also have an <a>Apply</a> instance. But
+--   we cannot control this if an external library defines <tt>Parser</tt>.
+--   
+--   Note that you should only use this if <tt>f</tt> doesn't already have
+--   the <a>SF</a> constraint. If it does, this could lead to conflicting
+--   instances.
+upgradeC :: (Monoidal t, C (MF t) f) => (C (SF t) f => f r) -> f r
+
 -- | Create the "empty <a>MF</a>@.
 --   
 --   If <tt><a>MF</a> t f</tt> represents multiple applications of <tt>t
@@ -1978,6 +2029,42 @@ inL :: forall t f g a. (Monoidal t, C (MF t) g) => f a -> t f g a
 --   <a>inject</a>.
 inR :: forall t f g a. (Monoidal t, C (MF t) f) => g a -> t f g a
 
+-- | This is <a>biretract</a>, but taking a <tt><a>C</a> (<a>MF</a> t)</tt>
+--   constraint instead of a <tt><a>C</a> (<a>SF</a> t)</tt> constraint.
+--   For example, for <a>Day</a>, it takes an <a>Applicative</a> constraint
+--   instead of an <a>Apply</a> constraint.
+--   
+--   In an ideal world, this would be not necessary, and we can use
+--   <a>biretract</a>. However, sometimes <tt><a>C</a> (<a>MF</a> t)</tt>
+--   is not an actual subclass of <tt><a>C</a> (<a>SF</a> t)</tt> (like
+--   <a>Apply</a> and <a>Applicative</a>), even though it should
+--   technically always be so.
+--   
+--   Note that you should only use this if <tt>f</tt> doesn't already have
+--   the <a>SF</a> constraint (for example, for <a>Day</a>, if <tt>f</tt>
+--   already has an <a>Apply</a> instance). If it does, this could lead to
+--   conflicting instances. If <tt>f</tt> already has the <a>SF</a>
+--   instance, just use <a>biretract</a> directly.
+biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
+
+-- | This is <a>binterpret</a>, but taking a <tt><a>C</a> (<a>MF</a>
+--   t)</tt> constraint instead of a <tt><a>C</a> (<a>SF</a> t)</tt>
+--   constraint. For example, for <a>Day</a>, it takes an
+--   <a>Applicative</a> constraint instead of an <a>Apply</a> constraint.
+--   
+--   In an ideal world, this would be not necessary, and we can use
+--   <a>biretract</a>. However, sometimes <tt><a>C</a> (<a>MF</a> t)</tt>
+--   is not an actual subclass of <tt><a>C</a> (<a>SF</a> t)</tt> (like
+--   <a>Apply</a> and <a>Applicative</a>), even though it should
+--   technically always be so.
+--   
+--   Note that you should only use this if <tt>f</tt> doesn't already have
+--   the <a>SF</a> constraint (for example, for <a>Day</a>, if <tt>f</tt>
+--   already has an <a>Apply</a> instance). If it does, this could lead to
+--   conflicting instances. If <tt>f</tt> already has the <a>SF</a>
+--   instance, just use <a>biretract</a> directly.
+binterpretT :: forall t f g h. (Monoidal t, C (MF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+
 -- | For some <tt>t</tt>, we have the ability to "statically analyze" the
 --   <tt><a>MF</a> t</tt> and pattern match and manipulate the structure
 --   without ever interpreting or retracting. These are <a>Matchable</a>.
@@ -2020,12 +2107,12 @@ instance Data.HBifunctor.Tensor.Matchable Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Matchable (GHC.Generics.:+:)
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Sum.Sum
-instance Data.HBifunctor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:+:)
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Sum.Sum
+instance Data.HBifunctor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
 instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:*:)
 instance Data.HBifunctor.Tensor.Tensor Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Tensor Data.Functor.Day.Day
@@ -2857,6 +2944,57 @@ fromSF :: Monoidal t => SF t f ~> MF t f
 --   types, you must always use this with explicit type application syntax
 --   (like <tt>pureT @Day</tt>)
 pureT :: (Monoidal t, C (MF t) f) => I t ~> f
+
+-- | If we have a constraint on the <a>Monoidal</a> satisfied, it should
+--   also imply the constraint on the <a>Semigroupoidal</a>.
+--   
+--   This is basically saying that <tt><a>C</a> (<a>SF</a> t)</tt> should
+--   be a superclass of <tt><a>C</a> (<a>MF</a> t)</tt>.
+--   
+--   For example, for <a>:*:</a>, this type signature says that <a>Alt</a>
+--   is a superclass of <a>Plus</a>, so whenever you have <a>Plus</a>, you
+--   should always also have <a>Alt</a>.
+--   
+--   For <a>Day</a>, this type signature says that <a>Apply</a> is a
+--   superclass of <a>Applicative</a>, so whenever you have
+--   <a>Applicative</a>, you should always also have <a>Apply</a>.
+--   
+--   This is necessary because in the current class hierarchy, <a>Apply</a>
+--   isn't a true superclass of <a>Applicative</a>. <a>upgradeC</a>
+--   basically "imbues" <tt>f</tt> with an <a>Apply</a> instance based on
+--   its <a>Applicative</a> instance, so things can be easier to use.
+--   
+--   For example, let's say I have a type <tt>Parser</tt> that is an
+--   <a>Applicative</a> instance, but the source library does not define an
+--   <a>Apply</a> instance. I cannot use <a>biretract</a> or
+--   <a>binterpret</a> with it, even though I should be able to, because
+--   they require <a>Apply</a>.
+--   
+--   That is:
+--   
+--   <pre>
+--   <a>biretract</a> :: <a>Day</a> Parser Parser a -&gt; Parser a
+--   </pre>
+--   
+--   is a type error, because it requires <tt><a>Apply</a> Parser</tt>.
+--   
+--   But, if we know that <tt>Parser</tt> has an <a>Applicative</a>
+--   instance, we can use:
+--   
+--   <pre>
+--   x -&gt; <a>upgradeC</a> <a>Day</a> (<a>biretract</a> x)
+--     :: Day Parser Parser a -&gt; a
+--   </pre>
+--   
+--   and this will now typecheck properly.
+--   
+--   Ideally, <tt>Parser</tt> would also have an <a>Apply</a> instance. But
+--   we cannot control this if an external library defines <tt>Parser</tt>.
+--   
+--   Note that you should only use this if <tt>f</tt> doesn't already have
+--   the <a>SF</a> constraint. If it does, this could lead to conflicting
+--   instances.
+upgradeC :: (Monoidal t, C (MF t) f) => (C (SF t) f => f r) -> f r
 
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
