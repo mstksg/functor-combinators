@@ -45,6 +45,7 @@ import           Control.Natural.IsoF
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Alt
+import           Data.Functor.Bind
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           GHC.Generics
@@ -150,6 +151,15 @@ deriveRead1 ''Void1
 deriveEq1 ''Void1
 deriveOrd1 ''Void1
 
+instance Alt Void1 where
+    x <!> _ = absurd1 x
+
+instance Bind Void1 where
+    x >>- _ = case x of {}
+
+instance Apply Void1 where
+    x <.> _ = case x of {}
+
 -- | We have a natural transformation between 'Void1' and any other
 -- functor @f@ with no constraints.
 absurd1 :: Void1 a -> f a
@@ -212,6 +222,15 @@ deriveShow1 ''Void2
 deriveRead1 ''Void2
 deriveEq1 ''Void2
 deriveOrd1 ''Void2
+
+instance Alt (Void2 f) where
+    x <!> _ = absurd2 x
+
+instance Bind (Void2 f) where
+    x >>- _ = case x of {}
+
+instance Apply (Void2 f) where
+    x <.> _ = case x of {}
 
 -- | If you treat a @'Void2' f a@ as a functor combinator, then 'absurd2'
 -- lets you convert from a @'Void2' f a@ into a @t f a@ for any functor
