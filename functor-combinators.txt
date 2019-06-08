@@ -1971,7 +1971,7 @@ pureT :: (Monoidal t, C (MF t) f) => I t ~> f
 --   instance, we can use:
 --   
 --   <pre>
---   <a>upgradeC</a> (<a>Proxy</a> @<a>Day</a>) <a>biretract</a>
+--   <a>upgradeC</a> @<a>Day</a> (<a>Proxy</a> @Parser) <a>biretract</a>
 --     :: Day Parser Parser a -&gt; a
 --   </pre>
 --   
@@ -1982,8 +1982,12 @@ pureT :: (Monoidal t, C (MF t) f) => I t ~> f
 --   
 --   Note that you should only use this if <tt>f</tt> doesn't already have
 --   the <a>SF</a> constraint. If it does, this could lead to conflicting
---   instances.
-upgradeC :: (Monoidal t, C (MF t) f) => p f -> (C (SF t) f => r) -> r
+--   instances. Only use this with <i>specific</i>, concrete <tt>f</tt>s.
+--   
+--   The <tt>proxy</tt> argument can be provided using something like
+--   <tt><a>Proxy</a> @f</tt>, to specify which <tt>f</tt> you want to
+--   upgrade.
+upgradeC :: (Monoidal t, C (MF t) f) => proxy f -> (C (SF t) f => r) -> r
 
 -- | Create the "empty <a>MF</a>@.
 --   
@@ -2044,7 +2048,8 @@ inR :: forall t f g a. (Monoidal t, C (MF t) f) => g a -> t f g a
 --   the <a>SF</a> constraint (for example, for <a>Day</a>, if <tt>f</tt>
 --   already has an <a>Apply</a> instance). If it does, this could lead to
 --   conflicting instances. If <tt>f</tt> already has the <a>SF</a>
---   instance, just use <a>biretract</a> directly.
+--   instance, just use <a>biretract</a> directly. Only use this with
+--   <i>specific</i>, concrete <tt>f</tt>s.
 biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
 
 -- | This is <a>binterpret</a>, but taking a <tt><a>C</a> (<a>MF</a>
@@ -2062,8 +2067,42 @@ biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
 --   the <a>SF</a> constraint (for example, for <a>Day</a>, if <tt>f</tt>
 --   already has an <a>Apply</a> instance). If it does, this could lead to
 --   conflicting instances. If <tt>f</tt> already has the <a>SF</a>
---   instance, just use <a>biretract</a> directly.
+--   instance, just use <a>biretract</a> directly. Only use this with
+--   <i>specific</i>, concrete <tt>f</tt>s.
 binterpretT :: forall t f g h. (Monoidal t, C (MF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+
+-- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
+--   require <tt><a>Plus</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Plus</a> instance.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
+
+-- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
+--   require <tt><a>Apply</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Apply</a> instance.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
+
+-- | For any <tt><a>Monad</a> f</tt>, produce a value that would require
+--   <tt><a>Bind</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Bind</a> instance.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 
 -- | For some <tt>t</tt>, we have the ability to "statically analyze" the
 --   <tt><a>MF</a> t</tt> and pattern match and manipulate the structure
@@ -2982,7 +3021,7 @@ pureT :: (Monoidal t, C (MF t) f) => I t ~> f
 --   instance, we can use:
 --   
 --   <pre>
---   <a>upgradeC</a> (<a>Proxy</a> @<a>Day</a>) <a>biretract</a>
+--   <a>upgradeC</a> @<a>Day</a> (<a>Proxy</a> @Parser) <a>biretract</a>
 --     :: Day Parser Parser a -&gt; a
 --   </pre>
 --   
@@ -2993,8 +3032,12 @@ pureT :: (Monoidal t, C (MF t) f) => I t ~> f
 --   
 --   Note that you should only use this if <tt>f</tt> doesn't already have
 --   the <a>SF</a> constraint. If it does, this could lead to conflicting
---   instances.
-upgradeC :: (Monoidal t, C (MF t) f) => p f -> (C (SF t) f => r) -> r
+--   instances. Only use this with <i>specific</i>, concrete <tt>f</tt>s.
+--   
+--   The <tt>proxy</tt> argument can be provided using something like
+--   <tt><a>Proxy</a> @f</tt>, to specify which <tt>f</tt> you want to
+--   upgrade.
+upgradeC :: (Monoidal t, C (MF t) f) => proxy f -> (C (SF t) f => r) -> r
 
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
