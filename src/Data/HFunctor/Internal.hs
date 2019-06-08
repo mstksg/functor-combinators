@@ -297,10 +297,10 @@ prodProd = isoF to_ from_
     to_   (x :*: y)  = Pair x y
     from_ (Pair x y) = x :*: y
 
-unsafeApply :: forall f r. Applicative f => (Apply f => f r) -> f r
-unsafeApply x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(Apply f) of
+unsafeApply :: forall f p r. Applicative f => p f -> (Apply f => r) -> r
+unsafeApply _ x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(Apply f) of
     Sub Dict -> x
 
-unsafeBind :: forall f r. Monad f => (Bind f => f r) -> f r
-unsafeBind x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
+unsafeBind :: forall f p r. Monad f => p f -> (Bind f => r) -> r
+unsafeBind _ x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
     Sub Dict -> x

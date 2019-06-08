@@ -80,18 +80,14 @@ module Data.HBifunctor.Tensor (
   , matchingMF
   ) where
 
-import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
-import           Data.Constraint
-import           Data.Constraint.Unsafe
 import           Data.Function
 import           Data.Functor.Apply.Free
-import           Data.Functor.Bind
 import           Data.Functor.Day            (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
@@ -105,7 +101,6 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.Proxy
 import           GHC.Generics hiding         (C)
-import           Unsafe.Coerce
 import qualified Data.Functor.Day            as D
 
 -- | An 'Associative' 'HBifunctor' can be a 'Tensor' if there is some
@@ -363,7 +358,7 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     -- use:
     --
     -- @
-    -- \x -> 'upgradeC' 'Day' ('biretract' x)
+    -- 'upgradeC' ('Proxy' \@'Day') 'biretract'
     --   :: Day Parser Parser a -> a
     -- @
     --
@@ -375,7 +370,7 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     -- Note that you should only use this if @f@ doesn't already have the
     -- 'SF' constraint.  If it does, this could lead to conflicting
     -- instances.
-    upgradeC :: C (MF t) f => (C (SF t) f => f r) -> f r
+    upgradeC :: C (MF t) f => p f -> (C (SF t) f => r) -> r
 
     {-# MINIMAL appendMF, splitSF, splittingMF, upgradeC #-}
 
@@ -443,7 +438,8 @@ inR = hleft (pureT @t) . intro2
 -- instance).  If it does, this could lead to conflicting instances.  If
 -- @f@ already has the 'SF' instance, just use 'biretract' directly.
 biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
-biretractT x = upgradeC @t (biretract x)
+biretractT = upgradeC @t (Proxy @f)
+               biretract
 
 -- | This is 'binterpret', but taking a @'C' ('MF' t)@ constraint instead of
 -- a @'C' ('SF' t)@ constraint.  For example, for 'Day', it takes an
@@ -463,7 +459,8 @@ binterpretT
     => f ~> h
     -> g ~> h
     -> t f g ~> h
-binterpretT f g x = upgradeC @t (binterpret f g x)
+binterpretT f g = upgradeC @t (Proxy @h) $
+                    binterpret f g
 
 -- | For some @t@, we have the ability to "statically analyze" the @'MF' t@
 -- and pattern match and manipulate the structure without ever
@@ -579,7 +576,7 @@ instance Monoidal (:*:) where
     toMF (x :*: y) = ListF [x, y]
     pureT _        = zero
 
-    upgradeC x = x
+    upgradeC _ x = x
 
 instance Monoidal Product where
     type MF Product = ListF
@@ -598,7 +595,7 @@ instance Monoidal Product where
     toMF (Pair x y) = ListF [x, y]
     pureT _         = zero
 
-    upgradeC x = x
+    upgradeC _ x = x
 
 instance Monoidal Day where
     type MF Day = Ap
@@ -629,7 +626,7 @@ instance Monoidal (:+:) where
     toMF  = toSF
     pureT = absurd1
 
-    upgradeC x = x
+    upgradeC _ x = x
 
 instance Monoidal Sum where
     type MF Sum = Step
@@ -641,7 +638,7 @@ instance Monoidal Sum where
     toMF  = toSF
     pureT = absurd1
 
-    upgradeC x = x
+    upgradeC _ x = x
 
 instance Monoidal Comp where
     type MF Comp = Free
