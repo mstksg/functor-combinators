@@ -62,7 +62,7 @@ module Data.Functor.Combinator (
   , HBifunctor(..)
   , Semigroupoidal(SF, appendSF, consSF, toSF, biretract, binterpret)
   , Tensor(..)
-  , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT)
+  , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT, upgradeC)
   , inL, inR
   , biget, bicollect
   , (!*!)

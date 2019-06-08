@@ -144,6 +144,8 @@ instance Monoidal These1 where
     toMF  = toSF
     pureT = absurd1
 
+    upgradeC x = x
+
 instance Matchable These1 where
     unsplitSF = stepsUp
     matchMF   = R1

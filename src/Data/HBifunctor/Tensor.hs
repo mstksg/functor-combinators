@@ -72,20 +72,26 @@ module Data.HBifunctor.Tensor (
   -- ** Utility
   , inL
   , inR
+  , biretractT
+  , binterpretT
   -- * 'Matchable'
   , Matchable(..)
   , splittingSF
   , matchingMF
   ) where
 
+import           Control.Applicative
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Constraint
+import           Data.Constraint.Unsafe
 import           Data.Function
 import           Data.Functor.Apply.Free
+import           Data.Functor.Bind
 import           Data.Functor.Day            (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
@@ -99,6 +105,7 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.Proxy
 import           GHC.Generics hiding         (C)
+import           Unsafe.Coerce
 import qualified Data.Functor.Day            as D
 
 -- | An 'Associative' 'HBifunctor' can be a 'Tensor' if there is some
@@ -320,7 +327,57 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     pureT  :: C (MF t) f => I t ~> f
     pureT  = retract . reviewF (splittingMF @t) . L1
 
-    {-# MINIMAL appendMF, splitSF, splittingMF #-}
+    -- | If we have a constraint on the 'Monoidal' satisfied, it should
+    -- also imply the constraint on the 'Semigroupoidal'.
+    --
+    -- This is basically saying that @'C' ('SF' t)@ should be a superclass
+    -- of @'C' ('MF' t)@.
+    --
+    -- For example, for ':*:', this type signature says that 'Alt' is
+    -- a superclass of 'Plus', so whenever you have 'Plus', you should
+    -- always also have 'Alt'.
+    --
+    -- For 'Day', this type signature says that 'Apply' is a superclass of
+    -- 'Applicative', so whenever you have 'Applicative', you should always
+    -- also have 'Apply'.
+    --
+    -- This is necessary because in the current class hierarchy, 'Apply'
+    -- isn't a true superclass of 'Applicative'.  'upgradeC' basically
+    -- "imbues" @f@ with an 'Apply' instance based on its 'Applicative'
+    -- instance, so things can be easier to use.
+    --
+    -- For example, let's say I have a type @Parser@ that is an
+    -- 'Applicative' instance, but the source library does not define an
+    -- 'Apply' instance.  I cannot use 'biretract' or 'binterpret' with it,
+    -- even though I should be able to, because they require 'Apply'.
+    --
+    -- That is:
+    --
+    -- @
+    -- 'biretract' :: 'Day' Parser Parser a -> Parser a
+    -- @
+    --
+    -- is a type error, because it requires @'Apply' Parser@.
+    --
+    -- But, if we know that @Parser@ has an 'Applicative' instance, we can
+    -- use:
+    --
+    -- @
+    -- \x -> 'upgradeC' 'Day' ('biretract' x)
+    --   :: Day Parser Parser a -> a
+    -- @
+    --
+    -- and this will now typecheck properly.
+    --
+    -- Ideally, @Parser@ would also have an 'Apply' instance.  But we
+    -- cannot control this if an external library defines @Parser@.
+    --
+    -- Note that you should only use this if @f@ doesn't already have the
+    -- 'SF' constraint.  If it does, this could lead to conflicting
+    -- instances.
+    upgradeC :: C (MF t) f => (C (SF t) f => f r) -> f r
+
+    {-# MINIMAL appendMF, splitSF, splittingMF, upgradeC #-}
 
 -- | Create the "empty 'MF'@.
 --
@@ -371,6 +428,42 @@ inR
     => g a
     -> t f g a
 inR = hleft (pureT @t) . intro2
+
+-- | This is 'biretract', but taking a @'C' ('MF' t)@ constraint instead of
+-- a @'C' ('SF' t)@ constraint.  For example, for 'Day', it takes an
+-- 'Applicative' constraint instead of an 'Apply' constraint.
+--
+-- In an ideal world, this would be not necessary, and we can use
+-- 'biretract'.  However, sometimes @'C' ('MF' t)@ is not an actual
+-- subclass of @'C' ('SF' t)@ (like 'Apply' and 'Applicative'), even though
+-- it should technically always be so.
+--
+-- Note that you should only use this if @f@ doesn't already have the 'SF'
+-- constraint (for example, for 'Day', if @f@ already has an 'Apply'
+-- instance).  If it does, this could lead to conflicting instances.  If
+-- @f@ already has the 'SF' instance, just use 'biretract' directly.
+biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
+biretractT x = upgradeC @t (biretract x)
+
+-- | This is 'binterpret', but taking a @'C' ('MF' t)@ constraint instead of
+-- a @'C' ('SF' t)@ constraint.  For example, for 'Day', it takes an
+-- 'Applicative' constraint instead of an 'Apply' constraint.
+--
+-- In an ideal world, this would be not necessary, and we can use
+-- 'biretract'.  However, sometimes @'C' ('MF' t)@ is not an actual
+-- subclass of @'C' ('SF' t)@ (like 'Apply' and 'Applicative'), even though
+-- it should technically always be so.
+--
+-- Note that you should only use this if @f@ doesn't already have the 'SF'
+-- constraint (for example, for 'Day', if @f@ already has an 'Apply'
+-- instance).  If it does, this could lead to conflicting instances.  If
+-- @f@ already has the 'SF' instance, just use 'biretract' directly.
+binterpretT
+    :: forall t f g h. (Monoidal t, C (MF t) h)
+    => f ~> h
+    -> g ~> h
+    -> t f g ~> h
+binterpretT f g x = upgradeC @t (binterpret f g x)
 
 -- | For some @t@, we have the ability to "statically analyze" the @'MF' t@
 -- and pattern match and manipulate the structure without ever
@@ -469,23 +562,6 @@ instance Tensor Comp where
     elim1 (x :>>= y) = runIdentity . y <$> x
     elim2 (x :>>= y) = y (runIdentity x)
 
-instance Monoidal Comp where
-    type MF Comp = Free
-
-    appendMF (x :>>= y) = x >>= y
-    splitSF             = free1Comp
-    splittingMF = isoF to_ from_
-      where
-        to_ :: Free f ~> Identity :+: Comp f (Free f)
-        to_ = foldFree' (L1 . Identity) $ \y n -> R1 $
-            y :>>= (from_ . n)
-        from_ :: Identity :+: Comp f (Free f) ~> Free f
-        from_ = pure . runIdentity
-            !*! (\case x :>>= f -> liftFree x >>= f)
-
-    toMF (x :>>= y) = liftFree x >>= (inject . y)
-    pureT           = pure . runIdentity
-
 instance Monoidal (:*:) where
     type MF (:*:) = ListF
 
@@ -502,6 +578,8 @@ instance Monoidal (:*:) where
 
     toMF (x :*: y) = ListF [x, y]
     pureT _        = zero
+
+    upgradeC x = x
 
 instance Monoidal Product where
     type MF Product = ListF
@@ -520,6 +598,8 @@ instance Monoidal Product where
     toMF (Pair x y) = ListF [x, y]
     pureT _         = zero
 
+    upgradeC x = x
+
 instance Monoidal Day where
     type MF Day = Ap
 
@@ -537,6 +617,8 @@ instance Monoidal Day where
     toMF (Day x y z) = z <$> liftAp x <*> liftAp y
     pureT            = pure . runIdentity
 
+    upgradeC = unsafeApply
+
 instance Monoidal (:+:) where
     type MF (:+:) = Step
 
@@ -547,6 +629,8 @@ instance Monoidal (:+:) where
     toMF  = toSF
     pureT = absurd1
 
+    upgradeC x = x
+
 instance Monoidal Sum where
     type MF Sum = Step
 
@@ -556,6 +640,27 @@ instance Monoidal Sum where
 
     toMF  = toSF
     pureT = absurd1
+
+    upgradeC x = x
+
+instance Monoidal Comp where
+    type MF Comp = Free
+
+    appendMF (x :>>= y) = x >>= y
+    splitSF             = free1Comp
+    splittingMF = isoF to_ from_
+      where
+        to_ :: Free f ~> Identity :+: Comp f (Free f)
+        to_ = foldFree' (L1 . Identity) $ \y n -> R1 $
+            y :>>= (from_ . n)
+        from_ :: Identity :+: Comp f (Free f) ~> Free f
+        from_ = pure . runIdentity
+            !*! (\case x :>>= f -> liftFree x >>= f)
+
+    toMF (x :>>= y) = liftFree x >>= (inject . y)
+    pureT           = pure . runIdentity
+
+    upgradeC = unsafeBind
 
 instance Matchable (:*:) where
     unsplitSF = ProdNonEmpty
@@ -576,3 +681,4 @@ instance Matchable (:+:) where
 instance Matchable Sum where
     unsplitSF   = stepUp . reviewF sumSum
     matchMF     = R1
+

@@ -1,19 +1,23 @@
-{-# LANGUAGE DeriveFunctor      #-}
-{-# LANGUAGE DerivingVia        #-}
-{-# LANGUAGE KindSignatures     #-}
-{-# LANGUAGE LambdaCase         #-}
-{-# LANGUAGE RankNTypes         #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies       #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DeriveFunctor       #-}
+{-# LANGUAGE DerivingVia         #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving  #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Data.HFunctor.Internal (
     HFunctor(..)
   , HBifunctor(..)
   , WrappedHBifunctor(..)
   , sumSum, prodProd
+  , unsafeApply, unsafeBind
   ) where
 
+import           Control.Applicative
 import           Control.Applicative.Backwards
 import           Control.Applicative.Free
 import           Control.Applicative.Lift
@@ -28,6 +32,8 @@ import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Coerce
+import           Data.Constraint
+import           Data.Constraint.Unsafe
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
@@ -290,3 +296,11 @@ prodProd = isoF to_ from_
   where
     to_   (x :*: y)  = Pair x y
     from_ (Pair x y) = x :*: y
+
+unsafeApply :: forall f r. Applicative f => (Apply f => f r) -> f r
+unsafeApply x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(Apply f) of
+    Sub Dict -> x
+
+unsafeBind :: forall f r. Monad f => (Bind f => f r) -> f r
+unsafeBind x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
+    Sub Dict -> x

@@ -36,6 +36,7 @@ dependencies:
 - tagged
 - transformers
 - trivial-constraint >= 0.5
+- constraints
 
 ghc-options:
 - -Wall
