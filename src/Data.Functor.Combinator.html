@@ -100,20 +100,20 @@
 </span><a name="line-100"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control.Natural</span><span>
 </span><a name="line-101"></a><span class="hs-keyword">import</span><span>           </span><a href="Control.Natural.IsoF.html"><span class="hs-identifier">Control.Natural.IsoF</span></a><span>
 </span><a name="line-102"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Coerce</span><span>
-</span><a name="line-103"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Constraint.Trivial</span><span>
-</span><a name="line-104"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Data</span><span>
-</span><a name="line-105"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Deriving</span><span>
-</span><a name="line-106"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.Functor.Apply.Free.html"><span class="hs-identifier">Data.Functor.Apply.Free</span></a><span>
-</span><a name="line-107"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Functor.Coyoneda</span><span>
-</span><a name="line-108"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Functor.Day</span><span>
-</span><a name="line-109"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.Functor.These.html"><span class="hs-identifier">Data.Functor.These</span></a><span>
-</span><a name="line-110"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HBifunctor.html"><span class="hs-identifier">Data.HBifunctor</span></a><span>
-</span><a name="line-111"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HBifunctor.Associative.html"><span class="hs-identifier">Data.HBifunctor.Associative</span></a><span>
-</span><a name="line-112"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HBifunctor.Tensor.html"><span class="hs-identifier">Data.HBifunctor.Tensor</span></a><span>
-</span><a name="line-113"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.html"><span class="hs-identifier">Data.HFunctor</span></a><span>
-</span><a name="line-114"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.Final.html"><span class="hs-identifier">Data.HFunctor.Final</span></a><span>
-</span><a name="line-115"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.Interpret.html"><span class="hs-identifier">Data.HFunctor.Interpret</span></a><span>
-</span><a name="line-116"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">GHC.Generics</span><span>
+</span><a name="line-103"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Data</span><span>
+</span><a name="line-104"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Deriving</span><span>
+</span><a name="line-105"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.Functor.Apply.Free.html"><span class="hs-identifier">Data.Functor.Apply.Free</span></a><span>
+</span><a name="line-106"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Functor.Coyoneda</span><span>
+</span><a name="line-107"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Functor.Day</span><span>
+</span><a name="line-108"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.Functor.These.html"><span class="hs-identifier">Data.Functor.These</span></a><span>
+</span><a name="line-109"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HBifunctor.html"><span class="hs-identifier">Data.HBifunctor</span></a><span>
+</span><a name="line-110"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HBifunctor.Associative.html"><span class="hs-identifier">Data.HBifunctor.Associative</span></a><span>
+</span><a name="line-111"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HBifunctor.Tensor.html"><span class="hs-identifier">Data.HBifunctor.Tensor</span></a><span>
+</span><a name="line-112"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.html"><span class="hs-identifier">Data.HFunctor</span></a><span>
+</span><a name="line-113"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.Final.html"><span class="hs-identifier">Data.HFunctor.Final</span></a><span>
+</span><a name="line-114"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.Interpret.html"><span class="hs-identifier">Data.HFunctor.Interpret</span></a><span>
+</span><a name="line-115"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">GHC.Generics</span><span>
+</span><a name="line-116"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Data.Functor.Plus</span><span>             </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">P</span><span>
 </span><a name="line-117"></a><span>
 </span><a name="line-118"></a><span class="hs-comment">-- | The functor combinator that forgets all structure in the input.</span><span>
 </span><a name="line-119"></a><span class="hs-comment">-- Ignores the input structure and stores no information.</span><span>
@@ -144,10 +144,13 @@
 </span><a name="line-144"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.html#Inject"><span class="hs-identifier hs-type">Inject</span></a><span> </span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-type">ProxyF</span></a><span> </span><span class="hs-keyword">where</span><span>
 </span><a name="line-145"></a><span>    </span><a name="local-8214565720323980663"><a href="Data.HFunctor.html#inject"><span class="hs-identifier">inject</span></a></a><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-var">ProxyF</span></a><span>
 </span><a name="line-146"></a><span>
-</span><a name="line-147"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Interpret.html#Interpret"><span class="hs-identifier hs-type">Interpret</span></a><span> </span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-type">ProxyF</span></a><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-148"></a><span>    </span><span class="hs-keyword">type</span><span> </span><span class="hs-identifier">C</span><span> </span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-type">ProxyF</span></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-type">Impossible</span><span>
-</span><a name="line-149"></a><span>    </span><a name="local-8214565720324001442"><a href="Data.HFunctor.Interpret.html#retract"><span class="hs-identifier">retract</span></a></a><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">absurdible</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Data.Functor.Combinator.html#fromProxyF"><span class="hs-identifier hs-var">fromProxyF</span></a><span>
-</span><a name="line-150"></a><span>
-</span><a name="line-151"></a><span class="hs-identifier">fromProxyF</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-type">ProxyF</span></a><span> </span><a href="#local-6989586621679302256"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-6989586621679302257"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Proxy</span><span> </span><a href="#local-6989586621679302256"><span class="hs-identifier hs-type">f</span></a><span>
-</span><a name="line-152"></a><a name="fromProxyF"><a href="Data.Functor.Combinator.html#fromProxyF"><span class="hs-identifier">fromProxyF</span></a></a><span> </span><span class="hs-glyph">~</span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-var">ProxyF</span></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">Proxy</span><span>
-</span><a name="line-153"></a></pre></body></html>
+</span><a name="line-147"></a><span class="hs-comment">-- | Technically, 'Data.HFunctor.Interpret.C' is over-constrained: we only</span><span>
+</span><a name="line-148"></a><span class="hs-comment">-- need @'P.zero' :: f a@, but we don't really have that typeclass in any</span><span>
+</span><a name="line-149"></a><span class="hs-comment">-- standard hierarchies.  We use 'P.Plus' here instead, but we never use</span><span>
+</span><a name="line-150"></a><span class="hs-comment">-- 'P.&lt;!&gt;'.  This would only go wrong in situations where your type</span><span>
+</span><a name="line-151"></a><span class="hs-comment">-- supports 'P.zero' but not 'P.&lt;!&gt;', like instances of</span><span>
+</span><a name="line-152"></a><span class="hs-comment">-- 'Control.Monad.Fail.MonadFail' without 'Control.Monad.MonadPlus'.</span><span>
+</span><a name="line-153"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Interpret.html#Interpret"><span class="hs-identifier hs-type">Interpret</span></a><span> </span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-type">ProxyF</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-154"></a><span>    </span><span class="hs-keyword">type</span><span> </span><span class="hs-identifier">C</span><span> </span><a href="Data.Functor.Combinator.html#ProxyF"><span class="hs-identifier hs-type">ProxyF</span></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-type">P.Plus</span><span>
+</span><a name="line-155"></a><span>    </span><a name="local-8214565720324001442"><a href="Data.HFunctor.Interpret.html#retract"><span class="hs-identifier">retract</span></a></a><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">P.zero</span><span>
+</span><a name="line-156"></a></pre></body></html>
