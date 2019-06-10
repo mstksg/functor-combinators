@@ -155,16 +155,63 @@ convenience in running.
 Without further ado, let's run down all of the combinators!
 
 Combinator Zoo
---------------
+==============
 
-### Two-Argument
+Two-Argument
+------------
 
-#### `:*:`
+### :\*: / Product
 
-#### `:+:`
+### :+: / Sum
 
-#### Day
+### Day
 
-#### These1
+### Comp
 
-### Single-Argument
+### These1
+
+Single-Argument
+---------------
+
+### Coyoneda
+
+### Ap
+
+### Ap1
+
+### Alt
+
+### Lift / MaybeApply
+
+### ListF
+
+### NonEmptyF
+
+### MaybeF
+
+### Free
+
+### Free1
+
+### Final
+
+### IdentityT
+
+### ProxyF
+
+### Chain
+
+### Chain1
+
+### Step
+
+### Steps
+
+Combinator Combinators
+----------------------
+
+### ComposeT
+
+### HLift
+
+### HFree
