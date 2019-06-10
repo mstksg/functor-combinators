@@ -1109,7 +1109,9 @@ hmap :: HFunctor t => (f ~> g) -> t f ~> t g
 --   interpret it out as itself, it should lave the value unchanged.
 class Inject t => Interpret t where {
     
-    -- | The constraint on the target context of <a>interpret</a>.
+    -- | The constraint on the target context of <a>interpret</a>. It's
+    --   basically the constraint that allows you to "exit" or "run" an
+    --   <a>Interpret</a>.
     type family C t :: (Type -> Type) -> Constraint;
 }
 
@@ -1583,12 +1585,20 @@ toSF :: Semigroupoidal t => t f f ~> SF t f
 -- | The <a>HBifunctor</a> analogy of <a>retract</a>. It retracts
 --   <i>both</i> <tt>f</tt>s into a single <tt>f</tt>, effectively fully
 --   mixing them together.
-biretract :: (Semigroupoidal t, C (SF t) f) => t f f ~> f
+biretract :: (Semigroupoidal t, CS t f) => t f f ~> f
 
 -- | The <a>HBifunctor</a> analogy of <a>interpret</a>. It takes two
 --   interpreting functions, and mixes them together into a target functor
 --   <tt>h</tt>.
-binterpret :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+binterpret :: (Semigroupoidal t, CS t h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+
+-- | Convenient alias for the constraint required for <a>biretract</a>,
+--   <a>binterpret</a>, etc.
+--   
+--   It's usually a constraint on the target/result context of
+--   interpretation that allows you to "exit" or "run" a
+--   <tt><a>Semigroupoidal</a> t</tt>.
+type CS t = C (SF t)
 
 -- | An <tt><a>SF</a> t f</tt> represents the successive application of
 --   <tt>t</tt> to <tt>f</tt>, over and over again. So, that means that an
@@ -1630,7 +1640,7 @@ matchingSF :: (Semigroupoidal t, Functor f) => SF t f <~> (f :+: t f (SF t f))
 --       :: <a>Day</a> [] (Map Int) Char
 --       -&gt; Sum Int
 --   </pre>
-biget :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+biget :: (Semigroupoidal t, CS t (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 
 -- | Useful wrapper over <a>biget</a> to allow you to collect a <tt>b</tt>
 --   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
@@ -1638,10 +1648,10 @@ biget :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (fora
 --   
 --   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
 --   <a>Apply</a>, or <a>Applicative</a>.
-bicollect :: (Semigroupoidal t, C (SF t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
+bicollect :: (Semigroupoidal t, CS t (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
 -- | Infix alias for <a>binterpret</a>
-(!*!) :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+(!*!) :: (Semigroupoidal t, CS t h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 infixr 5 !*!
 
 -- | Infix alias for <a>biget</a>
@@ -1658,7 +1668,7 @@ infixr 5 !*!
 --       :: <a>Day</a> [] (Map Int) Char
 --       -&gt; Sum Int
 --   </pre>
-(!$!) :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+(!$!) :: (Semigroupoidal t, CS t (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 infixr 5 !$!
 instance Data.HBifunctor.Associative.Semigroupoidal (GHC.Generics.:*:)
 instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Product.Product
@@ -1932,7 +1942,7 @@ fromSF :: Monoidal t => SF t f ~> MF t f
 --   Note that because <tt>t</tt> appears nowhere in the input or output
 --   types, you must always use this with explicit type application syntax
 --   (like <tt>pureT @Day</tt>)
-pureT :: (Monoidal t, C (MF t) f) => I t ~> f
+pureT :: (Monoidal t, CM t f) => I t ~> f
 
 -- | If we have a constraint on the <a>Monoidal</a> satisfied, it should
 --   also imply the constraint on the <a>Semigroupoidal</a>.
@@ -1983,11 +1993,20 @@ pureT :: (Monoidal t, C (MF t) f) => I t ~> f
 --   Note that you should only use this if <tt>f</tt> doesn't already have
 --   the <a>SF</a> constraint. If it does, this could lead to conflicting
 --   instances. Only use this with <i>specific</i>, concrete <tt>f</tt>s.
+--   Otherwise this is unsafe and can possibly break coherence guarantees.
 --   
 --   The <tt>proxy</tt> argument can be provided using something like
 --   <tt><a>Proxy</a> @f</tt>, to specify which <tt>f</tt> you want to
 --   upgrade.
-upgradeC :: (Monoidal t, C (MF t) f) => proxy f -> (C (SF t) f => r) -> r
+upgradeC :: (Monoidal t, CM t f) => proxy f -> (CS t f => r) -> r
+
+-- | Convenient alias for the constraint required for <a>inL</a>,
+--   <a>inR</a>, <a>pureT</a>, etc.
+--   
+--   It's usually a constraint on the target/result context of
+--   interpretation that allows you to "exit" or "run" a
+--   <tt><a>Monoidal</a> t</tt>.
+type CM t = C (MF t)
 
 -- | Create the "empty <a>MF</a>@.
 --   
@@ -2024,14 +2043,14 @@ unconsMF :: Monoidal t => MF t f ~> (I t :+: t f (MF t f))
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inL :: forall t f g a. (Monoidal t, C (MF t) g) => f a -> t f g a
+inL :: forall t f g a. (Monoidal t, CM t g) => f a -> t f g a
 
 -- | Convenient wrapper over <a>intro2</a> that lets us introduce an
 --   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inR :: forall t f g a. (Monoidal t, C (MF t) f) => g a -> t f g a
+inR :: forall t f g a. (Monoidal t, CM t f) => g a -> t f g a
 
 -- | This is <a>biretract</a>, but taking a <tt><a>C</a> (<a>MF</a> t)</tt>
 --   constraint instead of a <tt><a>C</a> (<a>SF</a> t)</tt> constraint.
@@ -2050,7 +2069,7 @@ inR :: forall t f g a. (Monoidal t, C (MF t) f) => g a -> t f g a
 --   conflicting instances. If <tt>f</tt> already has the <a>SF</a>
 --   instance, just use <a>biretract</a> directly. Only use this with
 --   <i>specific</i>, concrete <tt>f</tt>s.
-biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
+biretractT :: forall t f. (Monoidal t, CM t f) => t f f ~> f
 
 -- | This is <a>binterpret</a>, but taking a <tt><a>C</a> (<a>MF</a>
 --   t)</tt> constraint instead of a <tt><a>C</a> (<a>SF</a> t)</tt>
@@ -2069,7 +2088,7 @@ biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
 --   conflicting instances. If <tt>f</tt> already has the <a>SF</a>
 --   instance, just use <a>biretract</a> directly. Only use this with
 --   <i>specific</i>, concrete <tt>f</tt>s.
-binterpretT :: forall t f g h. (Monoidal t, C (MF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+binterpretT :: forall t f g h. (Monoidal t, CM t h) => (f ~> h) -> (g ~> h) -> t f g ~> h
 
 -- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
 --   require <tt><a>Plus</a> f</tt>.
@@ -2573,7 +2592,9 @@ inject :: Inject t => f ~> t f
 --   interpret it out as itself, it should lave the value unchanged.
 class Inject t => Interpret t where {
     
-    -- | The constraint on the target context of <a>interpret</a>.
+    -- | The constraint on the target context of <a>interpret</a>. It's
+    --   basically the constraint that allows you to "exit" or "run" an
+    --   <a>Interpret</a>.
     type family C t :: (Type -> Type) -> Constraint;
 }
 
@@ -2773,12 +2794,81 @@ toSF :: Semigroupoidal t => t f f ~> SF t f
 -- | The <a>HBifunctor</a> analogy of <a>retract</a>. It retracts
 --   <i>both</i> <tt>f</tt>s into a single <tt>f</tt>, effectively fully
 --   mixing them together.
-biretract :: (Semigroupoidal t, C (SF t) f) => t f f ~> f
+biretract :: (Semigroupoidal t, CS t f) => t f f ~> f
 
 -- | The <a>HBifunctor</a> analogy of <a>interpret</a>. It takes two
 --   interpreting functions, and mixes them together into a target functor
 --   <tt>h</tt>.
-binterpret :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+binterpret :: (Semigroupoidal t, CS t h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+
+-- | Convenient alias for the constraint required for <a>biretract</a>,
+--   <a>binterpret</a>, etc.
+--   
+--   It's usually a constraint on the target/result context of
+--   interpretation that allows you to "exit" or "run" a
+--   <tt><a>Semigroupoidal</a> t</tt>.
+type CS t = C (SF t)
+
+-- | Useful wrapper over <a>binterpret</a> to allow you to directly extract
+--   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
+--   x</tt> into <tt>b</tt>.
+--   
+--   Note that depending on the constraints on the interpretation of
+--   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
+--   
+--   <ul>
+--   <li>If <tt><a>C</a> (<a>SF</a> t)</tt> is <a>Unconstrained</a>, there
+--   are no constraints on <tt>b</tt></li>
+--   <li>If <tt><a>C</a> (<a>SF</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
+--   needs to be an instance of <a>Semigroup</a></li>
+--   <li>If <tt><a>C</a> (<a>SF</a> t)</tt> is <a>Applicative</a>,
+--   <tt>b</tt> needs to be an instance of <a>Monoid</a></li>
+--   </ul>
+--   
+--   For some constraints (like <a>Monad</a>), this will not be usable.
+--   
+--   <pre>
+--   -- Return the length of either the list, or the Map, depending on which
+--   --   one s in the <a>+</a>
+--   <a>biget</a> <a>length</a> length
+--       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
+--       -&gt; Int
+--   
+--   -- Return the length of both the list and the map, added together
+--   <a>biget</a> (<a>Sum</a> . length) (Sum . length)
+--       :: <a>Day</a> [] (Map Int) Char
+--       -&gt; Sum Int
+--   </pre>
+biget :: (Semigroupoidal t, CS t (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+
+-- | Useful wrapper over <a>biget</a> to allow you to collect a <tt>b</tt>
+--   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
+--   a</tt>.
+--   
+--   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
+--   <a>Apply</a>, or <a>Applicative</a>.
+bicollect :: (Semigroupoidal t, CS t (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
+
+-- | Infix alias for <a>binterpret</a>
+(!*!) :: (Semigroupoidal t, CS t h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+infixr 5 !*!
+
+-- | Infix alias for <a>biget</a>
+--   
+--   <pre>
+--   -- Return the length of either the list, or the Map, depending on which
+--   --   one s in the <a>+</a>
+--   <a>length</a> <a>!$!</a> length
+--       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
+--       -&gt; Int
+--   
+--   -- Return the length of both the list and the map, added together
+--   <a>Sum</a> . length !$! Sum . length
+--       :: <a>Day</a> [] (Map Int) Char
+--       -&gt; Sum Int
+--   </pre>
+(!$!) :: (Semigroupoidal t, CS t (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
+infixr 5 !$!
 
 -- | An <a>Associative</a> <a>HBifunctor</a> can be a <a>Tensor</a> if
 --   there is some identity <tt>i</tt> where <tt>t i f</tt> is equivalent
@@ -2982,7 +3072,7 @@ fromSF :: Monoidal t => SF t f ~> MF t f
 --   Note that because <tt>t</tt> appears nowhere in the input or output
 --   types, you must always use this with explicit type application syntax
 --   (like <tt>pureT @Day</tt>)
-pureT :: (Monoidal t, C (MF t) f) => I t ~> f
+pureT :: (Monoidal t, CM t f) => I t ~> f
 
 -- | If we have a constraint on the <a>Monoidal</a> satisfied, it should
 --   also imply the constraint on the <a>Semigroupoidal</a>.
@@ -3033,86 +3123,34 @@ pureT :: (Monoidal t, C (MF t) f) => I t ~> f
 --   Note that you should only use this if <tt>f</tt> doesn't already have
 --   the <a>SF</a> constraint. If it does, this could lead to conflicting
 --   instances. Only use this with <i>specific</i>, concrete <tt>f</tt>s.
+--   Otherwise this is unsafe and can possibly break coherence guarantees.
 --   
 --   The <tt>proxy</tt> argument can be provided using something like
 --   <tt><a>Proxy</a> @f</tt>, to specify which <tt>f</tt> you want to
 --   upgrade.
-upgradeC :: (Monoidal t, C (MF t) f) => proxy f -> (C (SF t) f => r) -> r
+upgradeC :: (Monoidal t, CM t f) => proxy f -> (CS t f => r) -> r
+
+-- | Convenient alias for the constraint required for <a>inL</a>,
+--   <a>inR</a>, <a>pureT</a>, etc.
+--   
+--   It's usually a constraint on the target/result context of
+--   interpretation that allows you to "exit" or "run" a
+--   <tt><a>Monoidal</a> t</tt>.
+type CM t = C (MF t)
 
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inL :: forall t f g a. (Monoidal t, C (MF t) g) => f a -> t f g a
+inL :: forall t f g a. (Monoidal t, CM t g) => f a -> t f g a
 
 -- | Convenient wrapper over <a>intro2</a> that lets us introduce an
 --   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inR :: forall t f g a. (Monoidal t, C (MF t) f) => g a -> t f g a
-
--- | Useful wrapper over <a>binterpret</a> to allow you to directly extract
---   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
---   x</tt> into <tt>b</tt>.
---   
---   Note that depending on the constraints on the interpretation of
---   <tt>t</tt>, you may have extra constraints on <tt>b</tt>.
---   
---   <ul>
---   <li>If <tt><a>C</a> (<a>SF</a> t)</tt> is <a>Unconstrained</a>, there
---   are no constraints on <tt>b</tt></li>
---   <li>If <tt><a>C</a> (<a>SF</a> t)</tt> is <a>Apply</a>, <tt>b</tt>
---   needs to be an instance of <a>Semigroup</a></li>
---   <li>If <tt><a>C</a> (<a>SF</a> t)</tt> is <a>Applicative</a>,
---   <tt>b</tt> needs to be an instance of <a>Monoid</a></li>
---   </ul>
---   
---   For some constraints (like <a>Monad</a>), this will not be usable.
---   
---   <pre>
---   -- Return the length of either the list, or the Map, depending on which
---   --   one s in the <a>+</a>
---   <a>biget</a> <a>length</a> length
---       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
---       -&gt; Int
---   
---   -- Return the length of both the list and the map, added together
---   <a>biget</a> (<a>Sum</a> . length) (Sum . length)
---       :: <a>Day</a> [] (Map Int) Char
---       -&gt; Sum Int
---   </pre>
-biget :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
-
--- | Useful wrapper over <a>biget</a> to allow you to collect a <tt>b</tt>
---   from all instances of <tt>f</tt> and <tt>g</tt> inside a <tt>t f g
---   a</tt>.
---   
---   This will work if <tt><a>C</a> t</tt> is <a>Unconstrained</a>,
---   <a>Apply</a>, or <a>Applicative</a>.
-bicollect :: (Semigroupoidal t, C (SF t) (Const [b])) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
-
--- | Infix alias for <a>binterpret</a>
-(!*!) :: (Semigroupoidal t, C (SF t) h) => (f ~> h) -> (g ~> h) -> t f g ~> h
-infixr 5 !*!
-
--- | Infix alias for <a>biget</a>
---   
---   <pre>
---   -- Return the length of either the list, or the Map, depending on which
---   --   one s in the <a>+</a>
---   <a>length</a> <a>!$!</a> length
---       :: ([] :+: <a>Map</a> <a>Int</a>) <a>Char</a>
---       -&gt; Int
---   
---   -- Return the length of both the list and the map, added together
---   <a>Sum</a> . length !$! Sum . length
---       :: <a>Day</a> [] (Map Int) Char
---       -&gt; Sum Int
---   </pre>
-(!$!) :: (Semigroupoidal t, C (SF t) (Const b)) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
-infixr 5 !$!
+inR :: forall t f g a. (Monoidal t, CM t f) => g a -> t f g a
 
 -- | A covariant <a>Functor</a> suitable for Yoneda reduction
 data Coyoneda (f :: Type -> Type) a
