@@ -21,10 +21,11 @@ description:         Please see the README on GitHub at <https://github.com/mstk
 
 dependencies:
 - base >= 4.7 && < 5
+- comonad
+- constraints
 - containers
 - deriving-compat
 - free
-- recursion-schemes
 - kan-extensions
 - mmorph
 - mtl
@@ -32,11 +33,11 @@ dependencies:
 - nonempty-containers
 - pointed
 - profunctors
+- recursion-schemes
 - semigroupoids
 - tagged
 - transformers
 - trivial-constraint >= 0.5
-- constraints
 
 ghc-options:
 - -Wall

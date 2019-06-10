@@ -89,7 +89,7 @@ module Data.Functor.Combinator (
   -- ** Multi
   , Day(..)
   , (:*:)(..)
-  , (:+:)(..), Void1
+  , (:+:)(..), V1
   , These1(..)
   , Comp(Comp, unComp)
   ) where

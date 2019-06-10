@@ -47,18 +47,19 @@ import           Control.Applicative.Free
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
 import           Control.Natural
+import           Control.Natural.IsoF
 import           Data.Coerce
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
 import           Data.Functor.Reverse
 import           Data.HFunctor.Internal
-import           Control.Natural.IsoF
 import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable
@@ -260,6 +261,9 @@ instance Inject WrappedApplicative where
 instance Inject (ReaderT r) where
     inject = ReaderT . const
 
+instance Monoid e => Inject (EnvT e) where
+    inject = EnvT mempty
+
 instance Inject Reverse where
     inject = Reverse
 
@@ -328,6 +332,11 @@ instance HBind WrappedApplicative where
 
 instance HBind Reverse where
     hbind f = f . getReverse
+
+instance Monoid e => HBind (EnvT e) where
+    hbind f (EnvT e x) = EnvT (e <> e') y
+      where
+        EnvT e' y = f x
 
 instance (HBind t, Inject t) => HBind (HLift t) where
     hbind f = \case

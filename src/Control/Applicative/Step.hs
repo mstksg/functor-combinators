@@ -34,7 +34,6 @@ module Control.Applicative.Step (
   , stepDown
   , stepping
   -- * Void
-  , Void1
   , absurd1
   , Void2
   , absurd2
@@ -139,30 +138,9 @@ stepUp = \case
     L1 x          -> Step 0       x
     R1 (Step n y) -> Step (n + 1) y
 
--- | 'Void1' is a functor that is uninhabited for all inputs.  That is,
--- @'Void1' a@ is uninhabited for all @a@.
---
--- The identity functor of ':+:' (and also 'Data.Functor.These.TheseT')
-data Void1 a
-  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
-
-deriveShow1 ''Void1
-deriveRead1 ''Void1
-deriveEq1 ''Void1
-deriveOrd1 ''Void1
-
-instance Alt Void1 where
-    x <!> _ = absurd1 x
-
-instance Bind Void1 where
-    x >>- _ = case x of {}
-
-instance Apply Void1 where
-    x <.> _ = case x of {}
-
--- | We have a natural transformation between 'Void1' and any other
+-- | We have a natural transformation between 'V1' and any other
 -- functor @f@ with no constraints.
-absurd1 :: Void1 a -> f a
+absurd1 :: V1 a -> f a
 absurd1 = \case {}
 
 -- | A non-empty map of 'Natural' to @f a@.  Basically, contains multiple

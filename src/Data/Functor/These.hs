@@ -87,7 +87,7 @@ instance Associative These1 where
           These1 (These1 x y) z -> These1 x (These1 y z)
 
 instance Tensor These1 where
-    type I These1 = Void1
+    type I These1 = V1
 
     intro1 = This1
     intro2 = That1

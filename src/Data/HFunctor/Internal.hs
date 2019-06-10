@@ -23,6 +23,7 @@ import           Control.Applicative.Free
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
@@ -137,130 +138,6 @@ class HBifunctor t where
 
     {-# MINIMAL hleft, hright | hbimap #-}
 
-instance HFunctor Coyoneda where
-    hmap = hoistCoyoneda
-
-instance HFunctor Ap where
-    hmap = hoistAp
-
-instance HFunctor ListF where
-    hmap f (ListF xs) = ListF (map f xs)
-
-instance HFunctor NonEmptyF where
-    hmap f (NonEmptyF xs) = NonEmptyF (fmap f xs)
-
-instance HFunctor MaybeF where
-    hmap f (MaybeF xs) = MaybeF (fmap f xs)
-
-instance HFunctor Alt.Alt where
-    hmap = Alt.hoistAlt
-
-instance HFunctor Step where
-    hmap f (Step n x) = Step n (f x)
-
-instance HFunctor Steps where
-    hmap f (Steps xs) = Steps (f <$> xs)
-
-instance HFunctor Free where
-    hmap = hoistFree
-
-instance HFunctor Free1 where
-    hmap = hoistFree1
-
-instance HFunctor MC.F where
-    hmap = MC.hoistF
-
-instance HFunctor MaybeT where
-    hmap f = mapMaybeT f
-
-instance HFunctor Yoneda where
-    hmap f x = Yoneda $ f . runYoneda x
-
-instance HFunctor FA.Ap where
-    hmap = FA.hoistAp
-
-instance HFunctor FAF.Ap where
-    hmap = FAF.hoistAp
-
-instance HFunctor IdentityT where
-    hmap = mapIdentityT
-
-instance HFunctor Lift where
-    hmap = mapLift
-
-instance HFunctor MaybeApply where
-    hmap f (MaybeApply x) = MaybeApply (first f x)
-
-instance HFunctor Backwards where
-    hmap f (Backwards x) = Backwards (f x)
-
-instance HFunctor WrappedApplicative where
-    hmap f (WrapApplicative x) = WrapApplicative (f x)
-
-instance HFunctor (ReaderT r) where
-    hmap = mapReaderT
-
-instance HFunctor Tagged where
-    hmap _ = coerce
-
-instance HFunctor Reverse where
-    hmap f (Reverse x) = Reverse (f x)
-
-instance (HFunctor s, HFunctor t) => HFunctor (ComposeT s t) where
-    hmap f (ComposeT x) = ComposeT $ hmap (hmap f) x
-
-instance Functor f => HFunctor ((:.:) f) where
-    hmap f (Comp1 x) = Comp1 (f <$> x)
-
-instance HFunctor Void2 where
-    hmap _ = coerce
-
-instance HBifunctor (:*:) where
-    hleft  f (x :*: y) = f x :*:   y
-    hright g (x :*: y) =   x :*: g y
-    hbimap f g (x :*: y) = f x :*: g y
-
-instance HBifunctor Product where
-    hleft  f (Pair x y)   = Pair (f x)    y
-    hright g (Pair x y)   = Pair    x  (g y)
-    hbimap f g (Pair x y) = Pair (f x) (g y)
-
-instance HBifunctor Day where
-    hleft  = D.trans1
-    hright = D.trans2
-    hbimap f g (Day x y z) = Day (f x) (g y) z
-
-instance HBifunctor (:+:) where
-    hleft f = \case
-      L1 x -> L1 (f x)
-      R1 y -> R1 y
-
-    hright g = \case
-      L1 x -> L1 x
-      R1 y -> R1 (g y)
-
-    hbimap f g = \case
-      L1 x -> L1 (f x)
-      R1 y -> R1 (g y)
-
-instance HBifunctor Sum where
-    hleft f = \case
-      InL x -> InL (f x)
-      InR y -> InR y
-
-    hright g = \case
-      InL x -> InL x
-      InR y -> InR (g y)
-
-    hbimap f g = \case
-      InL x -> InL (f x)
-      InR y -> InR (g y)
-
-instance HBifunctor Comp where
-    hleft  f   (x :>>= h) = f x :>>= h
-    hright   g (x :>>= h) =   x :>>= (g . h)
-    hbimap f g (x :>>= h) = f x :>>= (g . h)
-
 -- | Useful newtype to allow us to derive an 'HFunctor' instance from any
 -- instance of 'HBifunctor', using -XDerivingVia.
 --
@@ -336,3 +213,133 @@ unsafeApply _ x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(
 unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 unsafeBind _ x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
     Sub Dict -> x
+
+instance HFunctor Coyoneda where
+    hmap = hoistCoyoneda
+
+instance HFunctor Ap where
+    hmap = hoistAp
+
+instance HFunctor ListF where
+    hmap f (ListF xs) = ListF (map f xs)
+
+instance HFunctor NonEmptyF where
+    hmap f (NonEmptyF xs) = NonEmptyF (fmap f xs)
+
+instance HFunctor MaybeF where
+    hmap f (MaybeF xs) = MaybeF (fmap f xs)
+
+instance HFunctor Alt.Alt where
+    hmap = Alt.hoistAlt
+
+instance HFunctor Step where
+    hmap f (Step n x) = Step n (f x)
+
+instance HFunctor Steps where
+    hmap f (Steps xs) = Steps (f <$> xs)
+
+instance HFunctor Free where
+    hmap = hoistFree
+
+instance HFunctor Free1 where
+    hmap = hoistFree1
+
+instance HFunctor MC.F where
+    hmap = MC.hoistF
+
+instance HFunctor MaybeT where
+    hmap f = mapMaybeT f
+
+instance HFunctor Yoneda where
+    hmap f x = Yoneda $ f . runYoneda x
+
+instance HFunctor FA.Ap where
+    hmap = FA.hoistAp
+
+instance HFunctor FAF.Ap where
+    hmap = FAF.hoistAp
+
+instance HFunctor IdentityT where
+    hmap = mapIdentityT
+
+instance HFunctor Lift where
+    hmap = mapLift
+
+instance HFunctor MaybeApply where
+    hmap f (MaybeApply x) = MaybeApply (first f x)
+
+instance HFunctor Backwards where
+    hmap f (Backwards x) = Backwards (f x)
+
+instance HFunctor WrappedApplicative where
+    hmap f (WrapApplicative x) = WrapApplicative (f x)
+
+instance HFunctor (ReaderT r) where
+    hmap = mapReaderT
+
+instance HFunctor Tagged where
+    hmap _ = coerce
+
+instance HFunctor Reverse where
+    hmap f (Reverse x) = Reverse (f x)
+
+instance (HFunctor s, HFunctor t) => HFunctor (ComposeT s t) where
+    hmap f (ComposeT x) = ComposeT $ hmap (hmap f) x
+
+instance Functor f => HFunctor ((:.:) f) where
+    hmap f (Comp1 x) = Comp1 (f <$> x)
+
+instance HFunctor (M1 i c) where
+    hmap f (M1 x) = M1 (f x)
+
+instance HFunctor Void2 where
+    hmap _ = coerce
+
+instance HFunctor (EnvT e) where
+    hmap f (EnvT e x) = EnvT e (f x)
+
+instance HBifunctor (:*:) where
+    hleft  f (x :*: y) = f x :*:   y
+    hright g (x :*: y) =   x :*: g y
+    hbimap f g (x :*: y) = f x :*: g y
+
+instance HBifunctor Product where
+    hleft  f (Pair x y)   = Pair (f x)    y
+    hright g (Pair x y)   = Pair    x  (g y)
+    hbimap f g (Pair x y) = Pair (f x) (g y)
+
+instance HBifunctor Day where
+    hleft  = D.trans1
+    hright = D.trans2
+    hbimap f g (Day x y z) = Day (f x) (g y) z
+
+instance HBifunctor (:+:) where
+    hleft f = \case
+      L1 x -> L1 (f x)
+      R1 y -> R1 y
+
+    hright g = \case
+      L1 x -> L1 x
+      R1 y -> R1 (g y)
+
+    hbimap f g = \case
+      L1 x -> L1 (f x)
+      R1 y -> R1 (g y)
+
+instance HBifunctor Sum where
+    hleft f = \case
+      InL x -> InL (f x)
+      InR y -> InR y
+
+    hright g = \case
+      InL x -> InL x
+      InR y -> InR (g y)
+
+    hbimap f g = \case
+      InL x -> InL (f x)
+      InR y -> InR (g y)
+
+instance HBifunctor Comp where
+    hleft  f   (x :>>= h) = f x :>>= h
+    hright   g (x :>>= h) =   x :>>= (g . h)
+    hbimap f g (x :>>= h) = f x :>>= (g . h)

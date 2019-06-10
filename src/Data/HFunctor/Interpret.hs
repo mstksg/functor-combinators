@@ -67,6 +67,7 @@ import           Control.Applicative.Backwards
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Comonad.Trans.Env      (EnvT(..))
 import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Compose
@@ -312,6 +313,13 @@ instance Interpret (ReaderT r) where
 
     retract     x = runReaderT x =<< ask
     interpret f x = f . runReaderT x =<< ask
+
+-- | This ignores the environment, so @'interpret' /= 'hbind'@
+instance Monoid e => Interpret (EnvT e) where
+    type C (EnvT e) = Unconstrained
+
+    retract     (EnvT _ x) = x
+    interpret f (EnvT _ x) = f x
 
 instance Interpret Reverse where
     type C Reverse = Unconstrained

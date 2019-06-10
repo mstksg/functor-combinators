@@ -139,7 +139,7 @@ class Associative t => Tensor t where
     -- Another example:
     --
     -- @
-    -- ('Void1' ':+:' f) a
+    -- ('V1' ':+:' f) a
     -- @
     --
     -- is equivalent to just
@@ -187,12 +187,12 @@ leftIdentity = isoF intro2 elim2
 
 -- | 'leftIdentity' ('intro1' and 'elim1') for ':+:' actually does not
 -- require 'Functor'.  This is the more general version.
-voidLeftIdentity :: f <~> Void1 :+: f
+voidLeftIdentity :: f <~> V1 :+: f
 voidLeftIdentity = isoF R1 (absurd1 !*! id)
 
 -- | 'rightIdentity' ('intro2' and 'elim2') for ':+:' actually does not
 -- require 'Functor'.  This is the more general version.
-voidRightIdentity :: f <~> Void1 :+: f
+voidRightIdentity :: f <~> V1 :+: f
 voidRightIdentity = isoF R1 (absurd1 !*! id)
 
 -- | A @'Monoidal' t@ is a 'Semigroupoidal', in that it provides some type
@@ -543,7 +543,7 @@ instance Tensor Day where
     elim2    = D.elim1
 
 instance Tensor (:+:) where
-    type I (:+:) = Void1
+    type I (:+:) = V1
 
     intro1 = L1
     intro2 = R1
@@ -556,7 +556,7 @@ instance Tensor (:+:) where
       R1 y -> y
 
 instance Tensor Sum where
-    type I Sum = Void1
+    type I Sum = V1
 
     intro1 = InL
     intro2 = InR
