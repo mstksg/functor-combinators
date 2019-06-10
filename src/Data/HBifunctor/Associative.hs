@@ -95,6 +95,7 @@ import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Coerce
 import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Apply.Free
@@ -385,6 +386,9 @@ instance Associative Sum where
           InL (InL x) -> InL x
           InL (InR y) -> InR (InL y)
           InR z       -> InR (InR z)
+
+instance Associative Void3 where
+    associating = isoF coerce coerce
 
 instance Associative Comp where
     associating = isoF to_ from_

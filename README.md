@@ -1,4 +1,5 @@
-# functor-combinators
+functor-combinators
+===================
 
 Tools for working with *functor combinators*: types that take functors (or
 other indexed types) and returns a new functor that "enhances" or "mixes" them
@@ -13,7 +14,8 @@ combinators with a uniform and lawful interface, so the real functionality here
 is the wide variety of functor combinators from all around the Haskell
 ecosystem.
 
-## What is a functor combinator?
+What is a functor combinator?
+-----------------------------
 
 A functor combinator takes functors (or other indexed types) and returns a new
 functor, enhances or mixes them together in some way.
@@ -151,3 +153,18 @@ There are other various utility functions that can be built on `interpret` and
 convenience in running.
 
 Without further ado, let's run down all of the combinators!
+
+Combinator Zoo
+--------------
+
+### Two-Argument
+
+#### `:*:`
+
+#### `:+:`
+
+#### Day
+
+#### These1
+
+### Single-Argument

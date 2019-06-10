@@ -197,6 +197,11 @@ class HFunctor t => Inject t where
 --
 -- That is, squishing a @t (t (t f)) a@ into a @t f a@ can be done "inside"
 -- first, then "outside", or "outside" first, then "inside".
+--
+-- Note that these laws are different from the
+-- 'Data.HFunctor.Interpret.Interpret' laws, so we often have instances
+-- where 'hbind' and 'Data.HFunctor.Interpret.interpret' (though they both
+-- may typecheck) produce different behavior.
 class Inject t => HBind t where
     -- | Bind a continuation to a @t f@ into some context @g@.
     hbind :: (f ~> t g) -> t f ~> t g
@@ -333,6 +338,7 @@ instance HBind WrappedApplicative where
 instance HBind Reverse where
     hbind f = f . getReverse
 
+-- | Combines the accumulators
 instance Monoid e => HBind (EnvT e) where
     hbind f (EnvT e x) = EnvT (e <> e') y
       where

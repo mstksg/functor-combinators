@@ -54,8 +54,7 @@
 -- See "Data.Functor.Tensor" for binary functor combinators that mix
 -- together two or more different functors.
 module Data.HFunctor.Interpret (
-    HFunctor(..)
-  , Interpret(..), forI
+    Interpret(..), forI
   -- * Utilities
   , getI
   , collectI
@@ -112,6 +111,8 @@ import qualified Data.Map.NonEmpty              as NEM
 --
 -- @
 -- 'interpret' id . 'inject' == id
+-- -- or
+-- 'retract' . 'inject' == id
 -- @
 --
 -- That is, if we lift a value into our structure, then immediately

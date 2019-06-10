@@ -69,7 +69,7 @@ import qualified Data.Functor.Day               as D
 -- @f@ can be turned into a monad built over @g@.
 --
 -- For the ability to move in and out of the enhanced functor, see
--- 'Data.Functor.HFunctor.Interpret'.
+-- 'Data.HFunctor.Inject' and 'Data.HFunctor.Interpret.Interpret'.
 class HFunctor t where
     -- | If we can turn an @f@ into a @g@, then we can turn a @t f@ into
     -- a @t g@.
@@ -85,13 +85,12 @@ class HFunctor t where
     --
     -- For example, @'ListF' f a@ is essentially a list of @f a@s.  If we
     -- 'hmap' to swap out the @f a@s for @g a@s, then we must ensure that
-    -- the "added structure" (here, the number of items in the list)
-    -- remains the same.  So, 'hmap' must preserve the number of items in
-    -- the list.
+    -- the "added structure" (here, the number of items in the list, and
+    -- the ordering of those items) remains the same.  So, 'hmap' must
+    -- preserve the number of items in the list, and must maintain the
+    -- ordering.
     --
-    -- The law @'hmap' 'id' == id@ is a way of formalizing this informal
-    -- property.
-    --
+    -- The law @'hmap' 'id' == id@ is a way of formalizing this property.
     hmap :: f ~> g -> t f ~> t g
 
     {-# MINIMAL hmap #-}
@@ -153,14 +152,7 @@ newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
     = WrapHBifunctor { unwrapHBifunctor :: t f g a }
   deriving Functor
 
-instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
-    hmap f = WrapHBifunctor . hright f . unwrapHBifunctor
-
-deriving via (WrappedHBifunctor Day f)    instance HFunctor (Day f)
-deriving via (WrappedHBifunctor (:*:) f)  instance HFunctor ((:*:) f)
-deriving via (WrappedHBifunctor (:+:) f)  instance HFunctor ((:+:) f)
-deriving via (WrappedHBifunctor Comp f)   instance HFunctor (Comp f)
-
+-- | Isomorphism between different varieities of ':+:'.
 sumSum :: (f :+: g) <~> Sum f g
 sumSum = isoF to_ from_
   where
@@ -169,6 +161,7 @@ sumSum = isoF to_ from_
     from_ (InL x) = L1 x
     from_ (InR y) = R1 y
 
+-- | Isomorphism between different varieities of ':*:'.
 prodProd :: (f :*: g) <~> Product f g
 prodProd = isoF to_ from_
   where
@@ -339,7 +332,22 @@ instance HBifunctor Sum where
       InL x -> InL (f x)
       InR y -> InR (g y)
 
+instance HBifunctor Void3 where
+    hleft  _   = coerce
+    hright   _ = coerce
+    hbimap _ _ = coerce
+
 instance HBifunctor Comp where
     hleft  f   (x :>>= h) = f x :>>= h
     hright   g (x :>>= h) =   x :>>= (g . h)
     hbimap f g (x :>>= h) = f x :>>= (g . h)
+
+instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
+    hmap f = WrapHBifunctor . hright f . unwrapHBifunctor
+
+deriving via (WrappedHBifunctor Day f)     instance HFunctor (Day f)
+deriving via (WrappedHBifunctor (:*:) f)   instance HFunctor ((:*:) f)
+deriving via (WrappedHBifunctor Product f) instance HFunctor (Product f)
+deriving via (WrappedHBifunctor Sum f)     instance HFunctor (Sum f)
+deriving via (WrappedHBifunctor Void3 f)   instance HFunctor (Void3 f)
+deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)

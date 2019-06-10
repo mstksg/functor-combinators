@@ -42,6 +42,7 @@ import           Data.Coerce
 import           Data.Data
 import           Data.Deriving
 import           Data.Foldable
+import           Data.Functor.Bind
 import           Data.Functor.Plus
 import           Data.List.NonEmpty  (NonEmpty(..))
 import           Data.Maybe
@@ -59,6 +60,8 @@ deriveRead1 ''ListF
 deriveEq1 ''ListF
 deriveOrd1 ''ListF
 
+instance Apply f => Apply (ListF f) where
+    ListF fs <.> ListF xs = ListF $ liftF2 (<.>) fs xs
 instance Applicative f => Applicative (ListF f) where
     pure  = ListF . (:[]) . pure
     ListF fs <*> ListF xs = ListF $ liftA2 (<*>) fs xs

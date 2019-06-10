@@ -37,6 +37,8 @@ module Control.Applicative.Step (
   , absurd1
   , Void2
   , absurd2
+  , Void3
+  , absurd3
   ) where
 
 import           Control.Natural
@@ -215,3 +217,27 @@ instance Apply (Void2 f) where
 -- combinator @t@.
 absurd2 :: Void2 f a -> t f a
 absurd2 = \case {}
+
+-- | @'Void3' a b@ is uninhabited for all @a@ and @b@.
+data Void3 a b c
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''Void3
+deriveRead1 ''Void3
+deriveEq1 ''Void3
+deriveOrd1 ''Void3
+
+instance Alt (Void3 f g) where
+    x <!> _ = absurd3 x
+
+instance Bind (Void3 f g) where
+    x >>- _ = case x of {}
+
+instance Apply (Void3 f g) where
+    x <.> _ = case x of {}
+
+-- | If you treat a @'Void3' f a@ as a binary functor combinator, then
+-- 'absurd3' lets you convert from a @'Void3' f a@ into a @t f a@ for any
+-- functor combinator @t@.
+absurd3 :: Void3 f g a -> t f g a
+absurd3 = \case {}
