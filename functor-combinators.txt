@@ -120,6 +120,7 @@ instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.NonEm
 instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.NonEmptyF f a)
 instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.NonEmptyF f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.ListF f)
+instance Data.Functor.Bind.Class.Apply f => Data.Functor.Bind.Class.Apply (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.ListF f)
@@ -590,15 +591,9 @@ stepDown :: Step f ~> (f :+: Step f)
 --   isomorphism.
 stepping :: Step f <~> (f :+: Step f)
 
--- | <a>Void1</a> is a functor that is uninhabited for all inputs. That is,
---   <tt><a>Void1</a> a</tt> is uninhabited for all <tt>a</tt>.
---   
---   The identity functor of <a>:+:</a> (and also <a>TheseT</a>)
-data Void1 a
-
--- | We have a natural transformation between <a>Void1</a> and any other
+-- | We have a natural transformation between <a>V1</a> and any other
 --   functor <tt>f</tt> with no constraints.
-absurd1 :: Void1 a -> f a
+absurd1 :: V1 a -> f a
 
 -- | <tt><a>Void2</a> a b</tt> is uninhabited for all <tt>a</tt> and
 --   <tt>b</tt>.
@@ -608,6 +603,32 @@ data Void2 a b
 --   <a>absurd2</a> lets you convert from a <tt><a>Void2</a> f a</tt> into
 --   a <tt>t f a</tt> for any functor combinator <tt>t</tt>.
 absurd2 :: Void2 f a -> t f a
+
+-- | <tt><a>Void3</a> a b</tt> is uninhabited for all <tt>a</tt> and
+--   <tt>b</tt>.
+data Void3 a b c
+
+-- | If you treat a <tt><a>Void3</a> f a</tt> as a binary functor
+--   combinator, then <a>absurd3</a> lets you convert from a
+--   <tt><a>Void3</a> f a</tt> into a <tt>t f a</tt> for any functor
+--   combinator <tt>t</tt>.
+absurd3 :: Void3 f g a -> t f g a
+instance forall k1 k2 (a :: k2) (b :: k1). Data.Functor.Classes.Ord1 (Control.Applicative.Step.Void3 a b)
+instance forall k1 k2 (f :: k2) (g :: k1). Data.Functor.Alt.Alt (Control.Applicative.Step.Void3 f g)
+instance forall k1 k2 (f :: k2) (g :: k1). Data.Functor.Bind.Class.Bind (Control.Applicative.Step.Void3 f g)
+instance forall k1 k2 (f :: k2) (g :: k1). Data.Functor.Bind.Class.Apply (Control.Applicative.Step.Void3 f g)
+instance forall k1 k2 (a :: k2) (b :: k1). Data.Functor.Classes.Eq1 (Control.Applicative.Step.Void3 a b)
+instance forall k1 k2 (a :: k2) (b :: k1). Data.Functor.Classes.Read1 (Control.Applicative.Step.Void3 a b)
+instance forall k1 k2 (a :: k2) (b :: k1). Data.Functor.Classes.Show1 (Control.Applicative.Step.Void3 a b)
+instance forall k1 (a :: k1) k2 (b :: k2) k3 (c :: k3). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable b, Data.Typeable.Internal.Typeable c, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Typeable.Internal.Typeable k3) => Data.Data.Data (Control.Applicative.Step.Void3 a b c)
+instance forall k1 (a :: k1) k2 (b :: k2) k3 (c :: k3). GHC.Generics.Generic (Control.Applicative.Step.Void3 a b c)
+instance forall k1 (a :: k1) k2 (b :: k2). Data.Traversable.Traversable (Control.Applicative.Step.Void3 a b)
+instance forall k1 (a :: k1) k2 (b :: k2). Data.Foldable.Foldable (Control.Applicative.Step.Void3 a b)
+instance forall k1 (a :: k1) k2 (b :: k2). GHC.Base.Functor (Control.Applicative.Step.Void3 a b)
+instance forall k1 (a :: k1) k2 (b :: k2) k3 (c :: k3). GHC.Classes.Ord (Control.Applicative.Step.Void3 a b c)
+instance forall k1 (a :: k1) k2 (b :: k2) k3 (c :: k3). GHC.Classes.Eq (Control.Applicative.Step.Void3 a b c)
+instance forall k1 (a :: k1) k2 (b :: k2) k3 (c :: k3). GHC.Read.Read (Control.Applicative.Step.Void3 a b c)
+instance forall k1 (a :: k1) k2 (b :: k2) k3 (c :: k3). GHC.Show.Show (Control.Applicative.Step.Void3 a b c)
 instance forall k (a :: k). Data.Functor.Classes.Ord1 (Control.Applicative.Step.Void2 a)
 instance forall k (f :: k). Data.Functor.Alt.Alt (Control.Applicative.Step.Void2 f)
 instance forall k (f :: k). Data.Functor.Bind.Class.Bind (Control.Applicative.Step.Void2 f)
@@ -641,22 +662,6 @@ instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.O
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Steps f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Steps f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Steps f a)
-instance Data.Functor.Classes.Ord1 Control.Applicative.Step.Void1
-instance Data.Functor.Alt.Alt Control.Applicative.Step.Void1
-instance Data.Functor.Bind.Class.Bind Control.Applicative.Step.Void1
-instance Data.Functor.Bind.Class.Apply Control.Applicative.Step.Void1
-instance Data.Functor.Classes.Eq1 Control.Applicative.Step.Void1
-instance Data.Functor.Classes.Read1 Control.Applicative.Step.Void1
-instance Data.Functor.Classes.Show1 Control.Applicative.Step.Void1
-instance forall k (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable k) => Data.Data.Data (Control.Applicative.Step.Void1 a)
-instance forall k (a :: k). GHC.Generics.Generic (Control.Applicative.Step.Void1 a)
-instance Data.Traversable.Traversable Control.Applicative.Step.Void1
-instance Data.Foldable.Foldable Control.Applicative.Step.Void1
-instance GHC.Base.Functor Control.Applicative.Step.Void1
-instance forall k (a :: k). GHC.Classes.Ord (Control.Applicative.Step.Void1 a)
-instance forall k (a :: k). GHC.Classes.Eq (Control.Applicative.Step.Void1 a)
-instance forall k (a :: k). GHC.Read.Read (Control.Applicative.Step.Void1 a)
-instance forall k (a :: k). GHC.Show.Show (Control.Applicative.Step.Void1 a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Step f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
 instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step f)
@@ -706,7 +711,7 @@ module Data.HFunctor
 --   can be turned into a monad built over <tt>g</tt>.
 --   
 --   For the ability to move in and out of the enhanced functor, see
---   <a>Interpret</a>.
+--   <a>Inject</a> and <a>Interpret</a>.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -725,11 +730,12 @@ class HFunctor t
 --   For example, <tt><a>ListF</a> f a</tt> is essentially a list of <tt>f
 --   a</tt>s. If we <a>hmap</a> to swap out the <tt>f a</tt>s for <tt>g
 --   a</tt>s, then we must ensure that the "added structure" (here, the
---   number of items in the list) remains the same. So, <a>hmap</a> must
---   preserve the number of items in the list.
+--   number of items in the list, and the ordering of those items) remains
+--   the same. So, <a>hmap</a> must preserve the number of items in the
+--   list, and must maintain the ordering.
 --   
 --   The law <tt><a>hmap</a> <a>id</a> == id</tt> is a way of formalizing
---   this informal property.
+--   this property.
 hmap :: HFunctor t => (f ~> g) -> t f ~> t g
 
 -- | Lift an isomorphism over an <a>HFunctor</a>.
@@ -779,6 +785,10 @@ inject :: Inject t => f ~> t f
 --   That is, squishing a <tt>t (t (t f)) a</tt> into a <tt>t f a</tt> can
 --   be done "inside" first, then "outside", or "outside" first, then
 --   "inside".
+--   
+--   Note that these laws are different from the <a>Interpret</a> laws, so
+--   we often have instances where <a>hbind</a> and <a>interpret</a>
+--   (though they both may typecheck) produce different behavior.
 class Inject t => HBind t
 
 -- | Bind a continuation to a <tt>t f</tt> into some context <tt>g</tt>.
@@ -843,6 +853,7 @@ instance Data.HFunctor.HBind Data.Functor.Bind.Class.MaybeApply
 instance Data.HFunctor.HBind Control.Applicative.Backwards.Backwards
 instance Data.HFunctor.HBind Data.Functor.Bind.Class.WrappedApplicative
 instance Data.HFunctor.HBind Data.Functor.Reverse.Reverse
+instance GHC.Base.Monoid e => Data.HFunctor.HBind (Control.Comonad.Trans.Env.EnvT e)
 instance (Data.HFunctor.HBind t, Data.HFunctor.Inject t) => Data.HFunctor.HBind (Data.HFunctor.HLift t)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.HBind (Data.HFunctor.HFree t)
 instance Data.HFunctor.Inject Data.Functor.Coyoneda.Coyoneda
@@ -863,6 +874,7 @@ instance Data.HFunctor.Inject Data.Functor.Bind.Class.MaybeApply
 instance Data.HFunctor.Inject Control.Applicative.Backwards.Backwards
 instance Data.HFunctor.Inject Data.Functor.Bind.Class.WrappedApplicative
 instance Data.HFunctor.Inject (Control.Monad.Trans.Reader.ReaderT r)
+instance GHC.Base.Monoid e => Data.HFunctor.Inject (Control.Comonad.Trans.Env.EnvT e)
 instance Data.HFunctor.Inject Data.Functor.Reverse.Reverse
 instance (Data.HFunctor.Inject s, Data.HFunctor.Inject t) => Data.HFunctor.Inject (Control.Monad.Trans.Compose.ComposeT s t)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HLift t)
@@ -1034,50 +1046,6 @@ instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor 
 --   together two or more different functors.
 module Data.HFunctor.Interpret
 
--- | An <a>HFunctor</a> can be thought of a unary "functor transformer" ---
---   a basic functor combinator. It takes a functor as input and returns a
---   functor as output.
---   
---   It "enhances" a functor with extra structure (sort of like how a monad
---   transformer enhances a <a>Monad</a> with extra structure).
---   
---   As a uniform inteface, we can "swap the underlying functor" (also
---   sometimes called "hoisting"). This is what <a>hmap</a> does: it lets
---   us swap out the <tt>f</tt> in a <tt>t f</tt> for a <tt>t g</tt>.
---   
---   For example, the free monad <a>Free</a> takes a <a>Functor</a> and
---   returns a new <a>Functor</a>. In the process, it provides a monadic
---   structure over <tt>f</tt>. <a>hmap</a> lets us turn a <tt><a>Free</a>
---   f</tt> into a <tt><a>Free</a> g</tt>: a monad built over <tt>f</tt>
---   can be turned into a monad built over <tt>g</tt>.
---   
---   For the ability to move in and out of the enhanced functor, see
---   <a>Interpret</a>.
-class HFunctor t
-
--- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
---   <tt>t f</tt> into a <tt>t g</tt>.
---   
---   It must be the case that
---   
---   <pre>
---   <a>hmap</a> <a>id</a> == id
---   </pre>
---   
---   Essentially, <tt>t f</tt> adds some "extra structure" to <tt>f</tt>.
---   <a>hmap</a> must swap out the functor, <i>without affecting the added
---   structure</i>.
---   
---   For example, <tt><a>ListF</a> f a</tt> is essentially a list of <tt>f
---   a</tt>s. If we <a>hmap</a> to swap out the <tt>f a</tt>s for <tt>g
---   a</tt>s, then we must ensure that the "added structure" (here, the
---   number of items in the list) remains the same. So, <a>hmap</a> must
---   preserve the number of items in the list.
---   
---   The law <tt><a>hmap</a> <a>id</a> == id</tt> is a way of formalizing
---   this informal property.
-hmap :: HFunctor t => (f ~> g) -> t f ~> t g
-
 -- | An <a>Interpret</a> lets us move in and out of the "enhanced"
 --   <a>Functor</a>.
 --   
@@ -1103,6 +1071,8 @@ hmap :: HFunctor t => (f ~> g) -> t f ~> t g
 --   
 --   <pre>
 --   <a>interpret</a> id . <a>inject</a> == id
+--   -- or
+--   <a>retract</a> . <a>inject</a> == id
 --   </pre>
 --   
 --   That is, if we lift a value into our structure, then immediately
@@ -1192,6 +1162,7 @@ instance Data.HFunctor.Interpret.Interpret Data.Functor.Bind.Class.MaybeApply
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Backwards.Backwards
 instance Data.HFunctor.Interpret.Interpret Data.Functor.Bind.Class.WrappedApplicative
 instance Data.HFunctor.Interpret.Interpret (Control.Monad.Trans.Reader.ReaderT r)
+instance GHC.Base.Monoid e => Data.HFunctor.Interpret.Interpret (Control.Comonad.Trans.Env.EnvT e)
 instance Data.HFunctor.Interpret.Interpret Data.Functor.Reverse.Reverse
 instance Data.HFunctor.Interpret.Interpret t => Data.HFunctor.Interpret.Interpret (Data.HFunctor.HLift t)
 instance Data.HFunctor.Interpret.Interpret t => Data.HFunctor.Interpret.Interpret (Data.HFunctor.HFree t)
@@ -1683,6 +1654,7 @@ instance Data.HBifunctor.Associative.Associative Data.Functor.Product.Product
 instance Data.HBifunctor.Associative.Associative Data.Functor.Day.Day
 instance Data.HBifunctor.Associative.Associative (GHC.Generics.:+:)
 instance Data.HBifunctor.Associative.Associative Data.Functor.Sum.Sum
+instance Data.HBifunctor.Associative.Associative Control.Applicative.Step.Void3
 instance Data.HBifunctor.Associative.Associative Control.Monad.Freer.Church.Comp
 instance Data.HFunctor.HBind t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.HClown t)
 instance Data.HFunctor.HBind t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.HJoker t)
@@ -1748,7 +1720,7 @@ class Associative t => Tensor t where {
     --   Another example:
     --   
     --   <pre>
-    --   (<a>Void1</a> <a>:+:</a> f) a
+    --   (<a>V1</a> <a>:+:</a> f) a
     --   </pre>
     --   
     --   is equivalent to just
@@ -1798,12 +1770,12 @@ leftIdentity :: (Tensor t, Functor g) => g <~> t (I t) g
 -- | <a>leftIdentity</a> (<a>intro1</a> and <a>elim1</a>) for <a>:+:</a>
 --   actually does not require <a>Functor</a>. This is the more general
 --   version.
-voidLeftIdentity :: f <~> (Void1 :+: f)
+voidLeftIdentity :: f <~> (V1 :+: f)
 
 -- | <a>rightIdentity</a> (<a>intro2</a> and <a>elim2</a>) for <a>:+:</a>
 --   actually does not require <a>Functor</a>. This is the more general
 --   version.
-voidRightIdentity :: f <~> (Void1 :+: f)
+voidRightIdentity :: f <~> (V1 :+: f)
 
 -- | A <tt><a>Monoidal</a> t</tt> is a <a>Semigroupoidal</a>, in that it
 --   provides some type <tt><a>MF</a> t f</tt> that is equivalent to one
@@ -2517,7 +2489,7 @@ infixr 0 <~>
 --   can be turned into a monad built over <tt>g</tt>.
 --   
 --   For the ability to move in and out of the enhanced functor, see
---   <a>Interpret</a>.
+--   <a>Inject</a> and <a>Interpret</a>.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -2536,11 +2508,12 @@ class HFunctor t
 --   For example, <tt><a>ListF</a> f a</tt> is essentially a list of <tt>f
 --   a</tt>s. If we <a>hmap</a> to swap out the <tt>f a</tt>s for <tt>g
 --   a</tt>s, then we must ensure that the "added structure" (here, the
---   number of items in the list) remains the same. So, <a>hmap</a> must
---   preserve the number of items in the list.
+--   number of items in the list, and the ordering of those items) remains
+--   the same. So, <a>hmap</a> must preserve the number of items in the
+--   list, and must maintain the ordering.
 --   
 --   The law <tt><a>hmap</a> <a>id</a> == id</tt> is a way of formalizing
---   this informal property.
+--   this property.
 hmap :: HFunctor t => (f ~> g) -> t f ~> t g
 
 -- | A typeclass for <a>HFunctor</a>s where you can "inject" an <tt>f
@@ -2586,6 +2559,8 @@ inject :: Inject t => f ~> t f
 --   
 --   <pre>
 --   <a>interpret</a> id . <a>inject</a> == id
+--   -- or
+--   <a>retract</a> . <a>inject</a> == id
 --   </pre>
 --   
 --   That is, if we lift a value into our structure, then immediately
@@ -2906,7 +2881,7 @@ class Associative t => Tensor t where {
     --   Another example:
     --   
     --   <pre>
-    --   (<a>Void1</a> <a>:+:</a> f) a
+    --   (<a>V1</a> <a>:+:</a> f) a
     --   </pre>
     --   
     --   is equivalent to just
@@ -3413,11 +3388,8 @@ L1 :: f p -> (:+:)
 R1 :: g p -> (:+:)
 infixr 5 :+:
 
--- | <a>Void1</a> is a functor that is uninhabited for all inputs. That is,
---   <tt><a>Void1</a> a</tt> is uninhabited for all <tt>a</tt>.
---   
---   The identity functor of <a>:+:</a> (and also <a>TheseT</a>)
-data Void1 a
+-- | Void: used for datatypes without constructors
+data V1 (p :: k) :: forall k. () => k -> Type
 
 -- | A <tt>These f g a</tt> has either an <tt>f a</tt>, a <tt>g a</tt>, or
 --   both.
