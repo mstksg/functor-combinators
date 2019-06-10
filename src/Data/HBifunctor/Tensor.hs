@@ -66,6 +66,7 @@ module Data.HBifunctor.Tensor (
   , voidRightIdentity
   -- * 'Monoidal'
   , Monoidal(..)
+  , CM
   , nilMF
   , consMF
   , unconsMF
@@ -323,7 +324,7 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     -- Note that because @t@ appears nowhere in the input or output types,
     -- you must always use this with explicit type application syntax (like
     -- @pureT \@Day@)
-    pureT  :: C (MF t) f => I t ~> f
+    pureT  :: CM t f => I t ~> f
     pureT  = retract . reviewF (splittingMF @t) . L1
 
     -- | If we have a constraint on the 'Monoidal' satisfied, it should
@@ -373,13 +374,21 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     --
     -- Note that you should only use this if @f@ doesn't already have the
     -- 'SF' constraint.  If it does, this could lead to conflicting
-    -- instances.  Only use this with /specific/, concrete @f@s.
+    -- instances.  Only use this with /specific/, concrete @f@s.  Otherwise
+    -- this is unsafe and can possibly break coherence guarantees.
     --
     -- The @proxy@ argument can be provided using something like @'Proxy'
     -- \@f@, to specify which @f@ you want to upgrade.
-    upgradeC :: C (MF t) f => proxy f -> (C (SF t) f => r) -> r
+    upgradeC :: CM t f => proxy f -> (CS t f => r) -> r
 
     {-# MINIMAL appendMF, splitSF, splittingMF, upgradeC #-}
+
+-- | Convenient alias for the constraint required for 'inL', 'inR',
+-- 'pureT', etc.
+--
+-- It's usually a constraint on the target/result context of interpretation
+-- that allows you to "exit" or "run" a @'Monoidal' t@.
+type CM t = C (MF t)
 
 -- | Create the "empty 'MF'@.
 --
@@ -416,7 +425,7 @@ unconsMF = viewF splittingMF
 --
 -- You can think of this as an 'HBifunctor' analogue of 'inject'.
 inL
-    :: forall t f g a. (Monoidal t, C (MF t) g)
+    :: forall t f g a. (Monoidal t, CM t g)
     => f a
     -> t f g a
 inL = hright (pureT @t) . intro1
@@ -426,7 +435,7 @@ inL = hright (pureT @t) . intro1
 --
 -- You can think of this as an 'HBifunctor' analogue of 'inject'.
 inR
-    :: forall t f g a. (Monoidal t, C (MF t) f)
+    :: forall t f g a. (Monoidal t, CM t f)
     => g a
     -> t f g a
 inR = hleft (pureT @t) . intro2
@@ -445,7 +454,7 @@ inR = hleft (pureT @t) . intro2
 -- instance).  If it does, this could lead to conflicting instances.  If
 -- @f@ already has the 'SF' instance, just use 'biretract' directly.  Only
 -- use this with /specific/, concrete @f@s.
-biretractT :: forall t f. Monoidal t => C (MF t) f => t f f ~> f
+biretractT :: forall t f. (Monoidal t, CM t f) => t f f ~> f
 biretractT = upgradeC @t (Proxy @f)
                biretract
 
@@ -464,7 +473,7 @@ biretractT = upgradeC @t (Proxy @f)
 -- @f@ already has the 'SF' instance, just use 'biretract' directly.  Only
 -- use this with /specific/, concrete @f@s.
 binterpretT
-    :: forall t f g h. (Monoidal t, C (MF t) h)
+    :: forall t f g h. (Monoidal t, CM t h)
     => f ~> h
     -> g ~> h
     -> t f g ~> h

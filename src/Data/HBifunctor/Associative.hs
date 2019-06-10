@@ -80,6 +80,7 @@ module Data.HBifunctor.Associative (
   , disassoc
   -- * 'Semigroupoidal'
   , Semigroupoidal(..)
+  , CS
   , matchingSF
   -- ** Utility
   , biget
@@ -236,20 +237,27 @@ class (Associative t, Interpret (SF t)) => Semigroupoidal t where
 
     -- | The 'HBifunctor' analogy of 'retract'. It retracts /both/ @f@s
     -- into a single @f@, effectively fully mixing them together.
-    biretract :: C (SF t) f => t f f ~> f
+    biretract :: CS t f => t f f ~> f
     biretract = retract . toSF
 
     -- | The 'HBifunctor' analogy of 'interpret'.  It takes two
     -- interpreting functions, and mixes them together into a target
     -- functor @h@.
     binterpret
-        :: C (SF t) h
+        :: CS t h
         => f ~> h
         -> g ~> h
         -> t f g ~> h
     binterpret f g = retract . toSF . hbimap f g
 
     {-# MINIMAL appendSF, matchSF #-}
+
+-- | Convenient alias for the constraint required for 'biretract',
+-- 'binterpret', etc.
+--
+-- It's usually a constraint on the target/result context of interpretation
+-- that allows you to "exit" or "run" a @'Semigroupoidal' t@.
+type CS t = C (SF t)
 
 -- | An @'SF' t f@ represents the successive application of @t@ to @f@,
 -- over and over again.   So, that means that an @'SF' t f@ must either be
@@ -286,7 +294,7 @@ matchingSF = isoF matchSF (inject !*! consSF)
 --     -> Sum Int
 -- @
 biget
-    :: (Semigroupoidal t, C (SF t) (Const b))
+    :: (Semigroupoidal t, CS t (Const b))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
@@ -308,7 +316,7 @@ biget f g = getConst . binterpret (Const . f) (Const . g)
 --     -> Sum Int
 -- @
 (!$!)
-    :: (Semigroupoidal t, C (SF t) (Const b))
+    :: (Semigroupoidal t, CS t (Const b))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
@@ -318,7 +326,7 @@ infixr 5 !$!
 
 -- | Infix alias for 'binterpret'
 (!*!)
-    :: (Semigroupoidal t, C (SF t) h)
+    :: (Semigroupoidal t, CS t h)
     => (f ~> h)
     -> (g ~> h)
     -> t f g
@@ -332,7 +340,7 @@ infixr 5 !*!
 -- This will work if @'C' t@ is 'Data.Constraint.Trivial.Unconstrained',
 -- 'Apply', or 'Applicative'.
 bicollect
-    :: (Semigroupoidal t, C (SF t) (Const [b]))
+    :: (Semigroupoidal t, CS t (Const [b]))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a

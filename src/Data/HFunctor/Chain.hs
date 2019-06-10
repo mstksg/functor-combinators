@@ -182,11 +182,11 @@ instance HBifunctor t => Inject (Chain1 t) where
     inject  = Done1
 
 instance (HBifunctor t, Semigroupoidal t) => Interpret (Chain1 t) where
-    type C (Chain1 t) = C (SF t)
+    type C (Chain1 t) = CS t
     retract = \case
       Done1 x  -> x
       More1 xs -> binterpret id retract xs
-    interpret :: forall f g. C (SF t) g => f ~> g -> Chain1 t f ~> g
+    interpret :: forall f g. CS t g => f ~> g -> Chain1 t f ~> g
     interpret f = go
       where
         go :: Chain1 t f ~> g
@@ -324,17 +324,14 @@ instance (Tensor t, i ~ I t) => Inject (Chain t i) where
 
 -- | We can collapse and interpret an @'Chain' t i@ if we have @'Tensor' t@.
 instance (Monoidal t, i ~ I t) => Interpret (Chain t i) where
-    type C (Chain t i) = AndC (C (SF t)) (C (MF t))
-    retract = \case
-      Done x  -> pureT @t x
-      More xs -> binterpret id retract xs
+    type C (Chain t i) = CM t
     interpret
-        :: forall f g. (C (SF t) g, C (MF t) g)
+        :: forall f g. CM t g
         => f ~> g
         -> Chain t i f ~> g
-    interpret f = go
+    interpret f = upgradeC @t (Proxy @g) go
       where
-        go :: Chain t i f ~> g
+        go :: CS t g => Chain t i f ~> g
         go = \case
           Done x  -> pureT @t x
           More xs -> binterpret f go xs

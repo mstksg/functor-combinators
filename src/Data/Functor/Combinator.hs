@@ -61,12 +61,14 @@ module Data.Functor.Combinator (
   -- functors together in some way.
   , HBifunctor(..)
   , Semigroupoidal(SF, appendSF, consSF, toSF, biretract, binterpret)
-  , Tensor(..)
-  , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT, upgradeC)
-  , inL, inR
+  , CS
   , biget, bicollect
   , (!*!)
   , (!$!)
+  , Tensor(..)
+  , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT, upgradeC)
+  , CM
+  , inL, inR
   -- * Combinators
   -- | Functor combinators
   -- ** Single

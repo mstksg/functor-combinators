@@ -116,7 +116,9 @@ import qualified Data.Map.NonEmpty              as NEM
 -- That is, if we lift a value into our structure, then immediately
 -- interpret it out as itself, it should lave the value unchanged.
 class Inject t => Interpret t where
-    -- | The constraint on the target context of 'interpret'.
+    -- | The constraint on the target context of 'interpret'.  It's
+    -- basically the constraint that allows you to "exit" or "run" an
+    -- 'Interpret'.
     type C t :: (Type -> Type) -> Constraint
 
     -- | Remove the @f@ out of the enhanced @t f@ structure, provided that
