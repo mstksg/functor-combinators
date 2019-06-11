@@ -13,7 +13,7 @@ packages:
     hackage: trivial-constraint-0.5.1.0
 snapshots:
 - completed:
-    size: 507794
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/5/20.yaml
-    sha256: c9bc78cc4bc8e71078cc7d2307571e68b17bf7f1fd32a55b1baec7fc923f7943
-  original: nightly-2019-05-20
+    size: 511614
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/6/10.yaml
+    sha256: e9389ccd6c48a88c5c1727fe105204bc5615dd3f8ba4d2db6e79d476755f0c65
+  original: nightly-2019-06-10

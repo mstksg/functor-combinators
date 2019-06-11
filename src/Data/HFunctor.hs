@@ -166,8 +166,9 @@ instance HFunctor t => HFunctor (HFree t) where
 -- If you think of @t f a@ as an "enhanced @f@", then 'inject' allows you
 -- to use an @f@ as its enhanced form.
 --
--- 'inject' itself is not too useful without 'Data.HFunctor.Interpret' to
--- allow us to interpret or retrieve back the @f@.
+-- 'inject' itself is not too useful without
+-- 'Data.HFunctor.Interpret.Interpret' to allow us to interpret or retrieve
+-- back the @f@.
 class HFunctor t => Inject t where
     -- | Lift an @f@ into the enhanced @t f@ structure.  Analogous to
     -- 'lift' from 'MonadTrans'.
@@ -178,8 +179,8 @@ class HFunctor t => Inject t where
 -- | A typeclass for 'HFunctor's that you can bind continuations to,
 -- without caring about what the contexts at play.
 --
--- It is very similar to 'Data.HFunctor.Interpret', except
--- 'Data.HFunctor.Interpret' has the ability to constrain the contexts to
+-- It is very similar to 'Data.HFunctor.Interpret.Interpret', except
+-- 'Data.HFunctor.Interpret.Interpret' has the ability to constrain the contexts to
 -- some typeclass.
 --
 -- The main law is that binding 'inject' should leave things unchanged:

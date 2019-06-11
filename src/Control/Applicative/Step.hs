@@ -22,17 +22,21 @@
 -- Portability : non-portable
 --
 -- This module provides functor combinators that are the fixed points of
--- applications of ':+:' and 'Data.Functor.These.TheseT'.  They are useful
--- for their 'Data.Functor.HFunctor.Interpret' instances, along with their
--- relationship to the 'Data.Functor.Tensor.Monoidal' insatnces of ':+:'
--- and 'Data.Functor.These.TheseT'.
+-- applications of ':+:' and 'Data.Functor.These.These1'.  They are useful
+-- for their 'Data.HFunctor.Interpret.Interpret' instances, along with
+-- their relationship to the 'Data.Functor.Tensor.Monoidal' insatnces of
+-- ':+:' and 'Data.Functor.These.These1'.
 module Control.Applicative.Step (
   -- * Fixed Points
     Step(..)
   , Steps(..)
+  -- ** Steppers
   , stepUp
   , stepDown
   , stepping
+  , stepsUp
+  , stepsDown
+  , steppings
   -- * Void
   , absurd1
   , Void2
@@ -43,12 +47,17 @@ module Control.Applicative.Step (
 
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Bifunctor
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Alt
 import           Data.Functor.Bind
+import           Data.Functor.These
+import           Data.Map.NonEmpty          (NEMap)
+import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
+import           Data.These
 import           GHC.Generics
 import           GHC.Natural
 import qualified Data.Map.NonEmpty          as NEM
@@ -69,7 +78,7 @@ import qualified Data.Map.NonEmpty          as NEM
 -- Can be useful for using with the 'Data.Functor.Tensor.Monoidal' instance
 -- of ':+:'.
 --
--- 'Data.Functor.HFunctor.interpret'ing it requires no constraint on the
+-- 'Data.HFunctor.interpret'ing it requires no constraint on the
 -- target context.
 data Step f a = Step { stepPos :: Natural, stepVal :: f a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
@@ -97,7 +106,7 @@ instance Traversable1 f => Traversable1 (Step f) where
 stepping :: Step f <~> f :+: Step f
 stepping = isoF stepDown stepUp
 
--- | Pop off the first iteem in a 'Step'.  Because a @'Step' f@ is @f :+:
+-- | Pop off the first item in a 'Step'.  Because a @'Step' f@ is @f :+:
 -- f :+: f :+: ...@ forever, this matches on the first branch.
 --
 -- You can think of it as reassociating
@@ -166,7 +175,7 @@ absurd1 = \case {}
 -- Can be useful for using with the 'Data.Functor.Tensor.Monoidal' instance
 -- of 'Data.Functor.These.TheseT'.
 --
--- 'Data.Functor.HFunctor.interpret'ing it requires at least an 'Alt'
+-- 'Data.HFunctor.interpret'ing it requires at least an 'Alt'
 -- instance in the target context, since we have to handle potentially more
 -- than one @f@.
 newtype Steps f a = Steps { getSteps :: NEM.NEMap Natural (f a) }
@@ -193,6 +202,84 @@ instance Semigroup (Steps f a) where
 
 instance Functor f => Alt (Steps f) where
     (<!>) = (<>)
+
+-- | "Uncons and cons" an @f@ branch before a 'Steps'.  This is basically
+-- a witness that 'stepsDown' and 'stepsUp' form an isomorphism.
+steppings :: Steps f <~> These1 f (Steps f)
+steppings = isoF stepsDown stepsUp
+
+-- | Pop off the first item in a 'Steps'.  Because a @'Steps' f@ is @f
+-- `These1` f `These1` f `These1` ...@ forever, this matches on the first branch.
+--
+-- You can think of it as reassociating
+--
+-- @
+-- f `These1` f `These1` f `These1` f `These1` ...
+-- @
+--
+-- into
+--
+-- @
+-- f `These1` ( f `These1` f `These1` f `These1` ...)
+-- @
+--
+-- It returns:
+--
+-- *  'This1' if the first item is the /only/ item in the 'Steps'
+-- *  'That1' if the first item in the 'Steps' is empty, but there are more
+--    items left.  The extra items are all shfited down.
+-- *  'These1' if the first item in the 'Steps' exists, and there are also
+--    more items left.  The extra items are all shifted down.
+--
+-- Forms an isomorphism with 'stepsUp' (see 'steppings').
+stepsDown :: Steps f ~> These1 f (Steps f)
+stepsDown = these This1 That1 These1
+          . bimap getFirst Steps
+          . NEM.foldMapWithKey decr
+          . getSteps
+
+decr :: Natural -> f a -> These (First (f a)) (NEMap Natural (f a))
+decr i x = case minusNaturalMaybe i 1 of
+      Nothing -> This $ First x
+      Just i' -> That $ NEM.singleton i' x
+
+-- | Unshift an item into a 'Steps'.  Because a @'Steps' f@ is @f `These1`
+-- f `These1` f `These1` f `These1` ...@ forever, this basically conses an
+-- additional possibility of @f@ to the beginning of it all.
+--
+-- You can think of it as reassociating
+--
+-- @
+-- f `These1` ( f `These1` f `These1` f `These1` ...)
+-- @
+--
+-- into
+--
+-- @
+-- f `These1` f `These1` f `These1` f `These1` ...
+-- @
+--
+-- If you give:
+--
+-- *  'This1', then it returns a singleton 'Steps' with one item at
+--    index 0
+-- *  'That1', then it shifts every item in the given 'Steps' up one
+--    index.
+-- *  'These1', then it shifts every item in the given 'Steps' up one
+--    index, and adds the given item (the @f@) at index zero.
+--
+-- Forms an isomorphism with 'stepDown' (see 'stepping').
+stepsUp :: These1 f (Steps f) ~> Steps f
+stepsUp = \case
+    This1  x    -> Steps $ NEM.singleton 0 x
+    That1    xs -> Steps . NEM.mapKeysMonotonic (+ 1)
+                         . getSteps
+                         $ xs
+    These1 x xs -> Steps . NEM.insertMapMin 0 x
+                         . NEM.toMap
+                         . NEM.mapKeysMonotonic (+ 1)
+                         . getSteps
+                         $ xs
 
 -- | @'Void2' a b@ is uninhabited for all @a@ and @b@.
 data Void2 a b

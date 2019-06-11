@@ -14,6 +14,7 @@ module Data.HFunctor.Internal (
   , HBifunctor(..)
   , WrappedHBifunctor(..)
   , sumSum, prodProd
+  , generalize, absorb
   , unsafePlus, unsafeApply, unsafeBind
   ) where
 
@@ -38,12 +39,15 @@ import           Data.Constraint.Unsafe
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
+import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
 import           Data.Functor.Sum
+import           Data.Functor.These
 import           Data.Functor.Yoneda
 import           Data.Kind
+import           Data.Proxy
 import           Data.Tagged
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
@@ -207,6 +211,20 @@ unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 unsafeBind _ x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
     Sub Dict -> x
 
+-- | Turn 'Identity' into any @'Applicative' f@.  Can be useful as an
+-- argument to `hmap`, `hbimap`, or `interpret`.
+--
+-- It is a more general form of 'Control.Monad.Morph.generalize' from
+-- /mmorph/.
+generalize :: Applicative f => Identity ~> f
+generalize (Identity x) = pure x
+
+-- | Natural transformation from any functor @f@ into 'Proxy'.  Can be
+-- useful for "zeroing out" a functor with `hmap` or `hbimap` or
+-- `interpret`.
+absorb :: f ~> Proxy
+absorb _ = Proxy
+
 instance HFunctor Coyoneda where
     hmap = hoistCoyoneda
 
@@ -332,6 +350,12 @@ instance HBifunctor Sum where
       InL x -> InL (f x)
       InR y -> InR (g y)
 
+instance HBifunctor These1 where
+    hbimap f g = \case
+      This1  x   -> This1  (f x)
+      That1    y -> That1        (g y)
+      These1 x y -> These1 (f x) (g y)
+
 instance HBifunctor Void3 where
     hleft  _   = coerce
     hright   _ = coerce
@@ -349,5 +373,6 @@ deriving via (WrappedHBifunctor Day f)     instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)   instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor Product f) instance HFunctor (Product f)
 deriving via (WrappedHBifunctor Sum f)     instance HFunctor (Sum f)
+deriving via (WrappedHBifunctor These1 f)  instance HFunctor (These1 f)
 deriving via (WrappedHBifunctor Void3 f)   instance HFunctor (Void3 f)
 deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)

@@ -68,7 +68,9 @@ module Data.Functor.Combinator (
   , Tensor(..)
   , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT, upgradeC)
   , CM
+  , nilMF
   , inL, inR
+  , outL, outR
   -- * Combinators
   -- | Functor combinators
   -- ** Single
@@ -88,10 +90,13 @@ module Data.Functor.Combinator (
   , FreeOf(..)
   -- ** Multi
   , Day(..)
-  , (:*:)(..)
+  , (:*:)(..), prodOutL, prodOutR
   , (:+:)(..), V1
   , These1(..)
   , Comp(Comp, unComp)
+  -- * Natural Transformations
+  , generalize
+  , absorb
   ) where
 
 import           Control.Alternative.Free
@@ -113,9 +118,10 @@ import           Data.HBifunctor.Associative
 import           Data.HBifunctor.Tensor
 import           Data.HFunctor
 import           Data.HFunctor.Final
+import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics
-import qualified Data.Functor.Plus             as P
+import qualified Data.Functor.Plus           as P
 
 -- | The functor combinator that forgets all structure in the input.
 -- Ignores the input structure and stores no information.

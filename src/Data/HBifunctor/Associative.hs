@@ -105,6 +105,7 @@ import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Sum
+import           Data.Functor.These
 import           Data.HBifunctor
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
@@ -112,6 +113,7 @@ import           Data.Kind
 import           Data.List.NonEmpty         (NonEmpty(..))
 import           GHC.Generics hiding        (C)
 import qualified Data.Functor.Day           as D
+import qualified Data.Map.NonEmpty          as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -157,8 +159,8 @@ disassoc = reviewF associating
 -- *  @t f (t f (t f (t f f))) a@       -- 5 times
 -- *  .. etc
 --
--- This typeclass associates each @t@ with its "semigroupoidal functor
--- combinator" @'SF' t@.
+-- This typeclass associates each @t@ with its "induced semigroupoidal
+-- functor combinator" @'SF' t@.
 --
 -- This is useful because sometimes you might want to describe a type that
 -- can be @t f f@, @t f (t f f)@, @t f (t f (t f f))@, etc.; "f applied to
@@ -387,6 +389,26 @@ instance Associative Sum where
           InL (InR y) -> InR (InL y)
           InR z       -> InR (InR z)
 
+instance Associative These1 where
+    associating = isoF to_ from_
+      where
+        to_ = \case
+          This1  x              -> This1  (This1  x  )
+          That1    (This1  y  ) -> This1  (That1    y)
+          That1    (That1    z) -> That1               z
+          That1    (These1 y z) -> These1 (That1    y) z
+          These1 x (This1  y  ) -> This1  (These1 x y)
+          These1 x (That1    z) -> These1 (This1  x  ) z
+          These1 x (These1 y z) -> These1 (These1 x y) z
+        from_ = \case
+          This1  (This1  x  )   -> This1  x
+          This1  (That1    y)   -> That1    (This1  y  )
+          This1  (These1 x y)   -> These1 x (This1  y  )
+          That1               z -> That1    (That1    z)
+          These1 (This1  x  ) z -> These1 x (That1    z)
+          These1 (That1    y) z -> That1    (These1 y z)
+          These1 (These1 x y) z -> These1 x (These1 y z)
+
 instance Associative Void3 where
     associating = isoF coerce coerce
 
@@ -503,6 +525,40 @@ instance Semigroupoidal Sum where
     binterpret f g = \case
       InL x -> f x
       InR y -> g y
+
+instance Semigroupoidal These1 where
+    type SF These1 = Steps
+
+    appendSF = \case
+      This1  (Steps xs)            -> Steps xs
+      That1             (Steps ys) -> Steps (NEM.mapKeysMonotonic (+ 1) ys)
+      These1 (Steps xs) (Steps ys) -> Steps $
+        let (k, _) = NEM.findMax xs
+        in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+    -- yeah, we cannot distinguish between L1 and R1.This1
+    -- matchSF = R1 . stepsDown
+    --
+    -- a more fundamental problem because tehre is no difference between
+    -- Done1 "bye" and More1 (This1 "bye")
+    matchSF x = case stepsDown x of
+      This1  y   -> L1 y
+      That1    z -> R1 (That1    z)
+      These1 y z -> R1 (These1 y z)
+
+    consSF = stepsUp
+    toSF = \case
+      This1  x   -> Steps $ NEM.singleton 0 x
+      That1    y -> Steps $ NEM.singleton 1 y
+      These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
+
+    biretract = \case
+      This1  x   -> x
+      That1    y -> y
+      These1 x y -> x <!> y
+    binterpret f g = \case
+      This1  x   -> f x
+      That1    y -> g y
+      These1 x y -> f x <!> g y
 
 instance Semigroupoidal Comp where
     type SF Comp = Free1

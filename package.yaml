@@ -30,6 +30,7 @@ dependencies:
 - mmorph
 - mtl
 - natural-transformation
+- these >= 1
 - nonempty-containers
 - pointed
 - profunctors
@@ -49,4 +50,3 @@ library:
   source-dirs: src
   other-modules:
   - Data.HFunctor.Internal
-  - Data.Functor.These
