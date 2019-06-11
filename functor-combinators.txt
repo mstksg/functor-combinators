@@ -3422,6 +3422,11 @@ data Ap (f :: Type -> Type) a
 --   The construction here is based on <a>Ap</a>, similar to now
 --   <a>NonEmpty</a> is built on list.
 data Ap1 :: (Type -> Type) -> Type -> Type
+[Ap1] :: f a -> Ap f (a -> b) -> Ap1 f b
+
+-- | An <tt><a>Ap1</a> f</tt> is just a <tt><a>Day</a> f (<a>Ap</a>
+--   f)</tt>. This bidirectional pattern synonym lets you treat it as such.
+pattern DayAp1 :: Day f (Ap f) a -> Ap1 f a
 data Alt (f :: Type -> Type) a
 
 -- | A <tt><a>Free</a> f</tt> is <tt>f</tt> enhanced with "sequential
