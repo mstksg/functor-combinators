@@ -490,9 +490,9 @@ instance Data.Profunctor.Unsafe.Profunctor (Control.Natural.IsoF.Exchange a b)
 
 
 -- | This module provides functor combinators that are the fixed points of
---   applications of <a>:+:</a> and <a>TheseT</a>. They are useful for
+--   applications of <a>:+:</a> and <a>These1</a>. They are useful for
 --   their <a>Interpret</a> instances, along with their relationship to the
---   <a>Monoidal</a> insatnces of <a>:+:</a> and <a>TheseT</a>.
+--   <a>Monoidal</a> instances of <a>:+:</a> and <a>These1</a>.
 module Control.Applicative.Step
 
 -- | An <tt>f a</tt>, along with a <a>Natural</a> index.
@@ -528,6 +528,8 @@ Step :: Natural -> f a -> Step f a
 --   </pre>
 --   
 --   It is the fixed point of applications of <a>TheseT</a>.
+--   
+--   You can think of this as an infinite sparse array of <tt>f a</tt>s.
 --   
 --   Intuitively, in an infinite <tt>f `TheseT` f `TheseT` f `TheseT` f
 --   ...</tt>, each of those infinite positions may have an <tt>f</tt> in
@@ -567,7 +569,7 @@ Steps :: NEMap Natural (f a) -> Steps f a
 --   Forms an isomorphism with <a>stepDown</a> (see <a>stepping</a>).
 stepUp :: (f :+: Step f) ~> Step f
 
--- | Pop off the first iteem in a <a>Step</a>. Because a <tt><a>Step</a>
+-- | Pop off the first item in a <a>Step</a>. Because a <tt><a>Step</a>
 --   f</tt> is <tt>f :+: f :+: f :+: ...</tt> forever, this matches on the
 --   first branch.
 --   
@@ -590,6 +592,74 @@ stepDown :: Step f ~> (f :+: Step f)
 --   basically a witness that <a>stepDown</a> and <a>stepUp</a> form an
 --   isomorphism.
 stepping :: Step f <~> (f :+: Step f)
+
+-- | Unshift an item into a <a>Steps</a>. Because a <tt><a>Steps</a> f</tt>
+--   is <tt>f <a>These1</a> f <a>These1</a> f <a>These1</a> f <a>These1</a>
+--   ...</tt> forever, this basically conses an additional possibility of
+--   <tt>f</tt> to the beginning of it all.
+--   
+--   You can think of it as reassociating
+--   
+--   <pre>
+--   f <a>These1</a> ( f <a>These1</a> f <a>These1</a> f <a>These1</a> ...)
+--   </pre>
+--   
+--   into
+--   
+--   <pre>
+--   f <a>These1</a> f <a>These1</a> f <a>These1</a> f <a>These1</a> ...
+--   </pre>
+--   
+--   If you give:
+--   
+--   <ul>
+--   <li><a>This1</a>, then it returns a singleton <a>Steps</a> with one
+--   item at index 0</li>
+--   <li><a>That1</a>, then it shifts every item in the given <a>Steps</a>
+--   up one index.</li>
+--   <li><a>These1</a>, then it shifts every item in the given <a>Steps</a>
+--   up one index, and adds the given item (the <tt>f</tt>) at index
+--   zero.</li>
+--   </ul>
+--   
+--   Forms an isomorphism with <a>stepDown</a> (see <a>stepping</a>).
+stepsUp :: These1 f (Steps f) ~> Steps f
+
+-- | Pop off the first item in a <a>Steps</a>. Because a <tt><a>Steps</a>
+--   f</tt> is <tt>f <a>These1</a> f <a>These1</a> f <a>These1</a> ...</tt>
+--   forever, this matches on the first branch.
+--   
+--   You can think of it as reassociating
+--   
+--   <pre>
+--   f <a>These1</a> f <a>These1</a> f <a>These1</a> f <a>These1</a> ...
+--   </pre>
+--   
+--   into
+--   
+--   <pre>
+--   f <a>These1</a> ( f <a>These1</a> f <a>These1</a> f <a>These1</a> ...)
+--   </pre>
+--   
+--   It returns:
+--   
+--   <ul>
+--   <li><a>This1</a> if the first item is the <i>only</i> item in the
+--   <a>Steps</a></li>
+--   <li><a>That1</a> if the first item in the <a>Steps</a> is empty, but
+--   there are more items left. The extra items are all shfited down.</li>
+--   <li><a>These1</a> if the first item in the <a>Steps</a> exists, and
+--   there are also more items left. The extra items are all shifted
+--   down.</li>
+--   </ul>
+--   
+--   Forms an isomorphism with <a>stepsUp</a> (see <a>steppings</a>).
+stepsDown :: Steps f ~> These1 f (Steps f)
+
+-- | "Uncons and cons" an <tt>f</tt> branch before a <a>Steps</a>. This is
+--   basically a witness that <a>stepsDown</a> and <a>stepsUp</a> form an
+--   isomorphism.
+steppings :: Steps f <~> These1 f (Steps f)
 
 -- | We have a natural transformation between <a>V1</a> and any other
 --   functor <tt>f</tt> with no constraints.
@@ -1465,8 +1535,8 @@ disassoc :: (Associative t, Functor f, Functor g, Functor h) => t (t f g) h ~> t
 --   <li>.. etc</li>
 --   </ul>
 --   
---   This typeclass associates each <tt>t</tt> with its "semigroupoidal
---   functor combinator" <tt><a>SF</a> t</tt>.
+--   This typeclass associates each <tt>t</tt> with its "induced
+--   semigroupoidal functor combinator" <tt><a>SF</a> t</tt>.
 --   
 --   This is useful because sometimes you might want to describe a type
 --   that can be <tt>t f f</tt>, <tt>t f (t f f)</tt>, <tt>t f (t f (t f
@@ -1646,6 +1716,7 @@ instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Product.Product
 instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Day.Day
 instance Data.HBifunctor.Associative.Semigroupoidal (GHC.Generics.:+:)
 instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.Sum.Sum
+instance Data.HBifunctor.Associative.Semigroupoidal Data.Functor.These.These1
 instance Data.HBifunctor.Associative.Semigroupoidal Control.Monad.Freer.Church.Comp
 instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.HClown t)
 instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.HJoker t)
@@ -1654,6 +1725,7 @@ instance Data.HBifunctor.Associative.Associative Data.Functor.Product.Product
 instance Data.HBifunctor.Associative.Associative Data.Functor.Day.Day
 instance Data.HBifunctor.Associative.Associative (GHC.Generics.:+:)
 instance Data.HBifunctor.Associative.Associative Data.Functor.Sum.Sum
+instance Data.HBifunctor.Associative.Associative Data.Functor.These.These1
 instance Data.HBifunctor.Associative.Associative Control.Applicative.Step.Void3
 instance Data.HBifunctor.Associative.Associative Control.Monad.Freer.Church.Comp
 instance Data.HFunctor.HBind t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.HClown t)
@@ -1770,12 +1842,22 @@ leftIdentity :: (Tensor t, Functor g) => g <~> t (I t) g
 -- | <a>leftIdentity</a> (<a>intro1</a> and <a>elim1</a>) for <a>:+:</a>
 --   actually does not require <a>Functor</a>. This is the more general
 --   version.
-voidLeftIdentity :: f <~> (V1 :+: f)
+sumLeftIdentity :: f <~> (V1 :+: f)
 
 -- | <a>rightIdentity</a> (<a>intro2</a> and <a>elim2</a>) for <a>:+:</a>
 --   actually does not require <a>Functor</a>. This is the more general
 --   version.
-voidRightIdentity :: f <~> (V1 :+: f)
+sumRightIdentity :: f <~> (f :+: V1)
+
+-- | <a>leftIdentity</a> (<a>intro1</a> and <a>elim1</a>) for <a>:*:</a>
+--   actually does not require <a>Functor</a>. This is the more general
+--   version.
+prodLeftIdentity :: f <~> (Proxy :*: f)
+
+-- | <a>rightIdentity</a> (<a>intro2</a> and <a>elim2</a>) for <a>:*:</a>
+--   actually does not require <a>Functor</a>. This is the more general
+--   version.
+prodRightIdentity :: g <~> (g :*: Proxy)
 
 -- | A <tt><a>Monoidal</a> t</tt> is a <a>Semigroupoidal</a>, in that it
 --   provides some type <tt><a>MF</a> t f</tt> that is equivalent to one
@@ -1828,7 +1910,7 @@ voidRightIdentity :: f <~> (V1 :+: f)
 --   Which converts a <tt>t</tt> into its aggregate type <a>MF</a>
 class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where {
     
-    -- | The "monoidal functor combinator" generated by <tt>t</tt>.
+    -- | The "monoidal functor combinator" induced by <tt>t</tt>.
     --   
     --   A value of type <tt>MF t f a</tt> is <i>equivalent</i> to one of:
     --   
@@ -1962,6 +2044,8 @@ pureT :: (Monoidal t, CM t f) => I t ~> f
 --   Ideally, <tt>Parser</tt> would also have an <a>Apply</a> instance. But
 --   we cannot control this if an external library defines <tt>Parser</tt>.
 --   
+--   (Alternatively you can just use <a>biretractT</a>.)
+--   
 --   Note that you should only use this if <tt>f</tt> doesn't already have
 --   the <a>SF</a> constraint. If it does, this could lead to conflicting
 --   instances. Only use this with <i>specific</i>, concrete <tt>f</tt>s.
@@ -2015,14 +2099,30 @@ unconsMF :: Monoidal t => MF t f ~> (I t :+: t f (MF t f))
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inL :: forall t f g a. (Monoidal t, CM t g) => f a -> t f g a
+inL :: forall t f g. (Monoidal t, CM t g) => f ~> t f g
 
 -- | Convenient wrapper over <a>intro2</a> that lets us introduce an
 --   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inR :: forall t f g a. (Monoidal t, CM t f) => g a -> t f g a
+inR :: forall t f g. (Monoidal t, CM t f) => g ~> t f g
+
+-- | Convenient wrapper over <a>elim1</a> that lets us drop one of the
+--   arguments of a <a>Tensor</a> for free, without requiring any extra
+--   constraints (like for <a>binterpret</a>).
+--   
+--   See <a>prodOutL</a> for a version that does not require
+--   <tt><a>Functor</a> f</tt>, specifically for <a>:*:</a>.
+outL :: (Tensor t, I t ~ Proxy, Functor f) => t f g ~> f
+
+-- | Convenient wrapper over <a>elim2</a> that lets us drop one of the
+--   arguments of a <a>Tensor</a> for free, without requiring any
+--   constraints (like for <a>binterpret</a>).
+--   
+--   See <a>prodOutR</a> for a version that does not require
+--   <tt><a>Functor</a> g</tt>, specifically for <a>:*:</a>.
+outR :: (Tensor t, I t ~ Proxy, Functor g) => t f g ~> g
 
 -- | This is <a>biretract</a>, but taking a <tt><a>C</a> (<a>MF</a> t)</tt>
 --   constraint instead of a <tt><a>C</a> (<a>SF</a> t)</tt> constraint.
@@ -2061,6 +2161,14 @@ biretractT :: forall t f. (Monoidal t, CM t f) => t f f ~> f
 --   instance, just use <a>biretract</a> directly. Only use this with
 --   <i>specific</i>, concrete <tt>f</tt>s.
 binterpretT :: forall t f g h. (Monoidal t, CM t h) => (f ~> h) -> (g ~> h) -> t f g ~> h
+
+-- | <a>outL</a> for <a>:*:</a> actually does not require <a>Functor</a>.
+--   This is the more general version.
+prodOutL :: (f :*: g) ~> f
+
+-- | <a>outR</a> for <a>:*:</a> actually does not require <a>Functor</a>.
+--   This is the more general version.
+prodOutR :: (f :*: g) ~> g
 
 -- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
 --   require <tt><a>Plus</a> f</tt>.
@@ -2137,17 +2245,20 @@ instance Data.HBifunctor.Tensor.Matchable Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Matchable (GHC.Generics.:+:)
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Sum.Sum
+instance Data.HBifunctor.Tensor.Matchable Data.Functor.These.These1
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:+:)
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Sum.Sum
+instance Data.HBifunctor.Tensor.Monoidal Data.Functor.These.These1
 instance Data.HBifunctor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
 instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:*:)
 instance Data.HBifunctor.Tensor.Tensor Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Tensor Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:+:)
 instance Data.HBifunctor.Tensor.Tensor Data.Functor.Sum.Sum
+instance Data.HBifunctor.Tensor.Tensor Data.Functor.These.These1
 instance Data.HBifunctor.Tensor.Tensor Control.Monad.Freer.Church.Comp
 
 
@@ -2679,8 +2790,8 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 --   <li>.. etc</li>
 --   </ul>
 --   
---   This typeclass associates each <tt>t</tt> with its "semigroupoidal
---   functor combinator" <tt><a>SF</a> t</tt>.
+--   This typeclass associates each <tt>t</tt> with its "induced
+--   semigroupoidal functor combinator" <tt><a>SF</a> t</tt>.
 --   
 --   This is useful because sometimes you might want to describe a type
 --   that can be <tt>t f f</tt>, <tt>t f (t f f)</tt>, <tt>t f (t f (t f
@@ -2969,7 +3080,7 @@ elim2 :: (Tensor t, Functor g) => t (I t) g ~> g
 --   Which converts a <tt>t</tt> into its aggregate type <a>MF</a>
 class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where {
     
-    -- | The "monoidal functor combinator" generated by <tt>t</tt>.
+    -- | The "monoidal functor combinator" induced by <tt>t</tt>.
     --   
     --   A value of type <tt>MF t f a</tt> is <i>equivalent</i> to one of:
     --   
@@ -3095,6 +3206,8 @@ pureT :: (Monoidal t, CM t f) => I t ~> f
 --   Ideally, <tt>Parser</tt> would also have an <a>Apply</a> instance. But
 --   we cannot control this if an external library defines <tt>Parser</tt>.
 --   
+--   (Alternatively you can just use <a>biretractT</a>.)
+--   
 --   Note that you should only use this if <tt>f</tt> doesn't already have
 --   the <a>SF</a> constraint. If it does, this could lead to conflicting
 --   instances. Only use this with <i>specific</i>, concrete <tt>f</tt>s.
@@ -3113,19 +3226,52 @@ upgradeC :: (Monoidal t, CM t f) => proxy f -> (CS t f => r) -> r
 --   <tt><a>Monoidal</a> t</tt>.
 type CM t = C (MF t)
 
+-- | Create the "empty <a>MF</a>@.
+--   
+--   If <tt><a>MF</a> t f</tt> represents multiple applications of <tt>t
+--   f</tt> with itself, then <tt>nilMF</tt> gives us "zero applications of
+--   <tt>f</tt>".
+--   
+--   Note that <tt>t</tt> cannot be inferred from the input or output type
+--   of <a>nilMF</a>, so this function must always be called with
+--   -XTypeApplications:
+--   
+--   <pre>
+--   <a>nilMF</a> @<a>Day</a> :: <a>Identity</a> <a>~&gt;</a> <a>Ap</a> f
+--   nilMF @<a>Comp</a> :: Identity ~&gt; <a>Free</a> f
+--   nilMF @(<a>:*:</a>) :: <a>Proxy</a> ~&gt; <a>ListF</a> f
+--   </pre>
+nilMF :: forall t f. Monoidal t => I t ~> MF t f
+
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inL :: forall t f g a. (Monoidal t, CM t g) => f a -> t f g a
+inL :: forall t f g. (Monoidal t, CM t g) => f ~> t f g
 
 -- | Convenient wrapper over <a>intro2</a> that lets us introduce an
 --   arbitrary functor <tt>f</tt> to the right of a <tt>g</tt>.
 --   
 --   You can think of this as an <a>HBifunctor</a> analogue of
 --   <a>inject</a>.
-inR :: forall t f g a. (Monoidal t, CM t f) => g a -> t f g a
+inR :: forall t f g. (Monoidal t, CM t f) => g ~> t f g
+
+-- | Convenient wrapper over <a>elim1</a> that lets us drop one of the
+--   arguments of a <a>Tensor</a> for free, without requiring any extra
+--   constraints (like for <a>binterpret</a>).
+--   
+--   See <a>prodOutL</a> for a version that does not require
+--   <tt><a>Functor</a> f</tt>, specifically for <a>:*:</a>.
+outL :: (Tensor t, I t ~ Proxy, Functor f) => t f g ~> f
+
+-- | Convenient wrapper over <a>elim2</a> that lets us drop one of the
+--   arguments of a <a>Tensor</a> for free, without requiring any
+--   constraints (like for <a>binterpret</a>).
+--   
+--   See <a>prodOutR</a> for a version that does not require
+--   <tt><a>Functor</a> g</tt>, specifically for <a>:*:</a>.
+outR :: (Tensor t, I t ~ Proxy, Functor g) => t f g ~> g
 
 -- | A covariant <a>Functor</a> suitable for Yoneda reduction
 data Coyoneda (f :: Type -> Type) a
@@ -3275,6 +3421,8 @@ Step :: Natural -> f a -> Step f a
 --   
 --   It is the fixed point of applications of <a>TheseT</a>.
 --   
+--   You can think of this as an infinite sparse array of <tt>f a</tt>s.
+--   
 --   Intuitively, in an infinite <tt>f `TheseT` f `TheseT` f `TheseT` f
 --   ...</tt>, each of those infinite positions may have an <tt>f</tt> in
 --   them. However, because of the at-least-one nature of <a>TheseT</a>, we
@@ -3382,6 +3530,14 @@ data (:*:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Ty
 infixr 6 :*:
 infixr 6 :*:
 
+-- | <a>outL</a> for <a>:*:</a> actually does not require <a>Functor</a>.
+--   This is the more general version.
+prodOutL :: (f :*: g) ~> f
+
+-- | <a>outR</a> for <a>:*:</a> actually does not require <a>Functor</a>.
+--   This is the more general version.
+prodOutR :: (f :*: g) ~> g
+
 -- | Sums: encode choice between constructors
 data (:+:) (f :: k -> Type) (g :: k -> Type) (p :: k) :: forall k. () => k -> Type -> k -> Type -> k -> Type
 L1 :: f p -> (:+:)
@@ -3390,16 +3546,10 @@ infixr 5 :+:
 
 -- | Void: used for datatypes without constructors
 data V1 (p :: k) :: forall k. () => k -> Type
-
--- | A <tt>These f g a</tt> has either an <tt>f a</tt>, a <tt>g a</tt>, or
---   both.
---   
---   This is re-defined here from the <i>these</i> package, to avoid the
---   high dependency footprint.
-data These1 f g a
-This1 :: f a -> These1 f g a
-That1 :: g a -> These1 f g a
-These1 :: f a -> g a -> These1 f g a
+data These1 (f :: Type -> Type) (g :: Type -> Type) a
+This1 :: f a -> These1 a
+That1 :: g a -> These1 a
+These1 :: f a -> g a -> These1 a
 
 -- | Functor composition. <tt><a>Comp</a> f g a</tt> is equivalent to <tt>f
 --   (g a)</tt>, and the <a>Comp</a> pattern synonym is a way of getting
@@ -3427,6 +3577,18 @@ data Comp f g a
 -- | Pattern match on and construct a <tt><a>Comp</a> f g a</tt> as if it
 --   were <tt>f (g a)</tt>.
 pattern Comp :: Functor f => f (g a) -> Comp f g a
+
+-- | Turn <a>Identity</a> into any <tt><a>Applicative</a> f</tt>. Can be
+--   useful as an argument to <a>hmap</a>, <a>hbimap</a>, or
+--   <tt>interpret</tt>.
+--   
+--   It is a more general form of <a>generalize</a> from <i>mmorph</i>.
+generalize :: Applicative f => Identity ~> f
+
+-- | Natural transformation from any functor <tt>f</tt> into <a>Proxy</a>.
+--   Can be useful for "zeroing out" a functor with <a>hmap</a> or
+--   <a>hbimap</a> or <tt>interpret</tt>.
+absorb :: f ~> Proxy
 instance forall k (f :: k). Data.Functor.Classes.Ord1 (Data.Functor.Combinator.ProxyF f)
 instance Data.HFunctor.Internal.HFunctor Data.Functor.Combinator.ProxyF
 instance Data.HFunctor.HBind Data.Functor.Combinator.ProxyF
