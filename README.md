@@ -579,6 +579,72 @@ and other helper functions.
 
 [Data.Functor.These]: https://hackage.haskell.org/package/these/docs/Data-Functor-These.html
 
+### LeftF / RightF / Joker
+
+*   **Origin**: *[Data.HBifunctor][]* (for `LeftF` and `RightF`),
+    *[Data.Bifunctor.Joker][]* (for `Joker`)
+
+*   **Mixing Strategy**: "Ignore the left" / "ignore the right".
+
+    ```haskell
+    LeftF  f g a ~ f a
+
+    RightF f g a ~ g a
+    ```
+
+    You can think of `LeftF` as "`:+:` without the Right case,
+    `R1`", or `RightF` as "`:+:` without the Left case, `L1`".
+
+    (`Joker` is the same as `LeftF`)
+
+    This can be useful if you want the second (or first) argument to be
+    ignored, and only be useful maybe at the type level.
+
+*   **Constraints**
+
+    ```haskell
+    type CS LeftF  = Unconstrained
+    type CS Joker  = Unconstrained
+    type CS RightF = Unconstrained
+    ```
+
+    Interpreting out of either of these is unconstrained, and can be done in
+    any context.
+
+*   **Identity**
+
+    Unlike the previous functor combinators, these three are only
+    `Semigroupoidal`, not `Monoidal`: this is because there is no functor `i` such
+    that `LeftF i f` is equal to `f`, for all `f`.
+
+
+*   **Induced Semigroup**
+
+    ```haskell
+    type SF LeftF = HLift IdentityT
+    type SF Joker = EnvT Any            -- these two are the isomorphic
+    ```
+
+    For `LeftF` and `Joker`, induced semigroup is `HLift IdentityT`, or also
+    `EnvT Any`.
+
+    This can be useful as a type that marks if an `f` is "pure" (`HPure`, `Any
+    False`), or "tainted" (`HOther`, `Any True`).  It is an `f a` "tagged"
+    with some boolean bit about whether it was made using `inject`, or with
+    `consSF`.  The *provider* of an `EnvT Any f` can specify "pure or tained",
+    and the *interpreter* can make a decision based on that tag.
+
+    ```haskell
+    type SF RightF = HFree IdentityT
+    ```
+
+    For `RightF`, the induced semigroup is `HFree IdentityT`, which is
+    essentially `Step`.  See `Step` and the information on `:+:` for more
+    information.
+
+[Data.HBifunctor]: https://hackage.haskell.org/package/functor-combinators/docs/Data-HBifunctor.html
+[Data.Bifunctor.Joker]: https://hackage.haskell.org/package/bifunctors/docs/Data-Bifunctor-Joker.html
+
 Single-Argument
 ---------------
 
@@ -641,7 +707,9 @@ Single-Argument
 
 ### IdentityT
 
-### ProxyF
+### EnvT
+
+### ProxyF / ConstF
 
 ### Chain
 

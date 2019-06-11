@@ -90,17 +90,21 @@ module Data.HBifunctor.Associative (
   ) where
 
 import           Control.Applicative
+import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Bifunctor.Joker
 import           Data.Coerce
 import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
-import           Data.Functor.Day           (Day(..))
+import           Data.Functor.Day             (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -110,10 +114,11 @@ import           Data.HBifunctor
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List.NonEmpty         (NonEmpty(..))
-import           GHC.Generics hiding        (C)
-import qualified Data.Functor.Day           as D
-import qualified Data.Map.NonEmpty          as NEM
+import           Data.List.NonEmpty           (NonEmpty(..))
+import           Data.Semigroup               (Any(..))
+import           GHC.Generics hiding          (C)
+import qualified Data.Functor.Day             as D
+import qualified Data.Map.NonEmpty            as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -572,8 +577,6 @@ instance Semigroupoidal Comp where
     biretract      (x :>>= y) = x >>- y
     binterpret f g (x :>>= y) = f x >>- (g . y)
 
--- | If @'HClown' t@ is a proper 'Associative', this implies that @'HLift'
--- t@ is equivalent to @'HFree' t@.
 instance (Interpret t, HBind t) => Semigroupoidal (HClown t) where
     type SF (HClown t) = HLift t
 
@@ -582,8 +585,6 @@ instance (Interpret t, HBind t) => Semigroupoidal (HClown t) where
       HPure  x -> L1 x
       HOther x -> R1 $ HClown x
 
--- | If @'HJoker' t@ is a proper 'Associative', this implies that @'HFree'
--- t@ is equivalent to @'HLift' t@.
 instance (Interpret t, HBind t) => Semigroupoidal (HJoker t) where
     type SF (HJoker t) = HFree t
 
@@ -592,3 +593,14 @@ instance (Interpret t, HBind t) => Semigroupoidal (HJoker t) where
       HReturn x -> L1 x
       HJoin   x -> R1 $ HJoker x
 
+instance Associative Joker where
+    associating = isoF (Joker . Joker . runJoker)
+                       (Joker . runJoker . runJoker)
+
+-- | Somewhat ironically, 'Joker' is @'HClown' 'IdentityT'@, or 'LeftF'.
+instance Semigroupoidal Joker where
+    type SF Joker = EnvT Any
+
+    appendSF (Joker (EnvT _ x)) = EnvT (Any True) x
+    matchSF (EnvT (Any False) x) = L1 x
+    matchSF (EnvT (Any True ) x) = R1 $ Joker x

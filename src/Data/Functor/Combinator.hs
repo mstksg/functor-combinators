@@ -85,6 +85,8 @@ module Data.Functor.Combinator (
   , Step(..)
   , Steps(..)
   , ProxyF(..)
+  , ConstF(..)
+  , EnvT(..)
   , Void2
   , Final(..)
   , FreeOf(..)
@@ -94,6 +96,8 @@ module Data.Functor.Combinator (
   , (:+:)(..), V1
   , These1(..)
   , Comp(Comp, unComp)
+  , LeftF
+  , RightF
   -- * Natural Transformations
   , generalize
   , absorb
@@ -103,10 +107,12 @@ import           Control.Alternative.Free
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Coerce
+import           Data.Constraint.Trivial
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Apply.Free
@@ -135,6 +141,8 @@ import qualified Data.Functor.Plus           as P
 --
 -- It can be 'inject'ed into (losing all information), but it is impossible
 -- to ever 'retract' or 'interpret' it.
+--
+-- This is essentially @'ConstF' ()@.
 data ProxyF f a = ProxyF
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -146,18 +154,46 @@ deriveOrd1 ''ProxyF
 instance HFunctor ProxyF where
     hmap _ = coerce
 
-instance HBind ProxyF where
-    hbind _ = coerce
-
 instance Inject ProxyF where
     inject _ = ProxyF
 
--- | Technically, 'Data.HFunctor.Interpret.C' is over-constrained: we only
--- need @'P.zero' :: f a@, but we don't really have that typeclass in any
--- standard hierarchies.  We use 'P.Plus' here instead, but we never use
--- 'P.<!>'.  This would only go wrong in situations where your type
--- supports 'P.zero' but not 'P.<!>', like instances of
--- 'Control.Monad.Fail.MonadFail' without 'Control.Monad.MonadPlus'.
+instance HBind ProxyF where
+    hbind _ = coerce
+
+-- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
+-- have it impossible to retract out of.
 instance Interpret ProxyF where
-    type C ProxyF = P.Plus
-    retract _ = P.zero
+    type C ProxyF = Impossible
+
+    retract = absurdible . reProxy
+
+reProxy :: p f a -> Proxy f
+reProxy _ = Proxy
+
+-- | Functor combinator that forgets all structure on the input, and
+-- instead stores a value of type @e@.
+--
+-- Like 'ProxyF', acts like a "zero" with functor combinator composition.
+--
+-- It can be 'inject'ed into (losing all information), but it is impossible
+-- to ever 'retract' or 'interpret' it.
+data ConstF e f a = ConstF e
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''ConstF
+deriveRead1 ''ConstF
+deriveEq1 ''ConstF
+deriveOrd1 ''ConstF
+
+instance HFunctor (ConstF e) where
+    hmap _ = coerce
+
+instance Monoid e => Inject (ConstF e) where
+    inject _ = ConstF mempty
+
+-- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
+-- have it impossible to retract out of.
+instance Monoid e => Interpret (ConstF e) where
+    type C (ConstF e) = Impossible
+
+    retract = absurdible . reProxy

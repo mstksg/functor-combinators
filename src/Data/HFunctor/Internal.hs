@@ -33,6 +33,7 @@ import           Control.Monad.Trans.Reader
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor
+import           Data.Bifunctor.Joker
 import           Data.Coerce
 import           Data.Constraint
 import           Data.Constraint.Unsafe
@@ -356,6 +357,11 @@ instance HBifunctor These1 where
       That1    y -> That1        (g y)
       These1 x y -> These1 (f x) (g y)
 
+instance HBifunctor Joker where
+    hleft  f   (Joker x) = Joker (f x)
+    hright   _           = coerce
+    hbimap f _ (Joker x) = Joker (f x)
+
 instance HBifunctor Void3 where
     hleft  _   = coerce
     hright   _ = coerce
@@ -373,6 +379,7 @@ deriving via (WrappedHBifunctor Day f)     instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)   instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor Product f) instance HFunctor (Product f)
 deriving via (WrappedHBifunctor Sum f)     instance HFunctor (Sum f)
+deriving via (WrappedHBifunctor Joker f)   instance HFunctor (Joker f)
 deriving via (WrappedHBifunctor These1 f)  instance HFunctor (These1 f)
 deriving via (WrappedHBifunctor Void3 f)   instance HFunctor (Void3 f)
 deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)

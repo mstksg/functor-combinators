@@ -21,6 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/mstk
 
 dependencies:
 - base >= 4.7 && < 5
+- bifunctors
 - comonad
 - constraints
 - containers
@@ -30,13 +31,13 @@ dependencies:
 - mmorph
 - mtl
 - natural-transformation
-- these >= 1
 - nonempty-containers
 - pointed
 - profunctors
 - recursion-schemes
 - semigroupoids
 - tagged
+- these >= 1
 - transformers
 - trivial-constraint >= 0.5
 

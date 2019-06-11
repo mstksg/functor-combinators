@@ -32,8 +32,10 @@ module Data.HBifunctor (
   , BiffT(..)
   , HClown(..)
   , HJoker(..)
+  , LeftF, RightF
   ) where
 
+import           Control.Monad.Trans.Identity
 import           Control.Natural.IsoF
 import           Data.Functor.Classes
 import           Data.HFunctor.Internal
@@ -118,3 +120,24 @@ instance HFunctor t => HBifunctor (HJoker t) where
 deriving via (WrappedHBifunctor (HJoker t) f)
     instance HFunctor t => HFunctor (HJoker t f)
 
+-- | An 'HBifunctor' that ignores its second input.  Like
+-- a 'GHC.Generics.:+:' with no 'GHC.Generics.R1'/right branch.
+--
+-- @
+-- 'LeftF' f g a ~ f a
+-- @
+--
+-- This is a true 'Associative' and 'Semigroupoidal'.
+--
+type LeftF = HClown IdentityT
+
+-- | An 'HBifunctor' that ignores its first input.  Like
+-- a 'GHC.Generics.:+:' with no 'GHC.Generics.L1'/left branch.
+--
+-- @
+-- 'RightF' f g a ~ g a
+-- @
+--
+-- This is a true 'Associative' and 'Semigroupoidal'.
+--
+type RightF = HJoker IdentityT
