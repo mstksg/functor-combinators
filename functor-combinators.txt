@@ -2244,39 +2244,6 @@ prodOutL :: (f :*: g) ~> f
 --   This is the more general version.
 prodOutR :: (f :*: g) ~> g
 
--- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
---   require <tt><a>Plus</a> f</tt>.
---   
---   Always use with concrete and specific <tt>f</tt> only, and never use
---   with any <tt>f</tt> that already has a <a>Plus</a> instance.
---   
---   The <a>Proxy</a> argument allows you to specify which specific
---   <tt>f</tt> you want to enhance. You can pass in something like
---   <tt><a>Proxy</a> @MyFunctor</tt>.
-unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
-
--- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
---   require <tt><a>Apply</a> f</tt>.
---   
---   Always use with concrete and specific <tt>f</tt> only, and never use
---   with any <tt>f</tt> that already has a <a>Apply</a> instance.
---   
---   The <a>Proxy</a> argument allows you to specify which specific
---   <tt>f</tt> you want to enhance. You can pass in something like
---   <tt><a>Proxy</a> @MyFunctor</tt>.
-unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
-
--- | For any <tt><a>Monad</a> f</tt>, produce a value that would require
---   <tt><a>Bind</a> f</tt>.
---   
---   Always use with concrete and specific <tt>f</tt> only, and never use
---   with any <tt>f</tt> that already has a <a>Bind</a> instance.
---   
---   The <a>Proxy</a> argument allows you to specify which specific
---   <tt>f</tt> you want to enhance. You can pass in something like
---   <tt><a>Proxy</a> @MyFunctor</tt>.
-unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
-
 -- | For some <tt>t</tt>, we have the ability to "statically analyze" the
 --   <tt><a>MF</a> t</tt> and pattern match and manipulate the structure
 --   without ever interpreting or retracting. These are <a>Matchable</a>.
@@ -3705,6 +3672,58 @@ generalize :: Applicative f => Identity ~> f
 --   Can be useful for "zeroing out" a functor with <a>hmap</a> or
 --   <a>hbimap</a> or <tt>interpret</tt>.
 absorb :: f ~> Proxy
+
+-- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
+--   require <tt><a>Plus</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Plus</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
+
+-- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
+--   require <tt><a>Apply</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Apply</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
+
+-- | For any <tt><a>Monad</a> f</tt>, produce a value that would require
+--   <tt><a>Bind</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Bind</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
+
+-- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
+--   require <tt><tt>POinted</tt> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Pointed</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
 instance forall k e (f :: k). GHC.Classes.Ord e => Data.Functor.Classes.Ord1 (Data.Functor.Combinator.ConstF e f)
 instance Data.HFunctor.Internal.HFunctor (Data.Functor.Combinator.ConstF e)
 instance GHC.Base.Monoid e => Data.HFunctor.Inject (Data.Functor.Combinator.ConstF e)
