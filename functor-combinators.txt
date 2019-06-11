@@ -514,6 +514,9 @@ module Control.Applicative.Step
 --   <a>:+:</a>.
 --   
 --   <a>interpret</a>ing it requires no constraint on the target context.
+--   
+--   Note that this type and its instances equivalent to <tt><a>EnvT</a>
+--   (<a>Sum</a> <a>Natural</a>)</tt>.
 data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
@@ -1057,42 +1060,87 @@ HJoker :: t g a -> HJoker t f g a
 -- | An <a>HBifunctor</a> that ignores its second input. Like a <a>:+:</a>
 --   with no <a>R1</a>/right branch.
 --   
---   <pre>
---   <a>LeftF</a> f g a ~ f a
---   </pre>
+--   This is <a>Joker</a> from <a>Data.Bifunctors.Joker</a>, but given a
+--   more sensible name for its purpose.
 --   
---   This is a true <tt>Associative</tt> and <tt>Semigroupoidal</tt>.
-type LeftF = HClown IdentityT
+--   It is essentially <tt><a>HClown</a> <a>IdentityT</a></tt>
+newtype LeftF f g a
+LeftF :: f a -> LeftF f g a
+[runLeftF] :: LeftF f g a -> f a
 
 -- | An <a>HBifunctor</a> that ignores its first input. Like a <a>:+:</a>
 --   with no <a>L1</a>/left branch.
 --   
---   <pre>
---   <a>RightF</a> f g a ~ g a
---   </pre>
---   
---   This is a true <tt>Associative</tt> and <tt>Semigroupoidal</tt>.
-type RightF = HJoker IdentityT
-instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Read.Read (t g a) => GHC.Read.Read (Data.HBifunctor.HJoker t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Show.Show (t g a) => GHC.Show.Show (Data.HBifunctor.HJoker t f g a)
+--   It is essentially <tt><a>HJoker</a> <a>IdentityT</a></tt>
+newtype RightF f g a
+RightF :: g a -> RightF f g a
+[runRightF] :: RightF f g a -> g a
+instance Data.HFunctor.Internal.HFunctor (Data.HBifunctor.RightF f)
+instance forall k (g :: * -> *) (f :: k). Data.Functor.Classes.Ord1 g => Data.Functor.Classes.Ord1 (Data.HBifunctor.RightF f g)
+instance Data.HFunctor.Internal.HBifunctor Data.HBifunctor.RightF
+instance forall k (g :: * -> *) (f :: k). Data.Functor.Classes.Eq1 g => Data.Functor.Classes.Eq1 (Data.HBifunctor.RightF f g)
+instance forall k (g :: * -> *) (f :: k). Data.Functor.Classes.Read1 g => Data.Functor.Classes.Read1 (Data.HBifunctor.RightF f g)
+instance forall k (g :: * -> *) (f :: k). Data.Functor.Classes.Show1 g => Data.Functor.Classes.Show1 (Data.HBifunctor.RightF f g)
+instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable g, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Data.Data (g a)) => Data.Data.Data (Data.HBifunctor.RightF f g a)
+instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Generics.Generic (Data.HBifunctor.RightF f g a)
+instance forall k (f :: k) (g :: * -> *). Data.Traversable.Traversable g => Data.Traversable.Traversable (Data.HBifunctor.RightF f g)
+instance forall k (f :: k) (g :: * -> *). Data.Foldable.Foldable g => Data.Foldable.Foldable (Data.HBifunctor.RightF f g)
+instance forall k (f :: k) (g :: * -> *). GHC.Base.Functor g => GHC.Base.Functor (Data.HBifunctor.RightF f g)
+instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Classes.Ord (g a) => GHC.Classes.Ord (Data.HBifunctor.RightF f g a)
+instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Classes.Eq (g a) => GHC.Classes.Eq (Data.HBifunctor.RightF f g a)
+instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Read.Read (g a) => GHC.Read.Read (Data.HBifunctor.RightF f g a)
+instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Show.Show (g a) => GHC.Show.Show (Data.HBifunctor.RightF f g a)
+instance Data.HFunctor.Internal.HFunctor (Data.HBifunctor.LeftF f)
+instance Data.Traversable.Traversable f => Data.Bitraversable.Bitraversable (Data.HBifunctor.LeftF f)
+instance GHC.Base.Applicative f => Data.Biapplicative.Biapplicative (Data.HBifunctor.LeftF f)
+instance Data.HFunctor.Internal.HBifunctor Data.HBifunctor.LeftF
+instance Data.Foldable.Foldable f => Data.Bifoldable.Bifoldable (Data.HBifunctor.LeftF f)
+instance GHC.Base.Functor f => Data.Bifunctor.Bifunctor (Data.HBifunctor.LeftF f)
+instance forall k (f :: * -> *) (g :: k). Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Data.HBifunctor.LeftF f g)
+instance forall k (f :: * -> *) (g :: k). Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Data.HBifunctor.LeftF f g)
+instance forall k (f :: * -> *) (g :: k). Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Data.HBifunctor.LeftF f g)
+instance forall k (f :: * -> *) (g :: k). Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Data.HBifunctor.LeftF f g)
+instance forall k1 (f :: k1 -> *) k2 (g :: k2) (a :: k1). (Data.Typeable.Internal.Typeable g, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k2, Data.Typeable.Internal.Typeable k1, Data.Data.Data (f a)) => Data.Data.Data (Data.HBifunctor.LeftF f g a)
+instance forall k1 (f :: k1 -> *) k2 (g :: k2) (a :: k1). GHC.Generics.Generic (Data.HBifunctor.LeftF f g a)
+instance forall (f :: * -> *) k (g :: k). Data.Traversable.Traversable f => Data.Traversable.Traversable (Data.HBifunctor.LeftF f g)
+instance forall (f :: * -> *) k (g :: k). Data.Foldable.Foldable f => Data.Foldable.Foldable (Data.HBifunctor.LeftF f g)
+instance forall (f :: * -> *) k (g :: k). GHC.Base.Functor f => GHC.Base.Functor (Data.HBifunctor.LeftF f g)
+instance forall k1 (f :: k1 -> *) k2 (g :: k2) (a :: k1). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Data.HBifunctor.LeftF f g a)
+instance forall k1 (f :: k1 -> *) k2 (g :: k2) (a :: k1). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.HBifunctor.LeftF f g a)
+instance forall k1 (f :: k1 -> *) k2 (g :: k2) (a :: k1). GHC.Read.Read (f a) => GHC.Read.Read (Data.HBifunctor.LeftF f g a)
+instance forall k1 (f :: k1 -> *) k2 (g :: k2) (a :: k1). GHC.Show.Show (f a) => GHC.Show.Show (Data.HBifunctor.LeftF f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable g, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable t, Data.Typeable.Internal.Typeable k3, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Data.Data (t g a)) => Data.Data.Data (Data.HBifunctor.HJoker t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Generics.Generic (Data.HBifunctor.HJoker t f g a)
+instance forall k1 (t :: k1 -> * -> *) k2 (f :: k2) (g :: k1). Data.Traversable.Traversable (t g) => Data.Traversable.Traversable (Data.HBifunctor.HJoker t f g)
+instance forall k1 (t :: k1 -> * -> *) k2 (f :: k2) (g :: k1). Data.Foldable.Foldable (t g) => Data.Foldable.Foldable (Data.HBifunctor.HJoker t f g)
+instance forall k1 (t :: k1 -> * -> *) k2 (f :: k2) (g :: k1). GHC.Base.Functor (t g) => GHC.Base.Functor (Data.HBifunctor.HJoker t f g)
 instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Classes.Ord (t g a) => GHC.Classes.Ord (Data.HBifunctor.HJoker t f g a)
 instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Classes.Eq (t g a) => GHC.Classes.Eq (Data.HBifunctor.HJoker t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Read.Read (t f a) => GHC.Read.Read (Data.HBifunctor.HClown t f g a)
-instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Show.Show (t f a) => GHC.Show.Show (Data.HBifunctor.HClown t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Read.Read (t g a) => GHC.Read.Read (Data.HBifunctor.HJoker t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) k3 (f :: k3) (g :: k1) (a :: k2). GHC.Show.Show (t g a) => GHC.Show.Show (Data.HBifunctor.HJoker t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable g, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable t, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k3, Data.Typeable.Internal.Typeable k2, Data.Data.Data (t f a)) => Data.Data.Data (Data.HBifunctor.HClown t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Generics.Generic (Data.HBifunctor.HClown t f g a)
+instance forall k1 (t :: k1 -> * -> *) (f :: k1) k2 (g :: k2). Data.Traversable.Traversable (t f) => Data.Traversable.Traversable (Data.HBifunctor.HClown t f g)
+instance forall k1 (t :: k1 -> * -> *) (f :: k1) k2 (g :: k2). Data.Foldable.Foldable (t f) => Data.Foldable.Foldable (Data.HBifunctor.HClown t f g)
+instance forall k1 (t :: k1 -> * -> *) (f :: k1) k2 (g :: k2). GHC.Base.Functor (t f) => GHC.Base.Functor (Data.HBifunctor.HClown t f g)
 instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Classes.Ord (t f a) => GHC.Classes.Ord (Data.HBifunctor.HClown t f g a)
 instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Classes.Eq (t f a) => GHC.Classes.Eq (Data.HBifunctor.HClown t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Read.Read (t f a) => GHC.Read.Read (Data.HBifunctor.HClown t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) k3 (g :: k3) (a :: k2). GHC.Show.Show (t f a) => GHC.Show.Show (Data.HBifunctor.HClown t f g a)
 instance forall k (t :: k -> k -> * -> *) (f :: k). GHC.Base.Functor (t f f) => GHC.Base.Functor (Data.HBifunctor.JoinT t f)
 instance forall k1 k2 k3 (t :: k3 -> * -> *) (p :: k1 -> k2 -> k3) (f :: k1) (g :: k2). GHC.Base.Functor (t (p f g)) => GHC.Base.Functor (Data.HBifunctor.TannenT t p f g)
 instance (Data.HFunctor.Internal.HFunctor t, Data.HFunctor.Internal.HBifunctor p) => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.TannenT t p f)
 instance forall k1 k2 k3 k4 (p :: k3 -> k4 -> * -> *) (s :: k2 -> k3) (f :: k2) (t :: k1 -> k4) (g :: k1). GHC.Base.Functor (p (s f) (t g)) => GHC.Base.Functor (Data.HBifunctor.BiffT p s t f g)
 instance (Data.HFunctor.Internal.HBifunctor p, Data.HFunctor.Internal.HFunctor s, Data.HFunctor.Internal.HFunctor t) => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.BiffT p s t f)
-instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). GHC.Base.Functor (t f) => GHC.Base.Functor (Data.HBifunctor.HClown t f g)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.HClown t f)
-instance forall k1 k2 (t :: k2 -> * -> *) (g :: k2) (f :: k1). GHC.Base.Functor (t g) => GHC.Base.Functor (Data.HBifunctor.HJoker t f g)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.HJoker t f)
 instance forall k1 k2 (t :: k2 -> * -> *) (g :: k2) (f :: k1). Data.Functor.Classes.Show1 (t g) => Data.Functor.Classes.Show1 (Data.HBifunctor.HJoker t f g)
+instance forall k1 k2 (t :: k2 -> * -> *) (g :: k2) (f :: k1). Data.Functor.Classes.Read1 (t g) => Data.Functor.Classes.Read1 (Data.HBifunctor.HJoker t f g)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.HJoker t)
 instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). Data.Functor.Classes.Show1 (t f) => Data.Functor.Classes.Show1 (Data.HBifunctor.HClown t f g)
+instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). Data.Functor.Classes.Read1 (t f) => Data.Functor.Classes.Read1 (Data.HBifunctor.HClown t f g)
+instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). Data.Functor.Classes.Eq1 (t f) => Data.Functor.Classes.Eq1 (Data.HBifunctor.HClown t f g)
+instance forall k1 k2 (t :: k2 -> * -> *) (f :: k2) (g :: k1). Data.Functor.Classes.Ord1 (t f) => Data.Functor.Classes.Ord1 (Data.HBifunctor.HClown t f g)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.HClown t)
 instance (Data.HFunctor.Internal.HBifunctor p, Data.HFunctor.Internal.HFunctor s, Data.HFunctor.Internal.HFunctor t) => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.BiffT p s t)
 instance (Data.HFunctor.Internal.HFunctor t, Data.HFunctor.Internal.HBifunctor p) => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.TannenT t p)
@@ -1272,7 +1320,7 @@ module Data.Functor.Apply.Free
 --   <pre>
 --   <a>Ap1</a> f
 --       ~ f                            -- one f
---     <a>:+:</a> (f `'Day'\\` f)          -- two f's
+--     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
 --     :+: (f `Day` f `Day` f)           -- three f's
 --     :+: (f `Day` f `Day` f `Day` f)  -- four f's
 --     :+: ...                          -- etc.
@@ -1741,6 +1789,8 @@ instance Data.HBifunctor.Associative.Semigroupoidal Control.Monad.Freer.Church.C
 instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.HClown t)
 instance (Data.HFunctor.Interpret.Interpret t, Data.HFunctor.HBind t) => Data.HBifunctor.Associative.Semigroupoidal (Data.HBifunctor.HJoker t)
 instance Data.HBifunctor.Associative.Semigroupoidal Data.Bifunctor.Joker.Joker
+instance Data.HBifunctor.Associative.Semigroupoidal Data.HBifunctor.LeftF
+instance Data.HBifunctor.Associative.Semigroupoidal Data.HBifunctor.RightF
 instance Data.HBifunctor.Associative.Associative (GHC.Generics.:*:)
 instance Data.HBifunctor.Associative.Associative Data.Functor.Product.Product
 instance Data.HBifunctor.Associative.Associative Data.Functor.Day.Day
@@ -1752,6 +1802,8 @@ instance Data.HBifunctor.Associative.Associative Control.Monad.Freer.Church.Comp
 instance Data.HFunctor.HBind t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.HClown t)
 instance Data.HFunctor.HBind t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.HJoker t)
 instance Data.HBifunctor.Associative.Associative Data.Bifunctor.Joker.Joker
+instance Data.HBifunctor.Associative.Associative Data.HBifunctor.LeftF
+instance Data.HBifunctor.Associative.Associative Data.HBifunctor.RightF
 
 
 -- | This module provides tools for working with binary functor
@@ -3353,7 +3405,7 @@ data Ap (f :: Type -> Type) a
 --   <pre>
 --   <a>Ap1</a> f
 --       ~ f                            -- one f
---     <a>:+:</a> (f `'Day'\\` f)          -- two f's
+--     <a>:+:</a> (f `<tt>Day'</tt> f)          -- two f's
 --     :+: (f `Day` f `Day` f)           -- three f's
 --     :+: (f `Day` f `Day` f `Day` f)  -- four f's
 --     :+: ...                          -- etc.
@@ -3428,6 +3480,9 @@ data Free f a
 --   <a>:+:</a>.
 --   
 --   <a>interpret</a>ing it requires no constraint on the target context.
+--   
+--   Note that this type and its instances equivalent to <tt><a>EnvT</a>
+--   (<a>Sum</a> <a>Natural</a>)</tt>.
 data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
@@ -3618,22 +3673,21 @@ pattern Comp :: Functor f => f (g a) -> Comp f g a
 -- | An <a>HBifunctor</a> that ignores its second input. Like a <a>:+:</a>
 --   with no <a>R1</a>/right branch.
 --   
---   <pre>
---   <a>LeftF</a> f g a ~ f a
---   </pre>
+--   This is <a>Joker</a> from <a>Data.Bifunctors.Joker</a>, but given a
+--   more sensible name for its purpose.
 --   
---   This is a true <tt>Associative</tt> and <tt>Semigroupoidal</tt>.
-type LeftF = HClown IdentityT
+--   It is essentially <tt><a>HClown</a> <a>IdentityT</a></tt>
+newtype LeftF f g a
+LeftF :: f a -> LeftF f g a
+[runLeftF] :: LeftF f g a -> f a
 
 -- | An <a>HBifunctor</a> that ignores its first input. Like a <a>:+:</a>
 --   with no <a>L1</a>/left branch.
 --   
---   <pre>
---   <a>RightF</a> f g a ~ g a
---   </pre>
---   
---   This is a true <tt>Associative</tt> and <tt>Semigroupoidal</tt>.
-type RightF = HJoker IdentityT
+--   It is essentially <tt><a>HJoker</a> <a>IdentityT</a></tt>
+newtype RightF f g a
+RightF :: g a -> RightF f g a
+[runRightF] :: RightF f g a -> g a
 
 -- | Turn <a>Identity</a> into any <tt><a>Applicative</a> f</tt>. Can be
 --   useful as an argument to <a>hmap</a>, <a>hbimap</a>, or
