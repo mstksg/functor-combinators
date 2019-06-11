@@ -218,7 +218,7 @@ and other helper functions.
     we could have `data GET a` describing a GET request and `data POST a`
     describing a POST request; `(GET :+: POST) a` would be a functor that
     describes either a GET or POST request.
- 
+
     The person who creates the `f :+: g` decides which one to give, and the
     person who consumes/interprets/runs the `f :+: g` must provide a way of
     handling *both*
@@ -503,82 +503,81 @@ and other helper functions.
 
 ### These1
 
-*   **Origin**: *[Control.Monad.Freer.Church][]*.  Note that an equivalent type
-    is also found in *[GHC.Generics][]* and *[Data.Functor.Compose][]*, but
-    they are incompatible with the `HBifunctor` typeclass.
+*   **Origin**: *[Data.Functor.These][]*.
 
-*   **Mixing Strategy**: "Both, together, sequentially ": provide values from
-    *both* functors; the user must *use* both, and *in order*.
+*   **Mixing Strategy**: "Either-or, or both": provide either (or both) cases,
+    and user has to handle both possibilities.  An "inclusive either"
 
     ```haskell
-    data Comp f g a = Comp (f (g a))
+    data These1 f g a
+        = This1  (f a)
+        | That1        (g a)
+        | These1 (f a) (g a)
     ```
 
-    It can be useful for situations where your schema/functor must be specified
-    using both functors, and the user must *use* both, but also enforcing that
-    they must use both in the *given order*: that is, for a `Comp f g`, they
-    interpret `f` *before* they interpret `g`.
+    This can be useful for situations where your schema/functor can be
+    specified using one functor or another, or even both.  See description on
+    `:+:` for examples.
+
+    The person who creates the `These1 f g` decides which one to give, and the
+    person who consumes/interprets/runs the `f :+: g` must provide a way of
+    handling *both* situations.
 
     ```haskell
-    binterpret @Day
-        :: Bind h          -- superclass of Monad
+    binterpret @These
+        :: Alt h
         => (f ~> h)
         -> (g ~> h)
-        -> Comp f g ~> h
+        -> These f g a
+        -> h a
     ```
 
-    Unlike for `:*:`, you always have to interpret *both* functor values.  And,
-    unlike for `Day`, you must interpret both functor values *in that order*.
+    You can also pattern match on the `These1` directly to be more explicit
+    with how you handle each case.
 
 *   **Constraints**
 
     ```haskell
-    type CS Comp = Bind
-    type CM Comp = Monad
+    type CS These1 = Alt
+    type CM These1 = Alt
     ```
 
-    We need `Monad` to interpret out of a `Comp`.  Note that all
-    `Monad` instances should have a `Bind` instance, but due to how
-    *base* is structured, `Bind` is not a true superclass officially.  See the
-    note on `Day` for more information on getting around this with `upgradeC`.
+    You need at least `Alt` to be able to interpret out of a `These1`, because
+    you need to be able to handle the case where you have *both* `f` and `g`,
+    and need to combine the result.
 
 *   **Identity**
 
     ```haskell
-    type I Comp = Identity
+    type I These1 = Void
     ```
 
-    `Comp f Identity` is equivalent to just `f`, because `Identity` adds no
-    extra effects or structure.
+    `These1 f Void` is equivalent to just `f`, because it means the `That1` and
+    `These1` branches will be impossible to construct, and you are left with
+    only the `This1` branch.
 
 *   **Induced Monoid**
 
     ```haskell
-    type SF Day = Free1
-    type MF Day = Free
+    type SF These1 = Steps
+    type MF THese1 = Steps
     ```
 
-    `Free f a` is a bunch of `f x`s composed with each other.  It is either:
+    `Steps` is the result of an infinite application of `These1 to the same value:
 
-    *   `a` (zero `f`s)
-    *   `f a` (one `f`)
-    *   `f (f a)` (two `f`s)
-    *   `f (f (f a))` (three `f`s)
-    *   .. etc.
+    ```haskell
+    type Steps f = f `These1` f `These1` f `These1` f `These1` ... etc.
+    ```
 
-    `Free` is very useful because it allows you to specify that your schema can
-    have many `f`s, sequenced one after the other, in which the *choice* of
-    "the next `f`" is allowed to depend on the *result* of "the previous `f`".
+    It essentially represents an infinite *sparse* array of `f a`s, where an `f a` might
+    exist at many different positions, with gaps here and there.  There is
+    always at least *one* `f a`.
 
-    For example, in an interactive "wizard" sort of schema, where `f`
-    represents a wizard dialog box, we can represent our wizard using `Free f
-    a` --- an ordered sequence of dialog boxes, where the choice of the next
-    box can depend on result of the previous box.
+    Like `Step`, it's not particularly useful, but it can be used in situations
+    where you want a giant infinite sparse array of `f a`s, each at a given
+    position, with many gaps between them.
 
-    `Free1` is a version with "at least one" `f a`.
-
-[Data.Functor.Combinators]: https://hackage.haskell.org/package/functor-combinators/docs/Data-Functor-Combinators.html
-[Data.Functor.These]: https://hackage.haskell.org/package/these-1/docs/Data-Functor-These.html
+[Data.Functor.These]: https://hackage.haskell.org/package/these/docs/Data-Functor-These.html
 
 Single-Argument
 ---------------
@@ -591,7 +590,7 @@ Single-Argument
 
     Can be useful if `f` is created using a `GADT` that cannot be given a
     `Functor` instance.
-    
+
     For example, here is an indexed type that represents
     the type of a "form element", where the type parameter represents the
     output result of the form element.

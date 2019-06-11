@@ -24,7 +24,7 @@
 -- This module provides functor combinators that are the fixed points of
 -- applications of ':+:' and 'Data.Functor.These.These1'.  They are useful
 -- for their 'Data.HFunctor.Interpret.Interpret' instances, along with
--- their relationship to the 'Data.Functor.Tensor.Monoidal' insatnces of
+-- their relationship to the 'Data.HBifunctor.Tensor.Monoidal' instances of
 -- ':+:' and 'Data.Functor.These.These1'.
 module Control.Applicative.Step (
   -- * Fixed Points
@@ -75,10 +75,10 @@ import qualified Data.Map.NonEmpty          as NEM
 -- exactly one @f@ /somewhere/.  A @'Step' f a@ has that @f@, with
 -- a 'Natural' giving you "where" the @f@ is in the long chain.
 --
--- Can be useful for using with the 'Data.Functor.Tensor.Monoidal' instance
--- of ':+:'.
+-- Can be useful for using with the 'Data.HBifunctor.Tensor.Monoidal'
+-- instance of ':+:'.
 --
--- 'Data.HFunctor.interpret'ing it requires no constraint on the
+-- 'Data.HFunctor.Interpret.interpret'ing it requires no constraint on the
 -- target context.
 data Step f a = Step { stepPos :: Natural, stepVal :: f a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
@@ -164,6 +164,8 @@ absurd1 = \case {}
 --
 -- It is the fixed point of applications of 'Data.Functor.These.TheseT'.
 --
+-- You can think of this as an infinite sparse array of @f a@s.
+--
 -- Intuitively, in an infinite @f \`TheseT\` f \`TheseT\` f \`TheseT\` f ...@,
 -- each of those infinite positions may have an @f@ in them.  However,
 -- because of the at-least-one nature of 'Data.Functor.These.TheseT', we know we have at least
@@ -172,7 +174,7 @@ absurd1 = \case {}
 -- A @'Steps' f a@ has potentially many @f@s, each stored at a different
 -- 'Natural' position, with the guaruntee that at least one @f@ exists.
 --
--- Can be useful for using with the 'Data.Functor.Tensor.Monoidal' instance
+-- Can be useful for using with the 'Data.HBifunctor.Tensor.Monoidal' instance
 -- of 'Data.Functor.These.TheseT'.
 --
 -- 'Data.HFunctor.interpret'ing it requires at least an 'Alt'
