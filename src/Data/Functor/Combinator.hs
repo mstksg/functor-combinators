@@ -79,7 +79,7 @@ module Data.Functor.Combinator (
   , NonEmptyF(..)
   , MaybeF(..)
   , Ap
-  , Ap1
+  , Ap1(..)
   , Alt
   , Free
   , Step(..)
@@ -96,8 +96,8 @@ module Data.Functor.Combinator (
   , (:+:)(..), V1
   , These1(..)
   , Comp(Comp, unComp)
-  , LeftF
-  , RightF
+  , LeftF(..)
+  , RightF(..)
   -- * Natural Transformations
   , generalize
   , absorb
@@ -127,7 +127,6 @@ import           Data.HFunctor.Final
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics
-import qualified Data.Functor.Plus           as P
 
 -- | The functor combinator that forgets all structure in the input.
 -- Ignores the input structure and stores no information.

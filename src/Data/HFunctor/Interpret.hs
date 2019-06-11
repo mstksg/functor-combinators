@@ -229,6 +229,8 @@ instance Interpret MaybeF where
     retract     = fromMaybe zero . runMaybeF
     interpret f = maybe zero f . runMaybeF
 
+-- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
+-- 'Numeric.Natural.Natural')@.
 instance Interpret Step where
     type C Step = Unconstrained
 

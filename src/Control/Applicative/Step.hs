@@ -80,6 +80,9 @@ import qualified Data.Map.NonEmpty          as NEM
 --
 -- 'Data.HFunctor.Interpret.interpret'ing it requires no constraint on the
 -- target context.
+--
+-- Note that this type and its instances equivalent to
+-- @'Control.Comonad.Trans.Env.EnvT' ('Data.Semigroup.Sum' 'Natural')@.
 data Step f a = Step { stepPos :: Natural, stepVal :: f a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

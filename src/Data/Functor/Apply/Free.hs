@@ -51,7 +51,7 @@ import           GHC.Generics
 -- @
 -- 'Ap1' f
 --     ~ f                            -- one f
---   ':+:' (f \`'Day'\\` f)          -- two f's
+--   ':+:' (f \`'Day'` f)          -- two f's
 --   :+: (f \`Day\` f \`Day\` f)           -- three f's
 --   :+: (f \`Day\` f \`Day\` f \`Day\` f)  -- four f's
 --   :+: ...                          -- etc.

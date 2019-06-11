@@ -1,4 +1,8 @@
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveFoldable       #-}
 {-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE DeriveTraversable    #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE LambdaCase           #-}
@@ -32,14 +36,19 @@ module Data.HBifunctor (
   , BiffT(..)
   , HClown(..)
   , HJoker(..)
-  , LeftF, RightF
+  , LeftF(..)
+  , RightF(..)
   ) where
 
-import           Control.Monad.Trans.Identity
 import           Control.Natural.IsoF
+import           Data.Biapplicative
+import           Data.Bifunctor.TH
+import           Data.Data
+import           Data.Deriving
 import           Data.Functor.Classes
 import           Data.HFunctor.Internal
 import           Data.Kind
+import           GHC.Generics
 
 -- | Lift two isomorphisms on each side of a bifunctor to become an
 -- isomorphism between the two bifunctor applications.
@@ -89,13 +98,21 @@ deriving via (WrappedHBifunctor (BiffT (p :: (Type -> Type) -> (Type -> Type) ->
 -- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the second
 -- argument.
 newtype HClown t f g a = HClown { runHClown :: t f a }
-    deriving (Eq, Ord, Show, Read)
-
-deriving instance Functor (t f) => Functor (HClown t f g)
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
 instance Show1 (t f) => Show1 (HClown t f g) where
     liftShowsPrec sp sl d (HClown x) =
         showsUnaryWith (liftShowsPrec sp sl) "HClown" d x
+
+instance (Read1 (t f)) => Read1 (HClown t f g) where
+    liftReadsPrec rp rl = readsData $
+            readsUnaryWith (liftReadsPrec rp rl) "HClown" HClown
+
+instance Eq1 (t f) => Eq1 (HClown t f g) where
+    liftEq eq (HClown x) (HClown y) = liftEq eq x y
+
+instance Ord1 (t f) => Ord1 (HClown t f g) where
+    liftCompare c (HClown x) (HClown y) = liftCompare c x y
 
 instance HFunctor t => HBifunctor (HClown t) where
     hbimap f _ (HClown x) = HClown (hmap f x)
@@ -106,13 +123,15 @@ deriving via (WrappedHBifunctor (HClown t) f)
 -- | Form an 'HBifunctor' over a 'HFunctor' by ignoring the first
 -- argument.
 newtype HJoker t f g a = HJoker { runHJoker :: t g a }
-    deriving (Eq, Ord, Show, Read)
-
-deriving instance Functor (t g) => Functor (HJoker t f g)
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
 instance Show1 (t g) => Show1 (HJoker t f g) where
     liftShowsPrec sp sl d (HJoker x) =
         showsUnaryWith (liftShowsPrec sp sl) "HJoker" d x
+
+instance (Read1 (t g)) => Read1 (HJoker t f g) where
+    liftReadsPrec rp rl = readsData $
+            readsUnaryWith (liftReadsPrec rp rl) "HJoker" HJoker
 
 instance HFunctor t => HBifunctor (HJoker t) where
     hbimap _ g (HJoker x) = HJoker (hmap g x)
@@ -123,21 +142,45 @@ deriving via (WrappedHBifunctor (HJoker t) f)
 -- | An 'HBifunctor' that ignores its second input.  Like
 -- a 'GHC.Generics.:+:' with no 'GHC.Generics.R1'/right branch.
 --
--- @
--- 'LeftF' f g a ~ f a
--- @
+-- This is 'Data.Bifunctors.Jokker.Joker' from "Data.Bifunctors.Joker", but
+-- given a more sensible name for its purpose.
 --
--- This is a true 'Associative' and 'Semigroupoidal'.
---
-type LeftF = HClown IdentityT
+-- It is essentially @'HClown' 'Control.Monad.Trans.Identity.IdentityT'@
+newtype LeftF f g a = LeftF { runLeftF :: f a }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''LeftF
+deriveRead1 ''LeftF
+deriveEq1 ''LeftF
+deriveOrd1 ''LeftF
+deriveBifunctor ''LeftF
+deriveBifoldable ''LeftF
+deriveBitraversable ''LeftF
+
+instance Applicative f => Biapplicative (LeftF f) where
+    bipure _ y = LeftF (pure y)
+    LeftF x <<*>> LeftF y = LeftF (x <*> y)
+
+instance HBifunctor LeftF where
+    hbimap f _ (LeftF x) = LeftF (f x)
+
+deriving via (WrappedHBifunctor LeftF f)
+    instance HFunctor (LeftF f)
 
 -- | An 'HBifunctor' that ignores its first input.  Like
 -- a 'GHC.Generics.:+:' with no 'GHC.Generics.L1'/left branch.
 --
--- @
--- 'RightF' f g a ~ g a
--- @
---
--- This is a true 'Associative' and 'Semigroupoidal'.
---
-type RightF = HJoker IdentityT
+-- It is essentially @'HJoker' 'Control.Monad.Trans.Identity.IdentityT'@
+newtype RightF f g a = RightF { runRightF :: g a }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''RightF
+deriveRead1 ''RightF
+deriveEq1 ''RightF
+deriveOrd1 ''RightF
+
+instance HBifunctor RightF where
+    hbimap _ g (RightF x) = RightF (g x)
+
+deriving via (WrappedHBifunctor RightF f)
+    instance HFunctor (RightF f)

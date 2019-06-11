@@ -173,12 +173,37 @@ different ways.
 Each one has two associated constraints:
 
 *   `CS t` is the constraint on where you can *interpret* or *run* values of
-    the enhanced type (`binterpret`, `biretract`).
+    the enhanced type:
+
+    ```haskell
+    binterpret
+        :: (Semigroupoidal t, CS t h)
+        => (f ~> h)
+        => (g ~> h)
+        -> (t f g ~> h)
+
+    biretract
+        :: (Semigroupoidal t, CS t f)
+        => t f f ~> f
+    ```
+
 *   `CM t` is the constraint on where you can *create* values of the enhanced
     type (`pureT`, `inL`, `inR`)
 
-Most of these also have an identity, `i`, where applying `t f i` leaves `f`
-unchanged (`t f i ~ f`).  This is represented by the associated type `I t`.
+    ```haskell
+    pureT
+        :: (Monoidal t, CM t f)
+        => I t ~> f
+
+    inL :: (Monoidal t, CM t g)
+        => f ~> t f g
+
+    inR :: (Monoidal t, CM t f)
+        => g ~> t f g
+    ```
+
+Most of these also have an identity, `I t`, where applying `t f (I t)` leaves `f`
+unchanged (`t f (I t) ~ f`).  This is represented by the associated type `I t`.
 
 All of these also have a "apply to self many times", for situations where you
 want to represent the act of applying `t` to the same `f` multiple times,
@@ -194,6 +219,9 @@ consMF :: t f (MF t) ~> MF t
 ```
 
 and other helper functions.
+
+Here we simply list the induced monoid with some small notes; for more details,
+see the actual section for that induced monoid later on.
 
 ### :+: / Sum
 
@@ -238,15 +266,19 @@ and other helper functions.
     type CM (:+:) = Unconstrained
     ```
 
-    You don't need any constraint in order to use `inL`
+    You don't need any constraint in order to use `binterpret`, `inL`, `inR`,
+    etc.
+
+    However, note that `pureT @(:+:) :: Void1 ~> h` is effectively impossible to
+    call, because no values of type `Void1 a` exist.
 
 *   **Identity**
 
     ```haskell
-    type I (:+:) = Void
+    type I (:+:) = Void1
     ```
 
-    `f :+: Void` is equivalent to just `f`, because you can never have a value
+    `f :+: Void1` is equivalent to just `f`, because you can never have a value
     of the right branch.
 
 *   **Induced Monoid**
@@ -327,9 +359,9 @@ and other helper functions.
 
     It's basically an ordered collection of `f a`s `:*:`d with each other.
 
-    It can be useful if your schema provides a "bag" of multiple `f a` options,
-    and the interpreter can choose to use any combination of items in the bag
-    that they want.
+    It is useful if you want to define a schema where you can offer *multiple*
+    options for the `f a`, and the interpreter/consumer can freely pick any one
+    that they want to use.
 
     `NonEmptyF` is the version of `ListF` that has "at least one `f a`".
 
@@ -560,7 +592,7 @@ and other helper functions.
 
     ```haskell
     type SF These1 = Steps
-    type MF THese1 = Steps
+    type MF These1 = Steps
     ```
 
     `Steps` is the result of an infinite application of `These1 to the same value:
@@ -582,23 +614,27 @@ and other helper functions.
 ### LeftF / RightF / Joker
 
 *   **Origin**: *[Data.HBifunctor][]* (for `LeftF` and `RightF`),
-    *[Data.Bifunctor.Joker][]* (for `Joker`)
+    *[Data.Bifunctor.Joker][]* (for `Joker`, which is equivalent to `LeftF`)
 
 *   **Mixing Strategy**: "Ignore the left" / "ignore the right".
 
     ```haskell
-    LeftF  f g a ~ f a
+    data LeftF  f g a = LeftF  { runLeftF  :: f a }
+    data Joker  f g a = Joker  { runJoker  :: f a }    -- same
 
-    RightF f g a ~ g a
+    data RightF f g a = RightF { runRightF :: g a }
     ```
 
     You can think of `LeftF` as "`:+:` without the Right case,
-    `R1`", or `RightF` as "`:+:` without the Left case, `L1`".
-
-    (`Joker` is the same as `LeftF`)
+    `R1`", or `RightF` as "`:+:` without the Left case, `L1`".  `RightF f` is
+    also equivalent to `IdentityT` for any `f`.
 
     This can be useful if you want the second (or first) argument to be
-    ignored, and only be useful maybe at the type level.
+    ignored, and only be used maybe at the type level.
+
+    For example, `RightF IgnoreMe MyFunctor` is equivalent to just `MyFunctor`,
+    but you might want to use `IgnoreMe` as a phantom type to help limit what
+    values can be used for what functions.
 
 *   **Constraints**
 
@@ -615,32 +651,30 @@ and other helper functions.
 
     Unlike the previous functor combinators, these three are only
     `Semigroupoidal`, not `Monoidal`: this is because there is no functor `i` such
-    that `LeftF i f` is equal to `f`, for all `f`.
+    that `LeftF i g` is equal to `g`, for all `g`, and no functor `i` such that
+    `RightF f i` is equal to `f`, for all `f`.
 
 
 *   **Induced Semigroup**
 
     ```haskell
-    type SF LeftF = HLift IdentityT
-    type SF Joker = EnvT Any            -- these two are the isomorphic
+    type SF LeftF = EnvT Any
     ```
 
-    For `LeftF` and `Joker`, induced semigroup is `HLift IdentityT`, or also
-    `EnvT Any`.
-
-    This can be useful as a type that marks if an `f` is "pure" (`HPure`, `Any
-    False`), or "tainted" (`HOther`, `Any True`).  It is an `f a` "tagged"
-    with some boolean bit about whether it was made using `inject`, or with
-    `consSF`.  The *provider* of an `EnvT Any f` can specify "pure or tained",
-    and the *interpreter* can make a decision based on that tag.
+    For `LeftF` and `Joker`, induced semigroup is `EnvT Any`.  This can be
+    useful as a type that marks if an `f` is "pure" (`HPure`, `Any False`), or
+    "tainted" (`HOther`, `Any True`).  It is an `f a` "tagged" with some
+    boolean bit about whether it was made using `inject`, or with `consSF`.
+    The *provider* of an `EnvT Any f` can specify "pure or tained", and the
+    *interpreter* can make a decision based on that tag.
 
     ```haskell
-    type SF RightF = HFree IdentityT
+    type SF RightF = Step
     ```
 
-    For `RightF`, the induced semigroup is `HFree IdentityT`, which is
-    essentially `Step`.  See `Step` and the information on `:+:` for more
-    information.
+    For `RightF`, the induced semigroup is `Step`.  See `Step` and the
+    information on `:+:` for more details.  This can be useful for having a
+    value of `f a` at "some point", indexed by a `Natural`.
 
 [Data.HBifunctor]: https://hackage.haskell.org/package/functor-combinators/docs/Data-HBifunctor.html
 [Data.Bifunctor.Joker]: https://hackage.haskell.org/package/bifunctors/docs/Data-Bifunctor-Joker.html
@@ -652,7 +686,8 @@ Single-Argument
 
 *   **Origin**: *[Data.Functor.Coyoneda][]*
 
-*   **Enhancement**: A `Functor` instance.
+-   **Enhancement**: The ability to map over the parameter --- a free `Functor`
+    instance.
 
     Can be useful if `f` is created using a `GADT` that cannot be given a
     `Functor` instance.
@@ -685,17 +720,135 @@ Single-Argument
 
 [Data.Functor.Coyoneda]: https://hackage.haskell.org/package/kan-extensions/docs/Data-Functor-Coyoneda.html
 
-### Ap
+### ListF / NonEmptyF
 
-### Ap1
+*   **Origin**: *[Control.Applicative.ListF][]*
+
+*   **Enhancement**: The ability to offer multiple options for the interpreter
+    to pick from -- a free `Alt` instance.
+
+    ```haskell
+    data ListF     f a = ListF     { runListF     :: [f a]          }
+    data NonEmptyF f a = NonEmptyF { runNonEmptyF :: NonEmpty (f a) }
+    ```
+
+    Can be useful if you want to provide the ability when you *define* your
+    schema to provide multiple `f a`s that the *interpreter*/consumer can
+    freely pick from.
+
+    For example, for a form schema, you might have multiple ways to enter
+    a name.  If you had a `Name` schema `data Name a`, then you can represent
+    "many different name inputs" schema as `ListF Name a`.
+
+    Because this has a `Plus` instance, you can use `(<!>) :: ListF f a ->
+    ListF f a -> ListF f a` to combine multiple option sets, and `zero :: ListF
+    f a` to provide the "choice that always fails/is unusuable".
+
+    Also provided is `NonEmptyF`, which is a variety of `ListF` where you
+    always have "at least one `f a`".  Can be useful if you want to ensure, for
+    your interpreter's sake, that you always have at least one `f a` option to
+    pick from.  For example, `NonEmptyF Name a` will always have at least *one*
+    name schema.
+
+    Note that this is essentially `f` `:*:`d with itself multiple times;
+    `ListF` is the monoidal functor combinator induced by `:*:`, and
+    `NonEmptyF` is the semigroupoidal functor combinator induced by `:*:`.
+
+*   **Constraint**
+
+    ```haskell
+    type C ListF     = Plus
+    type C NonEmptyF = Alt
+    ```
+
+    Interpreting out of a `ListF f` requires the target context to be
+    `Plus`, and interpreting out of a `NonEmptyF f` requires `Alt` (because you
+    will never have the empty case).  However, you can directly pattern match
+    on the list and pick an item you want directly, which requires no
+    constraint.
+
+[Control.Applicative.ListF]: https://hackage.haskell.org/package/functor-combinators/docs/Control-Applicative-ListF.html
+
+### Ap / Ap1
+
+*   **Origin**: *[Control.Applicative.Free][]* / *[Data.Functor.Apply.Free][]*
+
+*   **Enhancement**: The ability to provide multiple `f`s that the interpreter
+    *must* consume *all* of --- the free `Applicative`.
+
+
+    While `ListF` may be considered "multiple options offered", `Ap` can be
+    considered "multiple actions all required".  The interpreter must
+    consume/interpret *all* of the multiple `f`s in order to interpret an `Ap`.
+
+    For example, for a form schema, you might want to have multiple form
+    elements.  If a single form element is `data FormElem a`, then you can
+    make a multi-form schema with `Ap FormElem a`.  The consumer of the form
+    schema must handle *every* `FormElem` provided.
+
+    Note that ordering is not enforced: while the consumer must handle
+    each `f` eventually, they are free to handle it in whatever order they
+    desire.  See `Free` for a version where ordering is enforced.
+
+    Because this has an `Applicative` instance, you can use `(<*>) :: Ap f (a
+    -> b) -> Ap f a -> Ap f b` to sequence multiple `Ap f`s together,
+    and `pure :: a -> Ap f a` to produce a "no-op" `Ap` without any `f`s.
+
+    Also provided is `Ap1`, which is a variety of `Ap` where you always have to
+    have "at least one `f`".  Can be useful if you want to ensure, for example,
+    that your form has at least one element.
+
+    Note that this is essentially `f` `Day`d with itself multiple times;
+    `Ap` is the monoidal functor combinator induced by `Day` and
+    `Ap1` is the semigroupoidal functor combinator induced by `Day`.
+
+*   **Constraint**
+
+    ```haskell
+    type C Ap  = Applicative
+    type C Ap1 = Apply
+    ```
+
+    Interpreting out of an `Ap f` requires the target context to be
+    `Applicative`, and interpreting out of a `Ap1 f` requires `Apply` (because
+    you will never have the pure case).
+
+[Control.Applicative.Free]: https://hackage.haskell.org/package/free/docs/Control-Applicative-Free.html
+[Data.Functor.Apply.Free]: https://hackage.haskell.org/package/functor-combinators/docs/Data-Functor-Apply-Free.html
 
 ### Alt
 
+*   **Origin**: *[Control.Alternative.Free][]*
+
+*   **Enhancement**: A combination of both `ListF` and `Ap`: provide a choice
+    (`ListF`-style) of sequences (`Ap`-style) of choices of sequences of
+    choices .... --- the free `Alternative`.
+
+    ```haskell
+    Alt f ~ ListF (Ap (ListF (Ap (ListF (Ap (...))))
+          ~ ListF (Ap (Alt f))
+    ```
+
+    This type imbues `f` with both sequential "must use both" operations (via
+    `<*>`) and choice-like "can use either" operations (via `<|>`).
+
+    It can be useful for implementing parser schemas, which often involve both
+    sequential and choice-like combinations.  If `f` is a primitive parsing
+    unit, then `Alt f` represents a non-deterministic parser of a bunch of
+    `f`s one after the other, with multiple possible results.
+
+*   **Constraint**
+
+    ```haskell
+    type C Alt = Alternative
+    ```
+
+    Interpreting out of an `Alt f` requires the target context to be
+    `Alternative` --- it uses `<*>` for sequencing, and `<|>` for choice.
+
+[Control.Alternative.Free]: https://hackage.haskell.org/package/free/docs/Control-Alternative-Free.html
+
 ### Lift / MaybeApply
-
-### ListF
-
-### NonEmptyF
 
 ### MaybeF
 
@@ -709,15 +862,15 @@ Single-Argument
 
 ### EnvT
 
-### ProxyF / ConstF
+### Step
+
+### Steps
 
 ### Chain
 
 ### Chain1
 
-### Step
-
-### Steps
+### ProxyF / ConstF
 
 Combinator Combinators
 ----------------------

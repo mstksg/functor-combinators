@@ -228,6 +228,8 @@ instance Inject NonEmptyF where
 instance Inject MaybeF where
     inject = MaybeF . Just
 
+-- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
+-- 'Numeric.Natural.Natural')@.
 instance Inject Step where
     inject = Step 0
 
@@ -298,6 +300,7 @@ instance HBind NonEmptyF where
 instance HBind MaybeF where
     hbind f = foldMap f . runMaybeF
 
+-- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum' 'Natural')@.
 instance HBind Step where
     hbind f (Step n x) = Step (n + m) y
       where
@@ -339,7 +342,7 @@ instance HBind WrappedApplicative where
 instance HBind Reverse where
     hbind f = f . getReverse
 
--- | Combines the accumulators
+-- | Combines the accumulators, Writer-style
 instance Monoid e => HBind (EnvT e) where
     hbind f (EnvT e x) = EnvT (e <> e') y
       where
