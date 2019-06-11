@@ -98,9 +98,15 @@ module Data.Functor.Combinator (
   , Comp(Comp, unComp)
   , LeftF(..)
   , RightF(..)
-  -- * Natural Transformations
+  -- * Util
+  -- ** Natural Transformations
   , generalize
   , absorb
+  -- ** Unsafe
+  , unsafePlus
+  , unsafeApply
+  , unsafeBind
+  , unsafePointed
   ) where
 
 import           Control.Alternative.Free

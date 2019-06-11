@@ -81,10 +81,6 @@ module Data.HBifunctor.Tensor (
   , binterpretT
   , prodOutL
   , prodOutR
-  -- ** Unsafe
-  , unsafePlus
-  , unsafeApply
-  , unsafeBind
   -- * 'Matchable'
   , Matchable(..)
   , splittingSF

@@ -15,7 +15,7 @@ module Data.HFunctor.Internal (
   , WrappedHBifunctor(..)
   , sumSum, prodProd
   , generalize, absorb
-  , unsafePlus, unsafeApply, unsafeBind
+  , unsafePlus, unsafeApply, unsafeBind, unsafePointed
   ) where
 
 import           Control.Applicative
@@ -50,6 +50,7 @@ import           Data.Functor.Yoneda
 import           Data.Kind
 import           Data.Proxy
 import           Data.Tagged
+import           Data.Pointed
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
@@ -179,6 +180,9 @@ prodProd = isoF to_ from_
 -- Always use with concrete and specific @f@ only, and never use with any
 -- @f@ that already has a 'Plus' instance.
 --
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
+--
 -- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
 -- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
 -- \@MyFunctor@.
@@ -191,6 +195,9 @@ unsafePlus _ x = case unsafeCoerceConstraint @(Plus (WrappedApplicative f)) @(Pl
 --
 -- Always use with concrete and specific @f@ only, and never use with any
 -- @f@ that already has a 'Apply' instance.
+--
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
 --
 -- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
 -- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
@@ -205,11 +212,36 @@ unsafeApply _ x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(
 -- Always use with concrete and specific @f@ only, and never use with any
 -- @f@ that already has a 'Bind' instance.
 --
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
+--
 -- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
 -- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
 -- \@MyFunctor@.
 unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 unsafeBind _ x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
+    Sub Dict -> x
+
+newtype PointMe f a = PointMe (f a)
+
+instance Applicative f => Pointed (PointMe f) where
+    point = PointMe . pure
+
+-- | For any @'Applicative' f@, produce a value that would require
+-- @'POinted'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Pointed' instance.
+--
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
+unsafePointed _ x = case unsafeCoerceConstraint @(Pointed (PointMe f)) @(Pointed f) of
     Sub Dict -> x
 
 -- | Turn 'Identity' into any @'Applicative' f@.  Can be useful as an

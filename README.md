@@ -776,7 +776,6 @@ Single-Argument
 *   **Enhancement**: The ability to provide multiple `f`s that the interpreter
     *must* consume *all* of --- the free `Applicative`.
 
-
     While `ListF` may be considered "multiple options offered", `Ap` can be
     considered "multiple actions all required".  The interpreter must
     consume/interpret *all* of the multiple `f`s in order to interpret an `Ap`.
@@ -786,13 +785,18 @@ Single-Argument
     make a multi-form schema with `Ap FormElem a`.  The consumer of the form
     schema must handle *every* `FormElem` provided.
 
-    Note that ordering is not enforced: while the consumer must handle
-    each `f` eventually, they are free to handle it in whatever order they
-    desire.  See `Free` for a version where ordering is enforced.
+    Note that ordering is not enforced: while the consumer must handle each `f`
+    eventually, they are free to handle it in whatever order they desire.  In
+    fact, they could even all be handled in parallel.  See `Free` for a version
+    where ordering is enforced.
 
     Because this has an `Applicative` instance, you can use `(<*>) :: Ap f (a
-    -> b) -> Ap f a -> Ap f b` to sequence multiple `Ap f`s together,
-    and `pure :: a -> Ap f a` to produce a "no-op" `Ap` without any `f`s.
+    -> b) -> Ap f a -> Ap f b` to sequence multiple `Ap f`s together, and `pure
+    :: a -> Ap f a` to produce a "no-op" `Ap` without any `f`s.
+
+    `Ap` has some utility over `Free` in that you can pattern match on the
+    constructors directly and look at each individual sequenced `f a`, for
+    static analysis, before anything is ever run or interpreted.
 
     Also provided is `Ap1`, which is a variety of `Ap` where you always have to
     have "at least one `f`".  Can be useful if you want to ensure, for example,
@@ -848,27 +852,180 @@ Single-Argument
 
 [Control.Alternative.Free]: https://hackage.haskell.org/package/free/docs/Control-Alternative-Free.html
 
+### Free / Free1
+
+*   **Origin**: *[Control.Monad.Freer.Church][]*, which is a variant of
+    *[Control.Monad.Free][]* that is compatible with `HFunctor`.
+
+*   **Enhancement**: The ability to provide multiple `f`s that the interpreter
+    must consume *in order*, sequentially --- the free `Monad`.
+
+    Contrast with `Ap`, which also sequences multiple `f`s together, but
+    without any enforced order.  It does this by *hiding* the "next `f a`" until
+    the previous `f a` has already been interpreted.
+
+    Perhaps more importantly, you can sequence `f`s in a way where the *choice
+    of the next `f`* is allowed to depend on the *result of the previous `f`*.
+
+    For example, in an interactive "wizard" sort of schema, where `f`
+    represents a wizard dialog box, we can represent our wizard using `Free f
+    a` --- an ordered sequence of dialog boxes, where the choice of the next
+    box can depend on result of the previous box.  Contrast to `Ap`, where the
+    choice of all dialog boxes must be made in advanced, up-front, before
+    reading any input from the user.
+
+    In having this, however, we loose the ability to be able to inspect each `f
+    a` before interpreting anything.
+
+    Because this has a `Monad` instance, you can use `(<*>) :: Free f (a
+    -> b) -> Free f a -> Free f b` and `(>>=) :: Free f a -> (a -> Free f b) ->
+    Free f b)` to sequence multiple `Free f`s together,
+    and `pure :: a -> Free f a` to produce a "no-op" `Free` without any `f`s.
+
+    Also provided is `Free1`, which is a variety of `Free1` where you always have to
+    have "at least one `f`".  Can be useful if you want to ensure, for example,
+    that your wizard has at least one dialog box.
+
+    Note that this is essentially `f` `Comp`d with itself multiple times;
+    `Free` is the monoidal functor combinator induced by `Comp` and
+    `Free1` is the semigroupoidal functor combinator induced by `Comp`.
+
+*   **Constraint**
+
+    ```haskell
+    type C Free  = Monad
+    type C Free1 = Bind
+    ```
+
+    Interpreting out of a `Free f` requires the target context to be
+    `Monad`, and interpreting out of a `Free1 f` requires `Bind` (because
+    you will never have the pure case).
+
+[Control.Monad.Free]: https://hackage.haskell.org/package/free/docs/Control-Monad-Free.html
+
 ### Lift / MaybeApply
+
+*   **Origin**: *[Control.Applicative.Lift][]* / *[Data.Functor.Apply][]* (the
+    same type)
+
+*   **Enhancement**: Make `f` "optional" in the schema in a way that the
+    interpreter can still work with as if the `f` was still there --- the free
+    `Pointed`.
+
+    ```haskell
+    data Lift f a = Pure  a
+                  | Other (f a)
+
+    newtype MaybeApply f a = MaybeApply { runMaybeApply :: Either a (f a) }
+        -- same
+    ```
+
+    Can be useful so that an `f a` is *optional* for the schema definition, but
+    in a way where the consumer can still continue from it as if they *had* the
+    `f`.
+
+    It can be used, for example, to turn an required parameter `Param a` into
+    an optional paramter `Lift Param a`.
+
+    Contrast this to `MaybeF`: this allows the interpreter to still "continue
+    on" as normal even if the `f` is not there.  However, `MaybeF` forces the
+    interpreter to abort if the `f` is not there.
+
+    This can be thought of as `Identity :+: f`.
+
+*   **Constraint**
+
+    ```haskell
+    type C Lift = Pointed
+    ```
+
+    Interpreting out of a `Lift f` requires the target context to be
+    `Pointed` --- it uses `point :: a -> f a` to handle the case where the `f`
+    is not there.  Note that every `Applicative` instance should also be a
+    `Pointed` instance; use `unsafePointed` to provide an instance for any
+    `Applicative` the same way you'd use `upgradeC`.
+
+[Control.Applicative.Lift]: https://hackage.haskell.org/package/transformers/docs/Control-Applicative-Lift.html
+[Data.Functor.Apply]: https://hackage.haskell.org/package/semigroupoids/docs/Data-Functor-Apply.html
 
 ### MaybeF
 
-### Free
+*   **Origin**: *[Control.Applicative.ListF][]*
 
-### Free1
+*   **Enhancement**: Make `f` "optional" in the schema in a way that the
+    interpreter must fail if the `f` is not present.
 
-### Final
+    ```haskell
+    newtype MaybeF f a = MaybeF { runMaybeF :: Maybe (f a) }
+    ```
 
-### IdentityT
+    Can be useful so that an `f a` is *optional* for the schema definition; if
+    the `f` is not present, the consumer must abort the current branch, or find
+    some other external way to continue onwards.
+
+    Contrast this to `Lift`, which is an "optional" `f` that the consumer may
+    continue on from.
+
+    This can be thought of as `Proxy :+: f`.
+
+*   **Constraint**
+
+    ```haskell
+    type C MaybeF = Plus
+    ```
+
+    Interpreting out of a `Lift f` requires the target context to be
+    `Plus` --- it uses `zero :: f a` to handle the case where the `f`
+    is not there.  Note that this is actually "over-constrained": we really
+    only need `zero`, and not all of `Plus` (which includes `<!>`).  However,
+    there is no common typeclass in Haskell that provides this, so this is the
+    most pragmatic choice.
 
 ### EnvT
+
+*   **Origin**: *[Control.Comonad.Trans.Env][]*
+
+*   **Enhancement**: Provide extra (monoidal) data alongside `f a` that the
+    interpreter can access.  Basically tuples extra `e` alongside the `f a`.
+
+    ```haskell
+    newtype EnvT e f a = EnvT e (f a)
+    ```
+
+    You can use this as basically tupling some extra data alongside an `f a`.
+    It can be useful if you want to provide extra information that isn't inside
+    the `f` for the interpreter use for interpretation.
+
+    When using `inject :: f a -> EnvT e f a`, it uses `mempty` as the initial
+    `e` value.
+
+    This can be thought of as `Const e :*: f`.
+
+    This type appears specialized --- as `EnvT (Sum Natural)` as `Step`, and
+    also as the semigroupoidal functor combinator `EnvT Any` induced by of `LeftF`.  For
+    `Step`, the extra information tracks "how deep we are" in along a chain of
+    possible branches, and for `EnvT Any` as an induced semigroup, it tracks if
+    we are "pure" or "impure".
+
+*   **Constraint**
+
+    ```haskell
+    type C (EnvT e) = Unconstrained
+    ```
+
+    Interpreting out of `EnvT e` requires no constraints.
+
+[Control.Comonad.Trans.Env]: https://hackage.haskell.org/package/comonad/docs/Control-Comonad-Trans-Env.html
 
 ### Step
 
 ### Steps
 
-### Chain
+### Final
 
-### Chain1
+### Chain / Chain1
+
+### IdentityT
 
 ### ProxyF / ConstF
 
