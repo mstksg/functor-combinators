@@ -569,6 +569,13 @@ Steps :: NEMap Natural (f a) -> Steps f a
 --   f :+: f :+: f :+: f :+: ...
 --   </pre>
 --   
+--   <pre>
+--   <a>stepUp</a> (<a>L1</a> "hello")
+--   -- <a>Step</a> 0 "hello"
+--   stepUp (<a>R1</a> (Step 1 "hello"))
+--   -- Step 2 "hello"
+--   </pre>
+--   
 --   Forms an isomorphism with <a>stepDown</a> (see <a>stepping</a>).
 stepUp :: (f :+: Step f) ~> Step f
 
@@ -586,6 +593,13 @@ stepUp :: (f :+: Step f) ~> Step f
 --   
 --   <pre>
 --   f :+: ( f :+: f :+: f :+: ...)
+--   </pre>
+--   
+--   <pre>
+--   <a>stepDown</a> (<a>Step</a> 2 "hello")
+--   -- <a>R1</a> (Step 1 "hello")
+--   stepDown (Step 0 "hello")
+--   -- <a>L1</a> "hello"
 --   </pre>
 --   
 --   Forms an isomorphism with <a>stepUp</a> (see <a>stepping</a>).
@@ -870,11 +884,43 @@ hbind :: HBind t => (f ~> t g) -> t f ~> t g
 -- | Collapse a nested <tt>t (t f)</tt> into a single <tt>t f</tt>.
 hjoin :: HBind t => t (t f) ~> t f
 
+-- | The functor combinator that forgets all structure in the input.
+--   Ignores the input structure and stores no information.
+--   
+--   Acts like the "zero" with respect to functor combinator composition.
+--   
+--   <pre>
+--   <a>ComposeT</a> ProxyF f      ~ ProxyF
+--   <a>ComposeT</a> f      ProxyF ~ ProxyF
+--   </pre>
+--   
+--   It can be <a>inject</a>ed into (losing all information), but it is
+--   impossible to ever <a>retract</a> or <a>interpret</a> it.
+--   
+--   This is essentially <tt><a>ConstF</a> ()</tt>.
+data ProxyF f a
+ProxyF :: ProxyF f a
+
+-- | Functor combinator that forgets all structure on the input, and
+--   instead stores a value of type <tt>e</tt>.
+--   
+--   Like <a>ProxyF</a>, acts like a "zero" with functor combinator
+--   composition.
+--   
+--   It can be <a>inject</a>ed into (losing all information), but it is
+--   impossible to ever <a>retract</a> or <a>interpret</a> it.
+data ConstF e f a
+ConstF :: e -> ConstF e f a
+[getConstF] :: ConstF e f a -> e
+
 -- | An "<a>HFunctor</a> combinator" that enhances an <a>HFunctor</a> with
 --   the ability to hold a single <tt>f a</tt>. This is the higher-order
 --   analogue of <a>Lift</a>.
 --   
---   This is mostly used as the semigroup fixed-point of <a>ClownT</a>.
+--   You can think of it as a free <a>Inject</a> for any <tt>f</tt>.
+--   
+--   Note that <tt><a>HLift</a> <a>IdentityT</a></tt> is equivalent to
+--   <tt><a>EnvT</a> <a>Any</a></tt>.
 data HLift t f a
 HPure :: f a -> HLift t f a
 HOther :: t f a -> HLift t f a
@@ -894,8 +940,10 @@ retractHLift :: Inject t => HLift t f a -> t f a
 --   
 --   This is the higher-oder analogue of <a>Free</a>.
 --   
---   This is mostly used as the semigroup fixed-point of <a>JokerT</a>, but
---   is also the free <a>HBind</a> for any <a>HFunctor</a> <tt>t</tt>.
+--   It is the free <a>HBind</a> for any <tt><a>HFunctor</a> t</tt>.
+--   
+--   Note that <tt><a>HFree</a> <a>IdentityT</a></tt> is equivalent to
+--   <a>Step</a>.
 data HFree t f a
 HReturn :: f a -> HFree t f a
 HJoin :: t (HFree t f) a -> HFree t f a
@@ -926,6 +974,7 @@ instance Data.HFunctor.HBind Data.Functor.Bind.Class.MaybeApply
 instance Data.HFunctor.HBind Control.Applicative.Backwards.Backwards
 instance Data.HFunctor.HBind Data.Functor.Bind.Class.WrappedApplicative
 instance Data.HFunctor.HBind Data.Functor.Reverse.Reverse
+instance Data.HFunctor.HBind Data.HFunctor.ProxyF
 instance GHC.Base.Monoid e => Data.HFunctor.HBind (Control.Comonad.Trans.Env.EnvT e)
 instance (Data.HFunctor.HBind t, Data.HFunctor.Inject t) => Data.HFunctor.HBind (Data.HFunctor.HLift t)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.HBind (Data.HFunctor.HFree t)
@@ -949,6 +998,8 @@ instance Data.HFunctor.Inject Data.Functor.Bind.Class.WrappedApplicative
 instance Data.HFunctor.Inject (Control.Monad.Trans.Reader.ReaderT r)
 instance GHC.Base.Monoid e => Data.HFunctor.Inject (Control.Comonad.Trans.Env.EnvT e)
 instance Data.HFunctor.Inject Data.Functor.Reverse.Reverse
+instance Data.HFunctor.Inject Data.HFunctor.ProxyF
+instance GHC.Base.Monoid e => Data.HFunctor.Inject (Data.HFunctor.ConstF e)
 instance (Data.HFunctor.Inject s, Data.HFunctor.Inject t) => Data.HFunctor.Inject (Control.Monad.Trans.Compose.ComposeT s t)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HLift t)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HFree t)
@@ -958,6 +1009,34 @@ instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (D
 instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.HLift t f)
 instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.HFunctor.HLift t f a)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HLift t)
+instance forall k e (f :: k). GHC.Classes.Ord e => Data.Functor.Classes.Ord1 (Data.HFunctor.ConstF e f)
+instance Data.HFunctor.Internal.HFunctor (Data.HFunctor.ConstF e)
+instance forall k e (f :: k). GHC.Classes.Eq e => Data.Functor.Classes.Eq1 (Data.HFunctor.ConstF e f)
+instance forall k e (f :: k). GHC.Read.Read e => Data.Functor.Classes.Read1 (Data.HFunctor.ConstF e f)
+instance forall k e (f :: k). GHC.Show.Show e => Data.Functor.Classes.Show1 (Data.HFunctor.ConstF e f)
+instance forall e k1 (f :: k1) k2 (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Data.Data e) => Data.Data.Data (Data.HFunctor.ConstF e f a)
+instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Generics.Generic (Data.HFunctor.ConstF e f a)
+instance forall e k (f :: k). Data.Traversable.Traversable (Data.HFunctor.ConstF e f)
+instance forall e k (f :: k). Data.Foldable.Foldable (Data.HFunctor.ConstF e f)
+instance forall e k (f :: k). GHC.Base.Functor (Data.HFunctor.ConstF e f)
+instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Classes.Ord e => GHC.Classes.Ord (Data.HFunctor.ConstF e f a)
+instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Classes.Eq e => GHC.Classes.Eq (Data.HFunctor.ConstF e f a)
+instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Read.Read e => GHC.Read.Read (Data.HFunctor.ConstF e f a)
+instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Show.Show e => GHC.Show.Show (Data.HFunctor.ConstF e f a)
+instance forall k (f :: k). Data.Functor.Classes.Ord1 (Data.HFunctor.ProxyF f)
+instance Data.HFunctor.Internal.HFunctor Data.HFunctor.ProxyF
+instance forall k (f :: k). Data.Functor.Classes.Eq1 (Data.HFunctor.ProxyF f)
+instance forall k (f :: k). Data.Functor.Classes.Read1 (Data.HFunctor.ProxyF f)
+instance forall k (f :: k). Data.Functor.Classes.Show1 (Data.HFunctor.ProxyF f)
+instance forall k1 (f :: k1) k2 (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2) => Data.Data.Data (Data.HFunctor.ProxyF f a)
+instance forall k1 (f :: k1) k2 (a :: k2). GHC.Generics.Generic (Data.HFunctor.ProxyF f a)
+instance forall k (f :: k). Data.Traversable.Traversable (Data.HFunctor.ProxyF f)
+instance forall k (f :: k). Data.Foldable.Foldable (Data.HFunctor.ProxyF f)
+instance forall k (f :: k). GHC.Base.Functor (Data.HFunctor.ProxyF f)
+instance forall k1 (f :: k1) k2 (a :: k2). GHC.Classes.Ord (Data.HFunctor.ProxyF f a)
+instance forall k1 (f :: k1) k2 (a :: k2). GHC.Classes.Eq (Data.HFunctor.ProxyF f a)
+instance forall k1 (f :: k1) k2 (a :: k2). GHC.Read.Read (Data.HFunctor.ProxyF f a)
+instance forall k1 (f :: k1) k2 (a :: k2). GHC.Show.Show (Data.HFunctor.ProxyF f a)
 
 
 -- | This module provides an abstraction for "two-argument functor
@@ -1302,6 +1381,8 @@ instance Data.HFunctor.Interpret.Interpret Data.Functor.Bind.Class.WrappedApplic
 instance Data.HFunctor.Interpret.Interpret (Control.Monad.Trans.Reader.ReaderT r)
 instance GHC.Base.Monoid e => Data.HFunctor.Interpret.Interpret (Control.Comonad.Trans.Env.EnvT e)
 instance Data.HFunctor.Interpret.Interpret Data.Functor.Reverse.Reverse
+instance Data.HFunctor.Interpret.Interpret Data.HFunctor.ProxyF
+instance GHC.Base.Monoid e => Data.HFunctor.Interpret.Interpret (Data.HFunctor.ConstF e)
 instance Data.HFunctor.Interpret.Interpret t => Data.HFunctor.Interpret.Interpret (Data.HFunctor.HLift t)
 instance Data.HFunctor.Interpret.Interpret t => Data.HFunctor.Interpret.Interpret (Data.HFunctor.HFree t)
 
@@ -1467,6 +1548,10 @@ fromFree :: FreeOf c t => t f ~> Final c f
 toFree :: (FreeOf c t, Functor f) => Final c f ~> t f
 fromFree :: (FreeOf c t, C t (Final c f)) => t f ~> Final c f
 toFree :: (FreeOf c t, c (t f)) => Final c f ~> t f
+
+-- | The isomorphism between a free structure and its encoding as
+--   <a>Final</a>.
+finalizing :: (FreeOf c t, Functor f) => t f <~> Final c f
 
 -- | Re-interpret the context under a <a>Final</a>.
 hoistFinalC :: (forall g x. (c g => g x) -> d g => g x) -> Final c f a -> Final d f a
@@ -3518,6 +3603,7 @@ ProxyF :: ProxyF f a
 --   impossible to ever <a>retract</a> or <a>interpret</a> it.
 data ConstF e f a
 ConstF :: e -> ConstF e f a
+[getConstF] :: ConstF e f a -> e
 data EnvT e (w :: Type -> Type) a
 EnvT :: e -> w a -> EnvT e a
 
@@ -3663,14 +3749,14 @@ RightF :: g a -> RightF f g a
 
 -- | Turn <a>Identity</a> into any <tt><a>Applicative</a> f</tt>. Can be
 --   useful as an argument to <a>hmap</a>, <a>hbimap</a>, or
---   <tt>interpret</tt>.
+--   <a>interpret</a>.
 --   
 --   It is a more general form of <a>generalize</a> from <i>mmorph</i>.
 generalize :: Applicative f => Identity ~> f
 
 -- | Natural transformation from any functor <tt>f</tt> into <a>Proxy</a>.
 --   Can be useful for "zeroing out" a functor with <a>hmap</a> or
---   <a>hbimap</a> or <tt>interpret</tt>.
+--   <a>hbimap</a> or <a>interpret</a>.
 absorb :: f ~> Proxy
 
 -- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
@@ -3713,7 +3799,7 @@ unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
 unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 
 -- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
---   require <tt><tt>POinted</tt> f</tt>.
+--   require <tt><a>Pointed</a> f</tt>.
 --   
 --   Always use with concrete and specific <tt>f</tt> only, and never use
 --   with any <tt>f</tt> that already has a <a>Pointed</a> instance.
@@ -3724,36 +3810,3 @@ unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 --   <tt>f</tt> you want to enhance. You can pass in something like
 --   <tt><a>Proxy</a> @MyFunctor</tt>.
 unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
-instance forall k e (f :: k). GHC.Classes.Ord e => Data.Functor.Classes.Ord1 (Data.Functor.Combinator.ConstF e f)
-instance Data.HFunctor.Internal.HFunctor (Data.Functor.Combinator.ConstF e)
-instance GHC.Base.Monoid e => Data.HFunctor.Inject (Data.Functor.Combinator.ConstF e)
-instance GHC.Base.Monoid e => Data.HFunctor.Interpret.Interpret (Data.Functor.Combinator.ConstF e)
-instance forall k e (f :: k). GHC.Classes.Eq e => Data.Functor.Classes.Eq1 (Data.Functor.Combinator.ConstF e f)
-instance forall k e (f :: k). GHC.Read.Read e => Data.Functor.Classes.Read1 (Data.Functor.Combinator.ConstF e f)
-instance forall k e (f :: k). GHC.Show.Show e => Data.Functor.Classes.Show1 (Data.Functor.Combinator.ConstF e f)
-instance forall e k1 (f :: k1) k2 (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Data.Data e) => Data.Data.Data (Data.Functor.Combinator.ConstF e f a)
-instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Generics.Generic (Data.Functor.Combinator.ConstF e f a)
-instance forall e k (f :: k). Data.Traversable.Traversable (Data.Functor.Combinator.ConstF e f)
-instance forall e k (f :: k). Data.Foldable.Foldable (Data.Functor.Combinator.ConstF e f)
-instance forall e k (f :: k). GHC.Base.Functor (Data.Functor.Combinator.ConstF e f)
-instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Classes.Ord e => GHC.Classes.Ord (Data.Functor.Combinator.ConstF e f a)
-instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Classes.Eq e => GHC.Classes.Eq (Data.Functor.Combinator.ConstF e f a)
-instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Read.Read e => GHC.Read.Read (Data.Functor.Combinator.ConstF e f a)
-instance forall e k1 (f :: k1) k2 (a :: k2). GHC.Show.Show e => GHC.Show.Show (Data.Functor.Combinator.ConstF e f a)
-instance forall k (f :: k). Data.Functor.Classes.Ord1 (Data.Functor.Combinator.ProxyF f)
-instance Data.HFunctor.Internal.HFunctor Data.Functor.Combinator.ProxyF
-instance Data.HFunctor.Inject Data.Functor.Combinator.ProxyF
-instance Data.HFunctor.HBind Data.Functor.Combinator.ProxyF
-instance Data.HFunctor.Interpret.Interpret Data.Functor.Combinator.ProxyF
-instance forall k (f :: k). Data.Functor.Classes.Eq1 (Data.Functor.Combinator.ProxyF f)
-instance forall k (f :: k). Data.Functor.Classes.Read1 (Data.Functor.Combinator.ProxyF f)
-instance forall k (f :: k). Data.Functor.Classes.Show1 (Data.Functor.Combinator.ProxyF f)
-instance forall k1 (f :: k1) k2 (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2) => Data.Data.Data (Data.Functor.Combinator.ProxyF f a)
-instance forall k1 (f :: k1) k2 (a :: k2). GHC.Generics.Generic (Data.Functor.Combinator.ProxyF f a)
-instance forall k (f :: k). Data.Traversable.Traversable (Data.Functor.Combinator.ProxyF f)
-instance forall k (f :: k). Data.Foldable.Foldable (Data.Functor.Combinator.ProxyF f)
-instance forall k (f :: k). GHC.Base.Functor (Data.Functor.Combinator.ProxyF f)
-instance forall k1 (f :: k1) k2 (a :: k2). GHC.Classes.Ord (Data.Functor.Combinator.ProxyF f a)
-instance forall k1 (f :: k1) k2 (a :: k2). GHC.Classes.Eq (Data.Functor.Combinator.ProxyF f a)
-instance forall k1 (f :: k1) k2 (a :: k2). GHC.Read.Read (Data.Functor.Combinator.ProxyF f a)
-instance forall k1 (f :: k1) k2 (a :: k2). GHC.Show.Show (Data.Functor.Combinator.ProxyF f a)
