@@ -1002,10 +1002,11 @@ Single-Argument
     This can be thought of as `Const e :*: f`.
 
     This type appears specialized --- as `EnvT (Sum Natural)` as `Step`, and
-    also as the semigroupoidal functor combinator `EnvT Any` induced by of `LeftF`.  For
-    `Step`, the extra information tracks "how deep we are" in along a chain of
-    possible branches, and for `EnvT Any` as an induced semigroup, it tracks if
-    we are "pure" or "impure".
+    also as the semigroupoidal functor combinator `EnvT Any` induced by of
+    `LeftF`.  For `Step`, the extra information tracks "how deep we are" in
+    along a chain of possible branches, and for `EnvT Any` as an induced
+    semigroup, the `Any` (a wrapped `Bool`) tracks if we are "pure" or
+    "impure".
 
 *   **Constraint**
 
@@ -1019,15 +1020,291 @@ Single-Argument
 
 ### Step
 
+*   **Origin**: *[Control.Applicative.Step][]*
+
+*   **Enhancement**: Tuples the `f a` with an extra natural number index.
+
+    ```haskell
+    data Step f a = Step { stepPos :: Natural, stepVal :: f a }
+    ```
+
+    This is essentially a specialized `EnvT`: it's `EnvT (Sum Natural)`.
+
+    This is a useful type because it can be seen as equivalent to `f :+: f :+:
+    f :+: f :+: f ...` forever: it's an `f`, but at some index.
+
+    The speicalized functions `stepUp` and `stepDown` allow you to match on the
+    "first" `f` in that infinite chain (these are also exposed as `consSF` and
+    `matchSF` for `:+:`); it will increment and decrement the index relatively
+    to make this work properly.
+
+*   **Constraint**
+
+    ```haskell
+    type C Step = Unconstrained
+    ```
+
+    Interpreting out of `Step` requires no constraints.
+
+[Control.Applicative.Step]: https://hackage.haskell.org/package/functor-combinators/docs/Control-Applicative-Step.html
+
 ### Steps
+
+*   **Origin**: *[Control.Applicative.Step][]*
+
+*   **Enhancement**: The ability to offer multiple *indexed*
+    options for the interpreter to pick from.  Like `NonEmptyF`, except with
+    each `f a` existing at an indexed position that the consumer/interpreter
+    can look up or access.
+
+    ```haskell
+    newtype Steps f a = Steps { getSteps :: NEMap Natural (f a) }
+    ```
+
+    This is like a mix between `NonEmptyF` and `Step`: multiple `f a` options
+    (at least one) for the consumer/interpreter to pick from.  Unlike
+    `NonEmptyF`, each `f a` exists at an "index" --- there might be one at 0,
+    one at 5, one at 100, etc.
+
+    Another way of looking at this is like an infinite *sparse array* of `f
+    a`s: it's an inifinitely large collection where each spot may potentially
+    have an `f a`.
+
+    Useful for "provide options that the consumer can pick from, index, or
+    access", like `ListF`/`NonEmptyF`.
+
+    This type can be seen as an infinite ``f `These1` f `These1` f `These1` f
+    ...``, and along these lines, `stepsDown` and `stepsUp` exist analogous to
+    `stepUp` and `stepDown` to treat a `Steps` in this manner.
+
+*   **Constraint**
+
+    ```haskell
+    type C Steps = Alt
+    ```
+
+    Interpreting out of `Steps` requires an `Alt` to combine different
+    possibilities.  It does not require a full `Plus` constraint because we
+    never need `zero`: a `Steps f a` always has at least one `f a`.
 
 ### Final
 
+*   **Origin**: *[Data.HFunctor.Final][]*
+
+*   **Enhancement**: `Final c` will lift `f` into a free structure of any
+    typeclass `c` --- give it all of the actions/API of a typeclass for free.
+    `Final c f` is the "free `c`" over `f`.
+
+    ```haskell
+    data Final c f a
+    ```
+
+    In a way, this is the "ultimate free structure": it can fully replace all
+    other free structures of typeclasses of kind `Type -> Type`.  For example:
+
+    ```haskell
+    Coyoneda  ~ Final Functor
+    ListF     ~ Final Plus
+    NonEmptyF ~ Final Alt
+    Ap        ~ Final Applicative
+    Ap1       ~ Final Apply
+    Free      ~ Final Monad
+    Free1     ~ Final Bind
+    Lift      ~ Final Pointed
+    IdentityT ~ Final Unconstrained
+    ```
+
+    All of these are connections are witnessed by instances of the typeclass
+    `FreeOf`.
+
+    In fact, `Final c` is often more performant than the actual concrete free
+    structures.
+
+    The main downside is that you cannot directly pattern match on the
+    structure of a `Final c` the same way you can pattern match on, say, `Ap`
+    or `ListF`.  Doing so may require a concrete throwaway data type with the
+    proper instances.
+
+    You can also think of this as the "ultimate `Interpret`", because with
+    `inject` you can push `f` into `Final c f`, and with `interpret` you only
+    ever need the `c` constraint to "run"/interpret this.
+
+    So, next time you want to give an `f` the ability to `<*>` and `pure`, you
+    can throw it into `Final Applicative`: `f` now gets "sequencing" abilities,
+    and is equivalent to `Ap f`.
+
+    If you want the API of a given typeclass `c`, you can inject `f` into
+    `Final c`, and you get the API of that typeclass for free on `f`.
+
+*   **Constraint**
+
+    ```haskell
+    type C (Final c) = c
+    ```
+
+    Interpreting out of a `Final c` requires `c`, since that is the extra
+    context that `f` is lifted into.
+
+[Data.HFunctor.Final]: https://hackage.haskell.org/package/functor-combinators/docs/Data-HFunctor-Final.html
+
 ### Chain / Chain1
+
+*   **Origin**: *[Data.HFunctor.Chain][]*
+
+*   **Enhancement**: `Chain t` will lift `f` into a linked list of `f`s chained
+    by `t`.
+
+    ```haskell
+    -- i is intended to be the identity of t
+    data Chain t i f a = Done (i a)
+                       | More (t f (Chain t i f a))
+    ```
+
+    For example, for `:*:`, `Chain (:*:) Proxy f` is equivalent to one of:
+
+    ```haskell
+    Proxy                       ~ Done Proxy
+    x                           ~ More (x :*: Done Proxy)
+    x :*: y                     ~ More (x :*: More (y :*: Done Proxy))
+    x :*: y :*: z               ~ More (x :*: More (y :*: More (z :*: Done Proxy)))
+    -- etc.
+    ```
+
+    This is useful because it provides a nice uniform way to work with all
+    "induced Monoidal functors".  That's because:
+
+    ```haskell
+    ListF       ~ Chain (:*:)  Proxy
+    Ap          ~ Chain Day    Identity
+    Free        ~ Chain Comp   Identity
+    Step        ~ Chain (:+:)  Void
+    Steps       ~ Chain These1 Void
+    ```
+
+    This isomorphism is witnessed by `unrollMF` (turn into the `Chain`) and
+    `rerollMF` (convert back from the `Chain`).
+
+    We also have a "non-empty" version, `Chain1`, for induced semigroupoids:
+
+    ```haskell
+    data Chain1 t f a = Done1 (f a)
+                      | More1 (t f (Chain1 t f a))
+    ```
+
+    ```haskell
+    NonEmptyF   ~ Chain1 (:*:)
+    Ap1         ~ Chain1 Day
+    Free1       ~ Chain1 Comp
+    Step        ~ Chain1 (:+:)
+    Steps       ~ Chain1 These1
+    EnvT Any    ~ Chain1 LeftF
+    Step        ~ Chain1 RightF
+    ```
+
+    Using `ListF`, `Ap`, `Free`, `Step`, `Steps`, etc. can feel very different,
+    but with `Chain` you get a uniform interface to pattern match on (and
+    construct) all of them in the same way.
+
+    Using `NonEmptyF`, `Ap1`, `Free1`, `Step`, `Steps`, `EnvT`, etc. can feel
+    very different, but with `Chain1` you get a uniform interface to pattern
+    match on (and construct) all of them in the same way.
+
+*   **Constraint**
+
+    ```haskell
+    type C (Chain  t (I t)) = CM t
+    type C (Chain1 t      ) = CS t
+    ```
+
+    Interpreting out of a `Chain` requires the monoidal constraint on `t`,
+    since we have to "squish" all of the layers of `t` together with a
+    potential empty case.  Interpreting out of a `Chain1` requires the
+    semigroupoidal constraint on `t`, since we have to squish all of the layers
+    of `t` together, but we don't have to worry about the empty case.
+
+    For example, we have:
+
+    ```haskell
+    type C (Chain  (:*:) Proxy) = Plus
+    type C (Chain1 (:*:)      ) = Alt
+
+    type C (Chain  Day Identity) = Applicative
+    type C (Chain1 Day         ) = Apply
+
+    type C (Chain  Comp Identity) = Monad
+    type C (Chain1 Comp         ) = Bind
+    ```
+
+[Data.HFunctor.Chain]: https://hackage.haskell.org/package/functor-combinators/docs/Data-HFunctor-Chain.html
 
 ### IdentityT
 
+*   **Origin**: *[Data.Functor.Identity][]*
+
+*   **Enhancement**: None whatsoever; it adds no extra structure to `f`, and
+    `IdentityT f` is the same as `f`
+
+    ```haskell
+    data IdentityT f a = IdentityT { runIdentityT :: f a }
+                       | More (t f (Chain t i f a))
+    ```
+
+    This isn't too useful on its own, but it can be useful to give to the
+    functor combinator combinators as a no-op functor combinator.  It can also
+    be used to signify "no structure", or as a placeholder until you figure out
+    what sort of structure you want to have.
+
+    In that sense, it can be thought of as a "`ListF` with always one item", a
+    "`MaybeF` that's always `Just`"', an "`Ap` with always one sequenced item",
+    a "`Free` with always exactly one layer of effects", etc.
+
+*   **Constraint**
+
+    ```haskell
+    type C IdentityT = Unconstrained
+    ```
+
+    Interpreting out of `IdentityT` requires no constraints --- it basically
+    does nothing.
+
+[Data.Functor.Identity]: https://hackage.haskell.org/package/base/docs/Data-Functor-Identity.html
+
 ### ProxyF / ConstF
+
+*   **Origin**: *[Data.HFunctor][]*
+
+*   **Enhancement**: "Black holes" --- they completely forget all the structure
+    of `f`, and are impossible to `interpret` out of.
+
+    ```haskell
+    data ProxyF f a = ProxyF
+    data ConstF e f a = ConstF e
+    ```
+
+    `ProxyF` is essentially `ConstF ()`.
+
+    These are both valid functor combinators in that you can inject into them,
+    and `retract . inject == id` is technically true (the best kind of true).
+
+    You can use them if you want your schema to be impossible to interpret, as
+    a placeholder or to signify that one branch is uninterpretable.  In this
+    sense, this is like a "`ListF` that is always empty" or a "`MaybeF` that is
+    always `Nothing`".
+
+    Because of this, they aren't too useful on their own --- they're more
+    useful in the context of swapping out and combining or manipulating with
+    other functor combinators or using with functor combinator combinators.
+
+*   **Constraint**
+
+    ```haskell
+    type C ProxyF     = Impossible
+    type C (ConstF e) = Impossible
+    ```
+
+    Interpreting out of these requires an impossible constraint.
+
+[Data.HFunctor]: https://hackage.haskell.org/package/base/docs/Data-HFunctor.html
 
 Combinator Combinators
 ----------------------

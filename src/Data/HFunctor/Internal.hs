@@ -228,8 +228,7 @@ instance Applicative f => Pointed (PointMe f) where
     point = PointMe . pure
 
 -- | For any @'Applicative' f@, produce a value that would require
--- @'POinted'
--- f@.
+-- @'Pointed' f@.
 --
 -- Always use with concrete and specific @f@ only, and never use with any
 -- @f@ that already has a 'Pointed' instance.
@@ -245,7 +244,7 @@ unsafePointed _ x = case unsafeCoerceConstraint @(Pointed (PointMe f)) @(Pointed
     Sub Dict -> x
 
 -- | Turn 'Identity' into any @'Applicative' f@.  Can be useful as an
--- argument to `hmap`, `hbimap`, or `interpret`.
+-- argument to 'hmap', 'hbimap', or 'Data.HFunctor.Interpret.interpret'.
 --
 -- It is a more general form of 'Control.Monad.Morph.generalize' from
 -- /mmorph/.
@@ -253,8 +252,8 @@ generalize :: Applicative f => Identity ~> f
 generalize (Identity x) = pure x
 
 -- | Natural transformation from any functor @f@ into 'Proxy'.  Can be
--- useful for "zeroing out" a functor with `hmap` or `hbimap` or
--- `interpret`.
+-- useful for "zeroing out" a functor with 'hmap' or 'hbimap' or
+-- 'Data.HFunctor.Interpret.interpret'.
 absorb :: f ~> Proxy
 absorb _ = Proxy
 

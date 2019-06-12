@@ -1,5 +1,9 @@
 {-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DeriveDataTypeable      #-}
+{-# LANGUAGE DeriveFoldable          #-}
 {-# LANGUAGE DeriveFunctor           #-}
+{-# LANGUAGE DeriveGeneric           #-}
+{-# LANGUAGE DeriveTraversable       #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE InstanceSigs            #-}
 {-# LANGUAGE LambdaCase              #-}
@@ -8,6 +12,7 @@
 {-# LANGUAGE RankNTypes              #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE StandaloneDeriving      #-}
+{-# LANGUAGE TemplateHaskell         #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableInstances    #-}
@@ -37,6 +42,9 @@ module Data.HFunctor (
   , overHFunctor
   , Inject(..)
   , HBind(..)
+  -- * Simple instances
+  , ProxyF(..)
+  , ConstF(..)
   -- * 'HFunctor' Combinators
   , HLift(..), retractHLift
   , HFree(..), retractHFree
@@ -55,6 +63,8 @@ import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Coerce
+import           Data.Data
+import           Data.Deriving
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
@@ -63,6 +73,7 @@ import           Data.HFunctor.Internal
 import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable
+import           GHC.Generics
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
@@ -77,11 +88,59 @@ overHFunctor
     -> t f <~> t g
 overHFunctor f = isoF (hmap (viewF f)) (hmap (reviewF f))
 
+-- | The functor combinator that forgets all structure in the input.
+-- Ignores the input structure and stores no information.
+--
+-- Acts like the "zero" with respect to functor combinator composition.
+--
+-- @
+-- 'Control.Monad.Trans.Compose.ComposeT' ProxyF f      ~ ProxyF
+-- 'Control.Monad.Trans.Compose.ComposeT' f      ProxyF ~ ProxyF
+-- @
+--
+-- It can be 'inject'ed into (losing all information), but it is impossible
+-- to ever 'Data.HFunctor.Interpret.retract' or
+-- 'Data.HFunctor.Interpret.interpret' it.
+--
+-- This is essentially @'ConstF' ()@.
+data ProxyF f a = ProxyF
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''ProxyF
+deriveRead1 ''ProxyF
+deriveEq1 ''ProxyF
+deriveOrd1 ''ProxyF
+
+instance HFunctor ProxyF where
+    hmap _ = coerce
+
+-- | Functor combinator that forgets all structure on the input, and
+-- instead stores a value of type @e@.
+--
+-- Like 'ProxyF', acts like a "zero" with functor combinator composition.
+--
+-- It can be 'inject'ed into (losing all information), but it is impossible
+-- to ever 'Data.HFunctor.Interpret.retract' or
+-- 'Data.HFunctor.Interpret.interpret' it.
+data ConstF e f a = ConstF { getConstF :: e }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''ConstF
+deriveRead1 ''ConstF
+deriveEq1 ''ConstF
+deriveOrd1 ''ConstF
+
+instance HFunctor (ConstF e) where
+    hmap _ = coerce
+
 -- | An "'HFunctor' combinator" that enhances an 'HFunctor' with the
 -- ability to hold a single @f a@.  This is the higher-order analogue of
 -- 'Control.Applicative.Lift.Lift'.
 --
--- This is mostly used as the semigroup fixed-point of 'Data.HBifunctor.ClownT'.
+-- You can think of it as a free 'Inject' for any @f@.
+--
+-- Note that @'HLift' 'IdentityT'@ is equivalent to @'EnvT'
+-- 'Data.Semigroup.Any'@.
 data HLift t f a = HPure  (f a)
                  | HOther (t f a)
   deriving Functor
@@ -119,9 +178,9 @@ retractHLift = \case
 --
 -- This is the higher-oder analogue of 'Control.Monad.Free.Free'.
 --
--- This is mostly used as the semigroup fixed-point of
--- 'Data.HBifunctor.JokerT', but is also the free 'HBind' for any
--- 'HFunctor' @t@.
+-- It is the free 'HBind' for any @'HFunctor' t@.
+--
+-- Note that @'HFree' 'IdentityT'@ is equivalent to 'Step'.
 data HFree t f a = HReturn (f a)
                  | HJoin   (t (HFree t f) a)
 
@@ -275,6 +334,12 @@ instance Monoid e => Inject (EnvT e) where
 instance Inject Reverse where
     inject = Reverse
 
+instance Inject ProxyF where
+    inject _ = ProxyF
+
+instance Monoid e => Inject (ConstF e) where
+    inject _ = ConstF mempty
+
 instance (Inject s, Inject t) => Inject (ComposeT s t) where
     inject = ComposeT . inject . inject
 
@@ -300,7 +365,8 @@ instance HBind NonEmptyF where
 instance HBind MaybeF where
     hbind f = foldMap f . runMaybeF
 
--- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum' 'Natural')@.
+-- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
+-- 'Numeric.Natural.Natural')@.
 instance HBind Step where
     hbind f (Step n x) = Step (n + m) y
       where
@@ -341,6 +407,9 @@ instance HBind WrappedApplicative where
 
 instance HBind Reverse where
     hbind f = f . getReverse
+
+instance HBind ProxyF where
+    hbind _ = coerce
 
 -- | Combines the accumulators, Writer-style
 instance Monoid e => HBind (EnvT e) where

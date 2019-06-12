@@ -124,6 +124,13 @@ stepping = isoF stepDown stepUp
 -- f :+: ( f :+: f :+: f :+: ...)
 -- @
 --
+-- @
+-- 'stepDown' ('Step' 2 "hello")
+-- -- 'R1' (Step 1 "hello")
+-- stepDown (Step 0 "hello")
+-- -- 'L1' "hello"
+-- @
+--
 -- Forms an isomorphism with 'stepUp' (see 'stepping').
 stepDown :: Step f ~> f :+: Step f
 stepDown (Step n x) = case minusNaturalMaybe n 1 of
@@ -144,6 +151,13 @@ stepDown (Step n x) = case minusNaturalMaybe n 1 of
 --
 -- @
 -- f :+: f :+: f :+: f :+: ...
+-- @
+--
+-- @
+-- 'stepUp' ('L1' "hello")
+-- -- 'Step' 0 "hello"
+-- stepUp ('R1' (Step 1 "hello"))
+-- -- Step 2 "hello"
 -- @
 --
 -- Forms an isomorphism with 'stepDown' (see 'stepping').
@@ -183,7 +197,7 @@ absurd1 = \case {}
 -- 'Data.HFunctor.interpret'ing it requires at least an 'Alt'
 -- instance in the target context, since we have to handle potentially more
 -- than one @f@.
-newtype Steps f a = Steps { getSteps :: NEM.NEMap Natural (f a) }
+newtype Steps f a = Steps { getSteps :: NEMap Natural (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
 deriveShow1 ''Steps

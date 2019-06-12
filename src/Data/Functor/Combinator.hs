@@ -1,14 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFoldable     #-}
-{-# LANGUAGE DeriveFunctor      #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DeriveTraversable  #-}
-{-# LANGUAGE EmptyCase          #-}
-{-# LANGUAGE EmptyDataDeriving  #-}
 {-# LANGUAGE ExplicitNamespaces #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE TypeFamilies       #-}
-{-# LANGUAGE TypeInType         #-}
 
 -- |
 -- Module      : Data.Functor.Combinator
@@ -117,10 +107,6 @@ import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
-import           Data.Coerce
-import           Data.Constraint.Trivial
-import           Data.Data
-import           Data.Deriving
 import           Data.Functor.Apply.Free
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
@@ -134,71 +120,3 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics
 
--- | The functor combinator that forgets all structure in the input.
--- Ignores the input structure and stores no information.
---
--- Acts like the "zero" with respect to functor combinator composition.
---
--- @
--- 'Control.Monad.Trans.Compose.ComposeT' ProxyF f      ~ ProxyF
--- 'Control.Monad.Trans.Compose.ComposeT' f      ProxyF ~ ProxyF
--- @
---
--- It can be 'inject'ed into (losing all information), but it is impossible
--- to ever 'retract' or 'interpret' it.
---
--- This is essentially @'ConstF' ()@.
-data ProxyF f a = ProxyF
-  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
-
-deriveShow1 ''ProxyF
-deriveRead1 ''ProxyF
-deriveEq1 ''ProxyF
-deriveOrd1 ''ProxyF
-
-instance HFunctor ProxyF where
-    hmap _ = coerce
-
-instance Inject ProxyF where
-    inject _ = ProxyF
-
-instance HBind ProxyF where
-    hbind _ = coerce
-
--- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
--- have it impossible to retract out of.
-instance Interpret ProxyF where
-    type C ProxyF = Impossible
-
-    retract = absurdible . reProxy
-
-reProxy :: p f a -> Proxy f
-reProxy _ = Proxy
-
--- | Functor combinator that forgets all structure on the input, and
--- instead stores a value of type @e@.
---
--- Like 'ProxyF', acts like a "zero" with functor combinator composition.
---
--- It can be 'inject'ed into (losing all information), but it is impossible
--- to ever 'retract' or 'interpret' it.
-data ConstF e f a = ConstF e
-  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
-
-deriveShow1 ''ConstF
-deriveRead1 ''ConstF
-deriveEq1 ''ConstF
-deriveOrd1 ''ConstF
-
-instance HFunctor (ConstF e) where
-    hmap _ = coerce
-
-instance Monoid e => Inject (ConstF e) where
-    inject _ = ConstF mempty
-
--- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
--- have it impossible to retract out of.
-instance Monoid e => Interpret (ConstF e) where
-    type C (ConstF e) = Impossible
-
-    retract = absurdible . reProxy

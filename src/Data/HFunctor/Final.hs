@@ -23,7 +23,7 @@
 module Data.HFunctor.Final (
     Final(..)
   , fromFinal, toFinal
-  , FreeOf(..)
+  , FreeOf(..), finalizing
   , hoistFinalC
   , liftFinal0
   , liftFinal1
@@ -39,6 +39,7 @@ import           Control.Monad.Freer.Church hiding (toFree)
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Identity
 import           Control.Natural
+import           Control.Natural.IsoF
 import           Data.Constraint.Trivial
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
@@ -303,6 +304,10 @@ class Interpret t => FreeOf c t | t -> c where
     fromFree = toFinal
     default toFree :: c (t f) => Final c f ~> t f
     toFree = fromFinal
+
+-- | The isomorphism between a free structure and its encoding as 'Final'.
+finalizing :: (FreeOf c t, Functor f) => t f <~> Final c f
+finalizing = isoF fromFree toFree
 
 instance FreeOf Functor Coyoneda
 instance FreeOf Applicative Ap

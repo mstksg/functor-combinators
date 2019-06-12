@@ -82,6 +82,7 @@ import           Data.HFunctor
 import           Data.Kind
 import           Data.Maybe
 import           Data.Pointed
+import           Data.Proxy
 import           Data.Semigroup.Foldable
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free       as Ap
@@ -329,6 +330,23 @@ instance Interpret Reverse where
 
     retract     = getReverse
     interpret f = f . getReverse
+
+-- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
+-- have it impossible to retract out of.
+instance Interpret ProxyF where
+    type C ProxyF = Impossible
+
+    retract = absurdible . reProxy
+
+reProxy :: p f a -> Proxy f
+reProxy _ = Proxy
+
+-- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
+-- have it impossible to retract out of.
+instance Monoid e => Interpret (ConstF e) where
+    type C (ConstF e) = Impossible
+
+    retract = absurdible . reProxy
 
 -- | A constraint on @a@ for both @c a@ and @d a@.  Requiring @'AndC'
 -- 'Show' 'Eq' a@ is the same as requiring @('Show' a, 'Eq' a)@.
