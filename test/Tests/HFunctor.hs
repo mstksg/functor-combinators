@@ -61,3 +61,6 @@ instance TestHFunctor t => TestHFunctor (HLift t) where
     genHF gx = Gen.bool >>= \case
       False -> HPure  <$> gx
       True  -> HOther <$> genHF gx
+
+instance Monoid e => TestHFunctor (EnvT e) where
+    genHF gx = EnvT mempty <$> gx

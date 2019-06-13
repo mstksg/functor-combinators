@@ -1,10 +1,12 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TypeApplications  #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeApplications   #-}
+{-# LANGUAGE TypeOperators      #-}
+{-# OPTIONS_GHC -Wno-orphans    #-}
 
 module Tests.Util (
     isoProp
@@ -91,3 +93,6 @@ groupTree Group{..} = testGroup (unGroupName groupName)
 
 -- instance (Show x, Show y, Show a) => Show (Day (Const x) (Const y) a) where
 --     showsPrec = liftShowsPrec showsPrec showList
+
+deriving instance (Show e, Show (f a)) => Show (EnvT e f a)
+deriving instance (Eq e, Eq (f a)) => Eq (EnvT e f a)

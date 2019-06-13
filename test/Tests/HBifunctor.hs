@@ -134,6 +134,12 @@ instance TestHBifunctor These1 where
 instance TestHBifunctor Comp where
     genHB gx gy = (:>>=) <$> gx <*> fmap const gy
 
+instance TestHBifunctor LeftF where
+    genHB gx _ = LeftF <$> gx
+
+instance TestHBifunctor RightF where
+    genHB _ gy = RightF <$> gy
+
 associatingProp_
     :: forall t m f g h a.
      ( Associative t
@@ -249,6 +255,14 @@ prop_associating_Comp :: Property
 prop_associating_Comp = property $
     associatingProp_ @Comp listGen listGen listGen
 
+prop_associating_LeftF :: Property
+prop_associating_LeftF = property $
+    associatingProp_ @LeftF listGen listGen listGen
+
+prop_associating_RightF :: Property
+prop_associating_RightF = property $
+    associatingProp_ @LeftF listGen listGen listGen
+
 
 
 
@@ -277,6 +291,15 @@ prop_matchingSF_Comp :: Property
 prop_matchingSF_Comp = property $
     matchingSFProp_ @Comp $
       Gen.list (Range.linear 0 3) intGen
+
+prop_matchingSF_LeftF :: Property
+prop_matchingSF_LeftF = property $
+    matchingSFProp_ @LeftF listGen
+
+prop_matchingSF_RightF :: Property
+prop_matchingSF_RightF = property $
+    matchingSFProp_ @RightF listGen
+
 
 
 

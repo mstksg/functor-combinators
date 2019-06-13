@@ -618,16 +618,14 @@ see the actual section for that induced monoid later on.
 
 [Data.Functor.These]: https://hackage.haskell.org/package/these/docs/Data-Functor-These.html
 
-### LeftF / RightF / Joker
+### LeftF / RightF
 
-*   **Origin**: *[Data.HBifunctor][]* (for `LeftF` and `RightF`),
-    *[Data.Bifunctor.Joker][]* (for `Joker`, which is equivalent to `LeftF`)
+*   **Origin**: *[Data.HBifunctor][]* (for `LeftF` and `RightF`)
 
 *   **Mixing Strategy**: "Ignore the left" / "ignore the right".
 
     ```haskell
     data LeftF  f g a = LeftF  { runLeftF  :: f a }
-    data Joker  f g a = Joker  { runJoker  :: f a }    -- same
 
     data RightF f g a = RightF { runRightF :: g a }
     ```
@@ -647,7 +645,6 @@ see the actual section for that induced monoid later on.
 
     ```haskell
     type CS LeftF  = Unconstrained
-    type CS Joker  = Unconstrained
     type CS RightF = Unconstrained
     ```
 
@@ -668,7 +665,7 @@ see the actual section for that induced monoid later on.
     type SF LeftF = EnvT Any
     ```
 
-    For `LeftF` and `Joker`, induced semigroup is `EnvT Any`.  This can be
+    For `LeftF`, the induced semigroup is `EnvT Any`.  This can be
     useful as a type that marks if an `f` is "pure" (`HPure`, `Any False`), or
     "tainted" (`HOther`, `Any True`).  It is an `f a` "tagged" with some
     boolean bit about whether it was made using `inject`, or with `consSF`.
@@ -684,7 +681,6 @@ see the actual section for that induced monoid later on.
     value of `f a` at "some point", indexed by a `Natural`.
 
 [Data.HBifunctor]: https://hackage.haskell.org/package/functor-combinators/docs/Data-HBifunctor.html
-[Data.Bifunctor.Joker]: https://hackage.haskell.org/package/bifunctors/docs/Data-Bifunctor-Joker.html
 
 Single-Argument
 ---------------
