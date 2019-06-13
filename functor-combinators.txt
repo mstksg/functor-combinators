@@ -955,6 +955,10 @@ HJoin :: t (HFree t f) a -> HFree t f a
 --   This witnesses the fact that <a>HFree</a> is the "Free <a>Bind</a>".
 retractHFree :: HBind t => HFree t f a -> t f a
 instance (GHC.Base.Functor f, GHC.Base.Functor (t f)) => GHC.Base.Functor (Data.HFunctor.HLift t f)
+instance forall k (f :: k -> *) (a :: k) (t :: (k -> *) -> k -> *). (GHC.Show.Show (f a), GHC.Show.Show (t f a)) => GHC.Show.Show (Data.HFunctor.HLift t f a)
+instance forall k (f :: k -> *) (a :: k) (t :: (k -> *) -> k -> *). (GHC.Read.Read (f a), GHC.Read.Read (t f a)) => GHC.Read.Read (Data.HFunctor.HLift t f a)
+instance forall k (f :: k -> *) (a :: k) (t :: (k -> *) -> k -> *). (GHC.Classes.Eq (f a), GHC.Classes.Eq (t f a)) => GHC.Classes.Eq (Data.HFunctor.HLift t f a)
+instance forall k (f :: k -> *) (a :: k) (t :: (k -> *) -> k -> *). (GHC.Classes.Ord (f a), GHC.Classes.Ord (t f a)) => GHC.Classes.Ord (Data.HFunctor.HLift t f a)
 instance (GHC.Base.Functor f, GHC.Base.Functor (t (Data.HFunctor.HFree t f))) => GHC.Base.Functor (Data.HFunctor.HFree t f)
 instance Data.HFunctor.HBind Data.Functor.Coyoneda.Coyoneda
 instance Data.HFunctor.HBind Control.Applicative.Free.Ap
@@ -1007,7 +1011,8 @@ instance (Data.Functor.Classes.Show1 (t (Data.HFunctor.HFree t f)), Data.Functor
 instance (Data.Functor.Classes.Show1 (t (Data.HFunctor.HFree t f)), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.HFunctor.HFree t f a)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HFree t)
 instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.HLift t f)
-instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.HFunctor.HLift t f a)
+instance (Data.Functor.Classes.Eq1 (t f), Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Data.HFunctor.HLift t f)
+instance (Data.Functor.Classes.Ord1 (t f), Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Data.HFunctor.HLift t f)
 instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HLift t)
 instance forall k e (f :: k). GHC.Classes.Ord e => Data.Functor.Classes.Ord1 (Data.HFunctor.ConstF e f)
 instance Data.HFunctor.Internal.HFunctor (Data.HFunctor.ConstF e)
@@ -2371,13 +2376,11 @@ instance Data.HBifunctor.Tensor.Matchable Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Matchable (GHC.Generics.:+:)
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Sum.Sum
-instance Data.HBifunctor.Tensor.Matchable Data.Functor.These.These1
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:*:)
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Product.Product
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Day.Day
 instance Data.HBifunctor.Tensor.Monoidal (GHC.Generics.:+:)
 instance Data.HBifunctor.Tensor.Monoidal Data.Functor.Sum.Sum
-instance Data.HBifunctor.Tensor.Monoidal Data.Functor.These.These1
 instance Data.HBifunctor.Tensor.Monoidal Control.Monad.Freer.Church.Comp
 instance Data.HBifunctor.Tensor.Tensor (GHC.Generics.:*:)
 instance Data.HBifunctor.Tensor.Tensor Data.Functor.Product.Product
@@ -2434,6 +2437,9 @@ module Data.HFunctor.Chain
 --   supposed to be. Using <a>Chain</a> allows us to work with all
 --   <tt><a>MF</a> t</tt>s in a uniform way, with normal pattern matching
 --   and normal constructors.
+--   
+--   This construction is inspired by
+--   <a>http://oleg.fi/gists/posts/2018-02-21-single-free.html</a>
 data Chain t i f a
 Done :: i a -> Chain t i f a
 More :: t f (Chain t i f) a -> Chain t i f a
@@ -2526,6 +2532,8 @@ unrollingMF :: Monoidal t => MF t f <~> Chain t (I t) f
 --   <tt><a>Chain1</a> t f</tt> with <a>unrollSF</a> and <a>rerollSF</a>.
 --   
 --   See <a>Chain</a> for a version that has an "empty" value.
+--   
+--   This construction is inspired by iteratees and machines.
 data Chain1 t f a
 Done1 :: f a -> Chain1 t f a
 More1 :: t f (Chain1 t f) a -> Chain1 t f a
@@ -3746,6 +3754,34 @@ LeftF :: f a -> LeftF f g a
 newtype RightF f g a
 RightF :: g a -> RightF f g a
 [runRightF] :: RightF f g a -> g a
+
+-- | An "<a>HFunctor</a> combinator" that enhances an <a>HFunctor</a> with
+--   the ability to hold a single <tt>f a</tt>. This is the higher-order
+--   analogue of <a>Lift</a>.
+--   
+--   You can think of it as a free <a>Inject</a> for any <tt>f</tt>.
+--   
+--   Note that <tt><a>HLift</a> <a>IdentityT</a></tt> is equivalent to
+--   <tt><a>EnvT</a> <a>Any</a></tt>.
+data HLift t f a
+HPure :: f a -> HLift t f a
+HOther :: t f a -> HLift t f a
+
+-- | An "<a>HFunctor</a> combinator" that turns an <a>HFunctor</a> into
+--   potentially infinite nestings of that <a>HFunctor</a>.
+--   
+--   An <tt><a>HFree</a> t f a</tt> is either <tt>f a</tt>, <tt>t f a</tt>,
+--   <tt>t (t f) a</tt>, <tt>t (t (t f)) a</tt>, etc.
+--   
+--   This is the higher-oder analogue of <a>Free</a>.
+--   
+--   It is the free <a>HBind</a> for any <tt><a>HFunctor</a> t</tt>.
+--   
+--   Note that <tt><a>HFree</a> <a>IdentityT</a></tt> is equivalent to
+--   <a>Step</a>.
+data HFree t f a
+HReturn :: f a -> HFree t f a
+HJoin :: t (HFree t f) a -> HFree t f a
 
 -- | Turn <a>Identity</a> into any <tt><a>Applicative</a> f</tt>. Can be
 --   useful as an argument to <a>hmap</a>, <a>hbimap</a>, or
