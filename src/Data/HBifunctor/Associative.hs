@@ -102,7 +102,7 @@ import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
-import           Data.Functor.Day                (Day(..))
+import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -110,13 +110,14 @@ import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HBifunctor
 import           Data.HFunctor
+import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List.NonEmpty              (NonEmpty(..))
-import           Data.Semigroup                  (Any(..))
-import           GHC.Generics hiding             (C)
-import qualified Data.Functor.Day                as D
-import qualified Data.Map.NonEmpty               as NEM
+import           Data.List.NonEmpty             (NonEmpty(..))
+import           Data.Semigroup                 (Any(..))
+import           GHC.Generics hiding            (C)
+import qualified Data.Functor.Day               as D
+import qualified Data.Map.NonEmpty              as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -485,20 +486,34 @@ instance Semigroupoidal Day where
     biretract (Day x y z) = z <$> x <.> y
     binterpret f g (Day x y z) = z <$> f x <.> g y
 
+-- | Semigroupoidal structure keeps track of "how many are in the sum", and
+-- "which part in the sum".  We assign them diagonal coordinates like in
+-- the diagram below.
+--
+-- @
+--                 i,j
+--                (0,0)
+--             (1,0) (0,1)
+--          (2,0) (1,1) (0,2)
+--       (3,0) (2,1) (1,2) (0,3)
+--    (4,0) (3,1) (2,2) (1,3) (0,4)
+-- (5,0) (4,1) (3,2) (2,3) (1,4) (0,5)
+-- @
 instance Semigroupoidal (:+:) where
-    type SF (:+:) = Step
+    type SF (:+:) = Step2
 
     appendSF = \case
-      L1 x          -> x
-      R1 (Step n y) -> Step (n + 1) y
-    matchSF = hright R1 . stepDown
+      L1 (Step2 i j x) -> Step2 (i + 1) j x
+      R1 s@(Step2 i j x)
+        | j == 0    -> Step2 (i + 2) j x
+        | otherwise -> s
 
-    consSF = \case
-      L1 x          -> Step 0       x
-      R1 (Step n y) -> Step (n + 1) y
+    matchSF = hright step2Down . step2Down
+
+    consSF = step2Up . R1 . step2Up
     toSF = \case
-      L1 x -> Step 0 x
-      R1 y -> Step 1 y
+      L1 x -> Step2 1 0 x
+      R1 y -> Step2 2 0 y
 
     biretract = \case
       L1 x -> x
@@ -507,58 +522,72 @@ instance Semigroupoidal (:+:) where
       L1 x -> f x
       R1 y -> g y
 
+-- | See ':+:' instance
 instance Semigroupoidal Sum where
-    type SF Sum = Step
+    type SF Sum = Step2
 
     appendSF = \case
-      InL x          -> x
-      InR (Step n y) -> Step (n + 1) y
-    matchSF = hright InR . stepDown
+      InL (Step2 i j x) -> Step2 (i + 1) j x
+      InR s@(Step2 i j x)
+        | j == 0    -> Step2 (i + 2) j x
+        | otherwise -> s
 
-    consSF = \case
-      InL x          -> Step 0       x
-      InR (Step n y) -> Step (n + 1) y
+    matchSF = hright (viewF sumSum . step2Down) . step2Down
+
+    consSF = step2Up . R1 . step2Up . reviewF sumSum
     toSF = \case
-      InL x -> Step 0 x
-      InR y -> Step 1 y
+      InL x -> Step2 1 0 x
+      InR y -> Step2 2 0 y
 
     biretract = \case
-      InL x -> x
-      InR y -> y
+      InR x -> x
+      InL y -> y
     binterpret f g = \case
       InL x -> f x
       InR y -> g y
 
 instance Semigroupoidal These1 where
-    type SF These1 = HLift Steps
+    type SF These1 = Steps
 
-    appendSF = \case
-        This1  xs    -> HOther . stepsUp . liftThese $ xs
-        That1     ys -> HOther . stepsUp . liftThese $ ys
-        These1 xs ys -> HOther $ recombine xs ys
-      where
-        liftThese (HPure  x ) = This1 x
-        liftThese (HOther xs) = That1 xs
-        recombine (HPure  x ) (HPure  y ) = Steps . NEM.fromList $
-                                            (0, x) :| [(1, y)]
-        recombine (HPure  x ) (HOther ys) = stepsUp $ These1 x ys
-        recombine (HOther xs) ys          = Steps $
-          let Steps xs' = xs
-              (k, _)    = NEM.findMax xs'
-          in  case ys of
-                HPure  z          -> NEM.insert (k + 1) z xs'
-                HOther (Steps zs) -> xs' <> NEM.mapKeysMonotonic (+ (k + 1)) zs
-    -- yeah, we cannot distinguish between L1 and R1.This1
-    matchSF = \case
-        HPure  x -> L1 x
-        HOther x -> R1 . hright HOther $ stepsDown x
+    -- appendSF = \case
+    --     This1  xs    -> HOther . stepsUp . liftThese $ xs
+    --     That1     ys -> HOther . stepsUp . liftThese $ ys
+    --     These1 xs ys -> HOther $ recombine xs ys
+    --   where
+    --     liftThese (HPure  x ) = This1 x
+    --     liftThese (HOther xs) = That1 xs
+    --     recombine (HPure  x ) (HPure  y ) = Steps . NEM.fromList $
+    --                                         (0, x) :| [(1, y)]
+    --     recombine (HPure  x ) (HOther ys) = stepsUp $ These1 x ys
+    --     recombine (HOther xs) ys          = Steps $
+    --       let Steps xs' = xs
+    --           (k, _)    = NEM.findMax xs'
+    --       in  case ys of
+    --             HPure  z          -> NEM.insert (k + 1) z xs'
+    --             HOther (Steps zs) -> xs' <> NEM.mapKeysMonotonic (+ (k + 1)) zs
+    -- -- yeah, we cannot distinguish between L1 and R1.This1
+    -- matchSF = \case
+    --     HPure  x -> L1 x
+    --     HOther x -> R1 . hright HOther $ stepsDown x
     --
     -- a more fundamental problem because tehre is no difference between
     -- Done1 "bye" and More1 (This1 "bye")
-    -- matchSF x = case stepsDown x of
-    --   This1  y   -> L1 y
-    --   That1    z -> R1 (That1    z)
-    --   These1 y z -> R1 (These1 y z)
+
+    appendSF = \case
+      This1  (Steps xs)            -> Steps xs
+      That1             (Steps ys) -> Steps (NEM.mapKeysMonotonic (+ 1) ys)
+      These1 (Steps xs) (Steps ys) -> Steps $
+        let (k, _) = NEM.findMax xs
+        in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+    -- yeah, we cannot distinguish between L1 and R1.This1
+    -- matchSF = R1 . stepsDown
+    --
+    -- a more fundamental problem because tehre is no difference between
+    -- Done1 "bye" and More1 (This1 "bye")
+    matchSF x = case stepsDown x of
+      This1  y   -> L1 y
+      That1    z -> R1 (That1    z)
+      These1 y z -> R1 (These1 y z)
 
     -- consSF = stepsUp
     -- toSF = \case

@@ -261,7 +261,10 @@ prop_associating_Day = property $
 
 prop_associating_Comp :: Property
 prop_associating_Comp = property $
-    associatingProp_ @Comp listGen listGen listGen
+    associatingProp_ @Comp
+      (Gen.list (Range.linear 0 3) intGen)
+      (Gen.list (Range.linear 0 3) intGen)
+      (Gen.list (Range.linear 0 3) intGen)
 
 prop_associating_LeftF :: Property
 prop_associating_LeftF = property $
@@ -355,9 +358,9 @@ prop_splittingSF_Sum :: Property
 prop_splittingSF_Sum = property $
     splittingSFProp_ @(:+:) listGen
 
-prop_splittingSF_Sum' :: Property
-prop_splittingSF_Sum' = property $
-    splittingSFProp_ @Sum listGen
+-- prop_splittingSF_Sum' :: Property
+-- prop_splittingSF_Sum' = property $
+--     splittingSFProp_ @Sum listGen
 
 prop_splittingSF_Prod :: Property
 prop_splittingSF_Prod = property $
@@ -380,9 +383,9 @@ prop_matchingMF_Sum :: Property
 prop_matchingMF_Sum = property $
     matchingMFProp_ @(:+:) listGen Nothing
 
-prop_matchingMF_Sum' :: Property
-prop_matchingMF_Sum' = property $
-    matchingMFProp_ @Sum listGen Nothing
+-- prop_matchingMF_Sum' :: Property
+-- prop_matchingMF_Sum' = property $
+--     matchingMFProp_ @Sum listGen Nothing
 
 prop_matchingMF_Prod :: Property
 prop_matchingMF_Prod = property $

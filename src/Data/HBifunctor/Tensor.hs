@@ -696,11 +696,15 @@ instance Monoidal Day where
 instance Monoidal (:+:) where
     type MF (:+:) = Step
 
-    appendMF    = appendSF
-    splitSF     = stepDown
+    appendMF = \case
+      L1 x          -> x
+      R1 (Step n x) -> Step (n + 1) x
+    splitSF     = stepDown . viewF interlacingStep
     splittingMF = stepping . sumLeftIdentity
 
-    toMF  = toSF
+    toMF  = \case
+      L1 x -> Step 0 x
+      R1 x -> Step 1 x
     pureT = absurd1
 
     upgradeC _ x = x
@@ -708,11 +712,17 @@ instance Monoidal (:+:) where
 instance Monoidal Sum where
     type MF Sum = Step
 
-    appendMF    = appendSF
-    splitSF     = viewF sumSum . stepDown
-    splittingMF = stepping . sumLeftIdentity . overHBifunctor id sumSum
+    appendMF = \case
+      InL x          -> x
+      InR (Step n x) -> Step (n + 1) x
+    splitSF     = viewF sumSum . stepDown . viewF interlacingStep
+    splittingMF = stepping
+                . sumLeftIdentity
+                . overHBifunctor id sumSum
 
-    toMF  = toSF
+    toMF  = \case
+      InL x -> Step 0 x
+      InR x -> Step 1 x
     pureT = absurd1
 
     upgradeC _ x = x
@@ -761,12 +771,12 @@ instance Matchable Day where
     matchMF   = fromAp
 
 instance Matchable (:+:) where
-    unsplitSF   = stepUp
-    matchMF     = R1
+    unsplitSF   = reviewF interlacingStep . stepUp
+    matchMF     = R1 . reviewF interlacingStep
 
 instance Matchable Sum where
-    unsplitSF   = stepUp . reviewF sumSum
-    matchMF     = R1
+    unsplitSF   = reviewF interlacingStep . stepUp . reviewF sumSum
+    matchMF     = R1 . reviewF interlacingStep
 
 -- instance Matchable These1 where
 --     unsplitSF = stepsUp

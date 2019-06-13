@@ -1,17 +1,20 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Tests.HFunctor (
     TestHFunctor(..)
   ) where
 
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Compose
 import           Data.Functor.Combinator
 import           Data.Semigroup.Traversable
 import           Hedgehog
-import qualified Data.List.NonEmpty         as NE
-import qualified Data.Map.NonEmpty          as NEM
-import qualified Hedgehog.Gen               as Gen
-import qualified Hedgehog.Range             as Range
+import qualified Data.List.NonEmpty          as NE
+import qualified Data.Map.NonEmpty           as NEM
+import qualified Hedgehog.Gen                as Gen
+import qualified Hedgehog.Range              as Range
 
 class HFunctor t => TestHFunctor t where
     genHF
@@ -21,6 +24,11 @@ class HFunctor t => TestHFunctor t where
 
 instance TestHFunctor Step where
     genHF gx = Step <$> Gen.integral (Range.linear 0 25) <*> gx
+
+instance TestHFunctor Step2 where
+    genHF gx = Step2 <$> Gen.integral (Range.linear 0 25)
+                     <*> Gen.integral (Range.linear 0 25)
+                     <*> gx
 
 instance TestHFunctor ListF where
     genHF gx = ListF <$> Gen.list (Range.linear 0 100) gx
@@ -68,3 +76,14 @@ instance TestHFunctor t => TestHFunctor (HLift t) where
 
 instance (Enum e, Bounded e) => TestHFunctor (EnvT e) where
     genHF gx = EnvT <$> Gen.enumBounded <*> gx
+
+-- | doesn't really do anything with t
+instance (TestHFunctor s, Inject t) => TestHFunctor (ComposeT s t) where
+    genHF gx = ComposeT . hmap inject <$> genHF @s gx
+      -- ss <- genHF @s gx
+      -- ts <- genHF @t gx
+      -- pure $ ComposeT $ _ ss
+        -- ComposeT . hmap inject <$> genHF @s gx
+    -- Gen.bool >>= \case
+    --   False -> HPure  <$> gx
+    --   True  -> HOther <$> genHF gx

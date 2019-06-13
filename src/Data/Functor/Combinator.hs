@@ -58,7 +58,7 @@ module Data.Functor.Combinator (
   , Tensor(..)
   , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT, upgradeC)
   , CM
-  , nilMF
+  , nilMF, consMF
   , inL, inR
   , outL, outR
   -- * Combinators
@@ -73,6 +73,7 @@ module Data.Functor.Combinator (
   , Alt
   , Free
   , Step(..)
+  , Step2(..)
   , Steps(..)
   , ProxyF(..)
   , ConstF(..)

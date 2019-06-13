@@ -10,6 +10,7 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeOperators              #-}
 
 -- |
@@ -29,11 +30,15 @@
 module Control.Applicative.Step (
   -- * Fixed Points
     Step(..)
+  , Step2(..)
   , Steps(..)
   -- ** Steppers
   , stepUp
   , stepDown
   , stepping
+  , step2Down
+  , step2Up
+  , interlacingStep
   , stepsUp
   , stepsDown
   , steppings
@@ -170,6 +175,79 @@ stepUp = \case
 -- functor @f@ with no constraints.
 absurd1 :: V1 a -> f a
 absurd1 = \case {}
+
+data Step2 f a = Step2 { stepX :: Natural, stepY :: Natural, step2Val :: f a }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''Step2
+deriveRead1 ''Step2
+deriveEq1 ''Step2
+deriveOrd1 ''Step2
+
+instance Applicative f => Applicative (Step2 f) where
+    pure = Step2 0 0 . pure
+    Step2 i j f <*> Step2 i' j' x = Step2 (i + i') (j + j') (f <*> x)
+
+instance Foldable1 f => Foldable1 (Step2 f) where
+    fold1      = fold1 . step2Val
+    foldMap1 f = foldMap1 f . step2Val
+    toNonEmpty = toNonEmpty . step2Val
+
+instance Traversable1 f => Traversable1 (Step2 f) where
+    traverse1 f (Step2 i j x) = Step2 i j <$> traverse1 f x
+    sequence1 (Step2 i j x) = Step2 i j <$> sequence1 x
+
+step2Down
+    :: Step2 f ~> f :+: Step2 f
+step2Down s@(Step2 i j x)
+  | j == 0    = case minusNaturalMaybe i 1 of
+      Nothing -> L1 x
+      Just i' -> R1 $ s { stepX = i' }
+  | otherwise = R1 s
+
+step2Up
+    :: f :+: Step2 f ~> Step2 f
+step2Up = \case
+    L1 x -> Step2 0 0 x
+    R1 s@(Step2 i j x)
+      | j == 0    -> Step2 (i + 1) j x
+      | otherwise -> s
+
+-- | 
+-- @
+--                 i,j 
+--                (0,0)                 =>             0
+--             (1,0) (0,1)              =>           1   2
+--          (2,0) (1,1) (0,2)           =>         3   4   5
+--       (3,0) (2,1) (1,2) (0,3)        =>       6   7   8   9
+--    (4,0) (3,1) (2,2) (1,3) (0,4)     =>    10  11  12  13  14
+-- (5,0) (4,1) (3,2) (2,3) (1,4) (0,5)  =>  15  16  17  18  19  20
+-- @
+interlacingStep :: Step2 f <~> Step f
+interlacingStep = isoF to_ from_
+  where
+    to_ :: Step2 f ~> Step f
+    to_ (Step2 i j x) = Step (yon i j) x
+    from_ :: Step f ~> Step2 f
+    from_ (Step k x) = Step2 (n - r) r x
+      where
+        (n, r) = itriang k
+
+    yon :: Natural -> Natural -> Natural
+    yon i 0 = triang i
+    yon i j = yon i (j - 1) + (i + j + 1)
+
+    triang :: Natural -> Natural
+    triang n = (n * (n + 1)) `div` 2
+    itriang :: Natural -> (Natural, Natural)
+    itriang t = (n, t - triang n)
+      where
+        n = floor @Double $ ((sqrt (8 * fromIntegral t + 1) - 1)) / 2
+
+
+
+-- dropStep2 :: Step2 f ~> Step f
+-- dropStep2 (Step2 _ j x) = Step j x
 
 -- | A non-empty map of 'Natural' to @f a@.  Basically, contains multiple
 -- @f a@s, each at a given 'Natural' index.

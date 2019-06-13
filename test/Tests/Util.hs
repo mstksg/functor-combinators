@@ -18,27 +18,20 @@ module Tests.Util (
   ) where
 
 import           Control.Applicative
-import           Control.Monad
 import           Control.Natural.IsoF
 import           Data.Function
-import           Data.Functor
 import           Data.Functor.Classes
 import           Data.Functor.Combinator
-import           Data.Functor.Day
-import           Data.Functor.Identity
-import           Data.GADT.Compare
 import           Data.GADT.Show
 import           Data.HBifunctor.Tensor
-import           Data.Kind
-import           Data.Maybe
-import           Data.Semigroup                 (Any(..))
+import           Data.Semigroup             (Any(..))
 import           Hedgehog
 import           Hedgehog.Internal.Property
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
-import qualified Control.Applicative.Free       as Ap
-import qualified Hedgehog.Gen                   as Gen
-import qualified Hedgehog.Range                 as Range
+import qualified Control.Applicative.Free   as Ap
+import qualified Hedgehog.Gen               as Gen
+import qualified Hedgehog.Range             as Range
 
 
 isoProp
