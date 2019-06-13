@@ -618,7 +618,7 @@ step2Down :: Step2 f ~> (f :+: Step2 f)
 step2Up :: (f :+: Step2 f) ~> Step2 f
 
 -- | <pre>
---                   i,j 
+--                   i,j
 --                  (0,0)                 =&gt;             0
 --               (1,0) (0,1)              =&gt;           1   2
 --            (2,0) (1,1) (0,2)           =&gt;         3   4   5
