@@ -656,12 +656,24 @@ instance Semigroupoidal Joker where
 instance Semigroupoidal LeftF where
     type SF LeftF = EnvT Any
 
-    appendSF (LeftF (EnvT _ x)) = EnvT (Any True) x
+    appendSF = hbind (EnvT (Any True)) . runLeftF
     matchSF (EnvT (Any False) x) = L1 x
     matchSF (EnvT (Any True ) x) = R1 $ LeftF x
+
+    consSF = EnvT (Any True) . runLeftF
+    toSF   = EnvT (Any True) . runLeftF
+
+    biretract      = runLeftF
+    binterpret f _ = f . runLeftF
 
 instance Semigroupoidal RightF where
     type SF RightF = Step
 
     appendSF = stepUp . R1 . runRightF
     matchSF  = hright RightF . stepDown
+
+    consSF   = stepUp . R1 . runRightF
+    toSF     = Step 1 . runRightF
+
+    biretract      = runRightF
+    binterpret _ g = g . runRightF

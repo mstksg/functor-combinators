@@ -24,6 +24,7 @@ import           Hedgehog
 import           Test.Tasty
 import           Tests.HFunctor
 import           Tests.Util
+import qualified Data.Semigroup              as S
 import qualified Hedgehog.Gen                as Gen
 import qualified Hedgehog.Range              as Range
 
@@ -59,6 +60,60 @@ matchingSFProp
     -> Gen (t f (SF t f) a)
     -> PropertyT m ()
 matchingSFProp gx gy gz = isoProp (matchingSF @t) gx (sumGen gy gz)
+
+consSFProp
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , Monad m
+     , Show (t f (SF t f) a)
+     , Show (SF t f a), Eq (SF t f a)
+     )
+    => Gen (t f (SF t f) a)
+    -> PropertyT m ()
+consSFProp gx = do
+    x <- forAll gx
+    appendSF (hleft inject x) === consSF x
+
+toSFProp
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , Monad m
+     , Show (t f f a)
+     , Show (SF t f a), Eq (SF t f a)
+     )
+    => Gen (t f f a)
+    -> PropertyT m ()
+toSFProp gx = do
+    x <- forAll gx
+    appendSF (hbimap inject inject x) === toSF x
+
+biretractProp
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , CS t f
+     , Monad m
+     , Show (t f f a)
+     , Show (f a), Eq (f a)
+     )
+    => Gen (t f f a)
+    -> PropertyT m ()
+biretractProp gx = do
+    x <- forAll gx
+    retract (appendSF (hbimap inject inject x)) === biretract x
+
+binterpretProp
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , CS t f
+     , Monad m
+     , Show (t f f a)
+     , Show (f a), Eq (f a)
+     )
+    => Gen (t f f a)
+    -> PropertyT m ()
+binterpretProp gx = do
+    x <- forAll gx
+    biretract x === binterpret id id x
 
 splittingMFProp
     :: forall t f m a.
@@ -175,6 +230,57 @@ matchingSFProp_ gx = matchingSFProp @t
       (genHF gx)
       gx
       (genHB gx (genHF gx))
+
+consSFProp_
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , TestHBifunctor t
+     , TestHFunctor (SF t)
+     , Monad m
+     , Show (t f (SF t f) a)
+     , Show (SF t f a), Eq (SF t f a)
+     )
+    => Gen (f a)
+    -> PropertyT m ()
+consSFProp_ gx = consSFProp @t (genHB gx (genHF gx))
+
+toSFProp_
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , TestHBifunctor t
+     , Monad m
+     , Show (t f f a)
+     , Show (SF t f a), Eq (SF t f a)
+     )
+    => Gen (f a)
+    -> PropertyT m ()
+toSFProp_ gx = toSFProp @t (genHB gx gx)
+
+biretractProp_
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , TestHBifunctor t
+     , CS t f
+     , Monad m
+     , Show (t f f a)
+     , Show (f a), Eq (f a)
+     )
+    => Gen (f a)
+    -> PropertyT m ()
+biretractProp_ gx = biretractProp @t (genHB gx gx)
+
+binterpretProp_
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , TestHBifunctor t
+     , CS t f
+     , Monad m
+     , Show (t f f a)
+     , Show (f a), Eq (f a)
+     )
+    => Gen (f a)
+    -> PropertyT m ()
+binterpretProp_ gx = binterpretProp @t (genHB gx gx)
 
 splittingMFProp_
     :: forall t f m a.
@@ -316,6 +422,168 @@ prop_matchingSF_RightF = property $
     matchingSFProp_ @RightF listGen
 
 
+
+
+
+prop_consSF_Sum :: Property
+prop_consSF_Sum = property $
+    consSFProp_ @(:+:) listGen
+
+prop_consSF_Sum' :: Property
+prop_consSF_Sum' = property $
+    consSFProp_ @Sum listGen
+
+prop_consSF_Prod :: Property
+prop_consSF_Prod = property $
+    consSFProp_ @(:*:) listGen
+
+prop_consSF_Prod' :: Property
+prop_consSF_Prod' = property $
+    consSFProp_ @Product listGen
+
+prop_consSF_These :: Property
+prop_consSF_These = property $
+    consSFProp_ @These1 listGen
+
+prop_consSF_Day :: Property
+prop_consSF_Day = property $
+    consSFProp_ @Day $ (Const <$> intGen)
+
+prop_consSF_Comp :: Property
+prop_consSF_Comp = property $
+    consSFProp_ @Comp $
+      Gen.list (Range.linear 0 3) intGen
+
+prop_consSF_LeftF :: Property
+prop_consSF_LeftF = property $
+    consSFProp_ @LeftF listGen
+
+prop_consSF_RightF :: Property
+prop_consSF_RightF = property $
+    consSFProp_ @RightF listGen
+
+
+
+
+
+
+prop_toSF_Sum :: Property
+prop_toSF_Sum = property $
+    toSFProp_ @(:+:) listGen
+
+prop_toSF_Sum' :: Property
+prop_toSF_Sum' = property $
+    toSFProp_ @Sum listGen
+
+prop_toSF_Prod :: Property
+prop_toSF_Prod = property $
+    toSFProp_ @(:*:) listGen
+
+prop_toSF_Prod' :: Property
+prop_toSF_Prod' = property $
+    toSFProp_ @Product listGen
+
+prop_toSF_These :: Property
+prop_toSF_These = property $
+    toSFProp_ @These1 listGen
+
+prop_toSF_Day :: Property
+prop_toSF_Day = property $
+    toSFProp_ @Day $ (Const <$> intGen)
+
+prop_toSF_Comp :: Property
+prop_toSF_Comp = property $
+    toSFProp_ @Comp $
+      Gen.list (Range.linear 0 3) intGen
+
+prop_toSF_LeftF :: Property
+prop_toSF_LeftF = property $
+    toSFProp_ @LeftF listGen
+
+prop_toSF_RightF :: Property
+prop_toSF_RightF = property $
+    toSFProp_ @RightF listGen
+
+
+
+
+prop_biretract_Sum :: Property
+prop_biretract_Sum = property $
+    biretractProp_ @(:+:) listGen
+
+prop_biretract_Sum' :: Property
+prop_biretract_Sum' = property $
+    biretractProp_ @Sum listGen
+
+prop_biretract_Prod :: Property
+prop_biretract_Prod = property $
+    biretractProp_ @(:*:) listGen
+
+prop_biretract_Prod' :: Property
+prop_biretract_Prod' = property $
+    biretractProp_ @Product listGen
+
+prop_biretract_These :: Property
+prop_biretract_These = property $
+    biretractProp_ @These1 listGen
+
+prop_biretract_Day :: Property
+prop_biretract_Day = property $
+    biretractProp_ @Day $ (Const . S.Sum <$> intGen)
+
+prop_biretract_Comp :: Property
+prop_biretract_Comp = property $
+    biretractProp_ @Comp $
+      Gen.list (Range.linear 0 3) intGen
+
+prop_biretract_LeftF :: Property
+prop_biretract_LeftF = property $
+    biretractProp_ @LeftF listGen
+
+prop_biretract_RightF :: Property
+prop_biretract_RightF = property $
+    biretractProp_ @RightF listGen
+
+
+
+
+
+prop_binterpret_Sum :: Property
+prop_binterpret_Sum = property $
+    binterpretProp_ @(:+:) listGen
+
+prop_binterpret_Sum' :: Property
+prop_binterpret_Sum' = property $
+    binterpretProp_ @Sum listGen
+
+prop_binterpret_Prod :: Property
+prop_binterpret_Prod = property $
+    binterpretProp_ @(:*:) listGen
+
+prop_binterpret_Prod' :: Property
+prop_binterpret_Prod' = property $
+    binterpretProp_ @Product listGen
+
+prop_binterpret_These :: Property
+prop_binterpret_These = property $
+    binterpretProp_ @These1 listGen
+
+prop_binterpret_Day :: Property
+prop_binterpret_Day = property $
+    binterpretProp_ @Day $ (Const . S.Sum <$> intGen)
+
+prop_binterpret_Comp :: Property
+prop_binterpret_Comp = property $
+    binterpretProp_ @Comp $
+      Gen.list (Range.linear 0 3) intGen
+
+prop_binterpret_LeftF :: Property
+prop_binterpret_LeftF = property $
+    binterpretProp_ @LeftF listGen
+
+prop_binterpret_RightF :: Property
+prop_binterpret_RightF = property $
+    binterpretProp_ @RightF listGen
 
 
 
