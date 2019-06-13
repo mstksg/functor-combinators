@@ -11,6 +11,20 @@ packages:
       sha256: 92c37318759cbff761155e9d23f786a1e0b62f154cb3edfb6e87f91bc7bf821c
   original:
     hackage: trivial-constraint-0.5.1.0
+- completed:
+    hackage: hedgehog-1.0@sha256:1437173d3fa562dcc454ef996f2dd41cd0e004ccbcf15e6e73dcd6f247db50ac,4463
+    pantry-tree:
+      size: 2409
+      sha256: 6497b13b911abf9010705332467c744ac775fe79a3871b5b7743213fbedf2dc9
+  original:
+    hackage: hedgehog-1.0
+- completed:
+    hackage: tasty-hedgehog-1.0.0.1@sha256:cdcf60a29195bd0d819d3018c11db2e0deb7c6e559ad940c49409a5a7a982f83,1766
+    pantry-tree:
+      size: 330
+      sha256: 7c26d9584f8ad1a86d9f5cbd6f5a8b81219eaee992e5a098ddab29a6c0b4b2bf
+  original:
+    hackage: tasty-hedgehog-1.0.0.1
 snapshots:
 - completed:
     size: 511614

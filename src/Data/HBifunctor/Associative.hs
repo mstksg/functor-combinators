@@ -530,38 +530,50 @@ instance Semigroupoidal Sum where
       InR y -> g y
 
 instance Semigroupoidal These1 where
-    type SF These1 = Steps
+    type SF These1 = HLift Steps
 
     appendSF = \case
-      This1  (Steps xs)            -> Steps xs
-      That1             (Steps ys) -> Steps (NEM.mapKeysMonotonic (+ 1) ys)
-      These1 (Steps xs) (Steps ys) -> Steps $
-        let (k, _) = NEM.findMax xs
-        in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+        This1  xs    -> HOther . stepsUp . liftThese $ xs
+        That1     ys -> HOther . stepsUp . liftThese $ ys
+        These1 xs ys -> HOther $ recombine xs ys
+      where
+        liftThese (HPure  x ) = This1 x
+        liftThese (HOther xs) = That1 xs
+        recombine (HPure  x ) (HPure  y ) = Steps . NEM.fromList $
+                                            (0, x) :| [(1, y)]
+        recombine (HPure  x ) (HOther ys) = stepsUp $ These1 x ys
+        recombine (HOther xs) ys          = Steps $
+          let Steps xs' = xs
+              (k, _)    = NEM.findMax xs'
+          in  case ys of
+                HPure  z          -> NEM.insert (k + 1) z xs'
+                HOther (Steps zs) -> xs' <> NEM.mapKeysMonotonic (+ (k + 1)) zs
     -- yeah, we cannot distinguish between L1 and R1.This1
-    -- matchSF = R1 . stepsDown
+    matchSF = \case
+        HPure  x -> L1 x
+        HOther x -> R1 . hright HOther $ stepsDown x
     --
     -- a more fundamental problem because tehre is no difference between
     -- Done1 "bye" and More1 (This1 "bye")
-    matchSF x = case stepsDown x of
-      This1  y   -> L1 y
-      That1    z -> R1 (That1    z)
-      These1 y z -> R1 (These1 y z)
+    -- matchSF x = case stepsDown x of
+    --   This1  y   -> L1 y
+    --   That1    z -> R1 (That1    z)
+    --   These1 y z -> R1 (These1 y z)
 
-    consSF = stepsUp
-    toSF = \case
-      This1  x   -> Steps $ NEM.singleton 0 x
-      That1    y -> Steps $ NEM.singleton 1 y
-      These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
+    -- consSF = stepsUp
+    -- toSF = \case
+    --   This1  x   -> Steps $ NEM.singleton 0 x
+    --   That1    y -> Steps $ NEM.singleton 1 y
+    --   These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
 
-    biretract = \case
-      This1  x   -> x
-      That1    y -> y
-      These1 x y -> x <!> y
-    binterpret f g = \case
-      This1  x   -> f x
-      That1    y -> g y
-      These1 x y -> f x <!> g y
+    -- biretract = \case
+    --   This1  x   -> x
+    --   That1    y -> y
+    --   These1 x y -> x <!> y
+    -- binterpret f g = \case
+    --   This1  x   -> f x
+    --   That1    y -> g y
+    --   These1 x y -> f x <!> g y
 
 instance Semigroupoidal Comp where
     type SF Comp = Free1

@@ -150,8 +150,28 @@ instance (Show1 (t f), Show1 f) => Show1 (HLift t f) where
       HPure x -> showsUnaryWith (liftShowsPrec sp sl) "HPure" d x
       HOther x -> showsUnaryWith (liftShowsPrec sp sl) "HOther" d x
 
-instance (Show1 (t f), Show1 f, Show a) => Show (HLift t f a) where
-    showsPrec = liftShowsPrec showsPrec showList
+deriving instance (Show (f a), Show (t f a)) => Show (HLift t f a)
+deriving instance (Read (f a), Read (t f a)) => Read (HLift t f a)
+deriving instance (Eq (f a), Eq (t f a)) => Eq (HLift t f a)
+deriving instance (Ord (f a), Ord (t f a)) => Ord (HLift t f a)
+
+instance (Eq1 (t f), Eq1 f) => Eq1 (HLift t f) where
+    liftEq eq = \case
+      HPure  x -> \case
+        HPure  y -> liftEq eq x y
+        HOther _ -> False
+      HOther x -> \case
+        HPure  _ -> False
+        HOther y -> liftEq eq x y
+
+instance (Ord1 (t f), Ord1 f) => Ord1 (HLift t f) where
+    liftCompare c = \case
+      HPure  x -> \case
+        HPure  y -> liftCompare c x y
+        HOther _ -> LT
+      HOther x -> \case
+        HPure  _ -> GT
+        HOther y -> liftCompare c x y
 
 instance HFunctor t => HFunctor (HLift t) where
     hmap f = \case

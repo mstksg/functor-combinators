@@ -101,8 +101,9 @@ import           GHC.Generics hiding         (C)
 -- You can convert in between @'SF' t f@ and @'Chain1' t f@ with 'unrollSF'
 -- and 'rerollSF'.
 --
--- See 'Chain' for a version that has an "empty"
--- value.
+-- See 'Chain' for a version that has an "empty" value.
+--
+-- This construction is inspired by iteratees and machines.
 data Chain1 t f a = Done1 (f a)
                   | More1 (t f (Chain1 t f) a)
   deriving (Typeable, Generic)
@@ -246,6 +247,9 @@ rerollSF = foldChain1 inject consSF
 -- Note that this is /exactly/ what an @'MF' t@ is supposed to be.  Using
 -- 'Chain' allows us to work with all @'MF' t@s in a uniform way, with
 -- normal pattern matching and normal constructors.
+--
+-- This construction is inspired by
+-- <http://oleg.fi/gists/posts/2018-02-21-single-free.html>
 data Chain t i f a = Done (i a)
                    | More (t f (Chain t i f) a)
 

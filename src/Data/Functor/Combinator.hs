@@ -88,6 +88,9 @@ module Data.Functor.Combinator (
   , Comp(Comp, unComp)
   , LeftF(..)
   , RightF(..)
+  -- ** Combinator Combinators
+  , HLift(..)
+  , HFree(..)
   -- * Util
   -- ** Natural Transformations
   , generalize

@@ -51,3 +51,23 @@ library:
   source-dirs: src
   other-modules:
   - Data.HFunctor.Internal
+
+
+tests:
+  functor-combinators-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hedgehog >= 1.0
+    - functor-combinators
+    - tasty
+    # - hedgehog-fn >= 1.0
+    # - nonempty-containers
+    # - tasty
+    - tasty-hedgehog >= 1.0
+    - dependent-sum
+    # - text

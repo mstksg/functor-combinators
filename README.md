@@ -87,6 +87,13 @@ hbimap
     -> (t f g ~> t g j)
 ```
 
+What does it mean exactly when we say that `hmap` and `hbimap` "preserve the
+enhanced structure"?  Well, for example `ListF f a` is essentially a list of `f
+a`s.  `hmap` will swap out and replace each `f a`, but it must *preserve the
+relative order* between each of the original `f a`s.  And it must preserve the
+length of the list.  It's a complete "in-place swap".  This is formalizing by
+requiring `hmap id == id` and `hbimap id id == id`.
+
 You can also always "lift" a functor value into its transformed type:
 
 ```haskell
@@ -681,6 +688,28 @@ see the actual section for that induced monoid later on.
 
 Single-Argument
 ---------------
+
+Unary functor combinators usually directly "enhance" a functor with extra
+capabilities --- usually in the form of a typeclass instance, or extra data
+fields/constructors.
+
+All of these can be "lifted into" with any constraint on `f`.
+
+```haskell
+inject
+    :: Inject t
+    => f ~> t f
+```
+
+Each one has an associated constraint, `C t`, which is the constraint on where
+you can *interpret* or *run* values of the enhanced type:
+
+```haskell
+interpret
+    :: (Interpret t, C t)
+    => (f ~> g)
+    -> (t f ~> g)
+```
 
 ### Coyoneda
 

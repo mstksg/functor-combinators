@@ -40,6 +40,8 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - trivial-constraint-0.5.1.0
+- hedgehog-1.0
+- tasty-hedgehog-1.0.0.1
 # - github: mstksg/trivial-constraint
 #   commit: 1fda2a4d079f8a0e14b6a0275c0b6e7aceda0ecc
 

@@ -717,17 +717,17 @@ instance Monoidal Sum where
 
     upgradeC _ x = x
 
-instance Monoidal These1 where
-    type MF These1 = Steps
+-- instance Monoidal These1 where
+--     type MF These1 = Steps
 
-    appendMF    = appendSF
-    splitSF     = stepsDown
-    splittingMF = steppings . sumLeftIdentity
+--     appendMF    = appendSF
+--     splitSF     = stepsDown
+--     splittingMF = steppings . sumLeftIdentity
 
-    toMF  = toSF
-    pureT = absurd1
+--     toMF  = toSF
+--     pureT = absurd1
 
-    upgradeC _ x = x
+--     upgradeC _ x = x
 
 instance Monoidal Comp where
     type MF Comp = Free
@@ -768,6 +768,6 @@ instance Matchable Sum where
     unsplitSF   = stepUp . reviewF sumSum
     matchMF     = R1
 
-instance Matchable These1 where
-    unsplitSF = stepsUp
-    matchMF   = R1
+-- instance Matchable These1 where
+--     unsplitSF = stepsUp
+--     matchMF   = R1
