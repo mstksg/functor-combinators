@@ -1334,8 +1334,93 @@ interpret
 Combinator Combinators
 ----------------------
 
+We have some higher-order functor combinator combinators that take functor
+combinators and return new ones, too.  There isn't a uniform interface for them
+at this time, but they can be useful in some situations.
+
 ### ComposeT
+
+
+*   **Origin**: *[Control.Monad.Trans.Compose][]*
+
+*   **Enhancement**: Compose enhancements from two different functor
+    combinators
+
+    ```haskell
+    newtype ComposeT s t f a = ComposeT { getComposeT :: s (t f) a }
+    ```
+
+    Can be useful if you want to layer or nest functor combinators to get both
+    enhancements as a *single* functor combinator*.
+
+    Usually really only useful in the context of other abstractions that expect
+    functor combinators, since this is the best way to turn two functor
+    combinators into a third one.
+
+*   **Constraint**
+
+    ```haskell
+    type C (ComposeT s t) = AndC (C s) (C t)
+    ```
+
+    Interpreting out of these requires the constraints on *both* layers.
+
+[Control.Monad.Trans.Compose]: https://hackage.haskell.org/package/mmorph/docs/Control-Monad-Trans-Compose.html
 
 ### HLift
 
+*   **Origin**: *[Data.HFunctor][]*
+
+*   **Enhancement**: `HLift t f` lets `f` exist either unchanged, or with the
+    structure of `t`.
+
+    ```haskell
+    data HLift t f a
+        = HPure  (f a)
+        | HOther (t f a)
+    ```
+
+    Can be useful if you want to "conditionally enhance" `f`.  Either `f` can
+    be enhanced by `t`, or it can exist in its pure "newly-injected" form.
+
+    If `t` is `Identity`, we get `EnvT Any`, or `f :+: f`: the "pure or impure"
+    combinator.
+
+*   **Constraint**
+
+    ```haskell
+    type C (HLift t) = C t
+    ```
+
+    Interpreting out of these requires the constraint on `t`, to handle the
+    `HOther` case.
+
 ### HFree
+
+*   **Origin**: *[Data.HFunctor][]*
+
+*   **Enhancement**: `HFree t f` lets `f` exist either unchanged, or with
+    multiple nested enhancements by `t`.
+
+    ```haskell
+    data HFree t f a
+        = HReturn (f a)
+        | HJoin   (t (HFree t f) a)
+    ```
+
+    It is related to `HLift`, but lets you lift over arbitrary many
+    compositions of `t`, enhancing `f` multiple times.
+
+    Can be useful if you want to represent the ability to apply a functor
+    combinator tot he same functor multiple times.
+
+    If `t` is `Identity`, we get `Steps`, the "`f a` at an indexed location"
+
+*   **Constraint**
+
+    ```haskell
+    type C (HFree t) = C t
+    ```
+
+    Interpreting out of these requires the constraint on `t`, to handle the
+    `HJoin` case.

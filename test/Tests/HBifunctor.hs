@@ -287,6 +287,11 @@ prop_matchingSF_These :: Property
 prop_matchingSF_These = property $
     matchingSFProp_ @These1 listGen
 
+-- prop_matchingSF_Day :: Property
+-- prop_matchingSF_Day = property $
+--     matchingSFProp_ @Day $ _
+--       -- Gen.list (Range.linear 0 3) intGen
+
 prop_matchingSF_Comp :: Property
 prop_matchingSF_Comp = property $
     matchingSFProp_ @Comp $
