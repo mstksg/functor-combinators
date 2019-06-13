@@ -278,9 +278,6 @@ instance HFunctor Alt.Alt where
 instance HFunctor Step where
     hmap f (Step n x) = Step n (f x)
 
-instance HFunctor Step2 where
-    hmap f (Step2 i j x) = Step2 i j (f x)
-
 instance HFunctor Steps where
     hmap f (Steps xs) = Steps (f <$> xs)
 

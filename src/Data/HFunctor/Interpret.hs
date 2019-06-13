@@ -238,15 +238,6 @@ instance Interpret Step where
     retract = stepVal
     interpret f = f . stepVal
 
--- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
--- 'Numeric.Natural.Natural', 'Data.Semigroup.Sum'
--- 'Numeric.Natural.Natural')@.
-instance Interpret Step2 where
-    type C Step2 = Unconstrained
-
-    retract = step2Val
-    interpret f = f . step2Val
-
 instance Interpret Steps where
     type C Steps = Alt
 

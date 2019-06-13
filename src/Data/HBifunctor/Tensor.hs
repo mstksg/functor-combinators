@@ -699,7 +699,7 @@ instance Monoidal (:+:) where
     appendMF = \case
       L1 x          -> x
       R1 (Step n x) -> Step (n + 1) x
-    splitSF     = stepDown . viewF interlacingStep
+    splitSF     = stepDown
     splittingMF = stepping . sumLeftIdentity
 
     toMF  = \case
@@ -715,14 +715,14 @@ instance Monoidal Sum where
     appendMF = \case
       InL x          -> x
       InR (Step n x) -> Step (n + 1) x
-    splitSF     = viewF sumSum . stepDown . viewF interlacingStep
+    splitSF     = viewF sumSum . stepDown
     splittingMF = stepping
                 . sumLeftIdentity
                 . overHBifunctor id sumSum
 
     toMF  = \case
-      InL x -> Step 0 x
-      InR x -> Step 1 x
+      InL x -> Step 1 x
+      InR x -> Step 2 x
     pureT = absurd1
 
     upgradeC _ x = x
@@ -771,12 +771,12 @@ instance Matchable Day where
     matchMF   = fromAp
 
 instance Matchable (:+:) where
-    unsplitSF   = reviewF interlacingStep . stepUp
-    matchMF     = R1 . reviewF interlacingStep
+    unsplitSF   = stepUp
+    matchMF     = R1
 
 instance Matchable Sum where
-    unsplitSF   = reviewF interlacingStep . stepUp . reviewF sumSum
-    matchMF     = R1 . reviewF interlacingStep
+    unsplitSF   = stepUp . reviewF sumSum
+    matchMF     = R1
 
 -- instance Matchable These1 where
 --     unsplitSF = stepsUp

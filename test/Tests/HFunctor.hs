@@ -25,11 +25,6 @@ class HFunctor t => TestHFunctor t where
 instance TestHFunctor Step where
     genHF gx = Step <$> Gen.integral (Range.linear 0 25) <*> gx
 
-instance TestHFunctor Step2 where
-    genHF gx = Step2 <$> Gen.integral (Range.linear 0 25)
-                     <*> Gen.integral (Range.linear 0 25)
-                     <*> gx
-
 instance TestHFunctor ListF where
     genHF gx = ListF <$> Gen.list (Range.linear 0 100) gx
 

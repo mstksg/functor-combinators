@@ -312,11 +312,6 @@ instance Inject MaybeF where
 instance Inject Step where
     inject = Step 0
 
--- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
--- 'Numeric.Natural.Natural', 'Data.Semigroup.Sum' 'Numeric.Natural.Natural')@.
-instance Inject Step2 where
-    inject = Step2 0 0
-
 instance Inject Steps where
     inject = Steps . NEM.singleton 0
 
@@ -396,13 +391,6 @@ instance HBind Step where
     hbind f (Step n x) = Step (n + m) y
       where
         Step m y = f x
-
--- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
--- 'Numeric.Natural.Natural', 'Data.Semigroup.Sum' 'Numeric.Natural.Natural')@.
-instance HBind Step2 where
-    hbind f (Step2 i j x) = Step2 (i + i') (j + j') y
-      where
-        Step2 i' j' y = f x
 
 instance HBind Steps where
     hbind f = foldMap1 f . getSteps

@@ -500,20 +500,17 @@ instance Semigroupoidal Day where
 -- (5,0) (4,1) (3,2) (2,3) (1,4) (0,5)
 -- @
 instance Semigroupoidal (:+:) where
-    type SF (:+:) = Step2
+    type SF (:+:) = Step
 
     appendSF = \case
-      L1 (Step2 i j x) -> Step2 (i + 1) j x
-      R1 s@(Step2 i j x)
-        | j == 0    -> Step2 (i + 2) j x
-        | otherwise -> s
+      L1 (Step i x) -> Step (i + 1) x
+      R1 (Step i y) -> Step (i + 2) y
+    matchSF = hright stepDown . stepDown
 
-    matchSF = hright step2Down . step2Down
-
-    consSF = step2Up . R1 . step2Up
+    consSF = stepUp . R1 . stepUp
     toSF = \case
-      L1 x -> Step2 1 0 x
-      R1 y -> Step2 2 0 y
+      L1 x -> Step 1 x
+      R1 y -> Step 2 y
 
     biretract = \case
       L1 x -> x
@@ -524,20 +521,17 @@ instance Semigroupoidal (:+:) where
 
 -- | See ':+:' instance
 instance Semigroupoidal Sum where
-    type SF Sum = Step2
+    type SF Sum = Step
 
     appendSF = \case
-      InL (Step2 i j x) -> Step2 (i + 1) j x
-      InR s@(Step2 i j x)
-        | j == 0    -> Step2 (i + 2) j x
-        | otherwise -> s
+      InL (Step i x) -> Step (i + 1) x
+      InR (Step i y) -> Step (i + 2) y
+    matchSF = hright (viewF sumSum . stepDown) . stepDown
 
-    matchSF = hright (viewF sumSum . step2Down) . step2Down
-
-    consSF = step2Up . R1 . step2Up . reviewF sumSum
+    consSF = stepUp . R1 . stepUp . reviewF sumSum
     toSF = \case
-      InL x -> Step2 1 0 x
-      InR y -> Step2 2 0 y
+      InL x -> Step 1 x
+      InR y -> Step 2 y
 
     biretract = \case
       InR x -> x
