@@ -521,6 +521,11 @@ data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
 [stepVal] :: Step f a -> f a
+data Step2 f a
+Step2 :: Natural -> Natural -> f a -> Step2 f a
+[stepX] :: Step2 f a -> Natural
+[stepY] :: Step2 f a -> Natural
+[step2Val] :: Step2 f a -> f a
 
 -- | A non-empty map of <a>Natural</a> to <tt>f a</tt>. Basically, contains
 --   multiple <tt>f a</tt>s, each at a given <a>Natural</a> index.
@@ -609,6 +614,19 @@ stepDown :: Step f ~> (f :+: Step f)
 --   basically a witness that <a>stepDown</a> and <a>stepUp</a> form an
 --   isomorphism.
 stepping :: Step f <~> (f :+: Step f)
+step2Down :: Step2 f ~> (f :+: Step2 f)
+step2Up :: (f :+: Step2 f) ~> Step2 f
+
+-- | <pre>
+--                   i,j 
+--                  (0,0)                 =&gt;             0
+--               (1,0) (0,1)              =&gt;           1   2
+--            (2,0) (1,1) (0,2)           =&gt;         3   4   5
+--         (3,0) (2,1) (1,2) (0,3)        =&gt;       6   7   8   9
+--      (4,0) (3,1) (2,2) (1,3) (0,4)     =&gt;    10  11  12  13  14
+--   (5,0) (4,1) (3,2) (2,3) (1,4) (0,5)  =&gt;  15  16  17  18  19  20
+--   </pre>
+interlacingStep :: Step2 f <~> Step f
 
 -- | Unshift an item into a <a>Steps</a>. Because a <tt><a>Steps</a> f</tt>
 --   is <tt>f <a>These1</a> f <a>These1</a> f <a>These1</a> f <a>These1</a>
@@ -749,6 +767,22 @@ instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.O
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Steps f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Steps f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Steps f a)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Step2 f)
+instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step2 f)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step2 f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Step2 f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.Step.Step2 f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.Step.Step2 f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.Step.Step2 f)
+instance forall k (f :: k -> *) (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.Step.Step2 f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Control.Applicative.Step.Step2 f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.Step.Step2 f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.Step.Step2 f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Step2 f)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Step2 f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Step2 f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Step2 f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step2 f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Step f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
 instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step f)
@@ -966,6 +1000,7 @@ instance Data.HFunctor.HBind Control.Applicative.ListF.ListF
 instance Data.HFunctor.HBind Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.HBind Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.HBind Control.Applicative.Step.Step
+instance Data.HFunctor.HBind Control.Applicative.Step.Step2
 instance Data.HFunctor.HBind Control.Applicative.Step.Steps
 instance Data.HFunctor.HBind Control.Alternative.Free.Alt
 instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free
@@ -988,6 +1023,7 @@ instance Data.HFunctor.Inject Control.Applicative.ListF.ListF
 instance Data.HFunctor.Inject Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.Inject Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.Inject Control.Applicative.Step.Step
+instance Data.HFunctor.Inject Control.Applicative.Step.Step2
 instance Data.HFunctor.Inject Control.Applicative.Step.Steps
 instance Data.HFunctor.Inject Control.Alternative.Free.Alt
 instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free
@@ -1372,6 +1408,7 @@ instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.ListF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Step
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Step2
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Steps
 instance Data.HFunctor.Interpret.Interpret Control.Alternative.Free.Alt
 instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free
@@ -3377,6 +3414,10 @@ type CM t = C (MF t)
 --   </pre>
 nilMF :: forall t f. Monoidal t => I t ~> MF t f
 
+-- | Lets us "cons" an application of <tt>f</tt> to the front of an
+--   <tt><a>MF</a> t f</tt>.
+consMF :: Monoidal t => t f (MF t f) ~> MF t f
+
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
 --   
@@ -3552,6 +3593,11 @@ data Step f a
 Step :: Natural -> f a -> Step f a
 [stepPos] :: Step f a -> Natural
 [stepVal] :: Step f a -> f a
+data Step2 f a
+Step2 :: Natural -> Natural -> f a -> Step2 f a
+[stepX] :: Step2 f a -> Natural
+[stepY] :: Step2 f a -> Natural
+[step2Val] :: Step2 f a -> f a
 
 -- | A non-empty map of <a>Natural</a> to <tt>f a</tt>. Basically, contains
 --   multiple <tt>f a</tt>s, each at a given <a>Natural</a> index.
