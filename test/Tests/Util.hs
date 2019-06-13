@@ -17,14 +17,11 @@ module Tests.Util (
   , groupTree
   ) where
 
--- import           Control.Applicative
--- import           Data.HBifunctor.Associative
--- import           Data.HBifunctor.Tensor
--- import           Hedgehog.Main
--- import           Test.Tasty
--- import           Type.Reflection
+import           Control.Applicative
 import           Control.Monad
 import           Control.Natural.IsoF
+import           Data.Function
+import           Data.Functor
 import           Data.Functor.Classes
 import           Data.Functor.Combinator
 import           Data.Functor.Day
@@ -77,46 +74,11 @@ groupTree Group{..} = testGroup (unGroupName groupName)
     deUnderscore '_' = ' '
     deUnderscore c   = c
 
-instance (GEq f, GEq g) => Eq (Day f g a) where
-    (==) (Day x1 y1 _) (Day x2 y2 _) =
-        isJust (geq x1 x2 *> geq y1 y2)
+instance (GShow f, GShow g) => Eq (Day f g a) where
+    (==) = (==) `on` show
 
-data ConstUnit :: Type -> Type -> Type where
-    ConstUnit :: e -> ConstUnit e ()
-
-deriving instance Eq e => Eq (ConstUnit e b)
-deriving instance Show e => Show (ConstUnit e b)
-
-instance Eq e => GEq (ConstUnit e) where
-    geq = \case
-      ConstUnit x -> \case
-        ConstUnit y -> Refl <$ guard (x == y)
-
-instance Show e => GShow (ConstUnit e) where
+instance Show c => GShow (Const c) where
     gshowsPrec = showsPrec
-
-
--- data SBool :: Bool -> Type  where
---     SFalse :: SBool 'False
---     STrue  :: SBool 'True
-
--- deriving instance Eq (SBool b)
--- deriving instance Show (SBool b)
-
--- instance GEq SBool where
---     geq = \case
---       SFalse -> \case
---         SFalse -> Just Refl
---         STrue  -> Nothing
---       STrue  -> \case
---         SFalse -> Nothing
---         STrue  -> Just Refl
-
--- instance GShow SBool where
---     gshowsPrec = showsPrec
-
--- instance Show c => GShow (Const c) where
---     gshowsPrec = showsPrec
 
 instance (GShow f, GShow g) => GShow (Day f g) where
     gshowsPrec d (Day x y _) =
@@ -130,24 +92,22 @@ instance GShow f => GShow (Ap1 f) where
       L1 _  -> showsUnaryWith gshowsPrec "inject" d x
       R1 ys -> showsBinaryWith gshowsPrec gshowsPrec "Ap1" d x ys
 
--- instance (GEq f) => Eq (Ap1 f a) where
---     (==) (Ap1 x1 y1) (Ap1 x2 y2) =
---       isJust (geq x1 x2) && case matchMF @Day y1 of
---         L1 _   -> case matchMF @Day y2 of
---           L1 _ -> True
---           R1 _ -> False
---         R1 ys1 -> case matchMF @Day y2 of
---           L1 _   -> False
---           R1 ys2 -> ys1 == ys2
-      
-    -- (==) (Day x1 y1 _) (Day x2 y2 _) =
-    --     isJust (geq x1 x2 *> geq y1 y2)
-
---       Ap.Pure x -> showsUnaryWith gshowsPrec "Pure" d x
-    -- showsPrec = gshowsPrec
+instance GShow f => Eq (Ap1 f a) where
+    (==) = (==) `on` show
 
 instance GShow f => Show (Ap1 f a) where
     showsPrec = gshowsPrec
+
+instance GShow f => GShow (Ap f) where
+    gshowsPrec d = \case
+      Ap.Pure _  -> showString "<pure>"
+      Ap.Ap x xs -> showsBinaryWith gshowsPrec gshowsPrec "Ap" d x xs
+
+instance GShow f => Show (Ap f a) where
+    showsPrec = gshowsPrec
+
+instance GShow f => Eq (Ap f a) where
+    (==) = (==) `on` show
 
 deriving instance (Show e, Show (f a)) => Show (EnvT e f a)
 deriving instance (Eq e, Eq (f a)) => Eq (EnvT e f a)

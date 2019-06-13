@@ -27,8 +27,6 @@ instance TestHFunctor ListF where
 
 instance TestHFunctor NonEmptyF where
     genHF gx = NonEmptyF <$> Gen.nonEmpty (Range.linear 1 100) gx
-      -- x  <- gx xs <- Gen.list (Range.linear 0 100) gx
-      -- pure $ NonEmptyF (x :| xs)
 
 instance TestHFunctor Steps where
     genHF gx = do
@@ -38,6 +36,12 @@ instance TestHFunctor Steps where
       where
         kv = (,) <$> Gen.integral (Range.linear 0 25)
                  <*> gx
+
+instance TestHFunctor Ap where
+    genHF gx = fmap NE.head
+             . sequence1
+             . fmap inject
+           <$> Gen.nonEmpty (Range.linear 0 3) gx
 
 instance TestHFunctor Ap1 where
     genHF gx = fmap NE.head

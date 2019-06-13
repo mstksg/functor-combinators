@@ -10,6 +10,7 @@ module Tests.HBifunctor (
     hbifunctorTests
   ) where
 
+import           Control.Applicative
 import           Control.Monad.Freer.Church
 import           Data.Functor
 import           Data.Functor.Combinator
@@ -251,6 +252,13 @@ prop_associating_These :: Property
 prop_associating_These = property $
     associatingProp_ @These1 listGen listGen listGen
 
+prop_associating_Day :: Property
+prop_associating_Day = property $
+    associatingProp_ @Day
+      (Const <$> intGen)
+      (Const <$> intGen)
+      (Const <$> intGen)
+
 prop_associating_Comp :: Property
 prop_associating_Comp = property $
     associatingProp_ @Comp listGen listGen listGen
@@ -287,10 +295,9 @@ prop_matchingSF_These :: Property
 prop_matchingSF_These = property $
     matchingSFProp_ @These1 listGen
 
--- prop_matchingSF_Day :: Property
--- prop_matchingSF_Day = property $
---     matchingSFProp_ @Day $ _
---       -- Gen.list (Range.linear 0 3) intGen
+prop_matchingSF_Day :: Property
+prop_matchingSF_Day = property $
+    matchingSFProp_ @Day $ (Const <$> intGen)
 
 prop_matchingSF_Comp :: Property
 prop_matchingSF_Comp = property $
@@ -327,11 +334,18 @@ prop_splittingMF_Prod' :: Property
 prop_splittingMF_Prod' = property $
     splittingMFProp_ @Product listGen (Just (pure Proxy))
 
+prop_splittingMF_Day :: Property
+prop_splittingMF_Day = property $
+    splittingMFProp_ @Day
+      (Const <$> intGen)
+      (Just (Identity <$> intGen))
+
 prop_splittingMF_Comp :: Property
 prop_splittingMF_Comp = property $
     splittingMFProp_ @Comp
       (Gen.list (Range.linear 0 3) intGen)
       (Just (Identity <$> intGen))
+
 
 
 
@@ -353,6 +367,10 @@ prop_splittingSF_Prod' :: Property
 prop_splittingSF_Prod' = property $
     splittingSFProp_ @Product listGen
 
+prop_splittingSF_Day :: Property
+prop_splittingSF_Day = property $
+    splittingSFProp_ @Day (Const <$> intGen)
+
 
 
 
@@ -373,3 +391,9 @@ prop_matchingMF_Prod = property $
 prop_matchingMF_Prod' :: Property
 prop_matchingMF_Prod' = property $
     matchingMFProp_ @Product listGen (Just (pure Proxy))
+
+prop_matchingMF_Day :: Property
+prop_matchingMF_Day = property $
+    matchingMFProp_ @Day
+      (Const <$> intGen)
+      (Just (Identity <$> intGen))
