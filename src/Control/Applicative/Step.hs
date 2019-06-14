@@ -44,7 +44,6 @@ module Control.Applicative.Step (
   , stepsUp
   , stepsDown
   , steppings
-  , flaggedDown
   -- * Void
   , absurd1
   , Void2
@@ -312,8 +311,8 @@ stepsUp = \case
 -- | An @f a@, along with a 'Bool' flag
 --
 -- @
--- Step f a ~ ('Bool', f a)
--- Step f   ~ ((,) Bool) ':.:' f       -- functor composition
+-- 'Flagged' f a ~ ('Bool', f a)
+-- Flagged f   ~ ((,) Bool) ':.:' f       -- functor composition
 -- @
 --
 -- You can think of it as an @f a@ that is "flagged" with a boolean value,
@@ -351,10 +350,6 @@ instance Traversable1 f => Traversable1 (Flagged f) where
     traverse1 f (Flagged n x) = Flagged n <$> traverse1 f x
     sequence1 (Flagged n x) = Flagged n <$> sequence1 x
 
-
-flaggedDown :: Flagged f ~> f :+: Flagged f
-flaggedDown (Flagged False x) = L1 x
-flaggedDown (Flagged True  x) = R1 (Flagged False x)
 
 
 
