@@ -72,6 +72,7 @@ module Data.Functor.Combinator (
   , Ap1(..)
   , Alt
   , Free
+  , Free1
   , Step(..)
   , Steps(..)
   , ProxyF(..)

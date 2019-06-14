@@ -13,17 +13,16 @@ module Tests.HBifunctor (
 import           Control.Applicative
 import           Control.Monad.Freer.Church
 import           Control.Natural.IsoF
-import           Data.Functor
 import           Data.Functor.Combinator
 import           Data.Functor.Identity
 import           Data.Functor.Product
 import           Data.Functor.Sum
 import           Data.HBifunctor.Associative
 import           Data.HBifunctor.Tensor
+import           Data.HFunctor.Chain
 import           Data.Proxy
 import           Hedgehog
 import           Test.Tasty
-import           Tests.HFunctor
 import           Tests.Util
 import qualified Data.Semigroup              as S
 import qualified Hedgehog.Gen                as Gen
@@ -61,6 +60,20 @@ matchingSFProp
     -> Gen (t f (SF t f) a)
     -> PropertyT m ()
 matchingSFProp gx gy gz = isoProp (matchingSF @t) gx (sumGen gy gz)
+
+unrollingSFProp
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , Monad m
+     , Functor f
+     , Show (SF t f a), Eq (SF t f a)
+     , Show (f a), Eq (f a)
+     , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
+     )
+    => Gen (SF t f a)
+    -> Gen (Chain1 t f a)
+    -> PropertyT m ()
+unrollingSFProp = isoProp (unrollingSF @t)
 
 consSFProp
     :: forall t f m a.
@@ -129,6 +142,19 @@ splittingMFProp
     -> PropertyT m ()
 splittingMFProp = isoProp (splittingMF @t)
 
+unrollingMFProp
+    :: forall t f m a.
+     ( Monoidal t
+     , Monad m
+     , Show (MF t f a), Eq (MF t f a)
+     , Show (I t a), Eq (I t a)
+     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     )
+    => Gen (MF t f a)
+    -> Gen (Chain t (I t) f a)
+    -> PropertyT m ()
+unrollingMFProp = isoProp (unrollingMF @t)
+
 toMFProp
     :: forall t f m a.
      ( Monoidal t
@@ -194,48 +220,24 @@ matchingMFProp
     -> PropertyT m ()
 matchingMFProp = isoProp (matchingMF @t)
 
-class HBifunctor t => TestHBifunctor t where
-    genHB
-        :: MonadGen m
-        => m (f a)
-        -> m (g a)
-        -> m (t f g a)
+matchingChainProp
+    :: forall t f m a.
+     ( Matchable t
+     , Monad m
+     , Functor f
+     , Show (f a), Eq (f a)
+     , Show (I t a), Eq (I t a)
+     , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
+     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     )
+    => Gen (Chain t (I t ) f a)
+    -> Gen ((I t :+: Chain1 t f) a)
+    -> PropertyT m ()
+matchingChainProp = isoProp (matchingChain @t)
 
-instance TestHBifunctor (:+:) where
-    genHB = sumGen
 
-instance TestHBifunctor Sum where
-    genHB gx gy = sumGen gx gy <&> \case
-      L1 x -> InL x
-      R1 y -> InR y
 
-instance TestHBifunctor (:*:) where
-    genHB gx gy = (:*:) <$> gx <*> gy
 
-instance TestHBifunctor Product where
-    genHB gx gy = Pair <$> gx <*> gy
-
-instance TestHBifunctor Day where
-    genHB gx gy = do
-      f <- Gen.bool <&> \case
-        False -> const
-        True  -> flip const
-      Day <$> gx <*> gy <*> pure f
-
-instance TestHBifunctor These1 where
-    genHB gx gy = Gen.enumBounded >>= \case
-      LT -> This1 <$> gx
-      EQ -> That1 <$> gy
-      GT -> These1 <$> gx <*> gy
-
-instance TestHBifunctor Comp where
-    genHB gx gy = (:>>=) <$> gx <*> fmap const gy
-
-instance TestHBifunctor LeftF where
-    genHB gx _ = LeftF <$> gx
-
-instance TestHBifunctor RightF where
-    genHB _ gy = RightF <$> gy
 
 associatingProp_
     :: forall t m f g h a.
@@ -271,6 +273,21 @@ matchingSFProp_ gx = matchingSFProp @t
       (genHF gx)
       gx
       (genHB gx (genHF gx))
+
+unrollingSFProp_
+    :: forall t f m a.
+     ( Semigroupoidal t
+     , TestHBifunctor t
+     , TestHFunctor (SF t)
+     , Monad m
+     , Functor f
+     , Show (SF t f a), Eq (SF t f a)
+     , Show (f a), Eq (f a)
+     , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
+     )
+    => Gen (f a)
+    -> PropertyT m ()
+unrollingSFProp_ gx = unrollingSFProp @t (genHF gx) (genHF gx)
 
 consSFProp_
     :: forall t f m a.
@@ -343,6 +360,35 @@ splittingMFProp_ gx gy = splittingMFProp @t
        Just gy' -> sumGen gy' (genHB gx (genHF gx))
     )
 
+genChain
+    :: forall t f m a. (MonadGen m, TestHBifunctor t)
+    => m (f a)
+    -> Maybe (m (I t a))
+    -> m (Chain t (I t) f a)
+genChain gx gy = go
+  where
+    go = case gy of
+      Nothing  -> More <$> genHB @t gx go
+      Just gy' -> Gen.bool >>= \case
+        False -> Done <$> gy'
+        True  -> More <$> genHB @t gx go
+
+unrollingMFProp_
+    :: forall t f m a.
+     ( Monoidal t
+     , TestHFunctor (MF t)
+     , TestHBifunctor t
+     , Monad m
+     , Show (MF t f a), Eq (MF t f a)
+     , Show (I t a), Eq (I t a)
+     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     )
+    => Gen (f a)
+    -> Maybe (Gen (I t a))
+    -> PropertyT m ()
+unrollingMFProp_ gx gy = unrollingMFProp @t (genHF gx) (genChain gx gy)
+
+
 toMFProp_
     :: forall t f m a.
      ( Monoidal t
@@ -402,6 +448,30 @@ matchingMFProp_ gx gy = matchingMFProp @t
        Nothing  -> R1 <$> genHF gx
        Just gy' -> sumGen gy' (genHF gx)
     )
+
+matchingChainProp_
+    :: forall t f m a.
+     ( Matchable t
+     , TestHBifunctor t
+     , Monad m
+     , Functor f
+     , Show (f a), Eq (f a)
+     , Show (I t a), Eq (I t a)
+     , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
+     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     )
+    => Gen (f a)
+    -> Maybe (Gen (I t a))
+    -> PropertyT m ()
+matchingChainProp_ gx gy = matchingChainProp @t
+    (genChain gx gy)
+    (case gy of
+       Nothing  -> R1 <$> genHF gx
+       Just gy' -> sumGen gy' (genHF gx)
+    )
+
+
+
 
 prop_associating_Sum :: Property
 prop_associating_Sum = property $
@@ -485,6 +555,47 @@ prop_matchingSF_LeftF = property $
 prop_matchingSF_RightF :: Property
 prop_matchingSF_RightF = property $
     matchingSFProp_ @RightF listGen
+
+
+
+
+
+prop_unrollingSF_Sum :: Property
+prop_unrollingSF_Sum = property $
+    unrollingSFProp_ @(:+:) listGen
+
+prop_unrollingSF_Sum' :: Property
+prop_unrollingSF_Sum' = property $
+    unrollingSFProp_ @Sum listGen
+
+prop_unrollingSF_Prod :: Property
+prop_unrollingSF_Prod = property $
+    unrollingSFProp_ @(:*:) listGen
+
+prop_unrollingSF_Prod' :: Property
+prop_unrollingSF_Prod' = property $
+    unrollingSFProp_ @Product listGen
+
+prop_unrollingSF_These :: Property
+prop_unrollingSF_These = property $
+    unrollingSFProp_ @These1 listGen
+
+prop_unrollingSF_Day :: Property
+prop_unrollingSF_Day = property $
+    unrollingSFProp_ @Day $ (Const <$> intGen)
+
+prop_unrollingSF_Comp :: Property
+prop_unrollingSF_Comp = property $
+    unrollingSFProp_ @Comp $
+      Gen.list (Range.linear 0 3) intGen
+
+prop_unrollingSF_LeftF :: Property
+prop_unrollingSF_LeftF = property $
+    unrollingSFProp_ @LeftF listGen
+
+prop_unrollingSF_RightF :: Property
+prop_unrollingSF_RightF = property $
+    unrollingSFProp_ @RightF listGen
 
 
 
@@ -690,6 +801,38 @@ prop_splittingMF_Comp = property $
 
 
 
+prop_unrollingMF_Sum' :: Property
+prop_unrollingMF_Sum' = property $
+    unrollingMFProp_ @Sum listGen Nothing
+
+prop_unrollingMF_Prod :: Property
+prop_unrollingMF_Prod = property $
+    unrollingMFProp_ @(:*:) listGen (Just (pure Proxy))
+
+prop_unrollingMF_Prod' :: Property
+prop_unrollingMF_Prod' = property $
+    unrollingMFProp_ @Product listGen (Just (pure Proxy))
+
+prop_unrollingMF_These :: Property
+prop_unrollingMF_These = property $
+    unrollingMFProp_ @These1 listGen Nothing
+
+prop_unrollingMF_Day :: Property
+prop_unrollingMF_Day = property $
+    unrollingMFProp_ @Day
+      (Const <$> intGen)
+      (Just (Identity <$> intGen))
+
+prop_unrollingMF_Comp :: Property
+prop_unrollingMF_Comp = property $
+    unrollingMFProp_ @Comp
+      (Gen.list (Range.linear 0 3) intGen)
+      (Just (Identity <$> intGen))
+
+
+
+
+
 prop_toMF_Sum :: Property
 prop_toMF_Sum = property $
     toMFProp_ @(:+:) listGen
@@ -831,5 +974,36 @@ prop_matchingMF_Prod' = property $
 prop_matchingMF_Day :: Property
 prop_matchingMF_Day = property $
     matchingMFProp_ @Day
+      (Const <$> intGen)
+      (Just (Identity <$> intGen))
+
+
+
+
+
+
+prop_matchingChain_Sum :: Property
+prop_matchingChain_Sum = property $
+    matchingChainProp_ @(:+:) listGen Nothing
+
+prop_matchingChain_Sum' :: Property
+prop_matchingChain_Sum' = property $
+    matchingChainProp_ @Sum listGen Nothing
+
+prop_matchingChain_Prod :: Property
+prop_matchingChain_Prod = property $
+    matchingChainProp_ @(:*:) listGen (Just (pure Proxy))
+
+prop_matchingChain_Prod' :: Property
+prop_matchingChain_Prod' = property $
+    matchingChainProp_ @Product listGen (Just (pure Proxy))
+
+-- prop_matchingChain_These :: Property
+-- prop_matchingChain_These = property $
+--     matchingChainProp_ @These1 listGen Nothing
+
+prop_matchingChain_Day :: Property
+prop_matchingChain_Day = property $
+    matchingChainProp_ @Day
       (Const <$> intGen)
       (Just (Identity <$> intGen))
