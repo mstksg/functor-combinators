@@ -3579,6 +3579,22 @@ data Alt (f :: Type -> Type) a
 --   <a>HFunctor</a> and <a>Interpret</a>.
 data Free f a
 
+-- | The Free <a>Bind</a>. Imbues any functor <tt>f</tt> with a <a>Bind</a>
+--   instance.
+--   
+--   Conceptually, this is "<a>Free</a> without pure". That is, while
+--   normally <tt><a>Free</a> f a</tt> is an <tt>a</tt>, a <tt>f a</tt>, a
+--   <tt>f (f a)</tt>, etc., a <tt><a>Free1</a> f a</tt> is an <tt>f
+--   a</tt>, <tt>f (f a)</tt>, <tt>f (f (f a))</tt>, etc. It's a
+--   <a>Free</a> with "at least one layer of <tt>f</tt>", excluding the
+--   <tt>a</tt> case.
+--   
+--   It can be useful as the semigroup formed by <a>:.:</a> (functor
+--   composition): Sometimes we want an <tt>f :.: f</tt>, or an <tt>f :.: f
+--   :.: f</tt>, or an <tt>f :.: f :.: f :.: f</tt>...just as long as we
+--   have at least one <tt>f</tt>.
+data Free1 f a
+
 -- | An <tt>f a</tt>, along with a <a>Natural</a> index.
 --   
 --   <pre>
