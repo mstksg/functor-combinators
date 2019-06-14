@@ -556,8 +556,8 @@ Steps :: NEMap Natural (f a) -> Steps f a
 -- | An <tt>f a</tt>, along with a <a>Bool</a> flag
 --   
 --   <pre>
---   Step f a ~ (<a>Bool</a>, f a)
---   Step f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
+--   <a>Flagged</a> f a ~ (<a>Bool</a>, f a)
+--   Flagged f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
 --   You can think of it as an <tt>f a</tt> that is "flagged" with a
@@ -704,7 +704,6 @@ stepsDown :: Steps f ~> These1 f (Steps f)
 --   basically a witness that <a>stepsDown</a> and <a>stepsUp</a> form an
 --   isomorphism.
 steppings :: Steps f <~> These1 f (Steps f)
-flaggedDown :: Flagged f ~> (f :+: Flagged f)
 
 -- | We have a natural transformation between <a>V1</a> and any other
 --   functor <tt>f</tt> with no constraints.
@@ -3672,8 +3671,8 @@ EnvT :: e -> w a -> EnvT e a
 -- | An <tt>f a</tt>, along with a <a>Bool</a> flag
 --   
 --   <pre>
---   Step f a ~ (<a>Bool</a>, f a)
---   Step f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
+--   <a>Flagged</a> f a ~ (<a>Bool</a>, f a)
+--   Flagged f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
 --   You can think of it as an <tt>f a</tt> that is "flagged" with a
