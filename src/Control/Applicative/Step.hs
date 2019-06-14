@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveFunctor              #-}
@@ -5,12 +6,16 @@
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE EmptyCase                  #-}
 {-# LANGUAGE EmptyDataDeriving          #-}
+{-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeInType                 #-}
 {-# LANGUAGE TypeOperators              #-}
 
 -- |
@@ -310,13 +315,16 @@ deriveRead1 ''Void2
 deriveEq1 ''Void2
 deriveOrd1 ''Void2
 
-instance Alt (Void2 f) where
+instance Semigroup (Void2 a b) where
+    x <> _ = case x of {}
+
+instance Alt (Void2 a) where
     x <!> _ = absurd2 x
 
-instance Bind (Void2 f) where
+instance Bind (Void2 a) where
     x >>- _ = case x of {}
 
-instance Apply (Void2 f) where
+instance Apply (Void2 a) where
     x <.> _ = case x of {}
 
 -- | If you treat a @'Void2' f a@ as a functor combinator, then 'absurd2'
@@ -334,13 +342,16 @@ deriveRead1 ''Void3
 deriveEq1 ''Void3
 deriveOrd1 ''Void3
 
-instance Alt (Void3 f g) where
+instance Semigroup (Void3 a b c) where
+    x <> _ = case x of {}
+
+instance Alt (Void3 a b) where
     x <!> _ = absurd3 x
 
-instance Bind (Void3 f g) where
+instance Bind (Void3 a b) where
     x >>- _ = case x of {}
 
-instance Apply (Void3 f g) where
+instance Apply (Void3 a b) where
     x <.> _ = case x of {}
 
 -- | If you treat a @'Void3' f a@ as a binary functor combinator, then

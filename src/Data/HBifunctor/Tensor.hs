@@ -90,7 +90,9 @@ module Data.HBifunctor.Tensor (
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
+import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Function
@@ -107,9 +109,11 @@ import           Data.HFunctor
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
+import           Data.List.NonEmpty          (NonEmpty(..))
 import           Data.Proxy
 import           GHC.Generics hiding         (C)
 import qualified Data.Functor.Day            as D
+import qualified Data.Map.NonEmpty           as NEM
 
 -- | An 'Associative' 'HBifunctor' can be a 'Tensor' if there is some
 -- identity @i@ where @t i f@ is equivalent to just @f@.
@@ -696,9 +700,7 @@ instance Monoidal Day where
 instance Monoidal (:+:) where
     type MF (:+:) = Step
 
-    appendMF = \case
-      L1 x          -> x
-      R1 (Step n x) -> Step (n + 1) x
+    appendMF    = id !*! stepUp . R1
     splitSF     = stepDown
     splittingMF = stepping . sumLeftIdentity
 
@@ -712,32 +714,36 @@ instance Monoidal (:+:) where
 instance Monoidal Sum where
     type MF Sum = Step
 
-    appendMF = \case
-      InL x          -> x
-      InR (Step n x) -> Step (n + 1) x
+    appendMF    = id !*! stepUp . R1
     splitSF     = viewF sumSum . stepDown
     splittingMF = stepping
                 . sumLeftIdentity
                 . overHBifunctor id sumSum
 
     toMF  = \case
-      InL x -> Step 1 x
-      InR x -> Step 2 x
+      InL x -> Step 0 x
+      InR x -> Step 1 x
     pureT = absurd1
 
     upgradeC _ x = x
 
--- instance Monoidal These1 where
---     type MF These1 = Steps
+instance Monoidal These1 where
+    type MF These1 = Steps
 
---     appendMF    = appendSF
---     splitSF     = stepsDown
---     splittingMF = steppings . sumLeftIdentity
+    appendMF    = \case
+      This1  x   -> x
+      That1    y -> stepsUp . That1 $ y
+      These1 x y -> x <> y
+    splitSF     = stepsDown . lowerEnvT . getComposeT
+    splittingMF = steppings . sumLeftIdentity
 
---     toMF  = toSF
---     pureT = absurd1
+    toMF  = \case
+      This1  x   -> Steps $ NEM.singleton 0 x
+      That1    y -> Steps $ NEM.singleton 1 y
+      These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
+    pureT = absurd1
 
---     upgradeC _ x = x
+    upgradeC _ x = x
 
 instance Monoidal Comp where
     type MF Comp = Free
@@ -778,6 +784,7 @@ instance Matchable Sum where
     unsplitSF   = stepUp . reviewF sumSum
     matchMF     = R1
 
+-- We can't write this until we get an isomorphism between MF These1 and SF These1
 -- instance Matchable These1 where
 --     unsplitSF = stepsUp
 --     matchMF   = R1

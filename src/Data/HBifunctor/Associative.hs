@@ -89,11 +89,20 @@ module Data.HBifunctor.Associative (
   , (!$!)
   ) where
 
+-- import           Data.Constraint
+-- import           Data.Finite
+-- import           Data.Functor.Classes
+-- import           Data.Map.NonEmpty        (NEMap)
+-- import           GHC.TypeLits.Witnesses
+-- import           GHC.TypeNats
+-- import           Unsafe.Coerce
+import qualified Data.Map.NonEmpty        as NEM
 import           Control.Applicative
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor.Joker
@@ -102,7 +111,7 @@ import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
-import           Data.Functor.Day               (Day(..))
+import           Data.Functor.Day            (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -113,11 +122,10 @@ import           Data.HFunctor
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List.NonEmpty             (NonEmpty(..))
-import           Data.Semigroup                 (Any(..))
-import           GHC.Generics hiding            (C)
-import qualified Data.Functor.Day               as D
-import qualified Data.Map.NonEmpty              as NEM
+import           Data.List.NonEmpty          (NonEmpty(..))
+import           Data.Semigroup              (Any(..))
+import           GHC.Generics hiding         (C)
+import qualified Data.Functor.Day            as D
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -486,19 +494,6 @@ instance Semigroupoidal Day where
     biretract (Day x y z) = z <$> x <.> y
     binterpret f g (Day x y z) = z <$> f x <.> g y
 
--- | Semigroupoidal structure keeps track of "how many are in the sum", and
--- "which part in the sum".  We assign them diagonal coordinates like in
--- the diagram below.
---
--- @
---                 i,j
---                (0,0)
---             (1,0) (0,1)
---          (2,0) (1,1) (0,2)
---       (3,0) (2,1) (1,2) (0,3)
---    (4,0) (3,1) (2,2) (1,3) (0,4)
--- (5,0) (4,1) (3,2) (2,3) (1,4) (0,5)
--- @
 instance Semigroupoidal (:+:) where
     type SF (:+:) = Step
 
@@ -519,7 +514,6 @@ instance Semigroupoidal (:+:) where
       L1 x -> f x
       R1 y -> g y
 
--- | See ':+:' instance
 instance Semigroupoidal Sum where
     type SF Sum = Step
 
@@ -540,63 +534,46 @@ instance Semigroupoidal Sum where
       InL x -> f x
       InR y -> g y
 
+-- data TC f a = TCA (f a) Bool
+--             | TCB (Maybe (f a)) (TC f a)
+                -- sparse, non-empty list
+                -- and the last item has a Bool
+                -- aka sparse non-empty list tagged with a bool
+
 instance Semigroupoidal These1 where
-    type SF These1 = Steps
+    type SF These1 = ComposeT (EnvT Any) Steps
 
-    -- appendSF = \case
-    --     This1  xs    -> HOther . stepsUp . liftThese $ xs
-    --     That1     ys -> HOther . stepsUp . liftThese $ ys
-    --     These1 xs ys -> HOther $ recombine xs ys
-    --   where
-    --     liftThese (HPure  x ) = This1 x
-    --     liftThese (HOther xs) = That1 xs
-    --     recombine (HPure  x ) (HPure  y ) = Steps . NEM.fromList $
-    --                                         (0, x) :| [(1, y)]
-    --     recombine (HPure  x ) (HOther ys) = stepsUp $ These1 x ys
-    --     recombine (HOther xs) ys          = Steps $
-    --       let Steps xs' = xs
-    --           (k, _)    = NEM.findMax xs'
-    --       in  case ys of
-    --             HPure  z          -> NEM.insert (k + 1) z xs'
-    --             HOther (Steps zs) -> xs' <> NEM.mapKeysMonotonic (+ (k + 1)) zs
-    -- -- yeah, we cannot distinguish between L1 and R1.This1
-    -- matchSF = \case
-    --     HPure  x -> L1 x
-    --     HOther x -> R1 . hright HOther $ stepsDown x
-    --
-    -- a more fundamental problem because tehre is no difference between
-    -- Done1 "bye" and More1 (This1 "bye")
+    appendSF s = ComposeT $ case s of
+        This1  (ComposeT (EnvT _ q))                       ->
+          EnvT (Any True) q
+        That1                        (ComposeT (EnvT b q)) ->
+          EnvT b        (stepsUp (That1 q))
+        These1 (ComposeT (EnvT a q)) (ComposeT (EnvT b r)) ->
+          EnvT (a <> b) (q <> r)
+    matchSF (ComposeT (EnvT a@(Any isImpure) q)) = case stepsDown q of
+      This1  x
+        | isImpure  -> R1 $ This1 x
+        | otherwise -> L1 x
+      That1    y    -> R1 . That1 . ComposeT $ EnvT a y
+      These1 x y    -> R1 . These1 x .  ComposeT $ EnvT a y
 
-    appendSF = \case
-      This1  (Steps xs)            -> Steps xs
-      That1             (Steps ys) -> Steps (NEM.mapKeysMonotonic (+ 1) ys)
-      These1 (Steps xs) (Steps ys) -> Steps $
-        let (k, _) = NEM.findMax xs
-        in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
-    -- yeah, we cannot distinguish between L1 and R1.This1
-    -- matchSF = R1 . stepsDown
-    --
-    -- a more fundamental problem because tehre is no difference between
-    -- Done1 "bye" and More1 (This1 "bye")
-    matchSF x = case stepsDown x of
-      This1  y   -> L1 y
-      That1    z -> R1 (That1    z)
-      These1 y z -> R1 (These1 y z)
+    consSF s = ComposeT $ case s of
+      This1  x                       -> EnvT (Any True) (inject x)
+      That1    (ComposeT (EnvT b y)) -> EnvT b          (stepsUp (That1    y))
+      These1 x (ComposeT (EnvT b y)) -> EnvT b          (stepsUp (These1 x y))
+    toSF  s = ComposeT $ case s of
+      This1  x   -> EnvT (Any True ) . Steps $ NEM.singleton 0 x
+      That1    y -> EnvT (Any False) . Steps $ NEM.singleton 1 y
+      These1 x y -> EnvT (Any False) . Steps $ NEM.fromDistinctAscList $ (0, x) :| [(1, y)]
 
-    -- consSF = stepsUp
-    -- toSF = \case
-    --   This1  x   -> Steps $ NEM.singleton 0 x
-    --   That1    y -> Steps $ NEM.singleton 1 y
-    --   These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
-
-    -- biretract = \case
-    --   This1  x   -> x
-    --   That1    y -> y
-    --   These1 x y -> x <!> y
-    -- binterpret f g = \case
-    --   This1  x   -> f x
-    --   That1    y -> g y
-    --   These1 x y -> f x <!> g y
+    biretract = \case
+      This1  x   -> x
+      That1    y -> y
+      These1 x y -> x <!> y
+    binterpret f g = \case
+      This1  x   -> f x
+      That1    y -> g y
+      These1 x y -> f x <!> g y
 
 instance Semigroupoidal Comp where
     type SF Comp = Free1

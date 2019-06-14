@@ -70,6 +70,7 @@ import           Data.HBifunctor.Associative
 import           Data.HBifunctor.Tensor
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
+import           Data.Kind
 import           Data.Typeable
 import           GHC.Generics hiding         (C)
 
@@ -168,7 +169,7 @@ foldChain1 f g = go
 --
 -- This is an anamorphism.
 unfoldChain1
-    :: forall t f g. HBifunctor t
+    :: forall t f (g :: Type -> Type). HBifunctor t
     => (g ~> f :+: t f g)
     -> g ~> Chain1 t f
 unfoldChain1 f = go
@@ -312,12 +313,12 @@ foldChain f g = go
 --
 -- This is an anamorphism.
 unfoldChain
-    :: forall t f g i. HBifunctor t
+    :: forall t f (g :: Type -> Type) i. HBifunctor t
     => (g ~> i :+: t f g)
     -> g ~> Chain t i f
 unfoldChain f = go
   where
-    go :: g ~> Chain t i f
+    go :: g a -> Chain t i f a
     go = (Done !*! More . hright go) . f
 
 instance HBifunctor t => HFunctor (Chain t i) where

@@ -80,6 +80,7 @@ module Data.Functor.Combinator (
   , Void2
   , Final(..)
   , FreeOf(..)
+  , ComposeT(..)
   -- ** Multi
   , Day(..)
   , (:*:)(..), prodOutL, prodOutR
@@ -108,6 +109,7 @@ import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Functor.Apply.Free

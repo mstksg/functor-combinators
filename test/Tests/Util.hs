@@ -105,6 +105,21 @@ instance GShow f => Eq (Ap f a) where
 deriving instance (Show e, Show (f a)) => Show (EnvT e f a)
 deriving instance (Eq e, Eq (f a)) => Eq (EnvT e f a)
 
+instance (Show e, Show1 f) => Show1 (EnvT e f) where
+    liftShowsPrec sp sl d (EnvT e x) =
+      showsBinaryWith showsPrec (liftShowsPrec sp sl) "EnvT" d e x
+
+instance (Eq e, Eq1 f) => Eq1 (EnvT e f) where
+    liftEq eq (EnvT e x) (EnvT d y) = e == d && liftEq eq x y
+
+instance Show1 (s (t f)) => Show1 (ComposeT s t f) where
+    liftShowsPrec sp sl d (ComposeT x) =
+      showsUnaryWith (liftShowsPrec sp sl) "ComposeT" d x
+
+instance Eq1 (s (t f)) => Eq1 (ComposeT s t f) where
+    liftEq eq (ComposeT x) (ComposeT y) = liftEq eq x y
+
+
 instance Enum Any where
     toEnum   = Any . toEnum
     fromEnum = fromEnum . getAny

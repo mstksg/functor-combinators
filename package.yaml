@@ -21,25 +21,9 @@ description:         Please see the README on GitHub at <https://github.com/mstk
 
 dependencies:
 - base >= 4.7 && < 5
-- bifunctors
-- comonad
-- constraints
-- containers
-- deriving-compat
-- free
-- kan-extensions
-- mmorph
-- mtl
-- natural-transformation
 - nonempty-containers
-- pointed
-- profunctors
-- recursion-schemes
 - semigroupoids
-- tagged
-- these >= 1
-- transformers
-- trivial-constraint >= 0.5
+- free
 
 ghc-options:
 - -Wall
@@ -51,7 +35,23 @@ library:
   source-dirs: src
   other-modules:
   - Data.HFunctor.Internal
-
+  dependencies:
+  - bifunctors
+  - comonad
+  - constraints
+  - containers
+  - deriving-compat
+  - kan-extensions
+  - mmorph
+  - mtl
+  - natural-transformation
+  - pointed
+  - profunctors
+  - recursion-schemes
+  - tagged
+  - these >= 1
+  - transformers
+  - trivial-constraint >= 0.5
 
 tests:
   functor-combinators-test:
@@ -65,9 +65,5 @@ tests:
     - hedgehog >= 1.0
     - functor-combinators
     - tasty
-    # - hedgehog-fn >= 1.0
-    # - nonempty-containers
-    # - tasty
     - tasty-hedgehog >= 1.0
     - dependent-sum
-    # - text

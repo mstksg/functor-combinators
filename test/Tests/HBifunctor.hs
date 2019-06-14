@@ -12,6 +12,7 @@ module Tests.HBifunctor (
 
 import           Control.Applicative
 import           Control.Monad.Freer.Church
+import           Control.Natural.IsoF
 import           Data.Functor
 import           Data.Functor.Combinator
 import           Data.Functor.Identity
@@ -127,6 +128,46 @@ splittingMFProp
     -> Gen ((I t :+: t f (MF t f)) a)
     -> PropertyT m ()
 splittingMFProp = isoProp (splittingMF @t)
+
+toMFProp
+    :: forall t f m a.
+     ( Monoidal t
+     , Monad m
+     , Show (t f f a)
+     , Show (MF t f a), Eq (MF t f a)
+     )
+    => Gen (t f f a)
+    -> PropertyT m ()
+toMFProp gx = do
+    x <- forAll gx
+    reviewF (splittingMF @t) (R1 (hright (inject @(MF t)) x)) === toMF @t x
+
+fromSFProp
+    :: forall t f m a.
+     ( Monoidal t
+     , Monad m
+     , Show (SF t f a)
+     , Show (MF t f a), Eq (MF t f a)
+     )
+    => Gen (SF t f a)
+    -> PropertyT m ()
+fromSFProp gx = do
+    x <- forAll gx
+    reviewF (splittingMF @t) (R1 (splitSF @t x)) === fromSF @t x
+
+pureTProp
+    :: forall t f m a.
+     ( Monoidal t
+     , Monad m
+     , C (MF t) f
+     , Show (I t a)
+     , Show (f a), Eq (f a)
+     )
+    => Gen (I t a)
+    -> PropertyT m ()
+pureTProp gx = do
+    x <- forAll gx
+    retract (reviewF (splittingMF @t) (L1 x)) === pureT @t @f x
 
 splittingSFProp
     :: forall t f m a.
@@ -301,6 +342,30 @@ splittingMFProp_ gx gy = splittingMFProp @t
        Nothing  -> R1 <$> genHB gx (genHF gx)
        Just gy' -> sumGen gy' (genHB gx (genHF gx))
     )
+
+toMFProp_
+    :: forall t f m a.
+     ( Monoidal t
+     , TestHBifunctor t
+     , Monad m
+     , Show (t f f a)
+     , Show (MF t f a), Eq (MF t f a)
+     )
+    => Gen (f a)
+    -> PropertyT m ()
+toMFProp_ gx = toMFProp @t (genHB gx gx)
+
+fromSFProp_
+    :: forall t f m a.
+     ( Monoidal t
+     , TestHFunctor (SF t)
+     , Monad m
+     , Show (SF t f a)
+     , Show (MF t f a), Eq (MF t f a)
+     )
+    => Gen (f a)
+    -> PropertyT m ()
+fromSFProp_ = fromSFProp @t . genHF
 
 splittingSFProp_
     :: forall t f m a.
@@ -605,6 +670,10 @@ prop_splittingMF_Prod' :: Property
 prop_splittingMF_Prod' = property $
     splittingMFProp_ @Product listGen (Just (pure Proxy))
 
+prop_splittingMF_These :: Property
+prop_splittingMF_These = property $
+    splittingMFProp_ @These1 listGen Nothing
+
 prop_splittingMF_Day :: Property
 prop_splittingMF_Day = property $
     splittingMFProp_ @Day
@@ -621,14 +690,101 @@ prop_splittingMF_Comp = property $
 
 
 
+prop_toMF_Sum :: Property
+prop_toMF_Sum = property $
+    toMFProp_ @(:+:) listGen
+
+prop_toMF_Sum' :: Property
+prop_toMF_Sum' = property $
+    toMFProp_ @Sum listGen
+
+prop_toMF_Prod :: Property
+prop_toMF_Prod = property $
+    toMFProp_ @(:*:) listGen
+
+prop_toMF_Prod' :: Property
+prop_toMF_Prod' = property $
+    toMFProp_ @Product listGen
+
+prop_toMF_These :: Property
+prop_toMF_These = property $
+    toMFProp_ @These1 listGen
+
+prop_toMF_Day :: Property
+prop_toMF_Day = property $
+    toMFProp_ @Day (Const <$> intGen)
+
+prop_toMF_Comp :: Property
+prop_toMF_Comp = property $
+    toMFProp_ @Comp (Gen.list (Range.linear 0 3) intGen)
+
+
+
+
+
+prop_fromSF_Sum :: Property
+prop_fromSF_Sum = property $
+    fromSFProp_ @(:+:) listGen
+
+prop_fromSF_Sum' :: Property
+prop_fromSF_Sum' = property $
+    fromSFProp_ @Sum listGen
+
+prop_fromSF_Prod :: Property
+prop_fromSF_Prod = property $
+    fromSFProp_ @(:*:) listGen
+
+prop_fromSF_Prod' :: Property
+prop_fromSF_Prod' = property $
+    fromSFProp_ @Product listGen
+
+prop_fromSF_These :: Property
+prop_fromSF_These = property $
+    fromSFProp_ @These1 listGen
+
+prop_fromSF_Day :: Property
+prop_fromSF_Day = property $
+    fromSFProp_ @Day (Const <$> intGen)
+
+prop_fromSF_Comp :: Property
+prop_fromSF_Comp = property $
+    fromSFProp_ @Comp (Gen.list (Range.linear 0 3) intGen)
+
+
+
+
+
+
+
+prop_pureT_Prod :: Property
+prop_pureT_Prod = property $
+    pureTProp @(:*:) @[] @_ @Int (pure Proxy)
+
+prop_pureT_Prod' :: Property
+prop_pureT_Prod' = property $
+    pureTProp @Product @[] @_ @Int (pure Proxy)
+
+prop_pureT_Day :: Property
+prop_pureT_Day = property $
+    pureTProp @Day @[] (Identity <$> intGen)
+
+prop_pureT_Comp :: Property
+prop_pureT_Comp = property $
+    pureTProp @Comp @[] (Identity <$> intGen)
+
+
+
+
+
+
 
 prop_splittingSF_Sum :: Property
 prop_splittingSF_Sum = property $
     splittingSFProp_ @(:+:) listGen
 
--- prop_splittingSF_Sum' :: Property
--- prop_splittingSF_Sum' = property $
---     splittingSFProp_ @Sum listGen
+prop_splittingSF_Sum' :: Property
+prop_splittingSF_Sum' = property $
+    splittingSFProp_ @Sum listGen
 
 prop_splittingSF_Prod :: Property
 prop_splittingSF_Prod = property $
@@ -637,6 +793,10 @@ prop_splittingSF_Prod = property $
 prop_splittingSF_Prod' :: Property
 prop_splittingSF_Prod' = property $
     splittingSFProp_ @Product listGen
+
+-- prop_splittingSF_These :: Property
+-- prop_splittingSF_These = property $
+--     splittingSFProp_ @These1 listGen
 
 prop_splittingSF_Day :: Property
 prop_splittingSF_Day = property $
@@ -647,13 +807,14 @@ prop_splittingSF_Day = property $
 
 
 
+
 prop_matchingMF_Sum :: Property
 prop_matchingMF_Sum = property $
     matchingMFProp_ @(:+:) listGen Nothing
 
--- prop_matchingMF_Sum' :: Property
--- prop_matchingMF_Sum' = property $
---     matchingMFProp_ @Sum listGen Nothing
+prop_matchingMF_Sum' :: Property
+prop_matchingMF_Sum' = property $
+    matchingMFProp_ @Sum listGen Nothing
 
 prop_matchingMF_Prod :: Property
 prop_matchingMF_Prod = property $
@@ -662,6 +823,10 @@ prop_matchingMF_Prod = property $
 prop_matchingMF_Prod' :: Property
 prop_matchingMF_Prod' = property $
     matchingMFProp_ @Product listGen (Just (pure Proxy))
+
+-- prop_matchingMF_These :: Property
+-- prop_matchingMF_These = property $
+--     matchingMFProp_ @These1 listGen Nothing
 
 prop_matchingMF_Day :: Property
 prop_matchingMF_Day = property $

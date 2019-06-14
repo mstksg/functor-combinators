@@ -42,6 +42,10 @@ extra-deps:
 - trivial-constraint-0.5.1.0
 - hedgehog-1.0
 - tasty-hedgehog-1.0.0.1
+# - github: mstksg/finite-typelits
+#   commit: fbbbd46109d438e23da13c2b6042b4c2557a6211
+# - github: mstksg/nonempty-containers
+#   commit: 08ecded84d85baf4209fab361c318610b7e1c107
 # - github: mstksg/trivial-constraint
 #   commit: 1fda2a4d079f8a0e14b6a0275c0b6e7aceda0ecc
 

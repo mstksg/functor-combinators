@@ -7,14 +7,13 @@ module Tests.HFunctor (
   ) where
 
 import           Control.Monad.Freer.Church
-import           Control.Monad.Trans.Compose
 import           Data.Functor.Combinator
 import           Data.Semigroup.Traversable
 import           Hedgehog
-import qualified Data.List.NonEmpty          as NE
-import qualified Data.Map.NonEmpty           as NEM
-import qualified Hedgehog.Gen                as Gen
-import qualified Hedgehog.Range              as Range
+import qualified Data.List.NonEmpty         as NE
+import qualified Data.Map.NonEmpty          as NEM
+import qualified Hedgehog.Gen               as Gen
+import qualified Hedgehog.Range             as Range
 
 class HFunctor t => TestHFunctor t where
     genHF
