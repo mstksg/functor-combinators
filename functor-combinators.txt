@@ -498,8 +498,8 @@ module Control.Applicative.Step
 -- | An <tt>f a</tt>, along with a <a>Natural</a> index.
 --   
 --   <pre>
---   Step f a ~ (<a>Natural</a>, f a)
---   Step f   ~ ((,) <a>Natural</a>) <a>:.:</a> f       -- functor composition
+--   <a>Step</a> f a ~ (<a>Natural</a>, f a)
+--   Step f   ~ ((,) Natural) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
 --   It is the fixed point of infinite applications of <a>:+:</a> (functor
@@ -552,6 +552,33 @@ Step :: Natural -> f a -> Step f a
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
+
+-- | An <tt>f a</tt>, along with a <a>Bool</a> flag
+--   
+--   <pre>
+--   Step f a ~ (<a>Bool</a>, f a)
+--   Step f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
+--   </pre>
+--   
+--   You can think of it as an <tt>f a</tt> that is "flagged" with a
+--   boolean value, and that value can indicuate whether or not it is
+--   "pure" (made with <a>inject</a> or <a>pure</a>) as <a>False</a>, or
+--   "inpure" (made from some other source) as <a>True</a>.
+--   
+--   You can think of it like a <a>Step</a> that is either 0 or 1, as well.
+--   
+--   <a>interpret</a>ing it requires no constraint on the target context.
+--   
+--   This type is equivalent (along with its instances) to:
+--   
+--   <ul>
+--   <li><pre><a>HLift</a> <a>IdentityT</a></pre></li>
+--   <li><pre><a>EnvT</a> <a>Any</a></pre></li>
+--   </ul>
+data Flagged f a
+Flagged :: Bool -> f a -> Flagged f a
+[flaggedFlag] :: Flagged f a -> Bool
+[flaggedVal] :: Flagged f a -> f a
 
 -- | Unshift an item into a <a>Step</a>. Because a <tt><a>Step</a> f</tt>
 --   is <tt>f :+: f :+: f :+: f :+: ...</tt> forever, this basically conses
@@ -677,6 +704,7 @@ stepsDown :: Steps f ~> These1 f (Steps f)
 --   basically a witness that <a>stepsDown</a> and <a>stepsUp</a> form an
 --   isomorphism.
 steppings :: Steps f <~> These1 f (Steps f)
+flaggedDown :: Flagged f ~> (f :+: Flagged f)
 
 -- | We have a natural transformation between <a>V1</a> and any other
 --   functor <tt>f</tt> with no constraints.
@@ -734,6 +762,22 @@ instance forall k1 (a :: k1) k2 (b :: k2). GHC.Classes.Ord (Control.Applicative.
 instance forall k1 (a :: k1) k2 (b :: k2). GHC.Classes.Eq (Control.Applicative.Step.Void2 a b)
 instance forall k1 (a :: k1) k2 (b :: k2). GHC.Read.Read (Control.Applicative.Step.Void2 a b)
 instance forall k1 (a :: k1) k2 (b :: k2). GHC.Show.Show (Control.Applicative.Step.Void2 a b)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Flagged f)
+instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Flagged f)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Flagged f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Flagged f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.Step.Flagged f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.Step.Flagged f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.Step.Flagged f)
+instance forall k (f :: k -> *) (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.Step.Flagged f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Control.Applicative.Step.Flagged f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.Step.Flagged f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.Step.Flagged f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.Step.Flagged f)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.Step.Flagged f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.Step.Flagged f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.Step.Flagged f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Flagged f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Steps f)
 instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Steps f)
 instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Steps f)
@@ -969,6 +1013,7 @@ instance Data.HFunctor.HBind Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.HBind Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.HBind Control.Applicative.Step.Step
 instance Data.HFunctor.HBind Control.Applicative.Step.Steps
+instance Data.HFunctor.HBind Control.Applicative.Step.Flagged
 instance Data.HFunctor.HBind Control.Alternative.Free.Alt
 instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free
 instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free1
@@ -991,6 +1036,7 @@ instance Data.HFunctor.Inject Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.Inject Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.Inject Control.Applicative.Step.Step
 instance Data.HFunctor.Inject Control.Applicative.Step.Steps
+instance Data.HFunctor.Inject Control.Applicative.Step.Flagged
 instance Data.HFunctor.Inject Control.Alternative.Free.Alt
 instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free
 instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free1
@@ -1375,6 +1421,7 @@ instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Step
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Steps
+instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Flagged
 instance Data.HFunctor.Interpret.Interpret Control.Alternative.Free.Alt
 instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free
 instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free1
@@ -3536,8 +3583,8 @@ data Free f a
 -- | An <tt>f a</tt>, along with a <a>Natural</a> index.
 --   
 --   <pre>
---   Step f a ~ (<a>Natural</a>, f a)
---   Step f   ~ ((,) <a>Natural</a>) <a>:.:</a> f       -- functor composition
+--   <a>Step</a> f a ~ (<a>Natural</a>, f a)
+--   Step f   ~ ((,) Natural) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
 --   It is the fixed point of infinite applications of <a>:+:</a> (functor
@@ -3621,6 +3668,33 @@ ConstF :: e -> ConstF e f a
 [getConstF] :: ConstF e f a -> e
 data EnvT e (w :: Type -> Type) a
 EnvT :: e -> w a -> EnvT e a
+
+-- | An <tt>f a</tt>, along with a <a>Bool</a> flag
+--   
+--   <pre>
+--   Step f a ~ (<a>Bool</a>, f a)
+--   Step f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
+--   </pre>
+--   
+--   You can think of it as an <tt>f a</tt> that is "flagged" with a
+--   boolean value, and that value can indicuate whether or not it is
+--   "pure" (made with <a>inject</a> or <a>pure</a>) as <a>False</a>, or
+--   "inpure" (made from some other source) as <a>True</a>.
+--   
+--   You can think of it like a <a>Step</a> that is either 0 or 1, as well.
+--   
+--   <a>interpret</a>ing it requires no constraint on the target context.
+--   
+--   This type is equivalent (along with its instances) to:
+--   
+--   <ul>
+--   <li><pre><a>HLift</a> <a>IdentityT</a></pre></li>
+--   <li><pre><a>EnvT</a> <a>Any</a></pre></li>
+--   </ul>
+data Flagged f a
+Flagged :: Bool -> f a -> Flagged f a
+[flaggedFlag] :: Flagged f a -> Bool
+[flaggedVal] :: Flagged f a -> f a
 
 -- | <tt><a>Void2</a> a b</tt> is uninhabited for all <tt>a</tt> and
 --   <tt>b</tt>.
