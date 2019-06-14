@@ -90,7 +90,6 @@ module Data.HBifunctor.Tensor (
 import           Control.Applicative.Free
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
-import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
 import           Control.Natural
@@ -734,7 +733,7 @@ instance Monoidal These1 where
       This1  x   -> x
       That1    y -> stepsUp . That1 $ y
       These1 x y -> x <> y
-    splitSF     = stepsDown . lowerEnvT . getComposeT
+    splitSF     = stepsDown . flaggedVal . getComposeT
     splittingMF = steppings . sumLeftIdentity
 
     toMF  = \case

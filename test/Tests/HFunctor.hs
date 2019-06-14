@@ -74,10 +74,6 @@ instance (Enum e, Bounded e) => TestHFunctor (EnvT e) where
 -- | doesn't really do anything with t
 instance (TestHFunctor s, Inject t) => TestHFunctor (ComposeT s t) where
     genHF gx = ComposeT . hmap inject <$> genHF @s gx
-      -- ss <- genHF @s gx
-      -- ts <- genHF @t gx
-      -- pure $ ComposeT $ _ ss
-        -- ComposeT . hmap inject <$> genHF @s gx
-    -- Gen.bool >>= \case
-    --   False -> HPure  <$> gx
-    --   True  -> HOther <$> genHF gx
+
+instance TestHFunctor Flagged where
+    genHF gx = Flagged <$> Gen.bool <*> gx

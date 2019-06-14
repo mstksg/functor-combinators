@@ -77,6 +77,7 @@ module Data.Functor.Combinator (
   , ProxyF(..)
   , ConstF(..)
   , EnvT(..)
+  , Flagged(..)
   , Void2
   , Final(..)
   , FreeOf(..)

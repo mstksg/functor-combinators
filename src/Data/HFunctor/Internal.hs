@@ -281,6 +281,9 @@ instance HFunctor Step where
 instance HFunctor Steps where
     hmap f (Steps xs) = Steps (f <$> xs)
 
+instance HFunctor Flagged where
+    hmap f (Flagged b x) = Flagged b (f x)
+
 instance HFunctor Free where
     hmap = hoistFree
 

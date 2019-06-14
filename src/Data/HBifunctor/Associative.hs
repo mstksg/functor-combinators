@@ -89,18 +89,9 @@ module Data.HBifunctor.Associative (
   , (!$!)
   ) where
 
--- import           Data.Constraint
--- import           Data.Finite
--- import           Data.Functor.Classes
--- import           Data.Map.NonEmpty        (NEMap)
--- import           GHC.TypeLits.Witnesses
--- import           GHC.TypeNats
--- import           Unsafe.Coerce
-import qualified Data.Map.NonEmpty        as NEM
 import           Control.Applicative
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
-import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
 import           Control.Natural
@@ -111,7 +102,7 @@ import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
-import           Data.Functor.Day            (Day(..))
+import           Data.Functor.Day             (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -122,10 +113,10 @@ import           Data.HFunctor
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List.NonEmpty          (NonEmpty(..))
-import           Data.Semigroup              (Any(..))
-import           GHC.Generics hiding         (C)
-import qualified Data.Functor.Day            as D
+import           Data.List.NonEmpty           (NonEmpty(..))
+import           GHC.Generics hiding          (C)
+import qualified Data.Functor.Day             as D
+import qualified Data.Map.NonEmpty            as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -540,31 +531,34 @@ instance Semigroupoidal Sum where
                 -- and the last item has a Bool
                 -- aka sparse non-empty list tagged with a bool
 
+-- | Ideally here 'SF' would be equivalent to 'MF', just like for ':+:'.
+-- This should be possible if we can write a bijection.  This bijection
+-- should be possible in theory --- but it has not yet been implemented.
 instance Semigroupoidal These1 where
-    type SF These1 = ComposeT (EnvT Any) Steps
+    type SF These1 = ComposeT Flagged Steps
 
     appendSF s = ComposeT $ case s of
-        This1  (ComposeT (EnvT _ q))                       ->
-          EnvT (Any True) q
-        That1                        (ComposeT (EnvT b q)) ->
-          EnvT b        (stepsUp (That1 q))
-        These1 (ComposeT (EnvT a q)) (ComposeT (EnvT b r)) ->
-          EnvT (a <> b) (q <> r)
-    matchSF (ComposeT (EnvT a@(Any isImpure) q)) = case stepsDown q of
+        This1  (ComposeT (Flagged _ q))                       ->
+          Flagged True q
+        That1                           (ComposeT (Flagged b q)) ->
+          Flagged b        (stepsUp (That1 q))
+        These1 (ComposeT (Flagged a q)) (ComposeT (Flagged b r)) ->
+          Flagged (a || b) (q <> r)
+    matchSF (ComposeT (Flagged isImpure q)) = case stepsDown q of
       This1  x
         | isImpure  -> R1 $ This1 x
         | otherwise -> L1 x
-      That1    y    -> R1 . That1 . ComposeT $ EnvT a y
-      These1 x y    -> R1 . These1 x .  ComposeT $ EnvT a y
+      That1    y    -> R1 . That1 . ComposeT $ Flagged isImpure y
+      These1 x y    -> R1 . These1 x .  ComposeT $ Flagged isImpure y
 
     consSF s = ComposeT $ case s of
-      This1  x                       -> EnvT (Any True) (inject x)
-      That1    (ComposeT (EnvT b y)) -> EnvT b          (stepsUp (That1    y))
-      These1 x (ComposeT (EnvT b y)) -> EnvT b          (stepsUp (These1 x y))
+      This1  x                          -> Flagged True (inject x)
+      That1    (ComposeT (Flagged b y)) -> Flagged b    (stepsUp (That1    y))
+      These1 x (ComposeT (Flagged b y)) -> Flagged b    (stepsUp (These1 x y))
     toSF  s = ComposeT $ case s of
-      This1  x   -> EnvT (Any True ) . Steps $ NEM.singleton 0 x
-      That1    y -> EnvT (Any False) . Steps $ NEM.singleton 1 y
-      These1 x y -> EnvT (Any False) . Steps $ NEM.fromDistinctAscList $ (0, x) :| [(1, y)]
+      This1  x   -> Flagged True  . Steps $ NEM.singleton 0 x
+      That1    y -> Flagged False . Steps $ NEM.singleton 1 y
+      These1 x y -> Flagged False . Steps $ NEM.fromDistinctAscList $ (0, x) :| [(1, y)]
 
     biretract = \case
       This1  x   -> x
@@ -618,21 +612,21 @@ instance Associative RightF where
 -- | Somewhat ironically, 'Joker' is also @'HClown'
 -- 'Control.Monad.Trans.Identity.IdentityT'@, or 'LeftF'.
 instance Semigroupoidal Joker where
-    type SF Joker = EnvT Any
+    type SF Joker = Flagged
 
-    appendSF (Joker (EnvT _ x)) = EnvT (Any True) x
-    matchSF (EnvT (Any False) x) = L1 x
-    matchSF (EnvT (Any True ) x) = R1 $ Joker x
+    appendSF (Joker (Flagged _ x)) = Flagged True x
+    matchSF (Flagged False x) = L1 x
+    matchSF (Flagged True  x) = R1 $ Joker x
 
 instance Semigroupoidal LeftF where
-    type SF LeftF = EnvT Any
+    type SF LeftF = Flagged
 
-    appendSF = hbind (EnvT (Any True)) . runLeftF
-    matchSF (EnvT (Any False) x) = L1 x
-    matchSF (EnvT (Any True ) x) = R1 $ LeftF x
+    appendSF = hbind (Flagged True) . runLeftF
+    matchSF (Flagged False x) = L1 x
+    matchSF (Flagged True  x) = R1 $ LeftF x
 
-    consSF = EnvT (Any True) . runLeftF
-    toSF   = EnvT (Any True) . runLeftF
+    consSF = Flagged True . runLeftF
+    toSF   = Flagged True . runLeftF
 
     biretract      = runLeftF
     binterpret f _ = f . runLeftF

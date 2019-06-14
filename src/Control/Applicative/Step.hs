@@ -36,6 +36,7 @@ module Control.Applicative.Step (
   -- * Fixed Points
     Step(..)
   , Steps(..)
+  , Flagged(..)
   -- ** Steppers
   , stepUp
   , stepDown
@@ -43,6 +44,7 @@ module Control.Applicative.Step (
   , stepsUp
   , stepsDown
   , steppings
+  , flaggedDown
   -- * Void
   , absurd1
   , Void2
@@ -71,8 +73,8 @@ import qualified Data.Map.NonEmpty          as NEM
 -- | An @f a@, along with a 'Natural' index.
 --
 -- @
--- Step f a ~ ('Natural', f a)
--- Step f   ~ ((,) 'Natural') ':.:' f       -- functor composition
+-- 'Step' f a ~ ('Natural', f a)
+-- Step f   ~ ((,) Natural) ':.:' f       -- functor composition
 -- @
 --
 -- It is the fixed point of infinite applications of ':+:' (functor sums).
@@ -305,6 +307,57 @@ stepsUp = \case
                          . NEM.mapKeysMonotonic (+ 1)
                          . getSteps
                          $ xs
+
+
+-- | An @f a@, along with a 'Bool' flag
+--
+-- @
+-- Step f a ~ ('Bool', f a)
+-- Step f   ~ ((,) Bool) ':.:' f       -- functor composition
+-- @
+--
+-- You can think of it as an @f a@ that is "flagged" with a boolean value,
+-- and that value can indicuate whether or not it is "pure" (made with
+-- 'Data.HFunctor.inject' or 'pure') as 'False', or "inpure" (made from some other
+-- source) as 'True'.
+--
+-- You can think of it like a 'Step' that is either 0 or 1, as well.
+--
+-- 'Data.HFunctor.Interpret.interpret'ing it requires no constraint on the
+-- target context.
+--
+-- This type is equivalent (along with its instances) to:
+--
+-- *   @'Data.HFunctor.HLift' 'Control.Monad.Trans.Identity.IdentityT'@
+-- *   @'Control.COmonad.Trans.Env.EnvT' 'Data.Semigroup.Any'@
+data Flagged f a = Flagged { flaggedFlag :: Bool, flaggedVal :: f a }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''Flagged
+deriveRead1 ''Flagged
+deriveEq1 ''Flagged
+deriveOrd1 ''Flagged
+
+instance Applicative f => Applicative (Flagged f) where
+    pure = Flagged False . pure
+    Flagged n f <*> Flagged m x = Flagged (n || m) (f <*> x)
+
+instance Foldable1 f => Foldable1 (Flagged f) where
+    fold1      = fold1 . flaggedVal
+    foldMap1 f = foldMap1 f . flaggedVal
+    toNonEmpty = toNonEmpty . flaggedVal
+
+instance Traversable1 f => Traversable1 (Flagged f) where
+    traverse1 f (Flagged n x) = Flagged n <$> traverse1 f x
+    sequence1 (Flagged n x) = Flagged n <$> sequence1 x
+
+
+flaggedDown :: Flagged f ~> f :+: Flagged f
+flaggedDown (Flagged False x) = L1 x
+flaggedDown (Flagged True  x) = R1 (Flagged False x)
+
+
+
 
 -- | @'Void2' a b@ is uninhabited for all @a@ and @b@.
 data Void2 a b

@@ -316,6 +316,11 @@ instance Inject Step where
 instance Inject Steps where
     inject = Steps . NEM.singleton 0
 
+-- | Equivalent to instance for @'EnvT' 'Data.Semigroup.Any'@ and @'HLift'
+-- 'IdentityT'@.
+instance Inject Flagged where
+    inject = Flagged False
+
 instance Inject Alt.Alt where
     inject = Alt.liftAlt
 
@@ -395,6 +400,13 @@ instance HBind Step where
 
 instance HBind Steps where
     hbind f = foldMap1 f . getSteps
+
+-- | Equivalent to instance for @'EnvT' 'Data.Semigroup.Any'@ and @'HLift'
+-- 'IdentityT'@.
+instance HBind Flagged where
+    hbind f (Flagged p x) = Flagged (p || q) y
+      where
+        Flagged q y = f x
 
 instance HBind Alt.Alt where
     hbind = Alt.runAlt

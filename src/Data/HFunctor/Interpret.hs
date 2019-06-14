@@ -244,6 +244,14 @@ instance Interpret Steps where
     retract     = asum1 . getSteps
     interpret f = asum1 . NEM.map f . getSteps
 
+-- | Equivalent to instance for @'EnvT' 'Data.Semigroup.Any'@ and @'HLift'
+-- 'IdentityT'@.
+instance Interpret Flagged where
+    type C Flagged = Unconstrained
+
+    retract = flaggedVal
+    interpret f = f . flaggedVal
+
 -- | A free 'Alternative'
 instance Interpret Alt.Alt where
     type C Alt.Alt = Alternative
