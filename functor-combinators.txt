@@ -560,10 +560,15 @@ Steps :: NEMap Natural (f a) -> Steps f a
 --   Flagged f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
+--   Creation with <a>inject</a> or <a>pure</a> uses <a>False</a> as the
+--   boolean.
+--   
 --   You can think of it as an <tt>f a</tt> that is "flagged" with a
 --   boolean value, and that value can indicuate whether or not it is
 --   "pure" (made with <a>inject</a> or <a>pure</a>) as <a>False</a>, or
---   "inpure" (made from some other source) as <a>True</a>.
+--   "impure" (made from some other source) as <a>True</a>. However,
+--   <a>False</a> may be always created directly, of course, using the
+--   constructor.
 --   
 --   You can think of it like a <a>Step</a> that is either 0 or 1, as well.
 --   
@@ -894,8 +899,13 @@ class HFunctor t => Inject t
 --   to <a>lift</a> from <a>MonadTrans</a>.
 inject :: Inject t => f ~> t f
 
--- | A typeclass for <a>HFunctor</a>s that you can bind continuations to,
---   without caring about what the contexts at play.
+-- | <a>HBind</a> is effectively a "higher-order <a>Monad</a>", in the
+--   sense that <a>HFunctor</a> is a "higher-order <a>Functor</a>".
+--   
+--   It can be considered a typeclass for <a>HFunctor</a>s that you can
+--   bind continuations to, nautral<i>universal over all
+--   <tt>f</tt></i>functors. They work "for all functors" you lift, without
+--   requiring any constraints.
 --   
 --   It is very similar to <a>Interpret</a>, except <a>Interpret</a> has
 --   the ability to constrain the contexts to some typeclass.
@@ -3691,10 +3701,15 @@ EnvT :: e -> w a -> EnvT e a
 --   Flagged f   ~ ((,) Bool) <a>:.:</a> f       -- functor composition
 --   </pre>
 --   
+--   Creation with <a>inject</a> or <a>pure</a> uses <a>False</a> as the
+--   boolean.
+--   
 --   You can think of it as an <tt>f a</tt> that is "flagged" with a
 --   boolean value, and that value can indicuate whether or not it is
 --   "pure" (made with <a>inject</a> or <a>pure</a>) as <a>False</a>, or
---   "inpure" (made from some other source) as <a>True</a>.
+--   "impure" (made from some other source) as <a>True</a>. However,
+--   <a>False</a> may be always created directly, of course, using the
+--   constructor.
 --   
 --   You can think of it like a <a>Step</a> that is either 0 or 1, as well.
 --   
