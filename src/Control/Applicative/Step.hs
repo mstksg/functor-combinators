@@ -315,10 +315,14 @@ stepsUp = \case
 -- Flagged f   ~ ((,) Bool) ':.:' f       -- functor composition
 -- @
 --
+-- Creation with 'Data.HFunctor.inject' or 'pure' uses 'False' as the
+-- boolean.
+--
 -- You can think of it as an @f a@ that is "flagged" with a boolean value,
 -- and that value can indicuate whether or not it is "pure" (made with
--- 'Data.HFunctor.inject' or 'pure') as 'False', or "inpure" (made from some other
--- source) as 'True'.
+-- 'Data.HFunctor.inject' or 'pure') as 'False', or "impure"
+-- (made from some other source) as 'True'.  However, 'False' may be always
+-- created directly, of course, using the constructor.
 --
 -- You can think of it like a 'Step' that is either 0 or 1, as well.
 --
@@ -337,6 +341,7 @@ deriveRead1 ''Flagged
 deriveEq1 ''Flagged
 deriveOrd1 ''Flagged
 
+-- | Uses 'False' for 'pure', and '||' for '<*>'.
 instance Applicative f => Applicative (Flagged f) where
     pure = Flagged False . pure
     Flagged n f <*> Flagged m x = Flagged (n || m) (f <*> x)

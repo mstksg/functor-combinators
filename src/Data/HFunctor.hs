@@ -256,12 +256,16 @@ class HFunctor t => Inject t where
 
     {-# MINIMAL inject #-}
 
--- | A typeclass for 'HFunctor's that you can bind continuations to,
--- without caring about what the contexts at play.
+-- | 'HBind' is effectively a "higher-order 'Monad'", in the sense that
+-- 'HFunctor' is a "higher-order 'Functor'".
+--
+-- It can be considered a typeclass for 'HFunctor's that you can bind
+-- continuations to, nautral/universal over all @f@/functors. They work
+-- "for all functors" you lift, without requiring any constraints.
 --
 -- It is very similar to 'Data.HFunctor.Interpret.Interpret', except
--- 'Data.HFunctor.Interpret.Interpret' has the ability to constrain the contexts to
--- some typeclass.
+-- 'Data.HFunctor.Interpret.Interpret' has the ability to constrain the
+-- contexts to some typeclass.
 --
 -- The main law is that binding 'inject' should leave things unchanged:
 --
@@ -308,15 +312,20 @@ instance Inject NonEmptyF where
 instance Inject MaybeF where
     inject = MaybeF . Just
 
--- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
+-- | Injects with 0.
+--
+-- Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
 -- 'Numeric.Natural.Natural')@.
 instance Inject Step where
     inject = Step 0
 
+-- | Injects into a singleton map at 0.
 instance Inject Steps where
     inject = Steps . NEM.singleton 0
 
--- | Equivalent to instance for @'EnvT' 'Data.Semigroup.Any'@ and @'HLift'
+-- | Injects with 'False'.
+--
+-- Equivalent to instance for @'EnvT' 'Data.Semigroup.Any'@ and @'HLift'
 -- 'IdentityT'@.
 instance Inject Flagged where
     inject = Flagged False

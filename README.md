@@ -17,7 +17,13 @@ functors out of simple primitive ones.
 The main benefit of this library in specific is to allow you to be able to work
 with different functor combinators with a uniform and lawful interface, so the
 real functionality here is the wide variety of functor combinators from all
-around the Haskell ecosystem.
+around the Haskell ecosystem.  This library also "fills in the matrix", in a
+sense, of functor combinators in specific roles that are missing from the
+haskell ecosystem.
+
+To jump into using it, import *Data.Functor.Combinator*.  For a run-down of the
+high-level goal of the library and the different functor combinators exported,
+read on!
 
 What is a functor combinator?
 -----------------------------
@@ -662,14 +668,14 @@ see the actual section for that induced monoid later on.
 *   **Induced Semigroup**
 
     ```haskell
-    type SF LeftF = EnvT Any
+    type SF LeftF = Flagged
     ```
 
-    For `LeftF`, the induced semigroup is `EnvT Any`.  This can be
-    useful as a type that marks if an `f` is "pure" (`HPure`, `Any False`), or
-    "tainted" (`HOther`, `Any True`).  It is an `f a` "tagged" with some
-    boolean bit about whether it was made using `inject`, or with `consSF`.
-    The *provider* of an `EnvT Any f` can specify "pure or tained", and the
+    For `LeftF`, the induced semigroup is `Flagged`, which is the `f a ` tupled
+    with a `Bool`.  See the information on `Flagged` for more details.
+    This can be useful as a type that marks if an `f` is made with
+    `inject`/`pure` and is "pure" (`False`), or "tainted" (`True`).  The
+    *provider* of an `EnvT Any f` can specify "pure or tainted", and the
     *interpreter* can make a decision based on that tag.
 
     ```haskell
@@ -1069,7 +1075,8 @@ interpret
     type C Step = Unconstrained
     ```
 
-    Interpreting out of `Step` requires no constraints.
+    Interpreting out of `Step` requires no constraints; we just drop the
+    `Natural` data.
 
 [Control.Applicative.Step]: https://hackage.haskell.org/package/functor-combinators/docs/Control-Applicative-Step.html
 
@@ -1111,6 +1118,33 @@ interpret
     Interpreting out of `Steps` requires an `Alt` to combine different
     possibilities.  It does not require a full `Plus` constraint because we
     never need `zero`: a `Steps f a` always has at least one `f a`.
+
+### Flagged
+
+*   **Origin**: *[Control.Applicative.Step][]*
+
+*   **Enhancement**: The ability to "tag" a functor value with a `True`/`False`
+    boolean value.
+
+    ```haskell
+    data Flagged f a = Flagged { flaggedFlag :: Bool, flaggedVal :: f a }
+    ```
+
+    This is essentially a specialized `EnvT`: it's `EnvT Any`.
+
+    If created with `inject` or `pure`, it adds the flag `False`.  This is
+    helpful for helping indicate if the value was created using a "pure" method
+    like `inject` or `pure`, or an "impure" method (any other method, including
+    direct construction).
+
+*   **Constraint**
+
+    ```haskell
+    type C Flagged = Unconstrained
+    ```
+
+    Interpreting out of `Flagged` requires no constraints; we just drop the
+    boolean flag.
 
 ### Final
 
