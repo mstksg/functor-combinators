@@ -86,6 +86,65 @@ listToMaybeF :: ListF f ~> MaybeF f
 
 -- | Convert a <a>MaybeF</a> into a <a>ListF</a> with zero or one items.
 maybeToListF :: MaybeF f ~> ListF f
+
+-- | A map of <tt>f a</tt>s, indexed by keys of type <tt>k</tt>. It can be
+--   useful for represeting a product of many different values of type
+--   <tt>f a</tt>, each "at" a different <tt>k</tt> location.
+--   
+--   Can be considered a combination of <tt>EnvT</tt> and <a>ListF</a>, in
+--   a way --- combining the "indexed with a value" property with
+--   "containing multiple <tt>f a</tt>s".
+newtype MapF k f a
+MapF :: Map k (f a) -> MapF k f a
+[runMapF] :: MapF k f a -> Map k (f a)
+
+-- | A non-empty map of <tt>f a</tt>s, indexed by keys of type <tt>k</tt>.
+--   It can be useful for represeting a product of many different values of
+--   type <tt>f a</tt>, each "at" a different <tt>k</tt> location, where
+--   you need to have at least one <tt>f a</tt> at all times.
+--   
+--   Can be considered a combination of <tt>EnvT</tt> and <a>NonEmptyF</a>,
+--   in a way --- combining the "indexed with a value" property with
+--   "containing multiple <tt>f a</tt>s".
+newtype NEMapF k f a
+NEMapF :: NEMap k (f a) -> NEMapF k f a
+[runNEMapF] :: NEMapF k f a -> NEMap k (f a)
+instance (GHC.Classes.Ord k, Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.NEMapF k f)
+instance (GHC.Classes.Ord k, GHC.Read.Read k, Data.Functor.Classes.Read1 f) => Data.Functor.Classes.Read1 (Control.Applicative.ListF.NEMapF k f)
+instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.ListF.NEMapF k f)
+instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.ListF.NEMapF k f)
+instance (GHC.Classes.Ord k, Data.Functor.Alt.Alt f) => GHC.Base.Semigroup (Control.Applicative.ListF.NEMapF k f a)
+instance (GHC.Base.Functor f, GHC.Classes.Ord k) => Data.Functor.Alt.Alt (Control.Applicative.ListF.NEMapF k f)
+instance (GHC.Base.Monoid k, Data.Pointed.Pointed f) => Data.Pointed.Pointed (Control.Applicative.ListF.NEMapF k f)
+instance (GHC.Classes.Eq k, Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.NEMapF k f)
+instance (GHC.Show.Show k, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Applicative.ListF.NEMapF k f)
+instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data k, Data.Data.Data (f a), GHC.Classes.Ord k) => Data.Data.Data (Control.Applicative.ListF.NEMapF k f a)
+instance GHC.Generics.Generic (Control.Applicative.ListF.NEMapF k f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.NEMapF k f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.NEMapF k f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.NEMapF k f)
+instance (GHC.Classes.Ord k, GHC.Classes.Ord (f a)) => GHC.Classes.Ord (Control.Applicative.ListF.NEMapF k f a)
+instance (GHC.Classes.Eq k, GHC.Classes.Eq (f a)) => GHC.Classes.Eq (Control.Applicative.ListF.NEMapF k f a)
+instance (GHC.Classes.Ord k, GHC.Read.Read k, GHC.Read.Read (f a)) => GHC.Read.Read (Control.Applicative.ListF.NEMapF k f a)
+instance (GHC.Show.Show k, GHC.Show.Show (f a)) => GHC.Show.Show (Control.Applicative.ListF.NEMapF k f a)
+instance (GHC.Classes.Ord k, Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.MapF k f)
+instance (GHC.Classes.Ord k, GHC.Read.Read k, Data.Functor.Classes.Read1 f) => Data.Functor.Classes.Read1 (Control.Applicative.ListF.MapF k f)
+instance (GHC.Classes.Ord k, Data.Functor.Alt.Alt f) => GHC.Base.Semigroup (Control.Applicative.ListF.MapF k f a)
+instance (GHC.Classes.Ord k, Data.Functor.Alt.Alt f) => GHC.Base.Monoid (Control.Applicative.ListF.MapF k f a)
+instance (GHC.Base.Functor f, GHC.Classes.Ord k) => Data.Functor.Alt.Alt (Control.Applicative.ListF.MapF k f)
+instance (GHC.Base.Functor f, GHC.Classes.Ord k) => Data.Functor.Plus.Plus (Control.Applicative.ListF.MapF k f)
+instance (GHC.Base.Monoid k, Data.Pointed.Pointed f) => Data.Pointed.Pointed (Control.Applicative.ListF.MapF k f)
+instance (GHC.Classes.Eq k, Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.MapF k f)
+instance (GHC.Show.Show k, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Applicative.ListF.MapF k f)
+instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data k, Data.Data.Data (f a), GHC.Classes.Ord k) => Data.Data.Data (Control.Applicative.ListF.MapF k f a)
+instance GHC.Generics.Generic (Control.Applicative.ListF.MapF k f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.MapF k f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.MapF k f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.MapF k f)
+instance (GHC.Classes.Ord k, GHC.Classes.Ord (f a)) => GHC.Classes.Ord (Control.Applicative.ListF.MapF k f a)
+instance (GHC.Classes.Eq k, GHC.Classes.Eq (f a)) => GHC.Classes.Eq (Control.Applicative.ListF.MapF k f a)
+instance (GHC.Classes.Ord k, GHC.Read.Read k, GHC.Read.Read (f a)) => GHC.Read.Read (Control.Applicative.ListF.MapF k f a)
+instance (GHC.Show.Show k, GHC.Show.Show (f a)) => GHC.Show.Show (Control.Applicative.ListF.MapF k f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.MaybeF f)
@@ -93,6 +152,7 @@ instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF
 instance GHC.Base.Applicative f => GHC.Base.Alternative (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Semigroup (Control.Applicative.ListF.MaybeF f a)
 instance GHC.Base.Monoid (Control.Applicative.ListF.MaybeF f a)
+instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.ListF.MaybeF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.MaybeF f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.MaybeF f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.MaybeF f)
@@ -109,6 +169,7 @@ instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Appli
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Semigroup (Control.Applicative.ListF.NonEmptyF f a)
+instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.ListF.NonEmptyF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.NonEmptyF f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.NonEmptyF f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.NonEmptyF f)
@@ -129,6 +190,7 @@ instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF
 instance GHC.Base.Applicative f => GHC.Base.Alternative (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Semigroup (Control.Applicative.ListF.ListF f a)
 instance GHC.Base.Monoid (Control.Applicative.ListF.ListF f a)
+instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.ListF f)
@@ -387,6 +449,7 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 f, GHC.Read.Read a) => 
 instance GHC.Base.Functor (Control.Monad.Freer.Church.Free f)
 instance Data.Functor.Bind.Class.Apply (Control.Monad.Freer.Church.Free f)
 instance GHC.Base.Applicative (Control.Monad.Freer.Church.Free f)
+instance Data.Pointed.Pointed (Control.Monad.Freer.Church.Free f)
 instance Data.Functor.Bind.Class.Bind (Control.Monad.Freer.Church.Free f)
 instance GHC.Base.Monad (Control.Monad.Freer.Church.Free f)
 instance Control.Monad.Free.Class.MonadFree f (Control.Monad.Freer.Church.Free f)
@@ -552,8 +615,9 @@ Step :: Natural -> f a -> Step f a
 --   target context, since we have to handle potentially more than one
 --   <tt>f</tt>.
 --   
---   It has no <tt>HBind</tt> instance because a proper <tt>HBind</tt>
---   would require a potential empty <a>Steps</a>.
+--   This type is structurally similar to <tt><tt>NEMapF</tt> (<a>Sum</a>
+--   <a>Natural</a>)</tt>; however, it has a different <a>Semigroup</a>
+--   instance to make it useful as the fixed-point of <a>These1</a>.
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
@@ -773,6 +837,7 @@ instance forall k1 (a :: k1) k2 (b :: k2). GHC.Read.Read (Control.Applicative.St
 instance forall k1 (a :: k1) k2 (b :: k2). GHC.Show.Show (Control.Applicative.Step.Void2 a b)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Flagged f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Flagged f)
+instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.Step.Flagged f)
 instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Flagged f)
 instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Flagged f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.Step.Flagged f)
@@ -792,6 +857,7 @@ instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Cl
 instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Steps f)
 instance forall k (f :: k -> *) (a :: k). GHC.Base.Semigroup (Control.Applicative.Step.Steps f a)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.Step.Steps f)
+instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.Step.Steps f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.Step.Steps f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.Step.Steps f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.Step.Steps f)
@@ -806,6 +872,7 @@ instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Steps f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.Step.Step f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.Step.Step f)
+instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.Step.Step f)
 instance Data.Semigroup.Foldable.Class.Foldable1 f => Data.Semigroup.Foldable.Class.Foldable1 (Control.Applicative.Step.Step f)
 instance Data.Semigroup.Traversable.Class.Traversable1 f => Data.Semigroup.Traversable.Class.Traversable1 (Control.Applicative.Step.Step f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.Step.Step f)
@@ -1061,6 +1128,8 @@ instance Data.HFunctor.Inject Control.Applicative.Free.Ap
 instance Data.HFunctor.Inject Control.Applicative.ListF.ListF
 instance Data.HFunctor.Inject Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.Inject Control.Applicative.ListF.MaybeF
+instance GHC.Base.Monoid k => Data.HFunctor.Inject (Control.Applicative.ListF.NEMapF k)
+instance GHC.Base.Monoid k => Data.HFunctor.Inject (Control.Applicative.ListF.MapF k)
 instance Data.HFunctor.Inject Control.Applicative.Step.Step
 instance Data.HFunctor.Inject Control.Applicative.Step.Steps
 instance Data.HFunctor.Inject Control.Applicative.Step.Flagged
@@ -1267,6 +1336,8 @@ instance Data.HFunctor.Interpret.Interpret Control.Applicative.Free.Ap
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.ListF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.MaybeF
+instance GHC.Base.Monoid k => Data.HFunctor.Interpret.Interpret (Control.Applicative.ListF.MapF k)
+instance GHC.Base.Monoid k => Data.HFunctor.Interpret.Interpret (Control.Applicative.ListF.NEMapF k)
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Step
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Steps
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Flagged
@@ -3490,6 +3561,29 @@ newtype MaybeF f a
 MaybeF :: Maybe (f a) -> MaybeF f a
 [runMaybeF] :: MaybeF f a -> Maybe (f a)
 
+-- | A map of <tt>f a</tt>s, indexed by keys of type <tt>k</tt>. It can be
+--   useful for represeting a product of many different values of type
+--   <tt>f a</tt>, each "at" a different <tt>k</tt> location.
+--   
+--   Can be considered a combination of <tt>EnvT</tt> and <a>ListF</a>, in
+--   a way --- combining the "indexed with a value" property with
+--   "containing multiple <tt>f a</tt>s".
+newtype MapF k f a
+MapF :: Map k (f a) -> MapF k f a
+[runMapF] :: MapF k f a -> Map k (f a)
+
+-- | A non-empty map of <tt>f a</tt>s, indexed by keys of type <tt>k</tt>.
+--   It can be useful for represeting a product of many different values of
+--   type <tt>f a</tt>, each "at" a different <tt>k</tt> location, where
+--   you need to have at least one <tt>f a</tt> at all times.
+--   
+--   Can be considered a combination of <tt>EnvT</tt> and <a>NonEmptyF</a>,
+--   in a way --- combining the "indexed with a value" property with
+--   "containing multiple <tt>f a</tt>s".
+newtype NEMapF k f a
+NEMapF :: NEMap k (f a) -> NEMapF k f a
+[runNEMapF] :: NEMapF k f a -> NEMap k (f a)
+
 -- | The free <a>Applicative</a> for a <a>Functor</a> <tt>f</tt>.
 data Ap (f :: Type -> Type) a
 
@@ -3636,8 +3730,9 @@ Step :: Natural -> f a -> Step f a
 --   target context, since we have to handle potentially more than one
 --   <tt>f</tt>.
 --   
---   It has no <tt>HBind</tt> instance because a proper <tt>HBind</tt>
---   would require a potential empty <a>Steps</a>.
+--   This type is structurally similar to <tt><tt>NEMapF</tt> (<a>Sum</a>
+--   <a>Natural</a>)</tt>; however, it has a different <a>Semigroup</a>
+--   instance to make it useful as the fixed-point of <a>These1</a>.
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
