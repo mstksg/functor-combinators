@@ -888,6 +888,76 @@ instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.Step.Step f a)
 
 
+-- | Working with non-standard typeclasses like <a>Plus</a>, <a>Apply</a>,
+--   <a>Bind</a>, and <a>Pointed</a> will sometimes cause problems when
+--   using with libraries that do not provide instances, even though their
+--   types already are instances of <a>Alternative</a> or
+--   <a>Applicative</a> or <a>Monad</a>.
+--   
+--   This module provides unsafe methods to "promote" <a>Applicative</a>
+--   instances to <a>Apply</a>, <a>Alternative</a> to <a>Plus</a>, etc.
+--   
+--   They are unsafe in the sense that if those types <i>already</i> have
+--   those instances, this will cause overlapping instances errors or
+--   problems with coherence. Because of this, you should always use these
+--   with <i>specific</i> <tt>f</tt>s, and never in a polymorphic way over
+--   <tt>f</tt>.
+module Data.Functor.Combinator.Unsafe
+
+-- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
+--   require <tt><a>Plus</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Plus</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
+
+-- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
+--   require <tt><a>Apply</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Apply</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
+
+-- | For any <tt><a>Monad</a> f</tt>, produce a value that would require
+--   <tt><a>Bind</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Bind</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
+
+-- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
+--   require <tt><a>Pointed</a> f</tt>.
+--   
+--   Always use with concrete and specific <tt>f</tt> only, and never use
+--   with any <tt>f</tt> that already has a <a>Pointed</a> instance.
+--   
+--   See documentation for <a>upgradeC</a> for example usages.
+--   
+--   The <a>Proxy</a> argument allows you to specify which specific
+--   <tt>f</tt> you want to enhance. You can pass in something like
+--   <tt><a>Proxy</a> @MyFunctor</tt>.
+unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
+instance GHC.Base.Applicative f => Data.Pointed.Pointed (Data.Functor.Combinator.Unsafe.PointMe f)
+
+
 -- | This module provides abstractions for working with unary functor
 --   combinators.
 --   
@@ -966,12 +1036,18 @@ overHFunctor :: HFunctor t => (f <~> g) -> t f <~> t g
 --   If you think of <tt>t f a</tt> as an "enhanced <tt>f</tt>", then
 --   <a>inject</a> allows you to use an <tt>f</tt> as its enhanced form.
 --   
---   <a>inject</a> itself is not too useful without <a>Interpret</a> to
---   allow us to interpret or retrieve back the <tt>f</tt>.
+--   With the exception of directly pattern matching on the result,
+--   <a>inject</a> itself is not too useful in the general case without
+--   <a>Interpret</a> to allow us to interpret or retrieve back the
+--   <tt>f</tt>.
 class HFunctor t => Inject t
 
--- | Lift an <tt>f</tt> into the enhanced <tt>t f</tt> structure. Analogous
---   to <a>lift</a> from <a>MonadTrans</a>.
+-- | Lift from <tt>f</tt> into the enhanced <tt>t f</tt> structure.
+--   Analogous to <a>lift</a> from <a>MonadTrans</a>.
+--   
+--   Note that this lets us "lift" a <tt>f a</tt>; if you want to lift an
+--   <tt>a</tt> with <tt>a -&gt; t f a</tt>, check if <tt>t f</tt> is an
+--   instance of <a>Applicative</a> or <a>Pointed</a>.
 inject :: Inject t => f ~> t f
 
 -- | <a>HBind</a> is effectively a "higher-order <a>Monad</a>", in the
@@ -2870,12 +2946,18 @@ hmap :: HFunctor t => (f ~> g) -> t f ~> t g
 --   If you think of <tt>t f a</tt> as an "enhanced <tt>f</tt>", then
 --   <a>inject</a> allows you to use an <tt>f</tt> as its enhanced form.
 --   
---   <a>inject</a> itself is not too useful without <a>Interpret</a> to
---   allow us to interpret or retrieve back the <tt>f</tt>.
+--   With the exception of directly pattern matching on the result,
+--   <a>inject</a> itself is not too useful in the general case without
+--   <a>Interpret</a> to allow us to interpret or retrieve back the
+--   <tt>f</tt>.
 class HFunctor t => Inject t
 
--- | Lift an <tt>f</tt> into the enhanced <tt>t f</tt> structure. Analogous
---   to <a>lift</a> from <a>MonadTrans</a>.
+-- | Lift from <tt>f</tt> into the enhanced <tt>t f</tt> structure.
+--   Analogous to <a>lift</a> from <a>MonadTrans</a>.
+--   
+--   Note that this lets us "lift" a <tt>f a</tt>; if you want to lift an
+--   <tt>a</tt> with <tt>a -&gt; t f a</tt>, check if <tt>t f</tt> is an
+--   instance of <a>Applicative</a> or <a>Pointed</a>.
 inject :: Inject t => f ~> t f
 
 -- | An <a>Interpret</a> lets us move in and out of the "enhanced"
@@ -3009,6 +3091,24 @@ hright :: HBifunctor t => (g ~> k) -> t f g ~> t f k
 
 -- | Swap out both transformed functors at the same time.
 hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
+
+-- | An <a>HBifunctor</a> where it doesn't matter which binds first is
+--   <a>Associative</a>. Knowing this gives us a lot of power to rearrange
+--   the internals of our <a>HFunctor</a> at will.
+--   
+--   For example, for the functor product:
+--   
+--   <pre>
+--   data (f <a>:*:</a> g) a = f a :*: g a
+--   </pre>
+--   
+--   We know that <tt>f :*: (g :*: h)</tt> is the same as <tt>(f :*: g) :*:
+--   h</tt>.
+class HBifunctor t => Associative t
+
+-- | The isomorphism between <tt>t f (t g h) a</tt> and <tt>t (t f g) h
+--   a</tt>. To use this isomorphism, see <a>assoc</a> and <a>disassoc</a>.
+associating :: (Associative t, Functor f, Functor g, Functor h) => t f (t g h) <~> t (t f g) h
 
 -- | For some <tt>t</tt>s, you can represent the act of applying a functor
 --   <tt>f</tt> to <tt>t</tt> many times, as a single type. That is, there
@@ -3766,6 +3866,16 @@ ConstF :: e -> ConstF e f a
 data EnvT e (w :: Type -> Type) a
 EnvT :: e -> w a -> EnvT e a
 
+-- | The reader monad transformer, which adds a read-only environment to
+--   the given monad.
+--   
+--   The <a>return</a> function ignores the environment, while
+--   <tt>&gt;&gt;=</tt> passes the inherited environment to both
+--   subcomputations.
+newtype ReaderT r (m :: Type -> Type) a
+ReaderT :: (r -> m a) -> ReaderT r a
+[runReaderT] :: ReaderT r a -> r -> m a
+
 -- | An <tt>f a</tt>, along with a <a>Bool</a> flag
 --   
 --   <pre>
@@ -3989,55 +4099,3 @@ generalize :: Applicative f => Identity ~> f
 --   Can be useful for "zeroing out" a functor with <a>hmap</a> or
 --   <a>hbimap</a> or <a>interpret</a>.
 absorb :: f ~> Proxy
-
--- | For any <tt><a>Alternative</a> f</tt>, produce a value that would
---   require <tt><a>Plus</a> f</tt>.
---   
---   Always use with concrete and specific <tt>f</tt> only, and never use
---   with any <tt>f</tt> that already has a <a>Plus</a> instance.
---   
---   See documentation for <a>upgradeC</a> for example usages.
---   
---   The <a>Proxy</a> argument allows you to specify which specific
---   <tt>f</tt> you want to enhance. You can pass in something like
---   <tt><a>Proxy</a> @MyFunctor</tt>.
-unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
-
--- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
---   require <tt><a>Apply</a> f</tt>.
---   
---   Always use with concrete and specific <tt>f</tt> only, and never use
---   with any <tt>f</tt> that already has a <a>Apply</a> instance.
---   
---   See documentation for <a>upgradeC</a> for example usages.
---   
---   The <a>Proxy</a> argument allows you to specify which specific
---   <tt>f</tt> you want to enhance. You can pass in something like
---   <tt><a>Proxy</a> @MyFunctor</tt>.
-unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
-
--- | For any <tt><a>Monad</a> f</tt>, produce a value that would require
---   <tt><a>Bind</a> f</tt>.
---   
---   Always use with concrete and specific <tt>f</tt> only, and never use
---   with any <tt>f</tt> that already has a <a>Bind</a> instance.
---   
---   See documentation for <a>upgradeC</a> for example usages.
---   
---   The <a>Proxy</a> argument allows you to specify which specific
---   <tt>f</tt> you want to enhance. You can pass in something like
---   <tt><a>Proxy</a> @MyFunctor</tt>.
-unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
-
--- | For any <tt><a>Applicative</a> f</tt>, produce a value that would
---   require <tt><a>Pointed</a> f</tt>.
---   
---   Always use with concrete and specific <tt>f</tt> only, and never use
---   with any <tt>f</tt> that already has a <a>Pointed</a> instance.
---   
---   See documentation for <a>upgradeC</a> for example usages.
---   
---   The <a>Proxy</a> argument allows you to specify which specific
---   <tt>f</tt> you want to enhance. You can pass in something like
---   <tt><a>Proxy</a> @MyFunctor</tt>.
-unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
