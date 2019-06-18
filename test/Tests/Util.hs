@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE EmptyCase            #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
@@ -24,29 +25,38 @@ module Tests.Util (
   ) where
 
 import           Control.Applicative
+import           Control.Applicative.Backwards
+import           Control.Applicative.Lift
 import           Control.Monad.Freer.Church
+import           Control.Monad.Trans.Maybe
 import           Control.Natural.IsoF
+import           Data.Bifunctor.Joker
 import           Data.Function
 import           Data.Functor
+import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Combinator
 import           Data.Functor.Identity
 import           Data.Functor.Product
+import           Data.Functor.Reverse
 import           Data.Functor.Sum
 import           Data.GADT.Show
 import           Data.HBifunctor.Tensor
 import           Data.HFunctor.Chain
-import           Data.Semigroup             (Any(..))
+import           Data.Semigroup                 (Any(..))
 import           Data.Semigroup.Traversable
-import           Hedgehog hiding            (HTraversable(..))
+import           GHC.Generics                   (M1(..))
+import           Hedgehog hiding                (HTraversable(..))
 import           Hedgehog.Internal.Property
 import           Test.Tasty
 import           Test.Tasty.Hedgehog
-import qualified Control.Applicative.Free   as Ap
-import qualified Data.List.NonEmpty         as NE
-import qualified Data.Map.NonEmpty          as NEM
-import qualified Hedgehog.Gen               as Gen
-import qualified Hedgehog.Range             as Range
+import qualified Control.Applicative.Free       as Ap
+import qualified Control.Applicative.Free.Fast  as FAF
+import qualified Control.Applicative.Free.Final as FA
+import qualified Data.List.NonEmpty             as NE
+import qualified Data.Map.NonEmpty              as NEM
+import qualified Hedgehog.Gen                   as Gen
+import qualified Hedgehog.Range                 as Range
 
 
 isoProp
@@ -124,10 +134,28 @@ instance GShow f => GShow (Ap f) where
       Ap.Pure _  -> showString "<pure>"
       Ap.Ap x xs -> showsBinaryWith gshowsPrec gshowsPrec "Ap" d x xs
 
+instance GShow f => GShow (FA.Ap f) where
+    gshowsPrec d = gshowsPrec @(Ap f) d . FA.runAp Ap.liftAp
+
+instance GShow f => GShow (FAF.Ap f) where
+    gshowsPrec d = gshowsPrec @(Ap f) d . FAF.runAp Ap.liftAp
+
 instance GShow f => Show (Ap f a) where
     showsPrec = gshowsPrec
 
+instance GShow f => Show (FA.Ap f a) where
+    showsPrec = gshowsPrec
+
+instance GShow f => Show (FAF.Ap f a) where
+    showsPrec = gshowsPrec
+
 instance GShow f => Eq (Ap f a) where
+    (==) = (==) `on` show
+
+instance GShow f => Eq (FA.Ap f a) where
+    (==) = (==) `on` show
+
+instance GShow f => Eq (FAF.Ap f a) where
     (==) = (==) `on` show
 
 deriving instance (Show e, Show (f a)) => Show (EnvT e f a)
@@ -163,6 +191,9 @@ class HFunctor t => TestHFunctor t where
         => m (f a)
         -> m (t f a)
 
+    default genHF :: (Inject t, MonadGen m) => m (f a) -> m (t f a)
+    genHF = fmap inject
+
 class HFunctor t => HTraversable t where
     htraverse :: Applicative h => (forall x. f x -> h (g x)) -> t f a -> h (t g a)
 
@@ -185,6 +216,18 @@ instance TestHFunctor Steps where
                  <*> gx
 
 instance TestHFunctor Ap where
+    genHF gx = fmap NE.last
+             . sequence1
+             . fmap inject
+           <$> Gen.nonEmpty (Range.linear 0 3) gx
+
+instance TestHFunctor FA.Ap where
+    genHF gx = fmap NE.last
+             . sequence1
+             . fmap inject
+           <$> Gen.nonEmpty (Range.linear 0 3) gx
+
+instance TestHFunctor FAF.Ap where
     genHF gx = fmap NE.last
              . sequence1
              . fmap inject
@@ -267,6 +310,9 @@ instance TestHBifunctor Comp where
 instance TestHBifunctor LeftF where
     genHB gx _ = LeftF <$> gx
 
+instance TestHBifunctor Joker where
+    genHB gx _ = Joker <$> gx
+
 instance TestHBifunctor RightF where
     genHB _ gy = RightF <$> gy
 
@@ -276,3 +322,36 @@ instance TestHBifunctor t => TestHFunctor (Chain1 t) where
         go = Gen.bool >>= \case
           False -> Done1 <$> x
           True  -> More1 <$> genHB x go
+
+instance TestHFunctor Coyoneda
+
+instance TestHFunctor WrappedApplicative
+
+deriving instance Eq (f a) => Eq (WrappedApplicative f a)
+deriving instance Show (f a) => Show (WrappedApplicative f a)
+
+-- | We cannot test the pure case, huhu
+instance TestHFunctor MaybeApply
+
+deriving instance (Eq a, Eq (f a)) => Eq (MaybeApply f a)
+deriving instance (Show a, Show (f a)) => Show (MaybeApply f a)
+
+-- | We cannot test the pure case, huhu
+instance TestHFunctor Lift
+
+instance TestHFunctor MaybeF where
+    genHF gx = Gen.bool >>= \case
+      False -> pure $ MaybeF Nothing
+      True  -> MaybeF . Just <$> gx
+
+instance TestHFunctor IdentityT where
+
+-- | We cannot test the pure case, huhu
+instance TestHFunctor (These1 f)
+
+instance TestHFunctor Reverse
+instance TestHFunctor Backwards
+instance Applicative f => TestHFunctor (Comp f)
+
+instance TestHFunctor (M1 i c)
+

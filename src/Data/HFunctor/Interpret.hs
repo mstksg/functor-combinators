@@ -71,19 +71,23 @@ import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
+import           Control.Monad.Trans.Maybe
 import           Control.Natural
 import           Data.Coerce
 import           Data.Constraint.Trivial
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
+import           Data.Functor.Product
 import           Data.Functor.Reverse
+import           Data.Functor.These
 import           Data.HFunctor
 import           Data.Kind
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Proxy
 import           Data.Semigroup.Foldable
+import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free       as Ap
 import qualified Control.Applicative.Free.Fast  as FAF
@@ -252,11 +256,41 @@ instance Interpret Flagged where
     retract = flaggedVal
     interpret f = f . flaggedVal
 
+-- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- but we don't really have that typeclass in any standard hierarchies.  We
+-- use 'Plus' here instead, but we never use '<!>'.  This would only go
+-- wrong in situations where your type supports 'zero' but not '<!>', like
+-- instances of 'Control.Monad.Fail.MonadFail' without
+-- 'Control.Monad.MonadPlus'.
+instance Interpret (These1 f) where
+    type C (These1 f) = Plus
+    retract = \case
+      This1  _   -> zero
+      That1    y -> y
+      These1 _ y -> y
+    interpret f = \case
+      This1  _   -> zero
+      That1    y -> f y
+      These1 _ y -> f y
+
 -- | A free 'Alternative'
 instance Interpret Alt.Alt where
     type C Alt.Alt = Alternative
 
     interpret = Alt.runAlt
+
+instance Plus f => Interpret ((:*:) f) where
+    type C ((:*:) f) = Unconstrained
+    retract (_ :*: y) = y
+
+instance Plus f => Interpret (Product f) where
+    type C (Product f) = Unconstrained
+    retract (Pair _ y) = y
+
+instance Interpret (M1 i c) where
+    type C (M1 i c) = Unconstrained
+    retract (M1 x) = x
+    interpret f (M1 x) = f x
 
 -- | A free 'Monad'
 instance Interpret Free where

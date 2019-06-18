@@ -76,6 +76,9 @@ import qualified Data.Functor.Day               as D
 --
 -- For the ability to move in and out of the enhanced functor, see
 -- 'Data.HFunctor.Inject' and 'Data.HFunctor.Interpret.Interpret'.
+--
+-- This class is similar to 'Control.Monad.Morph.MFunctor' from
+-- "Control.Monad.Morph", but instances must work without a 'Monad' constraint.
 class HFunctor t where
     -- | If we can turn an @f@ into a @g@, then we can turn a @t f@ into
     -- a @t g@.
@@ -290,9 +293,15 @@ instance HFunctor Free where
 instance HFunctor Free1 where
     hmap = hoistFree1
 
+-- | Note that there is no 'Data.HFunctor.Interpret.Interpret' or
+-- 'Data.HFunctor.Bind' instance, because 'Data.HFunctor.inject' requires
+-- @'Functor' f@.
 instance HFunctor MC.F where
     hmap = MC.hoistF
 
+-- | Note that there is no 'Data.HFunctor.Interpret.Interpret' or
+-- 'Data.HFunctor.Bind' instance, because 'Data.HFunctor.inject' requires
+-- @'Functor' f@.
 instance HFunctor MaybeT where
     hmap f = mapMaybeT f
 

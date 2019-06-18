@@ -69,7 +69,10 @@ import           Data.Deriving
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
+import           Data.Functor.Plus
+import           Data.Functor.Product
 import           Data.Functor.Reverse
+import           Data.Functor.These
 import           Data.HFunctor.Internal
 import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
@@ -287,6 +290,9 @@ class HFunctor t => Inject t where
 -- 'Data.HFunctor.Interpret.Interpret' laws, so we often have instances
 -- where 'hbind' and 'Data.HFunctor.Interpret.interpret' (though they both
 -- may typecheck) produce different behavior.
+--
+-- This class is similar to 'Control.Monad.Morph.MMonad' from
+-- "Control.Monad.Morph", but instances must work without a 'Monad' constraint.
 class Inject t => HBind t where
     -- | Bind a continuation to a @t f@ into some context @g@.
     hbind :: (f ~> t g) -> t f ~> t g
@@ -329,6 +335,26 @@ instance Inject Steps where
 -- 'IdentityT'@.
 instance Inject Flagged where
     inject = Flagged False
+
+instance Inject (These1 f) where
+    inject = That1
+
+instance Applicative f => Inject (Comp f) where
+    inject x = pure () :>>= const x
+
+instance Applicative f => Inject ((:.:) f) where
+    inject x = Comp1 $ pure x
+
+-- | Only uses 'zero'
+instance Plus f => Inject ((:*:) f) where
+    inject = (zero :*:)
+
+-- | Only uses 'zero'
+instance Plus f => Inject (Product f) where
+    inject = Pair zero
+
+instance Inject (M1 i c) where
+    inject = M1
 
 instance Inject Alt.Alt where
     inject = Alt.liftAlt
@@ -416,6 +442,28 @@ instance HBind Flagged where
     hbind f (Flagged p x) = Flagged (p || q) y
       where
         Flagged q y = f x
+
+instance Alt f => HBind (These1 f) where
+    hbind f = \case
+      This1  x   -> This1 x
+      That1    y -> f y
+      These1 x y -> case f y of
+        This1  x'    -> This1 (x <!> x')
+        That1     y' -> That1 y'
+        These1 x' y' -> These1 (x <!> x') y'
+
+instance Plus f => HBind (Product f) where
+    hbind f (Pair x y) = Pair (x <!> x') y'
+      where
+        Pair x' y' = f y
+
+instance Plus f => HBind ((:*:) f) where
+    hbind f (x :*: y) = (x <!> x') :*: y'
+      where
+        x' :*: y' = f y
+
+instance HBind (M1 i c) where
+    hbind f (M1 x) = f x
 
 instance HBind Alt.Alt where
     hbind = Alt.runAlt

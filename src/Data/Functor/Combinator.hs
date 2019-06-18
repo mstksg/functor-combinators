@@ -73,12 +73,14 @@ module Data.Functor.Combinator (
   , Alt
   , Free
   , Free1
+  , Lift
   , Step(..)
   , Steps(..)
   , ProxyF(..)
   , ConstF(..)
   , EnvT(..)
   , Flagged(..)
+  , IdentityT(..)
   , Void2
   , Final(..)
   , FreeOf(..)
@@ -107,11 +109,13 @@ module Data.Functor.Combinator (
 
 import           Control.Alternative.Free
 import           Control.Applicative.Free
+import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
+import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Functor.Apply.Free

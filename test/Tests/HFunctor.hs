@@ -1,23 +1,47 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
 module Tests.HFunctor (
-    retractingProp
-  , interpretProp, interpretProp_
-  , hbindInjectProp, hbindInjectProp_
-  , hbindhjoinProp, hbindhjoinProp_
-  , hjoinAssocProp, hjoinAssocProp_
+    hfunctorTests
   ) where
 
+-- import qualified Control.Alternative.Free    as Alt
+import           Control.Applicative
+import           Control.Applicative.Backwards
+import           Control.Monad.Trans.Maybe
+import           Control.Monad.Trans.Reader
+import           Data.Bifunctor
+import           Data.Functor.Bind
 import           Data.Functor.Combinator
+import           Data.Functor.Reverse
 import           Data.HFunctor
+import           Data.Tagged
+import           GHC.Generics                   (M1(..), Meta(..))
 import           Hedgehog
+import           Test.Tasty
+import           Test.Tasty.Hedgehog
 import           Tests.Util
-import qualified Hedgehog.Gen            as Gen
-import qualified Hedgehog.Range          as Range
+import qualified Control.Applicative.Free.Fast  as FAF
+import qualified Control.Applicative.Free.Final as FA
+import qualified Data.Semigroup                 as S
+import qualified Hedgehog.Gen                   as Gen
+import qualified Hedgehog.Range                 as Range
+
+hmapProp
+    :: forall t f m a.
+     ( HFunctor t
+     , Monad m
+     , Show (t f a), Eq (t f a)
+     )
+    => Gen (t f a)
+    -> PropertyT m ()
+hmapProp gx = do
+    x <- forAll gx
+    hmap id x === x
 
 retractingProp
     :: forall t f m a.
@@ -87,50 +111,138 @@ hjoinAssocProp gx = do
     x <- forAll gx
     hjoin (hjoin x) === hjoin (hmap hjoin x)
 
-interpretProp_
-    :: forall t f m a.
+hfunctorProps
+    :: forall t f a.
+     ( TestHFunctor t
+     , Show (t f a), Eq (t f a)
+     )
+    => Gen (f a)
+    -> TestTree
+hfunctorProps gx = testGroup "HFunctor"
+                 . map (uncurry testProperty . second property) $
+    [ ("hmap", hmapProp @t (genHF gx))
+    ]
+
+hbindProps
+    :: forall t f a.
+     ( HBind t
+     , TestHFunctor t
+     , Show (t f a)        , Eq (t f a)
+     , Show (t (t f) a)
+     , Show (t (t (t f)) a)
+     )
+    => Gen (f a)
+    -> TestTree
+hbindProps gx = testGroup "HBind"
+              . map (uncurry testProperty . second property) $
+    [ ("hbindInject", hbindInjectProp @t (genHF gx))
+    , ("hbindhjoin" , hbindhjoinProp  @t (genHF (genHF gx)))
+    , ("hjoinAssoc" , hjoinAssocProp  @t (genHF (genHF (genHF gx))))
+    ]
+
+interpretProps
+    :: forall t f a.
      ( Interpret t
      , TestHFunctor t
-     , Monad m
      , C t f
-     , Show (f a)
+     , Show (f a)          , Eq (f a)
      , Show (t f a)
-     , Eq (f a)
      )
     => Gen (f a)
-    -> PropertyT m ()
-interpretProp_ = interpretProp @t . genHF
+    -> TestTree
+interpretProps gx = testGroup "Interpret"
+                  . map (uncurry testProperty . second property) $
+    [ ("retracting", retractingProp @t gx)
+    , ("interpret" , interpretProp  @t (genHF gx))
+    ]
 
-hbindInjectProp_
-    :: forall t f m a.
+hbindProps_
+    :: forall t f a.
      ( HBind t
      , TestHFunctor t
-     , Monad m
-     , Show (t f a), Eq (t f a)
-     )
-    => Gen (f a)
-    -> PropertyT m ()
-hbindInjectProp_ = hbindInjectProp @t . genHF
-
-hbindhjoinProp_
-    :: forall t f m a.
-     ( HBind t
-     , TestHFunctor t
-     , Monad m
-     , Show (t f a), Eq (t f a)
-     )
-    => Gen (f a)
-    -> PropertyT m ()
-hbindhjoinProp_ = hbindInjectProp @t . genHF
-
-hjoinAssocProp_
-    :: forall t f m a.
-     ( HBind t
-     , TestHFunctor t
-     , Monad m
+     , Show (t f a)        , Eq (t f a)
+     , Show (t (t f) a)
      , Show (t (t (t f)) a)
-     , Show (t f a), Eq (t f a)
      )
     => Gen (f a)
-    -> PropertyT m ()
-hjoinAssocProp_ = hjoinAssocProp @t . genHF . genHF . genHF
+    -> [TestTree]
+hbindProps_ gx = [ hfunctorProps @t gx
+                 , hbindProps    @t gx
+                 ]
+
+interpretProps_
+    :: forall t f a.
+     ( Interpret t
+     , TestHFunctor t
+     , C t f
+     , Show (f a)          , Eq (f a)
+     , Show (t f a)        , Eq (t f a)
+     )
+    => Gen (f a)
+    -> [TestTree]
+interpretProps_ gx = [ hfunctorProps  @t gx
+                     , interpretProps @t gx
+                     ]
+
+
+bindInterpProps_
+    :: forall t f a.
+     ( HBind t
+     , Interpret t
+     , TestHFunctor t
+     , C t f
+     , Show (f a)          , Eq (f a)
+     , Show (t f a)        , Eq (t f a)
+     , Show (t (t f) a)
+     , Show (t (t (t f)) a)
+     )
+    => Gen (f a)
+    -> [TestTree]
+bindInterpProps_ gx = [ hfunctorProps  @t gx
+                      , hbindProps     @t gx
+                      , interpretProps @t gx
+                      ]
+
+hfunctorTests :: TestTree
+hfunctorTests = testGroup "HFunctors"
+    [ testGroup "Ap"   $ bindInterpProps_ @Ap     (Const . S.Sum <$> intGen)
+    , testGroup "Ap'"  $ bindInterpProps_ @FA.Ap  (Const . S.Sum <$> intGen)
+    , testGroup "Ap''" $ bindInterpProps_ @FAF.Ap (Const . S.Sum <$> intGen)
+    -- , testGroup "Alt"  $ bindInterpProps_ @Alt    (Const . S.Sum <$> intGen)  -- TODO
+    , testGroup "Coyoneda" $ bindInterpProps_ @Coyoneda listGen
+    , testGroup "WrappedApplicative" $ bindInterpProps_ @WrappedApplicative listGen
+    , testGroup "MaybeApply" $ bindInterpProps_ @MaybeApply listGen
+    , testGroup "Lift"       $ bindInterpProps_ @Lift listGen
+    , testGroup "ListF"      $ bindInterpProps_ @ListF listGen
+    , testGroup "NonEmptyF"  $ bindInterpProps_ @NonEmptyF listGen
+    , testGroup "MaybeF"     $ bindInterpProps_ @MaybeF listGen
+    , testGroup "Free1"      $ bindInterpProps_ @Free1  (Gen.list (Range.linear 0 3) intGen)
+    , testGroup "Free"       $ bindInterpProps_ @Free   (Gen.list (Range.linear 0 3) intGen)
+    , testGroup "Ap1"        $ bindInterpProps_ @Ap1    (Const . S.Sum <$> intGen)
+    , testGroup "EnvT"       $ bindInterpProps_ @(EnvT Ordering) listGen
+    , testGroup "IdentityT"  $ bindInterpProps_ @IdentityT listGen
+    -- , testGroup "ReaderT"    [ hfunctorProps @(ReaderT Int) listGen ]    -- no Show
+    , testGroup "These1"     $ bindInterpProps_ @(These1 []) listGen
+    , testGroup "Reverse"    $ bindInterpProps_ @Reverse listGen
+    , testGroup "Backwards"  $ bindInterpProps_ @Backwards listGen
+    , testGroup "Comp"       [ hfunctorProps @(Comp []) (Gen.list (Range.linear 0 3) intGen) ]
+    , testGroup "Step"       $ bindInterpProps_ @Step listGen
+    , testGroup "Steps"      $ bindInterpProps_ @Steps listGen
+    , testGroup "Flagged"    $ bindInterpProps_ @Flagged listGen
+    , testGroup "M1"         $ bindInterpProps_ @(M1 () ('MetaData "" "" "" 'True)) listGen
+
+    ]
+    -- [ testGroup "Sum"      $ matchableProps_      @(:+:)   listGen Nothing
+    -- , testGroup "Sum'"     $ matchableProps_      @Sum     listGen Nothing
+    -- , testGroup "Product"  $ matchableProps_      @(:*:)   listGen (Just (pure Proxy))
+    -- , testGroup "Product'" $ matchableProps_      @Product listGen (Just (pure Proxy))
+    -- , testGroup "These1"   $ monoidalProps_       @These1  listGen Nothing
+    -- , testGroup "LeftF"    $ semigroupoidalProps_ @LeftF   listGen
+    -- , testGroup "RightF"   $ semigroupoidalProps_ @RightF  listGen
+    -- , testGroup "Day"      $ matchableProps_      @Day     (Const . S.Sum <$> intGen)
+    --                                                        (Just (Identity <$> intGen))
+    -- , testGroup "Comp"     $ monoidalProps_       @Comp    (Gen.list (Range.linear 0 3) intGen)
+    --                                                        (Just (Identity <$> intGen))
+
+
+
