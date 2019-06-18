@@ -514,9 +514,10 @@ instance Semigroupoidal Sum where
                 -- and the last item has a Bool
                 -- aka sparse non-empty list tagged with a bool
 
--- | Ideally here 'SF' would be equivalent to 'MF', just like for ':+:'.
--- This should be possible if we can write a bijection.  This bijection
--- should be possible in theory --- but it has not yet been implemented.
+-- | Ideally here 'SF' would be equivalent to 'Data.HBifunctor.Tensor.MF',
+-- just like for ':+:'. This should be possible if we can write
+-- a bijection.  This bijection should be possible in theory --- but it has
+-- not yet been implemented.
 instance Semigroupoidal These1 where
     type SF These1 = ComposeT Flagged Steps
 

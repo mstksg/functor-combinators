@@ -90,7 +90,7 @@ deriving via (WrappedHBifunctor LeftF f)
 -- a 'GHC.Generics.:+:' with no 'GHC.Generics.L1'/left branch.
 --
 -- In its polykinded form (on @f@), it is essentially a higher-order
--- version of 'Tagged'.
+-- version of 'Data.Tagged.Tagged'.
 newtype RightF f g a = RightF { runRightF :: g a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

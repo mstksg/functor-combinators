@@ -209,9 +209,8 @@ absurd1 = \case {}
 -- instance in the target context, since we have to handle potentially more
 -- than one @f@.
 --
--- This type is structurally similar to @'NEMapF' ('Sum' 'Natural')@;
--- however, it has a different 'Semigroup' instance to make it useful as
--- the fixed-point of 'These1'.
+-- This type is essentailly the same as @'Control.Applicative.ListF.NEMapF'
+-- ('Sum' 'Natural')@ (except with a different 'Semigroup' instance).
 newtype Steps f a = Steps { getSteps :: NEMap Natural (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

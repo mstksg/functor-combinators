@@ -172,8 +172,6 @@ pattern ProdNonEmpty { nonEmptyProd
 --
 -- This is the free structure for a "fail"-like typeclass that would only
 -- have @zero :: f a@.
---
--- Equivalent to @'ProxyF' ':+:' 'IdentityT'@
 newtype MaybeF f a = MaybeF { runMaybeF :: Maybe (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -226,9 +224,10 @@ listToMaybeF (ListF xs) = MaybeF (listToMaybe xs)
 -- represeting a product of many different values of type @f a@, each "at"
 -- a different @k@ location.
 --
--- Can be considered a combination of 'EnvT' and 'ListF', in a way ---
--- combining the "indexed with a value" property with "containing multiple
--- @f a@s".
+-- Can be considered a combination of 'Control.Comonad.Trans.Env.EnvT' and
+-- 'ListF', in a way --- a @'MapF' k f a@ is like a @'ListF'
+-- ('Control.Comonad.Trans.Env.EnvT' k f) a@ with unique (and ordered)
+-- keys.
 newtype MapF k f a = MapF { runMapF :: M.Map k (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -261,9 +260,10 @@ instance (Monoid k, Pointed f) => Pointed (MapF k f) where
 -- each "at" a different @k@ location, where you need to have at least one
 -- @f a@ at all times.
 --
--- Can be considered a combination of 'EnvT' and 'NonEmptyF', in a way ---
--- combining the "indexed with a value" property with "containing multiple
--- @f a@s".
+-- Can be considered a combination of 'Control.Comonad.Trans.Env.EnvT' and
+-- 'NonEmptyF', in a way --- an @'NEMapF' k f a@ is like a @'NonEmptyF'
+-- ('Control.Comonad.Trans.Env.EnvT' k f) a@ with unique (and ordered)
+-- keys.
 newtype NEMapF k f a = NEMapF { runNEMapF :: NEM.NEMap k (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
