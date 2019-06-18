@@ -50,11 +50,14 @@ module Data.Functor.Combinator (
   -- | Classes that deal with two-functor combinators, that "mix" two
   -- functors together in some way.
   , HBifunctor(..)
+  -- *** Associative
+  , Associative(..)
   , Semigroupoidal(SF, appendSF, consSF, toSF, biretract, binterpret)
   , CS
   , biget, bicollect
   , (!*!)
   , (!$!)
+  -- *** Tensor
   , Tensor(..)
   , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT, upgradeC)
   , CM
@@ -81,6 +84,7 @@ module Data.Functor.Combinator (
   , ProxyF(..)
   , ConstF(..)
   , EnvT(..)
+  , ReaderT(..)
   , Flagged(..)
   , IdentityT(..)
   , Void2
@@ -102,11 +106,6 @@ module Data.Functor.Combinator (
   -- ** Natural Transformations
   , generalize
   , absorb
-  -- ** Unsafe
-  , unsafePlus
-  , unsafeApply
-  , unsafeBind
-  , unsafePointed
   ) where
 
 import           Control.Alternative.Free
@@ -118,6 +117,7 @@ import           Control.Comonad.Trans.Env
 import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
+import           Control.Monad.Trans.Reader
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Functor.Apply.Free
@@ -132,4 +132,3 @@ import           Data.HFunctor.Final
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics
-

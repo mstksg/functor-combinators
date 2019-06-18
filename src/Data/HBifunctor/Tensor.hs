@@ -96,7 +96,8 @@ import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Function
 import           Data.Functor.Apply.Free
-import           Data.Functor.Day            (Day(..))
+import           Data.Functor.Combinator.Unsafe
+import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -108,11 +109,11 @@ import           Data.HFunctor
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List.NonEmpty          (NonEmpty(..))
+import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Proxy
-import           GHC.Generics hiding         (C)
-import qualified Data.Functor.Day            as D
-import qualified Data.Map.NonEmpty           as NEM
+import           GHC.Generics hiding            (C)
+import qualified Data.Functor.Day               as D
+import qualified Data.Map.NonEmpty              as NEM
 
 -- | An 'Associative' 'HBifunctor' can be a 'Tensor' if there is some
 -- identity @i@ where @t i f@ is equivalent to just @f@.

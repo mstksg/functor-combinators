@@ -12,10 +12,10 @@ packages:
   original:
     hackage: trivial-constraint-0.5.1.0
 - completed:
-    hackage: hedgehog-1.0@sha256:1437173d3fa562dcc454ef996f2dd41cd0e004ccbcf15e6e73dcd6f247db50ac,4463
+    hackage: hedgehog-1.0@sha256:440dafedac48a34eac3871f8622b215462cfc0708536cb0458b7a8cf38247c69,4463
     pantry-tree:
       size: 2409
-      sha256: 6497b13b911abf9010705332467c744ac775fe79a3871b5b7743213fbedf2dc9
+      sha256: 985f5ddc16bc1fd4b0c33d4b4e6f54d205fc63aa97b5912b0fcb370dc2a672e3
   original:
     hackage: hedgehog-1.0
 - completed:

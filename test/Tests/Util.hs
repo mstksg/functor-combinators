@@ -1,11 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE EmptyCase            #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE GADTs                #-}
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -19,7 +15,6 @@ module Tests.Util (
   , sumGen
   , intGen
   , listGen
-  , groupTree
   , TestHFunctor(..)
   , TestHBifunctor(..)
   ) where
@@ -47,9 +42,6 @@ import           Data.Semigroup                 (Any(..))
 import           Data.Semigroup.Traversable
 import           GHC.Generics                   (M1(..))
 import           Hedgehog hiding                (HTraversable(..))
-import           Hedgehog.Internal.Property
-import           Test.Tasty
-import           Test.Tasty.Hedgehog
 import qualified Control.Applicative.Free       as Ap
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
@@ -81,16 +73,6 @@ intGen = Gen.integral (Range.linear 0 100)
 
 listGen :: MonadGen m => m [Int]
 listGen = Gen.list (Range.linear 0 100) intGen
-
-groupTree :: Group -> TestTree
-groupTree Group{..} = testGroup (unGroupName groupName)
-                                (map (uncurry go) groupProperties)
-  where
-    go :: PropertyName -> Property -> TestTree
-    go n = testProperty (mkName (unPropertyName n))
-    mkName = map deUnderscore . drop (length @[] @Char "prop_")
-    deUnderscore '_' = ' '
-    deUnderscore c   = c
 
 instance (GShow f, GShow g) => Eq (Day f g a) where
     (==) = (==) `on` show

@@ -481,5 +481,4 @@ hbifunctorTests = testGroup "HBifunctors"
                                                            (Just (Identity <$> intGen))
     , testGroup "Comp"     $ monoidalProps_       @Comp    (Gen.list (Range.linear 0 3) intGen)
                                                            (Just (Identity <$> intGen))
-
     ]

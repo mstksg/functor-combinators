@@ -251,12 +251,17 @@ instance HFunctor t => HFunctor (HFree t) where
 -- If you think of @t f a@ as an "enhanced @f@", then 'inject' allows you
 -- to use an @f@ as its enhanced form.
 --
--- 'inject' itself is not too useful without
+-- With the exception of directly pattern matching on the result, 'inject'
+-- itself is not too useful in the general case without
 -- 'Data.HFunctor.Interpret.Interpret' to allow us to interpret or retrieve
 -- back the @f@.
 class HFunctor t => Inject t where
-    -- | Lift an @f@ into the enhanced @t f@ structure.  Analogous to
+    -- | Lift from @f@ into the enhanced @t f@ structure.  Analogous to
     -- 'lift' from 'MonadTrans'.
+    --
+    -- Note that this lets us "lift" a @f a@; if you want to lift an @a@
+    -- with @a -> t f a@, check if @t f@ is an instance of 'Applicative' or
+    -- 'Pointed'.
     inject :: f ~> t f
 
     {-# MINIMAL inject #-}

@@ -15,10 +15,8 @@ module Data.HFunctor.Internal (
   , WrappedHBifunctor(..)
   , sumSum, prodProd
   , generalize, absorb
-  , unsafePlus, unsafeApply, unsafeBind, unsafePointed
   ) where
 
-import           Control.Applicative
 import           Control.Applicative.Backwards
 import           Control.Applicative.Free
 import           Control.Applicative.Lift
@@ -35,13 +33,10 @@ import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Bifunctor.Joker
 import           Data.Coerce
-import           Data.Constraint
-import           Data.Constraint.Unsafe
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day               (Day(..))
 import           Data.Functor.Identity
-import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
 import           Data.Functor.Sum
@@ -50,7 +45,6 @@ import           Data.Functor.Yoneda
 import           Data.Kind
 import           Data.Proxy
 import           Data.Tagged
-import           Data.Pointed
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
@@ -176,75 +170,6 @@ prodProd = isoF to_ from_
   where
     to_   (x :*: y)  = Pair x y
     from_ (Pair x y) = x :*: y
-
--- | For any @'Alternative' f@, produce a value that would require @'Plus'
--- f@.
---
--- Always use with concrete and specific @f@ only, and never use with any
--- @f@ that already has a 'Plus' instance.
---
--- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
--- usages.
---
--- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
--- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
--- \@MyFunctor@.
-unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
-unsafePlus _ x = case unsafeCoerceConstraint @(Plus (WrappedApplicative f)) @(Plus f) of
-    Sub Dict -> x
-
--- | For any @'Applicative' f@, produce a value that would require @'Apply'
--- f@.
---
--- Always use with concrete and specific @f@ only, and never use with any
--- @f@ that already has a 'Apply' instance.
---
--- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
--- usages.
---
--- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
--- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
--- \@MyFunctor@.
-unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
-unsafeApply _ x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(Apply f) of
-    Sub Dict -> x
-
--- | For any @'Monad' f@, produce a value that would require @'Bind'
--- f@.
---
--- Always use with concrete and specific @f@ only, and never use with any
--- @f@ that already has a 'Bind' instance.
---
--- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
--- usages.
---
--- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
--- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
--- \@MyFunctor@.
-unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
-unsafeBind _ x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
-    Sub Dict -> x
-
-newtype PointMe f a = PointMe (f a)
-
-instance Applicative f => Pointed (PointMe f) where
-    point = PointMe . pure
-
--- | For any @'Applicative' f@, produce a value that would require
--- @'Pointed' f@.
---
--- Always use with concrete and specific @f@ only, and never use with any
--- @f@ that already has a 'Pointed' instance.
---
--- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
--- usages.
---
--- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
--- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
--- \@MyFunctor@.
-unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
-unsafePointed _ x = case unsafeCoerceConstraint @(Pointed (PointMe f)) @(Pointed f) of
-    Sub Dict -> x
 
 -- | Turn 'Identity' into any @'Applicative' f@.  Can be useful as an
 -- argument to 'hmap', 'hbimap', or 'Data.HFunctor.Interpret.interpret'.
