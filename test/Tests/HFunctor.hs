@@ -168,19 +168,19 @@ hbindProps_ gx = [ hfunctorProps @t gx
                  , hbindProps    @t gx
                  ]
 
--- interpretProps_
---     :: forall t f a.
---      ( Interpret t
---      , TestHFunctor t
---      , C t f
---      , Show (f a)          , Eq (f a)
---      , Show (t f a)        , Eq (t f a)
---      )
---     => Gen (f a)
---     -> [TestTree]
--- interpretProps_ gx = [ hfunctorProps  @t gx
---                      , interpretProps @t gx
---                      ]
+interpretProps_
+    :: forall t f a.
+     ( Interpret t
+     , TestHFunctor t
+     , C t f
+     , Show (f a)          , Eq (f a)
+     , Show (t f a)        , Eq (t f a)
+     )
+    => Gen (f a)
+    -> [TestTree]
+interpretProps_ gx = [ hfunctorProps  @t gx
+                     , interpretProps @t gx
+                     ]
 
 
 bindInterpProps_
@@ -226,7 +226,7 @@ hfunctorTests = testGroup "HFunctors"
     , testGroup "Comp"       [ hfunctorProps @(Comp []) (Gen.list (Range.linear 0 3) intGen) ]
     , testGroup "Comp'"      [ hfunctorProps @((:*:) []) (Gen.list (Range.linear 0 3) intGen) ]
     , testGroup "Step"       $ bindInterpProps_ @Step listGen
-    , testGroup "Steps"      $ bindInterpProps_ @Steps listGen
+    , testGroup "Steps"      $ interpretProps_  @Steps listGen
     , testGroup "Flagged"    $ bindInterpProps_ @Flagged listGen
     , testGroup "M1"         $ bindInterpProps_ @(M1 () ('MetaData "" "" "" 'True)) listGen
     , testGroup "Product"    $ bindInterpProps_ @((:*:) []) listGen

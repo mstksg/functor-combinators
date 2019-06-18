@@ -204,6 +204,9 @@ absurd1 = \case {}
 -- 'Data.HFunctor.interpret'ing it requires at least an 'Alt'
 -- instance in the target context, since we have to handle potentially more
 -- than one @f@.
+--
+-- It has no 'HBind' instance because a proper 'HBind' would require
+-- a potential empty 'Steps'.
 newtype Steps f a = Steps { getSteps :: NEMap Natural (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

@@ -440,9 +440,6 @@ instance HBind Step where
       where
         Step m y = f x
 
-instance HBind Steps where
-    hbind f = foldMap1 f . getSteps
-
 -- | Equivalent to instance for @'EnvT' 'Data.Semigroup.Any'@ and @'HLift'
 -- 'IdentityT'@.
 instance HBind Flagged where
