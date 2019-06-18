@@ -69,8 +69,10 @@ fromListF :: ListF f ~> (Proxy :+: NonEmptyF f)
 --   Can be useful for describing a "an <tt>f a</tt> that may or may not be
 --   there".
 --   
---   This is the free structure for a "fail"-like typeclass that only has
---   <tt>zero :: f a</tt>.
+--   This is the free structure for a "fail"-like typeclass that would only
+--   have <tt>zero :: f a</tt>.
+--   
+--   Equivalent to <tt><tt>ProxyF</tt> <a>:+:</a> <tt>IdentityT</tt></tt>
 newtype MaybeF f a
 MaybeF :: Maybe (f a) -> MaybeF f a
 [runMaybeF] :: MaybeF f a -> Maybe (f a)
@@ -1032,8 +1034,10 @@ instance Data.HFunctor.HBind Control.Applicative.Step.Step
 instance Data.HFunctor.HBind Control.Applicative.Step.Steps
 instance Data.HFunctor.HBind Control.Applicative.Step.Flagged
 instance Data.Functor.Alt.Alt f => Data.HFunctor.HBind (Data.Functor.These.These1 f)
-instance Data.Functor.Plus.Plus f => Data.HFunctor.HBind (Data.Functor.Product.Product f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.HBind ((GHC.Generics.:*:) f)
+instance Data.Functor.Plus.Plus f => Data.HFunctor.HBind (Data.Functor.Product.Product f)
+instance Data.HFunctor.HBind ((GHC.Generics.:+:) f)
+instance Data.HFunctor.HBind (Data.Functor.Sum.Sum f)
 instance Data.HFunctor.HBind (GHC.Generics.M1 i c)
 instance Data.HFunctor.HBind Control.Alternative.Free.Alt
 instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free
@@ -1063,6 +1067,8 @@ instance GHC.Base.Applicative f => Data.HFunctor.Inject (Control.Monad.Freer.Chu
 instance GHC.Base.Applicative f => Data.HFunctor.Inject ((GHC.Generics.:.:) f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.Inject ((GHC.Generics.:*:) f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.Inject (Data.Functor.Product.Product f)
+instance Data.HFunctor.Inject ((GHC.Generics.:+:) f)
+instance Data.HFunctor.Inject (Data.Functor.Sum.Sum f)
 instance Data.HFunctor.Inject (GHC.Generics.M1 i c)
 instance Data.HFunctor.Inject Control.Alternative.Free.Alt
 instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free
@@ -1453,6 +1459,7 @@ instance Data.HFunctor.Interpret.Interpret (Data.Functor.These.These1 f)
 instance Data.HFunctor.Interpret.Interpret Control.Alternative.Free.Alt
 instance Data.Functor.Plus.Plus f => Data.HFunctor.Interpret.Interpret ((GHC.Generics.:*:) f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.Interpret.Interpret (Data.Functor.Product.Product f)
+instance Data.HFunctor.Interpret.Interpret ((GHC.Generics.:+:) f)
 instance Data.HFunctor.Interpret.Interpret (GHC.Generics.M1 i c)
 instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free
 instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free1
@@ -3538,8 +3545,10 @@ pattern ProdNonEmpty :: (f :*: ListF f) a -> NonEmptyF f a
 --   Can be useful for describing a "an <tt>f a</tt> that may or may not be
 --   there".
 --   
---   This is the free structure for a "fail"-like typeclass that only has
---   <tt>zero :: f a</tt>.
+--   This is the free structure for a "fail"-like typeclass that would only
+--   have <tt>zero :: f a</tt>.
+--   
+--   Equivalent to <tt><tt>ProxyF</tt> <a>:+:</a> <tt>IdentityT</tt></tt>
 newtype MaybeF f a
 MaybeF :: Maybe (f a) -> MaybeF f a
 [runMaybeF] :: MaybeF f a -> Maybe (f a)
