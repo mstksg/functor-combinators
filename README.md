@@ -604,7 +604,7 @@ see the actual section for that induced monoid later on.
 *   **Induced Monoid**
 
     ```haskell
-    type SF These1 = Steps
+    type SF These1 = ComposeT Flagged Steps
     type MF These1 = Steps
     ```
 
@@ -621,6 +621,11 @@ see the actual section for that induced monoid later on.
     Like `Step`, it's not particularly useful, but it can be used in situations
     where you want a giant infinite sparse array of `f a`s, each at a given
     position, with many gaps between them.
+
+    The induced semigroupoidal functor requires an extra "flag" because of some
+    of the quirks of the definition of semigroupoidal functor: It's a `Steps`,
+    but also with a boolean flag telling you if it was made using `inject` or
+    some other method.
 
 [Data.Functor.These]: https://hackage.haskell.org/package/these/docs/Data-Functor-These.html
 

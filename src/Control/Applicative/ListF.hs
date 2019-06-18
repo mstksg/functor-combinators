@@ -34,6 +34,9 @@ module Control.Applicative.ListF (
   -- * 'MaybeF'
   , MaybeF(..), mapMaybeF
   , listToMaybeF, maybeToListF
+  -- * 'MapF'
+  , MapF(..)
+  , NEMapF(..)
   ) where
 
 import           Control.Applicative
@@ -43,10 +46,16 @@ import           Data.Data
 import           Data.Deriving
 import           Data.Foldable
 import           Data.Functor.Bind
+import           Data.Functor.Classes
 import           Data.Functor.Plus
-import           Data.List.NonEmpty  (NonEmpty(..))
+import           Data.List.NonEmpty         (NonEmpty(..))
 import           Data.Maybe
+import           Data.Pointed
+import           Data.Semigroup.Foldable
+import           Data.Semigroup.Traversable
 import           GHC.Generics
+import qualified Data.Map                   as M
+import qualified Data.Map.NonEmpty          as NEM
 
 -- | A list of @f a@s.  Can be used to describe a product of many different
 -- values of type @f a@.
@@ -81,6 +90,9 @@ instance Semigroup (ListF f a) where
 
 instance Monoid (ListF f a) where
     mempty = ListF []
+
+instance Pointed f => Pointed (ListF f) where
+    point = ListF . (: []) . point
 
 -- | Map a function over the inside of a 'ListF'.
 mapListF
@@ -121,6 +133,9 @@ instance Functor f => Alt (NonEmptyF f) where
 
 instance Semigroup (NonEmptyF f a) where
     NonEmptyF xs <> NonEmptyF ys = NonEmptyF (xs <> ys)
+
+instance Pointed f => Pointed (NonEmptyF f) where
+    point = NonEmptyF . (:| []) . point
 
 -- | Map a function over the inside of a 'NonEmptyF'.
 mapNonEmptyF
@@ -188,6 +203,9 @@ instance Semigroup (MaybeF f a) where
 instance Monoid (MaybeF f a) where
     mempty = MaybeF Nothing
 
+instance Pointed f => Pointed (MaybeF f) where
+    point = MaybeF . Just . point
+
 -- | Map a function over the inside of a 'MaybeF'.
 mapMaybeF
     :: (Maybe (f a) -> Maybe (g b))
@@ -203,3 +221,76 @@ maybeToListF (MaybeF x) = ListF (maybeToList x)
 -- list, if it exists.
 listToMaybeF :: ListF f ~> MaybeF f
 listToMaybeF (ListF xs) = MaybeF (listToMaybe xs)
+
+-- | A map of @f a@s, indexed by keys of type @k@.  It can be useful for
+-- represeting a product of many different values of type @f a@, each "at"
+-- a different @k@ location.
+--
+-- Can be considered a combination of 'EnvT' and 'ListF', in a way ---
+-- combining the "indexed with a value" property with "containing multiple
+-- @f a@s".
+newtype MapF k f a = MapF { runMapF :: M.Map k (f a) }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''MapF
+deriveEq1 ''MapF
+deriveOrd1 ''MapF
+
+instance (Ord k, Read k, Read1 f) => Read1 (MapF k f) where
+    liftReadsPrec = $(makeLiftReadsPrec ''MapF)
+
+-- | A union, combining matching keys with '<!>'.
+instance (Ord k, Alt f) => Semigroup (MapF k f a) where
+    MapF xs <> MapF ys = MapF $ M.unionWith (<!>) xs ys
+
+instance (Ord k, Alt f) => Monoid (MapF k f a) where
+    mempty = MapF M.empty
+
+-- | Left-biased union
+instance (Functor f, Ord k) => Alt (MapF k f) where
+    MapF xs <!> MapF ys = MapF $ M.union xs ys
+
+instance (Functor f, Ord k) => Plus (MapF k f) where
+    zero = MapF M.empty
+
+instance (Monoid k, Pointed f) => Pointed (MapF k f) where
+    point = MapF . M.singleton mempty . point
+
+-- | A non-empty map of @f a@s, indexed by keys of type @k@.  It can be
+-- useful for represeting a product of many different values of type @f a@,
+-- each "at" a different @k@ location, where you need to have at least one
+-- @f a@ at all times.
+--
+-- Can be considered a combination of 'EnvT' and 'NonEmptyF', in a way ---
+-- combining the "indexed with a value" property with "containing multiple
+-- @f a@s".
+newtype NEMapF k f a = NEMapF { runNEMapF :: NEM.NEMap k (f a) }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''NEMapF
+deriveEq1 ''NEMapF
+deriveOrd1 ''NEMapF
+
+instance (Ord k, Read k, Read1 f) => Read1 (NEMapF k f) where
+    liftReadsPrec = $(makeLiftReadsPrec ''NEMapF)
+
+instance Foldable1 f => Foldable1 (NEMapF k f) where
+    fold1      = foldMap1 fold1 . runNEMapF
+    foldMap1 f = (foldMap1 . foldMap1) f . runNEMapF
+    toNonEmpty = foldMap1 toNonEmpty . runNEMapF
+
+instance Traversable1 f => Traversable1 (NEMapF k f) where
+    traverse1 f = fmap NEMapF . (traverse1 . traverse1) f . runNEMapF
+    sequence1   = fmap NEMapF . traverse1 sequence1 . runNEMapF
+
+-- | A union, combining matching keys with '<!>'.
+instance (Ord k, Alt f) => Semigroup (NEMapF k f a) where
+    NEMapF xs <> NEMapF ys = NEMapF $ NEM.unionWith (<!>) xs ys
+
+-- | Left-biased union
+instance (Functor f, Ord k) => Alt (NEMapF k f) where
+    NEMapF xs <!> NEMapF ys = NEMapF $ NEM.union xs ys
+
+instance (Monoid k, Pointed f) => Pointed (NEMapF k f) where
+    point = NEMapF . NEM.singleton mempty . point
+

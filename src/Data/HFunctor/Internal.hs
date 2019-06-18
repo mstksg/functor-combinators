@@ -275,6 +275,12 @@ instance HFunctor NonEmptyF where
 instance HFunctor MaybeF where
     hmap f (MaybeF xs) = MaybeF (fmap f xs)
 
+instance HFunctor (MapF k) where
+    hmap f (MapF xs) = MapF (fmap f xs)
+
+instance HFunctor (NEMapF k) where
+    hmap f (NEMapF xs) = NEMapF (fmap f xs)
+
 instance HFunctor Alt.Alt where
     hmap = Alt.hoistAlt
 

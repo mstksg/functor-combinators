@@ -68,6 +68,8 @@ module Data.Functor.Combinator (
   , ListF(..)
   , NonEmptyF(..)
   , MaybeF(..)
+  , MapF(..)
+  , NEMapF(..)
   , Ap
   , Ap1(..)
   , Alt

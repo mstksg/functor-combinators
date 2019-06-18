@@ -206,6 +206,21 @@ instance TestHFunctor ListF where
 instance TestHFunctor NonEmptyF where
     genHF gx = NonEmptyF <$> Gen.nonEmpty (Range.linear 1 25) gx
 
+instance (Enum k, Bounded k, Ord k) => TestHFunctor (MapF k) where
+    genHF gx = MapF <$> Gen.map (Range.linear 0 10) kv
+      where
+        kv = (,) <$> Gen.enumBounded
+                 <*> gx
+
+instance (Enum k, Bounded k, Ord k) => TestHFunctor (NEMapF k) where
+    genHF gx = do
+      mp <- Gen.map (Range.linear 0 10) kv
+      (k, v) <- kv
+      pure . NEMapF $ NEM.insertMap k v mp
+      where
+        kv = (,) <$> Gen.enumBounded
+                 <*> gx
+
 instance TestHFunctor Steps where
     genHF gx = do
       mp     <- Gen.map (Range.linear 0 10) kv
@@ -338,7 +353,6 @@ instance TestHFunctor Lift
 -- | We cannot test the pure case, huhu
 instance TestHFunctor (These1 f)
 
-
 instance TestHFunctor MaybeF where
     genHF gx = Gen.bool >>= \case
       False -> pure $ MaybeF Nothing
@@ -357,4 +371,3 @@ instance TestHFunctor ((:+:) f)
 instance TestHFunctor (Sum f)
 instance TestHFunctor ProxyF
 instance TestHFunctor (RightF f)
-

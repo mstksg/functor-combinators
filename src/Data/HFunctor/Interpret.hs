@@ -234,6 +234,18 @@ instance Interpret MaybeF where
     retract     = fromMaybe zero . runMaybeF
     interpret f = maybe zero f . runMaybeF
 
+instance Monoid k => Interpret (MapF k) where
+    type C (MapF k) = Plus
+
+    retract = foldr (<!>) zero . runMapF
+    interpret f = foldr ((<!>) . f) zero . runMapF
+
+instance Monoid k => Interpret (NEMapF k) where
+    type C (NEMapF k) = Alt
+
+    retract = asum1 . runNEMapF
+    interpret f = asum1 . fmap f . runNEMapF
+
 -- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
 -- 'Numeric.Natural.Natural')@.
 instance Interpret Step where

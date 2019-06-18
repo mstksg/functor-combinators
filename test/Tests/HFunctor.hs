@@ -214,6 +214,8 @@ hfunctorTests = testGroup "HFunctors"
     , testGroup "ListF"      $ bindInterpProps_ @ListF (Gen.list (Range.linear 0 3) intGen)
     , testGroup "NonEmptyF"  $ bindInterpProps_ @NonEmptyF (Gen.list (Range.linear 0 3) intGen)
     , testGroup "MaybeF"     $ bindInterpProps_ @MaybeF listGen
+    , testGroup "MapF"       $ interpretProps_  @(MapF Ordering) (Gen.list (Range.linear 0 3) intGen)
+    , testGroup "NEMapF"     $ interpretProps_  @(NEMapF Ordering) (Gen.list (Range.linear 0 3) intGen)
     , testGroup "Free1"      $ bindInterpProps_ @Free1  (Gen.list (Range.linear 0 3) intGen)
     , testGroup "Free"       $ bindInterpProps_ @Free   (Gen.list (Range.linear 0 3) intGen)
     , testGroup "Ap1"        $ bindInterpProps_ @Ap1    (Const . S.Sum <$> intGen)

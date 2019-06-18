@@ -61,6 +61,7 @@ import           Data.Functor.Alt
 import           Data.Functor.Bind
 import           Data.Functor.These
 import           Data.Map.NonEmpty          (NEMap)
+import           Data.Pointed
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
@@ -101,6 +102,9 @@ deriveOrd1 ''Step
 instance Applicative f => Applicative (Step f) where
     pure = Step 0 . pure
     Step n f <*> Step m x = Step (n + m) (f <*> x)
+
+instance Pointed f => Pointed (Step f) where
+    point = Step 0 . point
 
 instance Foldable1 f => Foldable1 (Step f) where
     fold1      = fold1 . stepVal
@@ -205,8 +209,9 @@ absurd1 = \case {}
 -- instance in the target context, since we have to handle potentially more
 -- than one @f@.
 --
--- It has no 'HBind' instance because a proper 'HBind' would require
--- a potential empty 'Steps'.
+-- This type is structurally similar to @'NEMapF' ('Sum' 'Natural')@;
+-- however, it has a different 'Semigroup' instance to make it useful as
+-- the fixed-point of 'These1'.
 newtype Steps f a = Steps { getSteps :: NEMap Natural (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -224,13 +229,19 @@ instance Traversable1 f => Traversable1 (Steps f) where
     traverse1 f = fmap Steps . (traverse1 . traverse1) f . getSteps
     sequence1   = fmap Steps . traverse1 sequence1 . getSteps
 
+-- | Appends the items back-to-back, shifting all of the items in the
+-- second map.  Matches the behavior as the fixed-point of 'These1'.
 instance Semigroup (Steps f a) where
     Steps xs <> Steps ys = Steps $
       let (k, _) = NEM.findMax xs
       in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
 
+-- | Left-biased untion
 instance Functor f => Alt (Steps f) where
-    (<!>) = (<>)
+    Steps xs <!> Steps ys = Steps $ NEM.union xs ys
+
+instance Pointed f => Pointed (Steps f) where
+    point = Steps . NEM.singleton 0 . point
 
 -- | "Uncons and cons" an @f@ branch before a 'Steps'.  This is basically
 -- a witness that 'stepsDown' and 'stepsUp' form an isomorphism.
@@ -348,6 +359,10 @@ deriveOrd1 ''Flagged
 instance Applicative f => Applicative (Flagged f) where
     pure = Flagged False . pure
     Flagged n f <*> Flagged m x = Flagged (n || m) (f <*> x)
+
+-- | Uses 'False' for 'point'.
+instance Pointed f => Pointed (Flagged f) where
+    point = Flagged False . point
 
 instance Foldable1 f => Foldable1 (Flagged f) where
     fold1      = fold1 . flaggedVal

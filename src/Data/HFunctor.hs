@@ -82,6 +82,7 @@ import           GHC.Generics
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
+import qualified Data.Map                       as M
 import qualified Data.Map.NonEmpty              as NEM
 
 -- | Lift an isomorphism over an 'HFunctor'.
@@ -319,6 +320,14 @@ instance Inject NonEmptyF where
 instance Inject MaybeF where
     inject = MaybeF . Just
 
+-- | Injects into a singleton map at 'mempty'.
+instance Monoid k => Inject (NEMapF k) where
+    inject = NEMapF . NEM.singleton mempty
+
+-- | Injects into a singleton map at 'mempty'.
+instance Monoid k => Inject (MapF k) where
+    inject = MapF . M.singleton mempty
+
 -- | Injects with 0.
 --
 -- Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
@@ -326,7 +335,8 @@ instance Inject MaybeF where
 instance Inject Step where
     inject = Step 0
 
--- | Injects into a singleton map at 0.
+-- | Injects into a singleton map at 0; same behavior as @'NEMapF'
+-- ('Data.Semigroup.Sum' 'Numeric.Natural.Natural')@.
 instance Inject Steps where
     inject = Steps . NEM.singleton 0
 

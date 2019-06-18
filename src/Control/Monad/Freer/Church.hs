@@ -57,6 +57,7 @@ import           Data.Functor
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
+import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           GHC.Generics
@@ -109,6 +110,9 @@ instance Apply (Free f) where
 instance Applicative (Free f) where
     pure  = return
     (<*>) = (<.>)
+
+instance Pointed (Free f) where
+    point = pure
 
 instance Bind (Free f) where
     x >>- f  = Free $ \p b -> runFree x (\y -> runFree (f y) p b) b
