@@ -43,10 +43,13 @@ module Data.HBifunctor (
 import           Control.Natural.IsoF
 import           Data.Biapplicative
 import           Data.Bifunctor.TH
+import           Data.Constraint.Trivial
 import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Classes
+import           Data.HFunctor
 import           Data.HFunctor.Internal
+import           Data.HFunctor.Interpret
 import           Data.Kind
 import           GHC.Generics
 
@@ -142,10 +145,8 @@ deriving via (WrappedHBifunctor (HJoker t) f)
 -- | An 'HBifunctor' that ignores its second input.  Like
 -- a 'GHC.Generics.:+:' with no 'GHC.Generics.R1'/right branch.
 --
--- This is 'Data.Bifunctors.Jokker.Joker' from "Data.Bifunctors.Joker", but
+-- This is 'Data.Bifunctors.Joker.Joker' from "Data.Bifunctors.Joker", but
 -- given a more sensible name for its purpose.
---
--- It is essentially @'HClown' 'Control.Monad.Trans.Identity.IdentityT'@
 newtype LeftF f g a = LeftF { runLeftF :: f a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -170,7 +171,8 @@ deriving via (WrappedHBifunctor LeftF f)
 -- | An 'HBifunctor' that ignores its first input.  Like
 -- a 'GHC.Generics.:+:' with no 'GHC.Generics.L1'/left branch.
 --
--- It is essentially @'HJoker' 'Control.Monad.Trans.Identity.IdentityT'@
+-- In its polykinded form (on @f@), it is essentially a higher-order
+-- version of 'Tagged'. 
 newtype RightF f g a = RightF { runRightF :: g a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -184,3 +186,17 @@ instance HBifunctor RightF where
 
 deriving via (WrappedHBifunctor RightF f)
     instance HFunctor (RightF f)
+
+instance HFunctor (RightF f) where
+    hmap f (RightF x) = RightF (f x)
+
+instance Inject (RightF f) where
+    inject = RightF
+
+instance HBind (RightF f) where
+    hbind f (RightF x) = f x
+
+instance Interpret (RightF f) where
+    type C (RightF f) = Unconstrained
+    retract (RightF x) = x
+    interpret f (RightF x) = f x

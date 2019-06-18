@@ -71,7 +71,6 @@ import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
-import           Control.Monad.Trans.Maybe
 import           Control.Natural
 import           Data.Coerce
 import           Data.Constraint.Trivial
@@ -80,6 +79,7 @@ import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
+import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor
 import           Data.Kind
@@ -286,6 +286,30 @@ instance Plus f => Interpret ((:*:) f) where
 instance Plus f => Interpret (Product f) where
     type C (Product f) = Unconstrained
     retract (Pair _ y) = y
+
+-- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- but we don't really have that typeclass in any standard hierarchies.  We
+-- use 'Plus' here instead, but we never use '<!>'.  This would only go
+-- wrong in situations where your type supports 'zero' but not '<!>', like
+-- instances of 'Control.Monad.Fail.MonadFail' without
+-- 'Control.Monad.MonadPlus'.
+instance Interpret ((:+:) f) where
+    type C ((:+:) f) = Plus
+    retract = \case
+      L1 _ -> zero
+      R1 y -> y
+
+-- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- but we don't really have that typeclass in any standard hierarchies.  We
+-- use 'Plus' here instead, but we never use '<!>'.  This would only go
+-- wrong in situations where your type supports 'zero' but not '<!>', like
+-- instances of 'Control.Monad.Fail.MonadFail' without
+-- 'Control.Monad.MonadPlus'.
+instance Interpret (Sum f) where
+    type C (Sum f) = Plus
+    retract = \case
+      InL _ -> zero
+      InR y -> y
 
 instance Interpret (M1 i c) where
     type C (M1 i c) = Unconstrained

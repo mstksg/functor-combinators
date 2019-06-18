@@ -420,6 +420,7 @@ instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
 
 deriving via (WrappedHBifunctor Day f)     instance HFunctor (Day f)
 deriving via (WrappedHBifunctor (:*:) f)   instance HFunctor ((:*:) f)
+deriving via (WrappedHBifunctor (:+:) f)   instance HFunctor ((:+:) f)
 deriving via (WrappedHBifunctor Product f) instance HFunctor (Product f)
 deriving via (WrappedHBifunctor Sum f)     instance HFunctor (Sum f)
 deriving via (WrappedHBifunctor Joker f)   instance HFunctor (Joker f)

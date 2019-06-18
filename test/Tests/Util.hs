@@ -28,7 +28,6 @@ import           Control.Applicative
 import           Control.Applicative.Backwards
 import           Control.Applicative.Lift
 import           Control.Monad.Freer.Church
-import           Control.Monad.Trans.Maybe
 import           Control.Natural.IsoF
 import           Data.Bifunctor.Joker
 import           Data.Function
@@ -37,6 +36,7 @@ import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Combinator
 import           Data.Functor.Identity
+import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
 import           Data.Functor.Sum
@@ -201,10 +201,10 @@ instance TestHFunctor Step where
     genHF gx = Step <$> Gen.integral (Range.linear 0 25) <*> gx
 
 instance TestHFunctor ListF where
-    genHF gx = ListF <$> Gen.list (Range.linear 0 100) gx
+    genHF gx = ListF <$> Gen.list (Range.linear 0 25) gx
 
 instance TestHFunctor NonEmptyF where
-    genHF gx = NonEmptyF <$> Gen.nonEmpty (Range.linear 1 100) gx
+    genHF gx = NonEmptyF <$> Gen.nonEmpty (Range.linear 1 25) gx
 
 instance TestHFunctor Steps where
     genHF gx = do
@@ -323,10 +323,6 @@ instance TestHBifunctor t => TestHFunctor (Chain1 t) where
           False -> Done1 <$> x
           True  -> More1 <$> genHB x go
 
-instance TestHFunctor Coyoneda
-
-instance TestHFunctor WrappedApplicative
-
 deriving instance Eq (f a) => Eq (WrappedApplicative f a)
 deriving instance Show (f a) => Show (WrappedApplicative f a)
 
@@ -339,19 +335,26 @@ deriving instance (Show a, Show (f a)) => Show (MaybeApply f a)
 -- | We cannot test the pure case, huhu
 instance TestHFunctor Lift
 
+-- | We cannot test the pure case, huhu
+instance TestHFunctor (These1 f)
+
+
 instance TestHFunctor MaybeF where
     genHF gx = Gen.bool >>= \case
       False -> pure $ MaybeF Nothing
       True  -> MaybeF . Just <$> gx
 
 instance TestHFunctor IdentityT where
-
--- | We cannot test the pure case, huhu
-instance TestHFunctor (These1 f)
-
+instance TestHFunctor Coyoneda
+instance TestHFunctor WrappedApplicative
 instance TestHFunctor Reverse
 instance TestHFunctor Backwards
 instance Applicative f => TestHFunctor (Comp f)
-
 instance TestHFunctor (M1 i c)
+instance Plus f => TestHFunctor ((:*:) f)
+instance Plus f => TestHFunctor (Product f)
+instance TestHFunctor ((:+:) f)
+instance TestHFunctor (Sum f)
+instance TestHFunctor ProxyF
+instance TestHFunctor (RightF f)
 

@@ -72,6 +72,7 @@ import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
+import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor.Internal
 import           Data.List.NonEmpty             (NonEmpty(..))
@@ -353,6 +354,12 @@ instance Plus f => Inject ((:*:) f) where
 instance Plus f => Inject (Product f) where
     inject = Pair zero
 
+instance Inject ((:+:) f) where
+    inject = R1
+
+instance Inject (Sum f) where
+    inject = InR
+
 instance Inject (M1 i c) where
     inject = M1
 
@@ -452,15 +459,25 @@ instance Alt f => HBind (These1 f) where
         That1     y' -> That1 y'
         These1 x' y' -> These1 (x <!> x') y'
 
+instance Plus f => HBind ((:*:) f) where
+    hbind f (x :*: y) = (x <!> x') :*: y'
+      where
+        x' :*: y' = f y
+
 instance Plus f => HBind (Product f) where
     hbind f (Pair x y) = Pair (x <!> x') y'
       where
         Pair x' y' = f y
 
-instance Plus f => HBind ((:*:) f) where
-    hbind f (x :*: y) = (x <!> x') :*: y'
-      where
-        x' :*: y' = f y
+instance HBind ((:+:) f) where
+    hbind f = \case
+      L1 x -> L1 x
+      R1 y -> f y
+
+instance HBind (Sum f) where
+    hbind f = \case
+      InL x -> InL x
+      InR y -> f y
 
 instance HBind (M1 i c) where
     hbind f (M1 x) = f x

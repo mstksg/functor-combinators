@@ -155,8 +155,10 @@ pattern ProdNonEmpty { nonEmptyProd
 --
 -- Can be useful for describing a "an @f a@ that may or may not be there".
 --
--- This is the free structure for a "fail"-like typeclass that only has
--- @zero :: f a@.
+-- This is the free structure for a "fail"-like typeclass that would only
+-- have @zero :: f a@.
+--
+-- Equivalent to @'ProxyF' ':+:' 'IdentityT'@
 newtype MaybeF f a = MaybeF { runMaybeF :: Maybe (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

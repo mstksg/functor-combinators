@@ -19,24 +19,26 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/mstksg/functor-combinators#readme>
 
-dependencies:
-- base >= 4.7 && < 5
-- nonempty-containers
-- semigroupoids
-- free
-
 ghc-options:
 - -Wall
 - -Wcompat
 - -Wredundant-constraints
 - -Werror=incomplete-patterns
 
+dependencies:
+- base >= 4.7 && < 5
+- bifunctors
+- free
+- nonempty-containers
+- semigroupoids
+- tagged
+- transformers
+
 library:
   source-dirs: src
   other-modules:
   - Data.HFunctor.Internal
   dependencies:
-  - bifunctors
   - comonad
   - constraints
   - containers
@@ -48,9 +50,7 @@ library:
   - pointed
   - profunctors
   - recursion-schemes
-  - tagged
   - these >= 1
-  - transformers
   - trivial-constraint >= 0.5
 
 tests:

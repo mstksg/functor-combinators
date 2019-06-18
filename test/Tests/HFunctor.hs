@@ -9,17 +9,15 @@ module Tests.HFunctor (
     hfunctorTests
   ) where
 
--- import qualified Control.Alternative.Free    as Alt
 import           Control.Applicative
 import           Control.Applicative.Backwards
-import           Control.Monad.Trans.Maybe
-import           Control.Monad.Trans.Reader
 import           Data.Bifunctor
 import           Data.Functor.Bind
 import           Data.Functor.Combinator
+import           Data.Functor.Product
 import           Data.Functor.Reverse
+import           Data.Functor.Sum
 import           Data.HFunctor
-import           Data.Tagged
 import           GHC.Generics                   (M1(..), Meta(..))
 import           Hedgehog
 import           Test.Tasty
@@ -170,19 +168,19 @@ hbindProps_ gx = [ hfunctorProps @t gx
                  , hbindProps    @t gx
                  ]
 
-interpretProps_
-    :: forall t f a.
-     ( Interpret t
-     , TestHFunctor t
-     , C t f
-     , Show (f a)          , Eq (f a)
-     , Show (t f a)        , Eq (t f a)
-     )
-    => Gen (f a)
-    -> [TestTree]
-interpretProps_ gx = [ hfunctorProps  @t gx
-                     , interpretProps @t gx
-                     ]
+-- interpretProps_
+--     :: forall t f a.
+--      ( Interpret t
+--      , TestHFunctor t
+--      , C t f
+--      , Show (f a)          , Eq (f a)
+--      , Show (t f a)        , Eq (t f a)
+--      )
+--     => Gen (f a)
+--     -> [TestTree]
+-- interpretProps_ gx = [ hfunctorProps  @t gx
+--                      , interpretProps @t gx
+--                      ]
 
 
 bindInterpProps_
@@ -213,8 +211,8 @@ hfunctorTests = testGroup "HFunctors"
     , testGroup "WrappedApplicative" $ bindInterpProps_ @WrappedApplicative listGen
     , testGroup "MaybeApply" $ bindInterpProps_ @MaybeApply listGen
     , testGroup "Lift"       $ bindInterpProps_ @Lift listGen
-    , testGroup "ListF"      $ bindInterpProps_ @ListF listGen
-    , testGroup "NonEmptyF"  $ bindInterpProps_ @NonEmptyF listGen
+    , testGroup "ListF"      $ bindInterpProps_ @ListF (Gen.list (Range.linear 0 3) intGen)
+    , testGroup "NonEmptyF"  $ bindInterpProps_ @NonEmptyF (Gen.list (Range.linear 0 3) intGen)
     , testGroup "MaybeF"     $ bindInterpProps_ @MaybeF listGen
     , testGroup "Free1"      $ bindInterpProps_ @Free1  (Gen.list (Range.linear 0 3) intGen)
     , testGroup "Free"       $ bindInterpProps_ @Free   (Gen.list (Range.linear 0 3) intGen)
@@ -226,23 +224,15 @@ hfunctorTests = testGroup "HFunctors"
     , testGroup "Reverse"    $ bindInterpProps_ @Reverse listGen
     , testGroup "Backwards"  $ bindInterpProps_ @Backwards listGen
     , testGroup "Comp"       [ hfunctorProps @(Comp []) (Gen.list (Range.linear 0 3) intGen) ]
+    , testGroup "Comp'"      [ hfunctorProps @((:*:) []) (Gen.list (Range.linear 0 3) intGen) ]
     , testGroup "Step"       $ bindInterpProps_ @Step listGen
     , testGroup "Steps"      $ bindInterpProps_ @Steps listGen
     , testGroup "Flagged"    $ bindInterpProps_ @Flagged listGen
     , testGroup "M1"         $ bindInterpProps_ @(M1 () ('MetaData "" "" "" 'True)) listGen
-
+    , testGroup "Product"    $ bindInterpProps_ @((:*:) []) listGen
+    , testGroup "Product'"   $ bindInterpProps_ @(Product []) listGen
+    , testGroup "Sum"        $ bindInterpProps_ @((:+:) []) listGen
+    , testGroup "Sum'"       $ bindInterpProps_ @(Sum []) listGen
+    , testGroup "ProxyF"     $ hbindProps_      @ProxyF listGen
+    , testGroup "RightF"     $ hbindProps_      @(RightF []) listGen
     ]
-    -- [ testGroup "Sum"      $ matchableProps_      @(:+:)   listGen Nothing
-    -- , testGroup "Sum'"     $ matchableProps_      @Sum     listGen Nothing
-    -- , testGroup "Product"  $ matchableProps_      @(:*:)   listGen (Just (pure Proxy))
-    -- , testGroup "Product'" $ matchableProps_      @Product listGen (Just (pure Proxy))
-    -- , testGroup "These1"   $ monoidalProps_       @These1  listGen Nothing
-    -- , testGroup "LeftF"    $ semigroupoidalProps_ @LeftF   listGen
-    -- , testGroup "RightF"   $ semigroupoidalProps_ @RightF  listGen
-    -- , testGroup "Day"      $ matchableProps_      @Day     (Const . S.Sum <$> intGen)
-    --                                                        (Just (Identity <$> intGen))
-    -- , testGroup "Comp"     $ monoidalProps_       @Comp    (Gen.list (Range.linear 0 3) intGen)
-    --                                                        (Just (Identity <$> intGen))
-
-
-
