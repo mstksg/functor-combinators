@@ -71,8 +71,6 @@ fromListF :: ListF f ~> (Proxy :+: NonEmptyF f)
 --   
 --   This is the free structure for a "fail"-like typeclass that would only
 --   have <tt>zero :: f a</tt>.
---   
---   Equivalent to <tt><tt>ProxyF</tt> <a>:+:</a> <tt>IdentityT</tt></tt>
 newtype MaybeF f a
 MaybeF :: Maybe (f a) -> MaybeF f a
 [runMaybeF] :: MaybeF f a -> Maybe (f a)
@@ -91,9 +89,9 @@ maybeToListF :: MaybeF f ~> ListF f
 --   useful for represeting a product of many different values of type
 --   <tt>f a</tt>, each "at" a different <tt>k</tt> location.
 --   
---   Can be considered a combination of <tt>EnvT</tt> and <a>ListF</a>, in
---   a way --- combining the "indexed with a value" property with
---   "containing multiple <tt>f a</tt>s".
+--   Can be considered a combination of <a>EnvT</a> and <a>ListF</a>, in a
+--   way --- a <tt><a>MapF</a> k f a</tt> is like a <tt><a>ListF</a>
+--   (<a>EnvT</a> k f) a</tt> with unique (and ordered) keys.
 newtype MapF k f a
 MapF :: Map k (f a) -> MapF k f a
 [runMapF] :: MapF k f a -> Map k (f a)
@@ -103,9 +101,10 @@ MapF :: Map k (f a) -> MapF k f a
 --   type <tt>f a</tt>, each "at" a different <tt>k</tt> location, where
 --   you need to have at least one <tt>f a</tt> at all times.
 --   
---   Can be considered a combination of <tt>EnvT</tt> and <a>NonEmptyF</a>,
---   in a way --- combining the "indexed with a value" property with
---   "containing multiple <tt>f a</tt>s".
+--   Can be considered a combination of <a>EnvT</a> and <a>NonEmptyF</a>,
+--   in a way --- an <tt><a>NEMapF</a> k f a</tt> is like a
+--   <tt><a>NonEmptyF</a> (<a>EnvT</a> k f) a</tt> with unique (and
+--   ordered) keys.
 newtype NEMapF k f a
 NEMapF :: NEMap k (f a) -> NEMapF k f a
 [runNEMapF] :: NEMapF k f a -> NEMap k (f a)
@@ -615,9 +614,9 @@ Step :: Natural -> f a -> Step f a
 --   target context, since we have to handle potentially more than one
 --   <tt>f</tt>.
 --   
---   This type is structurally similar to <tt><tt>NEMapF</tt> (<a>Sum</a>
---   <a>Natural</a>)</tt>; however, it has a different <a>Semigroup</a>
---   instance to make it useful as the fixed-point of <a>These1</a>.
+--   This type is essentailly the same as <tt><a>NEMapF</a> (<a>Sum</a>
+--   <a>Natural</a>)</tt> (except with a different <a>Semigroup</a>
+--   instance).
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
@@ -1447,7 +1446,7 @@ LeftF :: f a -> LeftF f g a
 --   with no <a>L1</a>/left branch.
 --   
 --   In its polykinded form (on <tt>f</tt>), it is essentially a
---   higher-order version of <tt>Tagged</tt>.
+--   higher-order version of <a>Tagged</a>.
 newtype RightF f g a
 RightF :: g a -> RightF f g a
 [runRightF] :: RightF f g a -> g a
@@ -3555,8 +3554,6 @@ pattern ProdNonEmpty :: (f :*: ListF f) a -> NonEmptyF f a
 --   
 --   This is the free structure for a "fail"-like typeclass that would only
 --   have <tt>zero :: f a</tt>.
---   
---   Equivalent to <tt><tt>ProxyF</tt> <a>:+:</a> <tt>IdentityT</tt></tt>
 newtype MaybeF f a
 MaybeF :: Maybe (f a) -> MaybeF f a
 [runMaybeF] :: MaybeF f a -> Maybe (f a)
@@ -3565,9 +3562,9 @@ MaybeF :: Maybe (f a) -> MaybeF f a
 --   useful for represeting a product of many different values of type
 --   <tt>f a</tt>, each "at" a different <tt>k</tt> location.
 --   
---   Can be considered a combination of <tt>EnvT</tt> and <a>ListF</a>, in
---   a way --- combining the "indexed with a value" property with
---   "containing multiple <tt>f a</tt>s".
+--   Can be considered a combination of <a>EnvT</a> and <a>ListF</a>, in a
+--   way --- a <tt><a>MapF</a> k f a</tt> is like a <tt><a>ListF</a>
+--   (<a>EnvT</a> k f) a</tt> with unique (and ordered) keys.
 newtype MapF k f a
 MapF :: Map k (f a) -> MapF k f a
 [runMapF] :: MapF k f a -> Map k (f a)
@@ -3577,9 +3574,10 @@ MapF :: Map k (f a) -> MapF k f a
 --   type <tt>f a</tt>, each "at" a different <tt>k</tt> location, where
 --   you need to have at least one <tt>f a</tt> at all times.
 --   
---   Can be considered a combination of <tt>EnvT</tt> and <a>NonEmptyF</a>,
---   in a way --- combining the "indexed with a value" property with
---   "containing multiple <tt>f a</tt>s".
+--   Can be considered a combination of <a>EnvT</a> and <a>NonEmptyF</a>,
+--   in a way --- an <tt><a>NEMapF</a> k f a</tt> is like a
+--   <tt><a>NonEmptyF</a> (<a>EnvT</a> k f) a</tt> with unique (and
+--   ordered) keys.
 newtype NEMapF k f a
 NEMapF :: NEMap k (f a) -> NEMapF k f a
 [runNEMapF] :: NEMapF k f a -> NEMap k (f a)
@@ -3730,9 +3728,9 @@ Step :: Natural -> f a -> Step f a
 --   target context, since we have to handle potentially more than one
 --   <tt>f</tt>.
 --   
---   This type is structurally similar to <tt><tt>NEMapF</tt> (<a>Sum</a>
---   <a>Natural</a>)</tt>; however, it has a different <a>Semigroup</a>
---   instance to make it useful as the fixed-point of <a>These1</a>.
+--   This type is essentailly the same as <tt><a>NEMapF</a> (<a>Sum</a>
+--   <a>Natural</a>)</tt> (except with a different <a>Semigroup</a>
+--   instance).
 newtype Steps f a
 Steps :: NEMap Natural (f a) -> Steps f a
 [getSteps] :: Steps f a -> NEMap Natural (f a)
@@ -3947,7 +3945,7 @@ LeftF :: f a -> LeftF f g a
 --   with no <a>L1</a>/left branch.
 --   
 --   In its polykinded form (on <tt>f</tt>), it is essentially a
---   higher-order version of <tt>Tagged</tt>.
+--   higher-order version of <a>Tagged</a>.
 newtype RightF f g a
 RightF :: g a -> RightF f g a
 [runRightF] :: RightF f g a -> g a
