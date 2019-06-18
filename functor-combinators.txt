@@ -849,6 +849,10 @@ module Data.HFunctor
 --   
 --   For the ability to move in and out of the enhanced functor, see
 --   <a>Inject</a> and <a>Interpret</a>.
+--   
+--   This class is similar to <a>MFunctor</a> from
+--   <a>Control.Monad.Morph</a>, but instances must work without a
+--   <a>Monad</a> constraint.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -931,6 +935,10 @@ inject :: Inject t => f ~> t f
 --   Note that these laws are different from the <a>Interpret</a> laws, so
 --   we often have instances where <a>hbind</a> and <a>interpret</a>
 --   (though they both may typecheck) produce different behavior.
+--   
+--   This class is similar to <a>MMonad</a> from
+--   <a>Control.Monad.Morph</a>, but instances must work without a
+--   <a>Monad</a> constraint.
 class Inject t => HBind t
 
 -- | Bind a continuation to a <tt>t f</tt> into some context <tt>g</tt>.
@@ -1023,6 +1031,10 @@ instance Data.HFunctor.HBind Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.HBind Control.Applicative.Step.Step
 instance Data.HFunctor.HBind Control.Applicative.Step.Steps
 instance Data.HFunctor.HBind Control.Applicative.Step.Flagged
+instance Data.Functor.Alt.Alt f => Data.HFunctor.HBind (Data.Functor.These.These1 f)
+instance Data.Functor.Plus.Plus f => Data.HFunctor.HBind (Data.Functor.Product.Product f)
+instance Data.Functor.Plus.Plus f => Data.HFunctor.HBind ((GHC.Generics.:*:) f)
+instance Data.HFunctor.HBind (GHC.Generics.M1 i c)
 instance Data.HFunctor.HBind Control.Alternative.Free.Alt
 instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free
 instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free1
@@ -1046,6 +1058,12 @@ instance Data.HFunctor.Inject Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.Inject Control.Applicative.Step.Step
 instance Data.HFunctor.Inject Control.Applicative.Step.Steps
 instance Data.HFunctor.Inject Control.Applicative.Step.Flagged
+instance Data.HFunctor.Inject (Data.Functor.These.These1 f)
+instance GHC.Base.Applicative f => Data.HFunctor.Inject (Control.Monad.Freer.Church.Comp f)
+instance GHC.Base.Applicative f => Data.HFunctor.Inject ((GHC.Generics.:.:) f)
+instance Data.Functor.Plus.Plus f => Data.HFunctor.Inject ((GHC.Generics.:*:) f)
+instance Data.Functor.Plus.Plus f => Data.HFunctor.Inject (Data.Functor.Product.Product f)
+instance Data.HFunctor.Inject (GHC.Generics.M1 i c)
 instance Data.HFunctor.Inject Control.Alternative.Free.Alt
 instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free
 instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free1
@@ -1431,7 +1449,11 @@ instance Data.HFunctor.Interpret.Interpret Control.Applicative.ListF.MaybeF
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Step
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Steps
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Step.Flagged
+instance Data.HFunctor.Interpret.Interpret (Data.Functor.These.These1 f)
 instance Data.HFunctor.Interpret.Interpret Control.Alternative.Free.Alt
+instance Data.Functor.Plus.Plus f => Data.HFunctor.Interpret.Interpret ((GHC.Generics.:*:) f)
+instance Data.Functor.Plus.Plus f => Data.HFunctor.Interpret.Interpret (Data.Functor.Product.Product f)
+instance Data.HFunctor.Interpret.Interpret (GHC.Generics.M1 i c)
 instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free
 instance Data.HFunctor.Interpret.Interpret Control.Monad.Freer.Church.Free1
 instance Data.HFunctor.Interpret.Interpret Control.Applicative.Free.Final.Ap
@@ -2794,6 +2816,10 @@ infixr 0 <~>
 --   
 --   For the ability to move in and out of the enhanced functor, see
 --   <a>Inject</a> and <a>Interpret</a>.
+--   
+--   This class is similar to <a>MFunctor</a> from
+--   <a>Control.Monad.Morph</a>, but instances must work without a
+--   <a>Monad</a> constraint.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -3605,6 +3631,10 @@ data Free f a
 --   have at least one <tt>f</tt>.
 data Free1 f a
 
+-- | Applicative functor formed by adding pure computations to a given
+--   applicative functor.
+data Lift (f :: Type -> Type) a
+
 -- | An <tt>f a</tt>, along with a <a>Natural</a> index.
 --   
 --   <pre>
@@ -3725,6 +3755,12 @@ data Flagged f a
 Flagged :: Bool -> f a -> Flagged f a
 [flaggedFlag] :: Flagged f a -> Bool
 [flaggedVal] :: Flagged f a -> f a
+
+-- | The trivial monad transformer, which maps a monad to an equivalent
+--   monad.
+newtype IdentityT (f :: k -> Type) (a :: k) :: forall k. () => k -> Type -> k -> Type
+IdentityT :: f a -> IdentityT
+[runIdentityT] :: IdentityT -> f a
 
 -- | <tt><a>Void2</a> a b</tt> is uninhabited for all <tt>a</tt> and
 --   <tt>b</tt>.
