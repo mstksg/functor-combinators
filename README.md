@@ -1,9 +1,10 @@
 functor-combinators
 ===================
 
-*[Introductory Blog Post][combinatorpedia]*
+*[Introductory Blog Post][combinatorpedia]* / *[Hackage][hackage]*
 
 [combinatorpedia]: https://blog.jle.im/entry/functor-combinatorpedia.html
+[hackage]: https://hackage.haskell.org/package/functor-combinators
 
 Tools for working with *functor combinators*: types that take functors (or
 other indexed types) and returns a new functor that "enhances" or "mixes" them
@@ -38,7 +39,28 @@ sense, of functor combinators in specific roles that are missing from the
 haskell ecosystem.
 
 To jump into using it, import *Data.Functor.Combinator*.  For a full
-introduction, check out the *[Functor Combinatorpedia][]*, which goes in-depth
-into the motivation behind functor combinator-driven development, examples of
-the functor combinators in this library, and details about how to use these
-abstractions!
+introduction, check out the *[Functor Combinatorpedia][combinatorpedia]*, which
+goes in-depth into the motivation behind functor combinator-driven development,
+examples of the functor combinators in this library, and details about how to
+use these abstractions!
+
+Comparisons
+-----------
+
+On the surface, *functor-combinators* look like it fills a similar space to
+effects systems and libraries like *[mtl][]*, *[polysemy][]*,
+*[freer-simple][]*, or *[fused-effects][]*.  However, the functor combinator
+design pattern actually exists on a different level.
+
+[mtl]: https://hackage.haskell.org/package/mtl
+[polysemy]: https://hackage.haskell.org/package/polysemy
+[freer-simple]: https://hackage.haskell.org/package/freer-simple
+[fused-effects]: https://hackage.haskell.org/package/fused-effects
+
+Functor combinator design patterns can be used to help build the *structure* of
+the *data types* and schemas that define your program/DSL.  Once you build
+these nice structures, you then *interpret* them into some target context. This
+"target context" is the realm that libraries like *mtl* and *polysemy* can
+fill; functor combinators serve to help you define a structure for your program
+*before* you interpret it into whatever Applicative or Monad or effects system
+you end up using.
