@@ -27,7 +27,8 @@
 -- two functors together and mix them in different ways.  Use them to build
 -- your final structure by combining simpler ones in composable ways!
 --
--- See README for a tutorial and a rundown on each different functor
+-- See <https://blog.jle.im/entry/functor-combinatorpedia.html> and the
+-- README for a tutorial and a rundown on each different functor
 -- combinator.
 module Data.Functor.Combinator (
   -- * Classes

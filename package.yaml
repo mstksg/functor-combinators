@@ -14,7 +14,7 @@ synopsis:            Tools for functor combinator-based program design
 category:            Data
 
 description: |
-    Tools for working with *functor combinators*: types that take functors (or
+    Tools for working with /functor combinators/: types that take functors (or
     other indexed types) and returns a new functor that "enhances" or "mixes"
     them in some way.  In the process, you can design featureful programs by
     composing smaller "primitives" using basic unversal combinators.
@@ -64,6 +64,7 @@ library:
   - recursion-schemes
   - these
   - trivial-constraint >= 0.5
+  - vinyl
 
 tests:
   functor-combinators-test:

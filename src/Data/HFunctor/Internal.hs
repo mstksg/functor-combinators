@@ -7,6 +7,7 @@
 {-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeInType          #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module Data.HFunctor.Internal (
@@ -45,6 +46,9 @@ import           Data.Functor.Yoneda
 import           Data.Kind
 import           Data.Proxy
 import           Data.Tagged
+import           Data.Vinyl.CoRec
+import           Data.Vinyl.Core                (Rec)
+import           Data.Vinyl.Recursive
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
@@ -151,7 +155,7 @@ class HBifunctor t where
 -- @
 --
 -- to give us an automatic 'HFunctor' instance and save us some work.
-newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
+newtype WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) a
     = WrapHBifunctor { unwrapHBifunctor :: t f g a }
   deriving Functor
 
@@ -283,6 +287,12 @@ instance HFunctor Void2 where
 
 instance HFunctor (EnvT e) where
     hmap f (EnvT e x) = EnvT e (f x)
+
+instance HFunctor Rec where
+    hmap = rmap
+
+instance HFunctor CoRec where
+    hmap f (CoRec x) = CoRec (f x)
 
 instance HBifunctor (:*:) where
     hleft  f (x :*: y) = f x :*:   y
