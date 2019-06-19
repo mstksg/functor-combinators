@@ -15,6 +15,10 @@
 --   re-implementations for compatibility) are available in other modules
 --   as well.
 --   
+--   This library does not define new functor combinators for the most
+--   part, but rather re-exports them from different parts of the Haskell
+--   ecosystem and provides a uniform interface.
+--   
 --   See the README for a quick overview, and also
 --   <a>https://blog.jle.im/entry/functor-combinatorpedia.html</a> for an
 --   in-depth dive into the motivation behind functor combinator-driven
@@ -2898,7 +2902,7 @@ instance (Data.HFunctor.Internal.HBifunctor t, Data.HBifunctor.Associative.Semig
 
 
 -- | Functor combinators and tools (typeclasses and utiility functions) to
---   manipulate them.
+--   manipulate them. This is the main "entrypoint" of the library.
 --   
 --   Classes include:
 --   
