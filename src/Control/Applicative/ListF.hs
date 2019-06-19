@@ -228,6 +228,26 @@ listToMaybeF (ListF xs) = MaybeF (listToMaybe xs)
 -- 'ListF', in a way --- a @'MapF' k f a@ is like a @'ListF'
 -- ('Control.Comonad.Trans.Env.EnvT' k f) a@ with unique (and ordered)
 -- keys.
+--
+-- One use case might be to extend a schema with many "options", indexed by
+-- some string.
+--
+-- For example, if you had a command line argument parser for a single
+-- command
+--
+-- @
+-- data Command a
+-- @
+--
+-- Then you can represent a command line argument parser for /multiple/
+-- named commands with
+--
+-- @
+-- type Commands = 'MapF' 'String' Command
+-- @
+--
+-- See 'NEMapF' for a non-empty variant, if you want to enforce that your
+-- bag has at least one @f a@.
 newtype MapF k f a = MapF { runMapF :: M.Map k (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -264,6 +284,8 @@ instance (Monoid k, Pointed f) => Pointed (MapF k f) where
 -- 'NonEmptyF', in a way --- an @'NEMapF' k f a@ is like a @'NonEmptyF'
 -- ('Control.Comonad.Trans.Env.EnvT' k f) a@ with unique (and ordered)
 -- keys.
+--
+-- See 'MapF' for some use cases.
 newtype NEMapF k f a = NEMapF { runNEMapF :: NEM.NEMap k (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 

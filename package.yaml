@@ -10,14 +10,24 @@ extra-source-files:
 - README.md
 - CHANGELOG.md
 
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis:            Tools for functor combinator-based program design
+category:            Data
 
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/mstksg/functor-combinators#readme>
+description: |
+    Tools for working with *functor combinators*: types that take functors (or
+    other indexed types) and returns a new functor that "enhances" or "mixes"
+    them in some way.  In the process, you can design featureful programs by
+    composing smaller "primitives" using basic unversal combinators.
+
+    The main entry point is "Data.Functor.Combinators", but more fine-grained
+    functionality and extra combinators (some of them re-implementations for
+    compatibility) are available in other modules as well.
+
+    See the README for a quick overview, and also
+    <https://blog.jle.im/entry/functor-combinatorpedia.html> for an in-depth
+    dive into the motivation behind functor combinator-driven development,
+    examples of the functor combinators in this library, and details about how
+    to use these abstractions!
 
 ghc-options:
 - -Wall
@@ -50,7 +60,7 @@ library:
   - pointed
   - profunctors
   - recursion-schemes
-  - these >= 1
+  - these
   - trivial-constraint >= 0.5
 
 tests:

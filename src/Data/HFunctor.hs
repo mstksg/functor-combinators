@@ -48,7 +48,7 @@ module Data.HFunctor (
   , ConstF(..)
   -- * 'HFunctor' Combinators
   , HLift(..), retractHLift
-  , HFree(..), retractHFree
+  , HFree(..), foldHFree, retractHFree
   ) where
 
 import           Control.Applicative.Backwards
@@ -202,15 +202,67 @@ retractHLift = \case
 -- An @'HFree' t f a@ is either @f a@, @t f a@, @t (t f) a@, @t (t (t f))
 -- a@, etc.
 --
--- This is the higher-oder analogue of 'Control.Monad.Free.Free'.
+-- This effectively turns @t@ into a tree with @t@ branches.
 --
--- It is the free 'HBind' for any @'HFunctor' t@.
+-- One particularly useful usage is with 'MapF'.  For example if you had
+-- a data type representing a command line command parser:
+--
+-- @
+-- data Command a
+-- @
+--
+-- You could represent "many possible named commands" using
+--
+-- @
+-- type Commands = 'MapF' 'String' Command
+-- @
+--
+-- And you can represent multiple /nested/ named commands using:
+--
+-- @
+-- type NestedCommands = 'HFree' ('MapF' 'String')
+-- @
+--
+-- This has an 'Data.HFunctor.Interpret.Interpret' instance, but it can be
+-- more useful to use via direct pattern matching, or through
+--
+-- @
+-- 'foldHFree'
+--     :: 'HBifunctor' t
+--     => f '~>' g
+--     -> t g ~> g
+--     -> HFree t f ~> g
+-- @
+--
+-- which requires no extra constriant on @g@, and lets you consider each
+-- branch separately.
+--
+-- This can be considered the higher-oder analogue of
+-- 'Control.Monad.Free.Free'; it is the free 'HBind' for any @'HFunctor'
+-- t@.
 --
 -- Note that @'HFree' 'IdentityT'@ is equivalent to 'Step'.
 data HFree t f a = HReturn (f a)
                  | HJoin   (t (HFree t f) a)
 
 deriving instance (Functor f, Functor (t (HFree t f))) => Functor (HFree t f)
+
+-- | Recursively fold down an 'HFree' into a single @g@ result, by handling
+-- each branch.  Can be more useful than
+-- 'Data.HFunctor.Interpret.interpret' because it allows you to treat each
+-- branch separately, and also does not require any constraint on @g@.
+--
+-- This is the catamorphism on 'HFree'.
+foldHFree
+    :: forall t f g. HFunctor t
+    => (f ~> g)
+    -> (t g ~> g)
+    -> (HFree t f ~> g)
+foldHFree f g = go
+  where
+    go :: HFree t f ~> g
+    go (HReturn x) = f x
+    go (HJoin   x) = g (hmap go x)
 
 -- | A higher-level 'Data.HFunctor.Interpret.retract' to get a @t f a@ back
 -- out of an @'HFree' t f a@, provided @t@ is an instance of 'Bind'.
