@@ -19,7 +19,8 @@
 -- Portability : non-portable
 --
 -- This module provides functor combinators that are wrappers over lists or
--- maybes of @f a@s, especially for their 'Data.Functor.HFunctor.Interpret'
+-- maybes of @f a@s, especially for their
+-- 'Data.HFunctor.Interpret.Interpret'
 -- instances.
 --
 -- Each one transforms a functor into some product of itself.  For example,

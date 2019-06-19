@@ -27,14 +27,14 @@ import           Data.Profunctor
 import           Control.Natural
 import           Data.Tagged
 
--- | The type of an isomorphism between two functors.  @f <~> g@ means that
+-- | The type of an isomorphism between two functors.  @f '<~>' g@ means that
 -- @f@ and @g@ are isomorphic to each other.
 --
--- We can effectively /use/ an @f <~> g@ with:
+-- We can effectively /use/ an @f \<~\> g@ with:
 --
 -- @
--- 'viewF'   :: (f <~> g) -> f a -> g a
--- 'reviewF' :: (f <~> g) -> g a -> a a
+-- 'viewF'   :: (f \<~\> g) -> f a -> g a
+-- 'reviewF' :: (f \<~\> g) -> g a -> a a
 -- @
 --
 -- Use 'viewF' to extract the "@f@ to @g@" function, and 'reviewF' to
@@ -45,13 +45,13 @@ import           Data.Tagged
 -- "Prelude":
 --
 -- @
--- ('.') :: f <~> g
---     -> g <~> h
---     -> f <~> h
+-- ('.') :: f \<~\> g
+--     -> g \<~\> h
+--     -> f \<~\> h
 -- @
 --
--- One nice thing about this representation is that we have the "identity"
--- isomorphism by using 'id' from "Prelude".
+-- Another nice thing about this representation is that we have the
+-- "identity" isomorphism by using 'id' from "Prelude".
 --
 -- @
 -- 'id' :: f '<~>' g
