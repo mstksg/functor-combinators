@@ -20,8 +20,7 @@
 --
 -- This module provides functor combinators that are wrappers over lists or
 -- maybes of @f a@s, especially for their
--- 'Data.HFunctor.Interpret.Interpret'
--- instances.
+-- 'Data.HFunctor.Interpret.Interpret' instances.
 --
 -- Each one transforms a functor into some product of itself.  For example,
 -- @'NonEmptyF' f@ represents @f ':*:' f@, or @f :*: f :*: f@, or @f :*:

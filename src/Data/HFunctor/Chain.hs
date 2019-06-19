@@ -45,6 +45,7 @@ module Data.HFunctor.Chain (
   , unrollMF
   , rerollMF
   , unrollingMF
+  , appendChain
   -- * 'Chain1'
   , Chain1(..)
   , foldChain1
@@ -52,6 +53,7 @@ module Data.HFunctor.Chain (
   , unrollingSF
   , unrollSF
   , rerollSF
+  , appendChain1
   , fromChain1
   -- ** Matchable
   -- | The following conversions between 'Chain' and 'Chain1' are only
@@ -100,7 +102,9 @@ import           GHC.Generics hiding         (C)
 -- and functions.
 --
 -- You can convert in between @'SF' t f@ and @'Chain1' t f@ with 'unrollSF'
--- and 'rerollSF'.
+-- and 'rerollSF'.  You can fully "collapse" a @'Chain1' t f@ into an @f@
+-- with 'retract', if @t@ is 'Semigroupoidal'; this could be considered
+-- a fundamental property of semigroupoidal-ness.
 --
 -- See 'Chain' for a version that has an "empty" value.
 --
@@ -227,6 +231,17 @@ unrollSF = unfoldChain1 matchSF
 rerollSF :: Semigroupoidal t => Chain1 t f ~> SF t f
 rerollSF = foldChain1 inject consSF
 
+-- | 'Chain1' is a semigroup with respect to @t@: we can "combine" them in
+-- an associative way.
+--
+-- @since 0.1.1.0
+appendChain1
+    :: forall t f. (Semigroupoidal t, Functor f)
+    => t (Chain1 t f) (Chain1 t f) ~> Chain1 t f
+appendChain1 = unrollSF
+             . appendSF
+             . hbimap rerollSF rerollSF
+
 -- | A useful construction that works like a "linked list" of @t f@ applied
 -- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
 -- @t f (t f (t f f))@, etc, with @f@ occuring /zero or more/ times.  It is
@@ -248,6 +263,10 @@ rerollSF = foldChain1 inject consSF
 -- Note that this is /exactly/ what an @'MF' t@ is supposed to be.  Using
 -- 'Chain' allows us to work with all @'MF' t@s in a uniform way, with
 -- normal pattern matching and normal constructors.
+--
+-- You can fully "collapse" a @'Chain' t (I t) f@ into an @f@ with
+-- 'retract', if @t@ is 'Monoidal'; this could be considered a fundamental
+-- property of monoidal-ness.
 --
 -- This construction is inspired by
 -- <http://oleg.fi/gists/posts/2018-02-21-single-free.html>
@@ -387,6 +406,18 @@ unrollMF = unfoldChain unconsMF
 -- @
 rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
 rerollMF = foldChain (nilMF @t) consMF
+
+-- | 'Chain' is a monoid with respect to @t@: we can "combine" them in
+-- an associative way.  The identity here is anything made with the 'Done'
+-- constructor.
+--
+-- @since 0.1.1.0
+appendChain
+    :: forall t f. Monoidal t
+    => t (Chain t (I t) f) (Chain t (I t) f) ~> Chain t (I t) f
+appendChain = unrollMF
+            . appendMF
+            . hbimap rerollMF rerollMF
 
 -- | A @'Chain1' t f@ is like a non-empty linked list of @f@s, and
 -- a @'Chain' t ('I' t) f@ is a possibly-empty linked list of @f@s.  This
