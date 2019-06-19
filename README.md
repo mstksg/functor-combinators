@@ -34,9 +34,10 @@ successive transformations and combiners.  The process of doing so:
 The main benefit of this library in specific is to allow you to be able to work
 with different functor combinators with a uniform and lawful interface, so the
 real functionality here is the wide variety of functor combinators from all
-around the Haskell ecosystem.  This library also "fills in the matrix", in a
-sense, of functor combinators in specific roles that are missing from the
-haskell ecosystem.
+around the Haskell ecosystem.  This library does not provide the functor
+combinators, as much as it re-exports them with a unified interface.  However,
+it does "fill in the matrix", in a sense, of functor combinators in specific
+roles that are missing from the haskell ecosystem.
 
 To jump into using it, import *Data.Functor.Combinator*.  For a full
 introduction, check out the *[Functor Combinatorpedia][combinatorpedia]*, which

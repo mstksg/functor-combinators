@@ -10,7 +10,7 @@
 -- Portability : non-portable
 --
 -- Functor combinators and tools (typeclasses and utiility functions) to
--- manipulate them.
+-- manipulate them.  This is the main "entrypoint" of the library.
 --
 -- Classes include:
 --

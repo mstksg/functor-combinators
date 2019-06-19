@@ -23,6 +23,10 @@ description: |
     functionality and extra combinators (some of them re-implementations for
     compatibility) are available in other modules as well.
 
+    This library does not define new functor combinators for the most part,
+    but rather re-exports them from different parts of the Haskell ecosystem
+    and provides a uniform interface.
+
     See the README for a quick overview, and also
     <https://blog.jle.im/entry/functor-combinatorpedia.html> for an in-depth
     dive into the motivation behind functor combinator-driven development,
