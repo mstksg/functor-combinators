@@ -2,8 +2,24 @@
 -- See Hoogle, http://www.haskell.org/hoogle/
 
 
--- | Please see the README on GitHub at
---   <a>https://github.com/mstksg/functor-combinators#readme</a>
+-- | Tools for functor combinator-based program design
+--   
+--   Tools for working with *functor combinators*: types that take functors
+--   (or other indexed types) and returns a new functor that "enhances" or
+--   "mixes" them in some way. In the process, you can design featureful
+--   programs by composing smaller "primitives" using basic unversal
+--   combinators.
+--   
+--   The main entry point is <a>Data.Functor.Combinators</a>, but more
+--   fine-grained functionality and extra combinators (some of them
+--   re-implementations for compatibility) are available in other modules
+--   as well.
+--   
+--   See the README for a quick overview, and also
+--   <a>https://blog.jle.im/entry/functor-combinatorpedia.html</a> for an
+--   in-depth dive into the motivation behind functor combinator-driven
+--   development, examples of the functor combinators in this library, and
+--   details about how to use these abstractions!
 @package functor-combinators
 @version 0.1.0.0
 
