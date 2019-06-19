@@ -29,6 +29,8 @@ description: |
     examples of the functor combinators in this library, and details about how
     to use these abstractions!
 
+tested-with: GHC >= 8.6
+
 ghc-options:
 - -Wall
 - -Wcompat
@@ -36,7 +38,7 @@ ghc-options:
 - -Werror=incomplete-patterns
 
 dependencies:
-- base >= 4.7 && < 5
+- base >= 4.12 && < 5
 - bifunctors
 - free
 - nonempty-containers
@@ -72,8 +74,8 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hedgehog >= 1.0
+    - dependent-sum
     - functor-combinators
+    - hedgehog >= 1.0
     - tasty
     - tasty-hedgehog >= 1.0
-    - dependent-sum
