@@ -16,11 +16,11 @@
 </pre><p>Use <code><a href="Control-Natural-IsoF.html#v:viewF" title="Control.Natural.IsoF">viewF</a></code> to extract the &quot;<code>f</code> to <code>g</code>&quot; function, and <code><a href="Control-Natural-IsoF.html#v:reviewF" title="Control.Natural.IsoF">reviewF</a></code> to
  extract the &quot;<code>g</code> to <code>f</code>&quot; function.  Reviewing and viewing the same value
  (or vice versa) leaves the value unchanged.</p><p>One nice thing is that we can compose isomorphisms using <code><a href="../base-4.12.0.0/Data-Function.html#v:." title="Data.Function">.</a></code> from
- <a href="../base-4.12.0.0/Prelude.html">Prelude</a>:</p><pre>(<code><a href="../base-4.12.0.0/Data-Function.html#v:." title="Data.Function">.</a></code>) :: f <a href="~">~</a> g
-    -&gt; g <a href="~">~</a> h
-    -&gt; f <a href="~">~</a> h
-</pre><p>One nice thing about this representation is that we have the &quot;identity&quot;
- isomorphism by using <code><a href="../base-4.12.0.0/Data-Function.html#v:id" title="Data.Function">id</a></code> from <a href="../base-4.12.0.0/Prelude.html">Prelude</a>.</p><pre><code><a href="../base-4.12.0.0/Data-Function.html#v:id" title="Data.Function">id</a></code> :: f <code><a href="Data-Functor-Combinator.html#t:-60--126--62-" title="Data.Functor.Combinator">&lt;~&gt;</a></code> g
+ <a href="../base-4.12.0.0/Prelude.html">Prelude</a>:</p><pre>(<code><a href="../base-4.12.0.0/Data-Function.html#v:." title="Data.Function">.</a></code>) :: f &lt;~&gt; g
+    -&gt; g &lt;~&gt; h
+    -&gt; f &lt;~&gt; h
+</pre><p>Another nice thing about this representation is that we have the
+ &quot;identity&quot; isomorphism by using <code><a href="../base-4.12.0.0/Data-Function.html#v:id" title="Data.Function">id</a></code> from <a href="../base-4.12.0.0/Prelude.html">Prelude</a>.</p><pre><code><a href="../base-4.12.0.0/Data-Function.html#v:id" title="Data.Function">id</a></code> :: f <code><a href="Data-Functor-Combinator.html#t:-60--126--62-" title="Data.Functor.Combinator">&lt;~&gt;</a></code> g
 </pre><p>As a convention, most isomorphisms have form &quot;X-ing&quot;, where the
  forwards function is &quot;ing&quot;.  For example, we have:</p><pre><code><a href="Data-HBifunctor-Tensor.html#v:splittingSF" title="Data.HBifunctor.Tensor">splittingSF</a></code> :: <code><a href="Data-HBifunctor-Tensor.html#v:Monoidal" title="Data.HBifunctor.Tensor">Monoidal</a></code> t =&gt; <code><a href="Data-HBifunctor-Associative.html#v:SF" title="Data.HBifunctor.Associative">SF</a></code> t a <code><a href="Data-Functor-Combinator.html#t:-60--126--62-" title="Data.Functor.Combinator">&lt;~&gt;</a></code> t f (<code><a href="Data-HBifunctor-Tensor.html#v:MF" title="Data.HBifunctor.Tensor">MF</a></code> t f)
 <code><a href="Data-HBifunctor-Tensor.html#v:splitSF" title="Data.HBifunctor.Tensor">splitSF</a></code>     :: Monoidal t =&gt; SF t a  <code><a href="Data-Functor-Combinator.html#t:-126--62-" title="Data.Functor.Combinator">~&gt;</a></code> t f (MF t f)
