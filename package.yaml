@@ -67,7 +67,7 @@ library:
   - profunctors
   - recursion-schemes
   - these
-  - trivial-constraint >= 0.5
+  - trivial-constraint >= 0.5.1
   - vinyl
 
 tests:
