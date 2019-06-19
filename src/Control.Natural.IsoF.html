@@ -27,14 +27,14 @@
 </span><a name="line-27"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control.Natural</span><span>
 </span><a name="line-28"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Tagged</span><span>
 </span><a name="line-29"></a><span>
-</span><a name="line-30"></a><span class="hs-comment">-- | The type of an isomorphism between two functors.  @f &lt;~&gt; g@ means that</span><span>
+</span><a name="line-30"></a><span class="hs-comment">-- | The type of an isomorphism between two functors.  @f '&lt;~&gt;' g@ means that</span><span>
 </span><a name="line-31"></a><span class="hs-comment">-- @f@ and @g@ are isomorphic to each other.</span><span>
 </span><a name="line-32"></a><span class="hs-comment">--</span><span>
-</span><a name="line-33"></a><span class="hs-comment">-- We can effectively /use/ an @f &lt;~&gt; g@ with:</span><span>
+</span><a name="line-33"></a><span class="hs-comment">-- We can effectively /use/ an @f \&lt;~\&gt; g@ with:</span><span>
 </span><a name="line-34"></a><span class="hs-comment">--</span><span>
 </span><a name="line-35"></a><span class="hs-comment">-- @</span><span>
-</span><a name="line-36"></a><span class="hs-comment">-- 'viewF'   :: (f &lt;~&gt; g) -&gt; f a -&gt; g a</span><span>
-</span><a name="line-37"></a><span class="hs-comment">-- 'reviewF' :: (f &lt;~&gt; g) -&gt; g a -&gt; a a</span><span>
+</span><a name="line-36"></a><span class="hs-comment">-- 'viewF'   :: (f \&lt;~\&gt; g) -&gt; f a -&gt; g a</span><span>
+</span><a name="line-37"></a><span class="hs-comment">-- 'reviewF' :: (f \&lt;~\&gt; g) -&gt; g a -&gt; a a</span><span>
 </span><a name="line-38"></a><span class="hs-comment">-- @</span><span>
 </span><a name="line-39"></a><span class="hs-comment">--</span><span>
 </span><a name="line-40"></a><span class="hs-comment">-- Use 'viewF' to extract the &quot;@f@ to @g@&quot; function, and 'reviewF' to</span><span>

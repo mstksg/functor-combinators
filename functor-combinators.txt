@@ -25,7 +25,7 @@
 --   development, examples of the functor combinators in this library, and
 --   details about how to use these abstractions!
 @package functor-combinators
-@version 0.1.0.0
+@version 0.1.0.1
 
 
 -- | This module provides functor combinators that are wrappers over lists
@@ -514,14 +514,15 @@ module Control.Natural.IsoF
 type (~>) (f :: k -> Type) (g :: k -> Type) = forall (x :: k). () => f x -> g x
 infixr 0 ~>
 
--- | The type of an isomorphism between two functors. <tt>f <a>~</a> g</tt>
---   means that <tt>f</tt> and <tt>g</tt> are isomorphic to each other.
+-- | The type of an isomorphism between two functors. <tt>f
+--   <a>&lt;~&gt;</a> g</tt> means that <tt>f</tt> and <tt>g</tt> are
+--   isomorphic to each other.
 --   
---   We can effectively <i>use</i> an <tt>f <a>~</a> g</tt> with:
+--   We can effectively <i>use</i> an <tt>f &lt;~&gt; g</tt> with:
 --   
 --   <pre>
---   <a>viewF</a>   :: (f <a>~</a> g) -&gt; f a -&gt; g a
---   <a>reviewF</a> :: (f <a>~</a> g) -&gt; g a -&gt; a a
+--   <a>viewF</a>   :: (f &lt;~&gt; g) -&gt; f a -&gt; g a
+--   <a>reviewF</a> :: (f &lt;~&gt; g) -&gt; g a -&gt; a a
 --   </pre>
 --   
 --   Use <a>viewF</a> to extract the "<tt>f</tt> to <tt>g</tt>" function,
@@ -2932,14 +2933,15 @@ module Data.Functor.Combinator
 type (~>) (f :: k -> Type) (g :: k -> Type) = forall (x :: k). () => f x -> g x
 infixr 0 ~>
 
--- | The type of an isomorphism between two functors. <tt>f <a>~</a> g</tt>
---   means that <tt>f</tt> and <tt>g</tt> are isomorphic to each other.
+-- | The type of an isomorphism between two functors. <tt>f
+--   <a>&lt;~&gt;</a> g</tt> means that <tt>f</tt> and <tt>g</tt> are
+--   isomorphic to each other.
 --   
---   We can effectively <i>use</i> an <tt>f <a>~</a> g</tt> with:
+--   We can effectively <i>use</i> an <tt>f &lt;~&gt; g</tt> with:
 --   
 --   <pre>
---   <a>viewF</a>   :: (f <a>~</a> g) -&gt; f a -&gt; g a
---   <a>reviewF</a> :: (f <a>~</a> g) -&gt; g a -&gt; a a
+--   <a>viewF</a>   :: (f &lt;~&gt; g) -&gt; f a -&gt; g a
+--   <a>reviewF</a> :: (f &lt;~&gt; g) -&gt; g a -&gt; a a
 --   </pre>
 --   
 --   Use <a>viewF</a> to extract the "<tt>f</tt> to <tt>g</tt>" function,
