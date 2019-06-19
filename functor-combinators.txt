@@ -4,11 +4,11 @@
 
 -- | Tools for functor combinator-based program design
 --   
---   Tools for working with *functor combinators*: types that take functors
---   (or other indexed types) and returns a new functor that "enhances" or
---   "mixes" them in some way. In the process, you can design featureful
---   programs by composing smaller "primitives" using basic unversal
---   combinators.
+--   Tools for working with <i>functor combinators</i>: types that take
+--   functors (or other indexed types) and returns a new functor that
+--   "enhances" or "mixes" them in some way. In the process, you can design
+--   featureful programs by composing smaller "primitives" using basic
+--   unversal combinators.
 --   
 --   The main entry point is <a>Data.Functor.Combinators</a>, but more
 --   fine-grained functionality and extra combinators (some of them
@@ -1261,8 +1261,8 @@ instance Data.HFunctor.HBind Control.Applicative.Step.Flagged
 instance Data.Functor.Alt.Alt f => Data.HFunctor.HBind (Data.Functor.These.These1 f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.HBind ((GHC.Generics.:*:) f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.HBind (Data.Functor.Product.Product f)
-instance Data.HFunctor.HBind ((GHC.Generics.:+:) f)
-instance Data.HFunctor.HBind (Data.Functor.Sum.Sum f)
+instance forall k (f :: k -> *). Data.HFunctor.HBind ((GHC.Generics.:+:) f)
+instance forall k (f :: k -> *). Data.HFunctor.HBind (Data.Functor.Sum.Sum f)
 instance Data.HFunctor.HBind (GHC.Generics.M1 i c)
 instance Data.HFunctor.HBind Control.Alternative.Free.Alt
 instance Data.HFunctor.HBind Control.Monad.Freer.Church.Free
@@ -1277,8 +1277,8 @@ instance Data.HFunctor.HBind Data.Functor.Bind.Class.WrappedApplicative
 instance Data.HFunctor.HBind Data.Functor.Reverse.Reverse
 instance Data.HFunctor.HBind Data.HFunctor.ProxyF
 instance GHC.Base.Monoid e => Data.HFunctor.HBind (Control.Comonad.Trans.Env.EnvT e)
-instance (Data.HFunctor.HBind t, Data.HFunctor.Inject t) => Data.HFunctor.HBind (Data.HFunctor.HLift t)
-instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.HBind (Data.HFunctor.HFree t)
+instance forall k (t :: (k -> *) -> k -> *). (Data.HFunctor.HBind t, Data.HFunctor.Inject t) => Data.HFunctor.HBind (Data.HFunctor.HLift t)
+instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.Internal.HFunctor t => Data.HFunctor.HBind (Data.HFunctor.HFree t)
 instance Data.HFunctor.Inject Data.Functor.Coyoneda.Coyoneda
 instance Data.HFunctor.Inject Control.Applicative.Free.Ap
 instance Data.HFunctor.Inject Control.Applicative.ListF.ListF
@@ -1294,8 +1294,8 @@ instance GHC.Base.Applicative f => Data.HFunctor.Inject (Control.Monad.Freer.Chu
 instance GHC.Base.Applicative f => Data.HFunctor.Inject ((GHC.Generics.:.:) f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.Inject ((GHC.Generics.:*:) f)
 instance Data.Functor.Plus.Plus f => Data.HFunctor.Inject (Data.Functor.Product.Product f)
-instance Data.HFunctor.Inject ((GHC.Generics.:+:) f)
-instance Data.HFunctor.Inject (Data.Functor.Sum.Sum f)
+instance forall k (f :: k -> *). Data.HFunctor.Inject ((GHC.Generics.:+:) f)
+instance forall k (f :: k -> *). Data.HFunctor.Inject (Data.Functor.Sum.Sum f)
 instance Data.HFunctor.Inject (GHC.Generics.M1 i c)
 instance Data.HFunctor.Inject Control.Alternative.Free.Alt
 instance Data.HFunctor.Inject Control.Monad.Freer.Church.Free
@@ -1313,15 +1313,15 @@ instance Data.HFunctor.Inject Data.Functor.Reverse.Reverse
 instance Data.HFunctor.Inject Data.HFunctor.ProxyF
 instance GHC.Base.Monoid e => Data.HFunctor.Inject (Data.HFunctor.ConstF e)
 instance (Data.HFunctor.Inject s, Data.HFunctor.Inject t) => Data.HFunctor.Inject (Control.Monad.Trans.Compose.ComposeT s t)
-instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HLift t)
-instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HFree t)
+instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HLift t)
+instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Inject (Data.HFunctor.HFree t)
 instance (Data.Functor.Classes.Show1 (t (Data.HFunctor.HFree t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.HFree t f)
 instance (Data.Functor.Classes.Show1 (t (Data.HFunctor.HFree t f)), Data.Functor.Classes.Show1 f, GHC.Show.Show a) => GHC.Show.Show (Data.HFunctor.HFree t f a)
-instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HFree t)
+instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HFree t)
 instance (Data.Functor.Classes.Show1 (t f), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.HLift t f)
 instance (Data.Functor.Classes.Eq1 (t f), Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Data.HFunctor.HLift t f)
 instance (Data.Functor.Classes.Ord1 (t f), Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Data.HFunctor.HLift t f)
-instance Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HLift t)
+instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.HLift t)
 instance forall k e (f :: k). GHC.Classes.Ord e => Data.Functor.Classes.Ord1 (Data.HFunctor.ConstF e f)
 instance Data.HFunctor.Internal.HFunctor (Data.HFunctor.ConstF e)
 instance forall k e (f :: k). GHC.Classes.Eq e => Data.Functor.Classes.Eq1 (Data.HFunctor.ConstF e f)
@@ -1578,7 +1578,7 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 --   
 --   to give us an automatic <a>HFunctor</a> instance and save us some
 --   work.
-newtype WrappedHBifunctor t (f :: Type -> Type) (g :: Type -> Type) a
+newtype WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) a
 WrapHBifunctor :: t f g a -> WrappedHBifunctor t a
 [unwrapHBifunctor] :: WrappedHBifunctor t a -> t f g a
 
@@ -1607,12 +1607,12 @@ LeftF :: f a -> LeftF f g a
 newtype RightF f g a
 RightF :: g a -> RightF f g a
 [runRightF] :: RightF f g a -> g a
-instance Data.HFunctor.Internal.HFunctor (Data.HBifunctor.RightF f)
+instance forall k (f :: k -> *). Data.HFunctor.Internal.HFunctor (Data.HBifunctor.RightF f)
 instance forall k (g :: * -> *) (f :: k). Data.Functor.Classes.Ord1 g => Data.Functor.Classes.Ord1 (Data.HBifunctor.RightF f g)
 instance Data.HFunctor.Internal.HBifunctor Data.HBifunctor.RightF
-instance forall k (f :: k). Data.HFunctor.Internal.HFunctor (Data.HBifunctor.RightF f)
-instance forall k (f :: k). Data.HFunctor.Inject (Data.HBifunctor.RightF f)
-instance forall k (f :: k). Data.HFunctor.HBind (Data.HBifunctor.RightF f)
+instance forall k1 k2 (f :: k2). Data.HFunctor.Internal.HFunctor (Data.HBifunctor.RightF f)
+instance forall k1 k2 (f :: k2). Data.HFunctor.Inject (Data.HBifunctor.RightF f)
+instance forall k1 k2 (f :: k2). Data.HFunctor.HBind (Data.HBifunctor.RightF f)
 instance forall k (f :: k). Data.HFunctor.Interpret.Interpret (Data.HBifunctor.RightF f)
 instance forall k (g :: * -> *) (f :: k). Data.Functor.Classes.Eq1 g => Data.Functor.Classes.Eq1 (Data.HBifunctor.RightF f g)
 instance forall k (g :: * -> *) (f :: k). Data.Functor.Classes.Read1 g => Data.Functor.Classes.Read1 (Data.HBifunctor.RightF f g)
@@ -1626,7 +1626,7 @@ instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Classes.Ord (g a) 
 instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Classes.Eq (g a) => GHC.Classes.Eq (Data.HBifunctor.RightF f g a)
 instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Read.Read (g a) => GHC.Read.Read (Data.HBifunctor.RightF f g a)
 instance forall k1 (f :: k1) k2 (g :: k2 -> *) (a :: k2). GHC.Show.Show (g a) => GHC.Show.Show (Data.HBifunctor.RightF f g a)
-instance Data.HFunctor.Internal.HFunctor (Data.HBifunctor.LeftF f)
+instance forall k (f :: k -> *). Data.HFunctor.Internal.HFunctor (Data.HBifunctor.LeftF f)
 instance Data.Traversable.Traversable f => Data.Bitraversable.Bitraversable (Data.HBifunctor.LeftF f)
 instance GHC.Base.Applicative f => Data.Biapplicative.Biapplicative (Data.HBifunctor.LeftF f)
 instance Data.HFunctor.Internal.HBifunctor Data.HBifunctor.LeftF
@@ -2885,15 +2885,15 @@ instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.F
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.Functor.Classes.Ord1 i, Data.Functor.Classes.Ord1 (t f (Data.HFunctor.Chain.Chain t i f))) => Data.Functor.Classes.Ord1 (Data.HFunctor.Chain.Chain t i f)
 instance forall k (t :: k -> (* -> *) -> * -> *) (f :: k) (i :: * -> *). (Data.Functor.Classes.Show1 (t f (Data.HFunctor.Chain.Chain t i f)), Data.Functor.Classes.Show1 i) => Data.Functor.Classes.Show1 (Data.HFunctor.Chain.Chain t i f)
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, Data.Functor.Classes.Read1 (t f (Data.HFunctor.Chain.Chain t i f)), Data.Functor.Classes.Read1 i) => Data.Functor.Classes.Read1 (Data.HFunctor.Chain.Chain t i f)
-instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain t i)
+instance forall k1 k2 (t :: (k1 -> *) -> (k2 -> *) -> k2 -> *) (i :: k2 -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain t i)
 instance (Data.HBifunctor.Tensor.Tensor t, i Data.Type.Equality.~ Data.HBifunctor.Tensor.I t) => Data.HFunctor.Inject (Data.HFunctor.Chain.Chain t i)
 instance (Data.HBifunctor.Tensor.Monoidal t, i Data.Type.Equality.~ Data.HBifunctor.Tensor.I t) => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Chain.Chain t i)
 instance (Data.Functor.Classes.Eq1 f, Data.Functor.Classes.Eq1 (t f (Data.HFunctor.Chain.Chain1 t f))) => Data.Functor.Classes.Eq1 (Data.HFunctor.Chain.Chain1 t f)
 instance (Data.Functor.Classes.Ord1 f, Data.Functor.Classes.Ord1 (t f (Data.HFunctor.Chain.Chain1 t f))) => Data.Functor.Classes.Ord1 (Data.HFunctor.Chain.Chain1 t f)
 instance (Data.Functor.Classes.Show1 (t f (Data.HFunctor.Chain.Chain1 t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.Chain.Chain1 t f)
 instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 (t f (Data.HFunctor.Chain.Chain1 t f)), Data.Functor.Classes.Read1 f) => Data.Functor.Classes.Read1 (Data.HFunctor.Chain.Chain1 t f)
-instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain1 t)
-instance Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Inject (Data.HFunctor.Chain.Chain1 t)
+instance forall k (t :: (k -> *) -> (k -> *) -> k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain1 t)
+instance forall k (t :: (k -> *) -> (k -> *) -> k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Inject (Data.HFunctor.Chain.Chain1 t)
 instance (Data.HFunctor.Internal.HBifunctor t, Data.HBifunctor.Associative.Semigroupoidal t) => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Chain.Chain1 t)
 
 
@@ -2919,7 +2919,8 @@ instance (Data.HFunctor.Internal.HBifunctor t, Data.HBifunctor.Associative.Semig
 --   build your final structure by combining simpler ones in composable
 --   ways!
 --   
---   See README for a tutorial and a rundown on each different functor
+--   See <a>https://blog.jle.im/entry/functor-combinatorpedia.html</a> and
+--   the README for a tutorial and a rundown on each different functor
 --   combinator.
 module Data.Functor.Combinator
 
