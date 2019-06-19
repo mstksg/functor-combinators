@@ -92,6 +92,26 @@ maybeToListF :: MaybeF f ~> ListF f
 --   Can be considered a combination of <a>EnvT</a> and <a>ListF</a>, in a
 --   way --- a <tt><a>MapF</a> k f a</tt> is like a <tt><a>ListF</a>
 --   (<a>EnvT</a> k f) a</tt> with unique (and ordered) keys.
+--   
+--   One use case might be to extend a schema with many "options", indexed
+--   by some string.
+--   
+--   For example, if you had a command line argument parser for a single
+--   command
+--   
+--   <pre>
+--   data Command a
+--   </pre>
+--   
+--   Then you can represent a command line argument parser for
+--   <i>multiple</i> named commands with
+--   
+--   <pre>
+--   type Commands = <a>MapF</a> <a>String</a> Command
+--   </pre>
+--   
+--   See <a>NEMapF</a> for a non-empty variant, if you want to enforce that
+--   your bag has at least one <tt>f a</tt>.
 newtype MapF k f a
 MapF :: Map k (f a) -> MapF k f a
 [runMapF] :: MapF k f a -> Map k (f a)
@@ -105,6 +125,8 @@ MapF :: Map k (f a) -> MapF k f a
 --   in a way --- an <tt><a>NEMapF</a> k f a</tt> is like a
 --   <tt><a>NonEmptyF</a> (<a>EnvT</a> k f) a</tt> with unique (and
 --   ordered) keys.
+--   
+--   See <a>MapF</a> for some use cases.
 newtype NEMapF k f a
 NEMapF :: NEMap k (f a) -> NEMapF k f a
 [runNEMapF] :: NEMapF k f a -> NEMap k (f a)
@@ -1148,15 +1170,58 @@ retractHLift :: Inject t => HLift t f a -> t f a
 --   An <tt><a>HFree</a> t f a</tt> is either <tt>f a</tt>, <tt>t f a</tt>,
 --   <tt>t (t f) a</tt>, <tt>t (t (t f)) a</tt>, etc.
 --   
---   This is the higher-oder analogue of <a>Free</a>.
+--   This effectively turns <tt>t</tt> into a tree with <tt>t</tt>
+--   branches.
 --   
---   It is the free <a>HBind</a> for any <tt><a>HFunctor</a> t</tt>.
+--   One particularly useful usage is with <a>MapF</a>. For example if you
+--   had a data type representing a command line command parser:
+--   
+--   <pre>
+--   data Command a
+--   </pre>
+--   
+--   You could represent "many possible named commands" using
+--   
+--   <pre>
+--   type Commands = <a>MapF</a> <a>String</a> Command
+--   </pre>
+--   
+--   And you can represent multiple <i>nested</i> named commands using:
+--   
+--   <pre>
+--   type NestedCommands = <a>HFree</a> (<a>MapF</a> <a>String</a>)
+--   </pre>
+--   
+--   This has an <a>Interpret</a> instance, but it can be more useful to
+--   use via direct pattern matching, or through
+--   
+--   <pre>
+--   <a>foldHFree</a>
+--       :: <a>HBifunctor</a> t
+--       =&gt; f <a>~&gt;</a> g
+--       -&gt; t g ~&gt; g
+--       -&gt; HFree t f ~&gt; g
+--   </pre>
+--   
+--   which requires no extra constriant on <tt>g</tt>, and lets you
+--   consider each branch separately.
+--   
+--   This can be considered the higher-oder analogue of <a>Free</a>; it is
+--   the free <a>HBind</a> for any <tt><a>HFunctor</a> t</tt>.
 --   
 --   Note that <tt><a>HFree</a> <a>IdentityT</a></tt> is equivalent to
 --   <a>Step</a>.
 data HFree t f a
 HReturn :: f a -> HFree t f a
 HJoin :: t (HFree t f) a -> HFree t f a
+
+-- | Recursively fold down an <a>HFree</a> into a single <tt>g</tt> result,
+--   by handling each branch. Can be more useful than <a>interpret</a>
+--   because it allows you to treat each branch separately, and also does
+--   not require any constraint on <tt>g</tt>.
+--   
+--   This is the catamorphism on <a>HFree</a>.
+foldHFree :: forall t f g. HFunctor t => (f ~> g) -> (t g ~> g) -> HFree t f ~> g
 
 -- | A higher-level <a>retract</a> to get a <tt>t f a</tt> back out of an
 --   <tt><a>HFree</a> t f a</tt>, provided <tt>t</tt> is an instance of
@@ -3665,6 +3730,26 @@ MaybeF :: Maybe (f a) -> MaybeF f a
 --   Can be considered a combination of <a>EnvT</a> and <a>ListF</a>, in a
 --   way --- a <tt><a>MapF</a> k f a</tt> is like a <tt><a>ListF</a>
 --   (<a>EnvT</a> k f) a</tt> with unique (and ordered) keys.
+--   
+--   One use case might be to extend a schema with many "options", indexed
+--   by some string.
+--   
+--   For example, if you had a command line argument parser for a single
+--   command
+--   
+--   <pre>
+--   data Command a
+--   </pre>
+--   
+--   Then you can represent a command line argument parser for
+--   <i>multiple</i> named commands with
+--   
+--   <pre>
+--   type Commands = <a>MapF</a> <a>String</a> Command
+--   </pre>
+--   
+--   See <a>NEMapF</a> for a non-empty variant, if you want to enforce that
+--   your bag has at least one <tt>f a</tt>.
 newtype MapF k f a
 MapF :: Map k (f a) -> MapF k f a
 [runMapF] :: MapF k f a -> Map k (f a)
@@ -3678,6 +3763,8 @@ MapF :: Map k (f a) -> MapF k f a
 --   in a way --- an <tt><a>NEMapF</a> k f a</tt> is like a
 --   <tt><a>NonEmptyF</a> (<a>EnvT</a> k f) a</tt> with unique (and
 --   ordered) keys.
+--   
+--   See <a>MapF</a> for some use cases.
 newtype NEMapF k f a
 NEMapF :: NEMap k (f a) -> NEMapF k f a
 [runNEMapF] :: NEMapF k f a -> NEMap k (f a)
@@ -4078,9 +4165,44 @@ HOther :: t f a -> HLift t f a
 --   An <tt><a>HFree</a> t f a</tt> is either <tt>f a</tt>, <tt>t f a</tt>,
 --   <tt>t (t f) a</tt>, <tt>t (t (t f)) a</tt>, etc.
 --   
---   This is the higher-oder analogue of <a>Free</a>.
+--   This effectively turns <tt>t</tt> into a tree with <tt>t</tt>
+--   branches.
 --   
---   It is the free <a>HBind</a> for any <tt><a>HFunctor</a> t</tt>.
+--   One particularly useful usage is with <a>MapF</a>. For example if you
+--   had a data type representing a command line command parser:
+--   
+--   <pre>
+--   data Command a
+--   </pre>
+--   
+--   You could represent "many possible named commands" using
+--   
+--   <pre>
+--   type Commands = <a>MapF</a> <a>String</a> Command
+--   </pre>
+--   
+--   And you can represent multiple <i>nested</i> named commands using:
+--   
+--   <pre>
+--   type NestedCommands = <a>HFree</a> (<a>MapF</a> <a>String</a>)
+--   </pre>
+--   
+--   This has an <a>Interpret</a> instance, but it can be more useful to
+--   use via direct pattern matching, or through
+--   
+--   <pre>
+--   <a>foldHFree</a>
+--       :: <a>HBifunctor</a> t
+--       =&gt; f <a>~&gt;</a> g
+--       -&gt; t g ~&gt; g
+--       -&gt; HFree t f ~&gt; g
+--   </pre>
+--   
+--   which requires no extra constriant on <tt>g</tt>, and lets you
+--   consider each branch separately.
+--   
+--   This can be considered the higher-oder analogue of <a>Free</a>; it is
+--   the free <a>HBind</a> for any <tt><a>HFunctor</a> t</tt>.
 --   
 --   Note that <tt><a>HFree</a> <a>IdentityT</a></tt> is equivalent to
 --   <a>Step</a>.
