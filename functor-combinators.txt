@@ -25,7 +25,7 @@
 --   development, examples of the functor combinators in this library, and
 --   details about how to use these abstractions!
 @package functor-combinators
-@version 0.1.0.1
+@version 0.1.1.0
 
 
 -- | This module provides functor combinators that are wrappers over lists
@@ -2695,6 +2695,10 @@ module Data.HFunctor.Chain
 --   <tt><a>MF</a> t</tt>s in a uniform way, with normal pattern matching
 --   and normal constructors.
 --   
+--   You can fully "collapse" a <tt><a>Chain</a> t (I t) f</tt> into an
+--   <tt>f</tt> with <a>retract</a>, if <tt>t</tt> is <a>Monoidal</a>; this
+--   could be considered a fundamental property of monoidal-ness.
+--   
 --   This construction is inspired by
 --   <a>http://oleg.fi/gists/posts/2018-02-21-single-free.html</a>
 data Chain t i f a
@@ -2755,6 +2759,11 @@ rerollMF :: forall t f. Monoidal t => Chain t (I t) f ~> MF t f
 --   <a>unrollMF</a> and <a>rerollMF</a> to convert between the two.
 unrollingMF :: Monoidal t => MF t f <~> Chain t (I t) f
 
+-- | <a>Chain</a> is a monoid with respect to <tt>t</tt>: we can "combine"
+--   them in an associative way. The identity here is anything made with
+--   the <a>Done</a> constructor.
+appendChain :: forall t f. Monoidal t => t (Chain t (I t) f) (Chain t (I t) f) ~> Chain t (I t) f
+
 -- | A useful construction that works like a "non-empty linked list" of
 --   <tt>t f</tt> applied to itself multiple times. That is, it contains
 --   <tt>t f f</tt>, <tt>t f (t f f)</tt>, <tt>t f (t f (t f f))</tt>, etc,
@@ -2787,6 +2796,10 @@ unrollingMF :: Monoidal t => MF t f <~> Chain t (I t) f
 --   
 --   You can convert in between <tt><a>SF</a> t f</tt> and
 --   <tt><a>Chain1</a> t f</tt> with <a>unrollSF</a> and <a>rerollSF</a>.
+--   You can fully "collapse" a <tt><a>Chain1</a> t f</tt> into an
+--   <tt>f</tt> with <a>retract</a>, if <tt>t</tt> is
+--   <a>Semigroupoidal</a>; this could be considered a fundamental property
+--   of semigroupoidal-ness.
 --   
 --   See <a>Chain</a> for a version that has an "empty" value.
 --   
@@ -2839,6 +2852,10 @@ unrollSF :: (Semigroupoidal t, Functor f) => SF t f ~> Chain1 t f
 --   <a>rerollSF</a> = <a>foldChain1</a> <a>inject</a> <a>consSF</a>
 --   </pre>
 rerollSF :: Semigroupoidal t => Chain1 t f ~> SF t f
+
+-- | <a>Chain1</a> is a semigroup with respect to <tt>t</tt>: we can
+--   "combine" them in an associative way.
+appendChain1 :: forall t f. (Semigroupoidal t, Functor f) => t (Chain1 t f) (Chain1 t f) ~> Chain1 t f
 
 -- | A <a>Chain1</a> is "one or more linked <tt>f</tt>s", and a
 --   <a>Chain</a> is "zero or more linked <tt>f</tt>s". So, we can convert
