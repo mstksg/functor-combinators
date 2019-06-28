@@ -77,6 +77,8 @@ import qualified Data.Functor.Day               as D
 --
 -- This class is similar to 'Control.Monad.Morph.MFunctor' from
 -- "Control.Monad.Morph", but instances must work without a 'Monad' constraint.
+--
+-- This class is also found in the /hschema/ library with the same name.
 class HFunctor t where
     -- | If we can turn an @f@ into a @g@, then we can turn a @t f@ into
     -- a @t g@.
