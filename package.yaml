@@ -81,6 +81,6 @@ tests:
     dependencies:
     - dependent-sum
     - functor-combinators
-    - hedgehog >= 1.0
+    - hedgehog >= 0.6
     - tasty
-    - tasty-hedgehog >= 1.0
+    - tasty-hedgehog
