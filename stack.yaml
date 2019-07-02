@@ -43,6 +43,9 @@ extra-deps:
 - tasty-hedgehog-1.0.0.1
 - trivial-constraint-0.5.1.0
 
+ghc-options:
+  "$locals": -ddump-to-file -ddump-hi
+
 # Override default flag values for local packages and extra-deps
 # flags: {}
 

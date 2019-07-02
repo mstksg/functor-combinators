@@ -47,7 +47,6 @@ dependencies:
 - free
 - nonempty-containers
 - semigroupoids
-- tagged
 - transformers
 
 library:
@@ -65,7 +64,7 @@ library:
   - natural-transformation
   - pointed
   - profunctors
-  - recursion-schemes
+  - tagged
   - these
   - trivial-constraint >= 0.5.1
   - vinyl
