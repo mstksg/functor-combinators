@@ -4,4 +4,5 @@ functor-combinators.cabal
 .stack.yaml.lock
 .ghc.environment.*
 dist-newstyle/
+*.dump-hi
 *~

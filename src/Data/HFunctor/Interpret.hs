@@ -414,7 +414,7 @@ instance Interpret Reverse where
 instance Interpret ProxyF where
     type C ProxyF = Impossible
 
-    retract = absurdible . reProxy
+    retract = nope . reProxy
 
 reProxy :: p f a -> Proxy f
 reProxy _ = Proxy
@@ -424,7 +424,7 @@ reProxy _ = Proxy
 instance Monoid e => Interpret (ConstF e) where
     type C (ConstF e) = Impossible
 
-    retract = absurdible . reProxy
+    retract = nope . reProxy
 
 -- | A constraint on @a@ for both @c a@ and @d a@.  Requiring @'AndC'
 -- 'Show' 'Eq' a@ is the same as requiring @('Show' a, 'Eq' a)@.

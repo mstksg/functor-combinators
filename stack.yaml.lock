@@ -19,15 +19,15 @@ packages:
   original:
     hackage: tasty-hedgehog-1.0.0.1
 - completed:
-    hackage: trivial-constraint-0.5.1.0@sha256:80f052aa9527ed23fe4bf5066535d5a393a1573b9c193a4cddd2c51ab12b310f,1767
+    hackage: trivial-constraint-0.6.0.0@sha256:117b4aed290097f48fa87fd18e8e365c1b58b917cf0397d3bc36fd89fc53e0d5,4093
     pantry-tree:
       size: 234
-      sha256: 92c37318759cbff761155e9d23f786a1e0b62f154cb3edfb6e87f91bc7bf821c
+      sha256: f199a6c270fc5d77c17f678d1c14713aa5934a6e8706a039c4bd705d989f5f0f
   original:
-    hackage: trivial-constraint-0.5.1.0
+    hackage: trivial-constraint-0.6.0.0
 snapshots:
 - completed:
-    size: 511614
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/6/10.yaml
-    sha256: e9389ccd6c48a88c5c1727fe105204bc5615dd3f8ba4d2db6e79d476755f0c65
-  original: nightly-2019-06-10
+    size: 519777
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/7/13.yaml
+    sha256: d69e220d244bcbf39c8bdd23150314c05256ecf163405ca02899c5af75317f83
+  original: nightly-2019-07-13
