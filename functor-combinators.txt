@@ -25,7 +25,7 @@
 --   development, examples of the functor combinators in this library, and
 --   details about how to use these abstractions!
 @package functor-combinators
-@version 0.1.1.0
+@version 0.1.1.1
 
 
 -- | This module provides functor combinators that are wrappers over lists
@@ -1037,6 +1037,9 @@ module Data.HFunctor
 --   This class is similar to <a>MFunctor</a> from
 --   <a>Control.Monad.Morph</a>, but instances must work without a
 --   <a>Monad</a> constraint.
+--   
+--   This class is also found in the <i>hschema</i> library with the same
+--   name.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
@@ -3015,6 +3018,9 @@ infixr 0 <~>
 --   This class is similar to <a>MFunctor</a> from
 --   <a>Control.Monad.Morph</a>, but instances must work without a
 --   <a>Monad</a> constraint.
+--   
+--   This class is also found in the <i>hschema</i> library with the same
+--   name.
 class HFunctor t
 
 -- | If we can turn an <tt>f</tt> into a <tt>g</tt>, then we can turn a
