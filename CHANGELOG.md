@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.1.1.1
+---------------
+
+*July 13, 2019*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.1.1.1>
+
+*   Moved to *trivial-constraints-0.6.0.0*
+
 Version 0.1.1.0
 ---------------
 
