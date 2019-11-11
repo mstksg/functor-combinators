@@ -53,9 +53,9 @@
 -- both arguments together into an 'Interpret'.  For example:
 --
 -- @
--- 'toMF' :: (f ':*:' f) a -> 'ListF' f a
--- 'toMF' :: 'Comp' f f a -> 'Free' f a
--- 'toMF' :: 'Day' f f a -> 'Ap' f a
+-- 'toLB' :: (f ':*:' f) a -> 'ListF' f a
+-- 'toLB' :: 'Comp' f f a -> 'Free' f a
+-- 'toLB' :: 'Day' f f a -> 'Ap' f a
 -- @
 module Data.HBifunctor.Tensor (
   -- * 'Tensor'
@@ -68,9 +68,9 @@ module Data.HBifunctor.Tensor (
   , prodRightIdentity
   -- * 'Monoidal'
   , MonoidIn(..)
-  , nilMF
-  , consMF
-  , unconsMF
+  , nilLB
+  , consLB
+  , unconsLB
   -- ** Utility
   , inL
   , inR
@@ -82,8 +82,8 @@ module Data.HBifunctor.Tensor (
   , prodOutR
   -- * 'Matchable'
   , Matchable(..)
-  , splittingSF
-  , matchingMF
+  , splittingNEB
+  , matchingLB
   ) where
 
 import           Control.Applicative.Free
@@ -124,10 +124,10 @@ import qualified Data.Map.NonEmpty           as NEM
 --
 -- The 'Tensor' is essentially the 'HBifunctor' equivalent of 'Inject',
 -- with 'intro1' and 'intro2' taking the place of 'inject'.
-class (Associative t, Inject (MF t)) => Tensor t i | t -> i where
+class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where
     -- | The "monoidal functor combinator" induced by @t@.
     --
-    -- A value of type @MF t f a@ is /equivalent/ to one of:
+    -- A value of type @ListBy t f a@ is /equivalent/ to one of:
     --
     -- *  @I a@                         -- zero fs
     -- *  @f a@                         -- one f
@@ -140,16 +140,16 @@ class (Associative t, Inject (MF t)) => Tensor t i | t -> i where
     -- For example, for ':*:', we have 'ListF'.  This is because:
     --
     -- @
-    -- 'Proxy'         ~ 'ListF' []         ~ 'nilMF' \@(':*:')
+    -- 'Proxy'         ~ 'ListF' []         ~ 'nilLB' \@(':*:')
     -- x             ~ ListF [x]        ~ 'inject' x
-    -- x :*: y       ~ ListF [x,y]      ~ 'toMF' (x :*: y)
+    -- x :*: y       ~ ListF [x,y]      ~ 'toLB' (x :*: y)
     -- x :*: y :*: z ~ ListF [x,y,z]
     -- -- etc.
     -- @
     --
-    -- You can create an "empty" one with 'nilMF', a "singleton" one with
-    -- 'inject', or else one from a single @t f f@ with 'toMF'.
-    type MF t :: (Type -> Type) -> Type -> Type
+    -- You can create an "empty" one with 'nilLB', a "singleton" one with
+    -- 'inject', or else one from a single @t f f@ with 'toLB'.
+    type ListBy t :: (Type -> Type) -> Type -> Type
 
     -- | Because @t f (I t)@ is equivalent to @f@, we can always "insert"
     -- @f@ into @t f (I t)@.
@@ -173,35 +173,35 @@ class (Associative t, Inject (MF t)) => Tensor t i | t -> i where
     -- @'I' t@.
     elim2 :: Functor g => t i g ~> g
 
-    -- | If a @'MF' t f@ represents multiple applications of @t f@ to
-    -- itself, then we can also "append" two @'MF' t f@s applied to
-    -- themselves into one giant @'MF' t f@ containing all of the @t f@s.
-    appendMF    :: t (MF t f) (MF t f) ~> MF t f
+    -- | If a @'ListBy' t f@ represents multiple applications of @t f@ to
+    -- itself, then we can also "append" two @'ListBy' t f@s applied to
+    -- themselves into one giant @'ListBy' t f@ containing all of the @t f@s.
+    appendLB    :: t (ListBy t f) (ListBy t f) ~> ListBy t f
 
-    -- | Lets you convert an @'SF' t f@ into a single application of @f@ to
-    -- @'MF' t f@.
+    -- | Lets you convert an @'NonEmptyBy' t f@ into a single application of @f@ to
+    -- @'ListBy' t f@.
     --
     -- Analogous to a function @'Data.List.NonEmpty.NonEmpty' a -> (a,
     -- [a])@
     --
     -- Note that this is not reversible in general unless we have
     -- @'Matchable' t@.
-    splitSF     :: SF t f ~> t f (MF t f)
+    splitNEB     :: NonEmptyBy t f ~> t f (ListBy t f)
 
-    -- | An @'MF' t f@ is either empty, or a single application of @t@ to @f@
-    -- and @MF t f@ (the "head" and "tail").  This witnesses that
+    -- | An @'ListBy' t f@ is either empty, or a single application of @t@ to @f@
+    -- and @ListBy t f@ (the "head" and "tail").  This witnesses that
     -- isomorphism.
     --
-    -- To /use/ this property, see 'nilMF', 'consMF', and 'unconsMF'.
-    splittingMF :: MF t f <~> i :+: t f (MF t f)
+    -- To /use/ this property, see 'nilLB', 'consLB', and 'unconsLB'.
+    splittingLB :: ListBy t f <~> i :+: t f (ListBy t f)
 
-    -- | Embed a direct application of @f@ to itself into a @'MF' t f@.
-    toMF   :: t f f ~> MF t f
-    toMF   = reviewF (splittingMF @t)
+    -- | Embed a direct application of @f@ to itself into a @'ListBy' t f@.
+    toLB   :: t f f ~> ListBy t f
+    toLB   = reviewF (splittingLB @t)
            . R1
-           . hright (inject @(MF t))
+           . hright (inject @(ListBy t))
 
-    -- | @'SF' t f@ is "one or more @f@s", and @'MF t f@ is "zero or more
+    -- | @'NonEmptyBy' t f@ is "one or more @f@s", and @'ListBy t f@ is "zero or more
     -- @f@s".  This function lets us convert from one to the other.
     --
     -- This is analogous to a function @'Data.List.NonEmpty.NonEmpty' a ->
@@ -211,18 +211,18 @@ class (Associative t, Inject (MF t)) => Tensor t i | t -> i where
     -- type, you should call this using /-XTypeApplications/:
     --
     -- @
-    -- 'fromSF' \@(':*:') :: 'NonEmptyF' f a -> 'ListF' f a
-    -- fromSF \@'Comp'  :: 'Free1' f a -> 'Free' f a
+    -- 'fromNEB' \@(':*:') :: 'NonEmptyF' f a -> 'ListF' f a
+    -- fromNEB \@'Comp'  :: 'Free1' f a -> 'Free' f a
     -- @
-    fromSF :: SF t f ~> MF t f
-    fromSF = reviewF (splittingMF @t) . R1 . splitSF @t
+    fromNEB :: NonEmptyBy t f ~> ListBy t f
+    fromNEB = reviewF (splittingLB @t) . R1 . splitNEB @t
 
 
 --    -- | If we have a constraint on the 'Monoidal' satisfied, it should
 --    -- also imply the constraint on the 'Semigroupoidal'.
 --    --
---    -- This is basically saying that @'C' ('SF' t)@ should be a superclass
---    -- of @'C' ('MF' t)@.
+--    -- This is basically saying that @'C' ('NonEmptyBy' t)@ should be a superclass
+--    -- of @'C' ('ListBy' t)@.
 --    --
 --    -- For example, for ':*:', this type signature says that 'Alt' is
 --    -- a superclass of 'Plus', so whenever you have 'Plus', you should
@@ -275,9 +275,9 @@ class (Associative t, Inject (MF t)) => Tensor t i | t -> i where
 --    upgradeC :: CM t f => proxy f -> (CS t f => r) -> r
 
     -- upgradeC :: CM t f => proxy f -> (CS t f => r) -> r
-    -- {-# MINIMAL intro1, intro2, elim1, elim2, appendMF, splitSF, splittingMF, upgradeC #-}
+    -- {-# MINIMAL intro1, intro2, elim1, elim2, appendLB, splitNEB, splittingLB, upgradeC #-}
 
-    {-# MINIMAL intro1, intro2, elim1, elim2, appendMF, splitSF, splittingMF #-}
+    {-# MINIMAL intro1, intro2, elim1, elim2, appendLB, splitNEB, splittingLB #-}
 
 -- | @f@ is isomorphic to @t f i@: that is, @i@ is the identity of @t@, and
 -- leaves @f@ unchanged.
@@ -319,7 +319,7 @@ prodOutL (x :*: _) = x
 prodOutR :: f :*: g ~> g
 prodOutR (_ :*: y) = y
 
-class (Tensor t i, SemigroupIn t f, Interpret (MF t) f) => MonoidIn t i f where
+class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f where
 
     -- | If we have an @i@, we can generate an @f@ based on how it
     -- interacts with @t@.
@@ -339,10 +339,10 @@ class (Tensor t i, SemigroupIn t f, Interpret (MF t) f) => MonoidIn t i f where
     -- Along with 'biretract', this function makes @f@ a monoid in the
     -- category of endofunctors with respect to tensor @t@.
     pureT  :: i ~> f
-    pureT  = retract . reviewF (splittingMF @t) . L1
+    pureT  = retract . reviewF (splittingLB @t) . L1
 
 ---- | A @'Monoidal' t@ is a 'Semigroupoidal', in that it provides some type
----- @'MF' t f@ that is equivalent to one of:
+---- @'ListBy' t f@ that is equivalent to one of:
 ----
 ---- *  @I a@                             -- 0 times
 ---- *  @f a@                             -- 1 time
@@ -352,7 +352,7 @@ class (Tensor t i, SemigroupIn t f, Interpret (MF t) f) => MonoidIn t i f where
 ---- *  @t f (t f (t f (t f f))) a@       -- 5 times
 ---- *  .. etc
 ----
----- The difference is that unlike @'SF' t@, @'MF' t@ has the "zero times"
+---- The difference is that unlike @'NonEmptyBy' t@, @'ListBy' t@ has the "zero times"
 ---- value.
 ----
 ---- This typeclass lets you use a type like 'ListF' in terms of repeated
@@ -365,56 +365,56 @@ class (Tensor t i, SemigroupIn t f, Interpret (MF t) f) => MonoidIn t i f where
 ---- you can use @'ListF' f@.
 ----
 ---- At the high level, the thing that 'Monoidal' adds to 'Semigroupoidal'
----- is 'inL', 'inR', and 'nilMF':
+---- is 'inL', 'inR', and 'nilLB':
 ----
 ---- @
 ---- 'inL'    :: f a -> t f g a
 ---- 'inR'    :: g a -> t f g a
----- 'nilMF'  :: I a -> MF t f a
+---- 'nilLB'  :: I a -> ListBy t f a
 ---- @
 ----
 ---- which are like the 'HBifunctor' versions of 'inject': it lets you inject
 ---- an @f@ into @t f g@, so you can start doing useful mixing operations
----- with it.  'nilMF' lets you construct an "empty" @'MF' t@.
+---- with it.  'nilLB' lets you construct an "empty" @'ListBy' t@.
 ----
 ---- Also useful is:
 ----
 ---- @
----- 'toMF' :: t f f a -> MF t f a
+---- 'toLB' :: t f f a -> ListBy t f a
 ---- @
 ----
----- Which converts a @t@ into its aggregate type 'MF'
---class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
+---- Which converts a @t@ into its aggregate type 'ListBy'
+--class (Tensor t, Semigroupoidal t, Interpret (ListBy t)) => Monoidal t where
 
--- | Create the "empty 'MF'".
+-- | Create the "empty 'ListBy'".
 --
--- If @'MF' t f@ represents multiple applications of @t f@ with
--- itself, then @nilMF@ gives us "zero applications of @f@".
+-- If @'ListBy' t f@ represents multiple applications of @t f@ with
+-- itself, then @nilLB@ gives us "zero applications of @f@".
 --
 -- Note that @t@ cannot be inferred from the input or output type of
--- 'nilMF', so this function must always be called with -XTypeApplications:
+-- 'nilLB', so this function must always be called with -XTypeApplications:
 --
 -- @
--- 'nilMF' \@'Day' :: 'Identity' '~>' 'Ap' f
--- nilMF \@'Comp' :: Identity ~> 'Free' f
--- nilMF \@(':*:') :: 'Proxy' ~> 'ListF' f
+-- 'nilLB' \@'Day' :: 'Identity' '~>' 'Ap' f
+-- nilLB \@'Comp' :: Identity ~> 'Free' f
+-- nilLB \@(':*:') :: 'Proxy' ~> 'ListF' f
 -- @
-nilMF    :: forall t i f. MonoidIn t i f => i ~> MF t f
-nilMF    = reviewF (splittingMF @t) . L1
+nilLB    :: forall t i f. MonoidIn t i f => i ~> ListBy t f
+nilLB    = reviewF (splittingLB @t) . L1
 
--- | Lets us "cons" an application of @f@ to the front of an @'MF' t f@.
-consMF   :: MonoidIn t i f => t f (MF t f) ~> MF t f
-consMF   = reviewF splittingMF . R1
+-- | Lets us "cons" an application of @f@ to the front of an @'ListBy' t f@.
+consLB   :: MonoidIn t i f => t f (ListBy t f) ~> ListBy t f
+consLB   = reviewF splittingLB . R1
 
--- | "Pattern match" on an @'MF' t@
+-- | "Pattern match" on an @'ListBy' t@
 --
--- An @'MF' t f@ is either empty, or a single application of @t@ to @f@
--- and @MF t f@ (the "head" and "tail")
+-- An @'ListBy' t f@ is either empty, or a single application of @t@ to @f@
+-- and @ListBy t f@ (the "head" and "tail")
 --
 -- This is analogous to the function @'Data.List.uncons' :: [a] -> Maybe
 -- (a, [a])@.
-unconsMF :: Tensor t i => MF t f ~> i :+: t f (MF t f)
-unconsMF = viewF splittingMF
+unconsLB :: Tensor t i => ListBy t f ~> i :+: t f (ListBy t f)
+unconsLB = viewF splittingLB
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
 -- functor @g@ to the right of an @f@.
@@ -456,37 +456,37 @@ outR
     => t f g ~> g
 outR = elim2 . hleft absorb
 
----- | This is 'biretract', but taking a @'C' ('MF' t)@ constraint instead of
----- a @'C' ('SF' t)@ constraint.  For example, for 'Day', it takes an
+---- | This is 'biretract', but taking a @'C' ('ListBy' t)@ constraint instead of
+---- a @'C' ('NonEmptyBy' t)@ constraint.  For example, for 'Day', it takes an
 ---- 'Applicative' constraint instead of an 'Apply' constraint.
 ----
 ---- In an ideal world, this would be not necessary, and we can use
----- 'biretract'.  However, sometimes @'C' ('MF' t)@ is not an actual
----- subclass of @'C' ('SF' t)@ (like 'Apply' and 'Applicative'), even though
+---- 'biretract'.  However, sometimes @'C' ('ListBy' t)@ is not an actual
+---- subclass of @'C' ('NonEmptyBy' t)@ (like 'Apply' and 'Applicative'), even though
 ---- it should technically always be so.
 ----
----- Note that you should only use this if @f@ doesn't already have the 'SF'
+---- Note that you should only use this if @f@ doesn't already have the 'NonEmptyBy'
 ---- constraint (for example, for 'Day', if @f@ already has an 'Apply'
 ---- instance).  If it does, this could lead to conflicting instances.  If
----- @f@ already has the 'SF' instance, just use 'biretract' directly.  Only
+---- @f@ already has the 'NonEmptyBy' instance, just use 'biretract' directly.  Only
 ---- use this with /specific/, concrete @f@s.
 --biretractT :: forall t f. Monoidal t i f => t f f ~> f
 --biretractT = upgradeC @t (Proxy @f)
 --               biretract
 
----- | This is 'binterpret', but taking a @'C' ('MF' t)@ constraint instead of
----- a @'C' ('SF' t)@ constraint.  For example, for 'Day', it takes an
+---- | This is 'binterpret', but taking a @'C' ('ListBy' t)@ constraint instead of
+---- a @'C' ('NonEmptyBy' t)@ constraint.  For example, for 'Day', it takes an
 ---- 'Applicative' constraint instead of an 'Apply' constraint.
 ----
 ---- In an ideal world, this would be not necessary, and we can use
----- 'biretract'.  However, sometimes @'C' ('MF' t)@ is not an actual
----- subclass of @'C' ('SF' t)@ (like 'Apply' and 'Applicative'), even though
+---- 'biretract'.  However, sometimes @'C' ('ListBy' t)@ is not an actual
+---- subclass of @'C' ('NonEmptyBy' t)@ (like 'Apply' and 'Applicative'), even though
 ---- it should technically always be so.
 ----
----- Note that you should only use this if @f@ doesn't already have the 'SF'
+---- Note that you should only use this if @f@ doesn't already have the 'NonEmptyBy'
 ---- constraint (for example, for 'Day', if @f@ already has an 'Apply'
 ---- instance).  If it does, this could lead to conflicting instances.  If
----- @f@ already has the 'SF' instance, just use 'biretract' directly.  Only
+---- @f@ already has the 'NonEmptyBy' instance, just use 'biretract' directly.  Only
 ---- use this with /specific/, concrete @f@s.
 --binterpretT
 --    :: forall t f g h. (Monoidal t, CM t h)
@@ -496,19 +496,19 @@ outR = elim2 . hleft absorb
 --binterpretT f g = upgradeC @t (Proxy @h) $
 --                    binterpret f g
 
--- | For some @t@, we have the ability to "statically analyze" the @'MF' t@
+-- | For some @t@, we have the ability to "statically analyze" the @'ListBy' t@
 -- and pattern match and manipulate the structure without ever
 -- interpreting or retracting.  These are 'Matchable'.
 class Tensor t i => Matchable t i where
-    -- | The inverse of 'splitSF'.  A consing of @f@ to @'MF' t f@ is
-    -- non-empty, so it can be represented as an @'SF' t f@.
+    -- | The inverse of 'splitNEB'.  A consing of @f@ to @'ListBy' t f@ is
+    -- non-empty, so it can be represented as an @'NonEmptyBy' t f@.
     --
     -- This is analogous to a function @'uncurry' ('Data.List.NonEmpty.:|')
     -- :: (a, [a]) -> 'Data.List.NonEmpty.NonEmpty' a@.
-    unsplitSF :: t f (MF t f) ~> SF t f
+    unsplitNEB :: t f (ListBy t f) ~> NonEmptyBy t f
 
-    -- | "Pattern match" on an @'MF' t f@: it is either empty, or it is
-    -- non-empty (and so can be an @'SF' t f@).
+    -- | "Pattern match" on an @'ListBy' t f@: it is either empty, or it is
+    -- non-empty (and so can be an @'NonEmptyBy' t f@).
     --
     -- This is analgous to a function @'Data.List.NonEmpty.nonEmpty' :: [a]
     -- -> Maybe ('Data.List.NonEmpty.NonEmpty' a)@.
@@ -517,35 +517,35 @@ class Tensor t i => Matchable t i where
     -- type, you should use this with /-XTypeApplications/:
     --
     -- @
-    -- 'matchMF' \@'Day' :: 'Ap' f a -> ('Identity' :+: 'Ap1' f) a
+    -- 'matchLB' \@'Day' :: 'Ap' f a -> ('Identity' :+: 'Ap1' f) a
     -- @
-    matchMF   :: MF t f ~> i :+: SF t f
+    matchLB   :: ListBy t f ~> i :+: NonEmptyBy t f
 
--- | An @'SF' t f@ is isomorphic to an @f@ consed with an @'MF' t f@, like
+-- | An @'NonEmptyBy' t f@ is isomorphic to an @f@ consed with an @'ListBy' t f@, like
 -- how a @'Data.List.NonEmpty.NonEmpty' a@ is isomorphic to @(a, [a])@.
-splittingSF
+splittingNEB
     :: Matchable t i
-    => SF t f <~> t f (MF t f)
-splittingSF = isoF splitSF unsplitSF
+    => NonEmptyBy t f <~> t f (ListBy t f)
+splittingNEB = isoF splitNEB unsplitNEB
 
--- | An @'MF' t f@ is isomorphic to either the empty case (@'I' t@) or the
--- non-empty case (@'SF' t f@), like how @[a]@ is isomorphic to @'Maybe'
+-- | An @'ListBy' t f@ is isomorphic to either the empty case (@'I' t@) or the
+-- non-empty case (@'NonEmptyBy' t f@), like how @[a]@ is isomorphic to @'Maybe'
 -- ('Data.List.NonEmpty.NonEmpty' a)@.
-matchingMF
+matchingLB
     :: forall t i f. (Matchable t i, MonoidIn t i f)
-    => MF t f <~> i :+: SF t f
-matchingMF = isoF (matchMF @t) (nilMF @t !*! fromSF @t)
+    => ListBy t f <~> i :+: NonEmptyBy t f
+matchingLB = isoF (matchLB @t) (nilLB @t !*! fromNEB @t)
 
 instance Tensor (:*:) Proxy where
-    type MF (:*:) = ListF
+    type ListBy (:*:) = ListF
     intro1 = (:*: Proxy)
     intro2 = (Proxy :*:)
     elim1 (x      :*: ~Proxy) = x
     elim2 (~Proxy :*: y     ) = y
 
-    appendMF (ListF xs :*: ListF ys) = ListF (xs ++ ys)
-    splitSF     = nonEmptyProd
-    splittingMF = isoF to_ from_
+    appendLB (ListF xs :*: ListF ys) = ListF (xs ++ ys)
+    splitNEB     = nonEmptyProd
+    splittingLB = isoF to_ from_
       where
         to_ = \case
           ListF []     -> L1 Proxy
@@ -554,22 +554,22 @@ instance Tensor (:*:) Proxy where
           L1 ~Proxy           -> ListF []
           R1 (x :*: ListF xs) -> ListF (x:xs)
 
-    toMF (x :*: y) = ListF [x, y]
+    toLB (x :*: y) = ListF [x, y]
     -- upgradeC _ x = x
 
 instance Plus f => MonoidIn (:*:) Proxy f where
     pureT _        = zero
 
 instance Tensor Product Proxy where
-    type MF Product = ListF
+    type ListBy Product = ListF
     intro1 = (`Pair` Proxy)
     intro2 = (Proxy `Pair`)
     elim1 (Pair x ~Proxy) = x
     elim2 (Pair ~Proxy y) = y
 
-    appendMF (ListF xs `Pair` ListF ys) = ListF (xs ++ ys)
-    splitSF     = viewF prodProd . nonEmptyProd
-    splittingMF = isoF to_ from_
+    appendLB (ListF xs `Pair` ListF ys) = ListF (xs ++ ys)
+    splitNEB     = viewF prodProd . nonEmptyProd
+    splittingLB = isoF to_ from_
       where
         to_ = \case
           ListF []     -> L1 Proxy
@@ -578,22 +578,22 @@ instance Tensor Product Proxy where
           L1 ~Proxy              -> ListF []
           R1 (x `Pair` ListF xs) -> ListF (x:xs)
 
-    toMF (Pair x y) = ListF [x, y]
+    toLB (Pair x y) = ListF [x, y]
     -- upgradeC _ x = x
 
 instance Plus f => MonoidIn Product Proxy f where
     pureT _         = zero
 
 instance Tensor Day Identity where
-    type MF Day = Ap
+    type ListBy Day = Ap
     intro1   = D.intro2
     intro2   = D.intro1
     elim1    = D.elim2
     elim2    = D.elim1
 
-    appendMF (Day x y z) = z <$> x <*> y
-    splitSF     = ap1Day
-    splittingMF = isoF to_ from_
+    appendLB (Day x y z) = z <$> x <*> y
+    splitNEB     = ap1Day
+    splittingLB = isoF to_ from_
       where
         to_ = \case
           Pure x  -> L1 (Identity x)
@@ -602,14 +602,14 @@ instance Tensor Day Identity where
           L1 (Identity x) -> Pure x
           R1 (Day x xs f) -> Ap x (flip f <$> xs)
 
-    toMF (Day x y z) = z <$> liftAp x <*> liftAp y
+    toLB (Day x y z) = z <$> liftAp x <*> liftAp y
     -- upgradeC = unsafeApply
 
 instance (Apply f, Applicative f) => MonoidIn Day Identity f where
     pureT            = generalize
 
 instance Tensor (:+:) V1 where
-    type MF (:+:) = Step
+    type ListBy (:+:) = Step
     intro1 = L1
     intro2 = R1
 
@@ -620,11 +620,11 @@ instance Tensor (:+:) V1 where
       L1 x -> absurd1 x
       R1 y -> y
 
-    appendMF    = id !*! stepUp . R1
-    splitSF     = stepDown
-    splittingMF = stepping . sumLeftIdentity
+    appendLB    = id !*! stepUp . R1
+    splitNEB     = stepDown
+    splittingLB = stepping . sumLeftIdentity
 
-    toMF  = \case
+    toLB  = \case
       L1 x -> Step 0 x
       R1 x -> Step 1 x
 --    upgradeC _ x = x
@@ -633,7 +633,7 @@ instance MonoidIn (:+:) V1 f where
     pureT = absurd1
 
 instance Tensor Sum V1 where
-    type MF Sum = Step
+    type ListBy Sum = Step
     intro1 = InL
     intro2 = InR
 
@@ -644,13 +644,13 @@ instance Tensor Sum V1 where
       InL x -> absurd1 x
       InR y -> y
 
-    appendMF    = id !*! stepUp . R1
-    splitSF     = viewF sumSum . stepDown
-    splittingMF = stepping
+    appendLB    = id !*! stepUp . R1
+    splitNEB     = viewF sumSum . stepDown
+    splittingLB = stepping
                 . sumLeftIdentity
                 . overHBifunctor id sumSum
 
-    toMF  = \case
+    toLB  = \case
       InL x -> Step 0 x
       InR x -> Step 1 x
 --    upgradeC _ x = x
@@ -660,7 +660,7 @@ instance MonoidIn Sum V1 f where
 
 
 instance Tensor These1 V1 where
-    type MF These1 = Steps
+    type ListBy These1 = Steps
     intro1 = This1
     intro2 = That1
     elim1  = \case
@@ -672,14 +672,14 @@ instance Tensor These1 V1 where
       That1    y -> y
       These1 x _ -> absurd1 x
 
-    appendMF    = \case
+    appendLB    = \case
       This1  x   -> x
       That1    y -> stepsUp . That1 $ y
       These1 x y -> x <> y
-    splitSF     = stepsDown . flaggedVal . getComposeT
-    splittingMF = steppings . sumLeftIdentity
+    splitNEB     = stepsDown . flaggedVal . getComposeT
+    splittingLB = steppings . sumLeftIdentity
 
-    toMF  = \case
+    toLB  = \case
       This1  x   -> Steps $ NEM.singleton 0 x
       That1    y -> Steps $ NEM.singleton 1 y
       These1 x y -> Steps $ NEM.fromDistinctAscList ((0, x) :| [(1, y)])
@@ -689,7 +689,7 @@ instance Alt f => MonoidIn These1 V1 f where
     pureT = absurd1
 
 instance Tensor Comp Identity where
-    type MF Comp = Free
+    type ListBy Comp = Free
 
     intro1 = (:>>= Identity)
     intro2 = (Identity () :>>=) . const
@@ -697,9 +697,9 @@ instance Tensor Comp Identity where
     elim1 (x :>>= y) = runIdentity . y <$> x
     elim2 (x :>>= y) = y (runIdentity x)
 
-    appendMF (x :>>= y) = x >>= y
-    splitSF             = free1Comp
-    splittingMF = isoF to_ from_
+    appendLB (x :>>= y) = x >>= y
+    splitNEB             = free1Comp
+    splittingLB = isoF to_ from_
       where
         to_ :: Free f ~> Identity :+: Comp f (Free f)
         to_ = foldFree' (L1 . Identity) $ \y n -> R1 $
@@ -708,33 +708,33 @@ instance Tensor Comp Identity where
         from_ = generalize
             !*! (\case x :>>= f -> liftFree x >>= f)
 
-    toMF (x :>>= y) = liftFree x >>= (inject . y)
+    toLB (x :>>= y) = liftFree x >>= (inject . y)
     -- upgradeC = unsafeBind
 
 instance (Bind f, Monad f) => MonoidIn Comp Identity f where
     pureT           = generalize
 
 instance Matchable (:*:) Proxy where
-    unsplitSF = ProdNonEmpty
-    matchMF   = fromListF
+    unsplitNEB = ProdNonEmpty
+    matchLB   = fromListF
 
 instance Matchable Product Proxy where
-    unsplitSF = ProdNonEmpty . reviewF prodProd
-    matchMF   = fromListF
+    unsplitNEB = ProdNonEmpty . reviewF prodProd
+    matchLB   = fromListF
 
 instance Matchable Day Identity where
-    unsplitSF = DayAp1
-    matchMF   = fromAp
+    unsplitNEB = DayAp1
+    matchLB   = fromAp
 
 instance Matchable (:+:) V1 where
-    unsplitSF   = stepUp
-    matchMF     = R1
+    unsplitNEB   = stepUp
+    matchLB     = R1
 
 instance Matchable Sum V1 where
-    unsplitSF   = stepUp . reviewF sumSum
-    matchMF     = R1
+    unsplitNEB   = stepUp . reviewF sumSum
+    matchLB     = R1
 
 -- We can't write this until we get an isomorphism between MF These1 and SF These1
 -- instance Matchable These1 where
---     unsplitSF = stepsUp
---     matchMF   = R1
+--     unsplitNEB = stepsUp
+--     matchLB   = R1

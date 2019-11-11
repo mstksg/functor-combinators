@@ -60,7 +60,7 @@ module Data.Functor.Combinator (
   -- *** Tensor
   , Tensor(..)
   , MonoidIn(..)
-  , nilMF, consMF
+  , nilLB, consLB
   , inL, inR
   , outL, outR
   -- * Combinators

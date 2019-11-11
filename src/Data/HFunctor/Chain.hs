@@ -28,14 +28,14 @@
 -- tensor applications".
 --
 -- The type @'Chain' t@, for any @'Monoidal' t@, is meant to be the same as
--- @'MF' t@ (the monoidal functor combinator for @t@), and represents "zero
+-- @'ListBy' t@ (the monoidal functor combinator for @t@), and represents "zero
 -- or more" applications of @f@ to @t@.
 --
 -- The type @'Chain1' t@, for any @'Semigroupoidal' t@, is meant to be the
--- same as @'SF' t@ (the semigroupoidal functor combinator for @t@) and
+-- same as @'NonEmptyBy' t@ (the semigroupoidal functor combinator for @t@) and
 -- represents "one or more" applications of @f@ to @t@.
 --
--- The advantage of using 'Chain' and 'Chain1' over 'MF' or 'SF' is that
+-- The advantage of using 'Chain' and 'Chain1' over 'ListBy' or 'NonEmptyBy' is that
 -- they provide a universal interface for pattern matching and constructing
 -- such values, which may simplify working with new such functor
 -- combinators you might encounter.
@@ -44,17 +44,17 @@ module Data.HFunctor.Chain (
     Chain(..)
   , foldChain
   , unfoldChain
-  , unrollMF
-  , rerollMF
-  , unrollingMF
+  , unrollLB
+  , rerollLB
+  , unrollingLB
   , appendChain
   -- * 'Chain1'
   , Chain1(..)
   , foldChain1
   , unfoldChain1
-  , unrollingSF
-  , unrollSF
-  , rerollSF
+  , unrollingNEB
+  , unrollNEB
+  , rerollNEB
   , appendChain1
   , fromChain1
   -- ** Matchable
@@ -81,7 +81,7 @@ import           GHC.Generics hiding         (C)
 -- | A useful construction that works like a "non-empty linked list" of @t
 -- f@ applied to itself multiple times.  That is, it contains @t f f@, @t
 -- f (t f f)@, @t f (t f (t f f))@, etc, with @f@ occuring /one or more/
--- times.  It is meant to be the same as @'SF' t@.
+-- times.  It is meant to be the same as @'NonEmptyBy' t@.
 --
 -- A @'Chain1' t f a@ is explicitly one of:
 --
@@ -91,20 +91,20 @@ import           GHC.Generics hiding         (C)
 -- *  @t f (t f (t f f)) a@
 -- *  .. etc
 --
--- Note that this is exactly the description of @'SF' t@.  And that's "the
+-- Note that this is exactly the description of @'NonEmptyBy' t@.  And that's "the
 -- point": for all instances of 'Semigroupoidal', @'Chain1' t@ is
--- isomorphic to @'SF' t@ (witnessed by 'unrollingSF').  That's big picture
--- of 'SF': it's supposed to be a type that consists of all possible
+-- isomorphic to @'NonEmptyBy' t@ (witnessed by 'unrollingNEB').  That's big picture
+-- of 'NonEmptyBy': it's supposed to be a type that consists of all possible
 -- self-applications of @f@ to @t@.
 --
--- 'Chain1' gives you a way to work with all @'SF' t@ in a uniform way.
--- Unlike for @'SF' t f@ in general, you can always explicitly /pattern
+-- 'Chain1' gives you a way to work with all @'NonEmptyBy' t@ in a uniform way.
+-- Unlike for @'NonEmptyBy' t f@ in general, you can always explicitly /pattern
 -- match/ on a 'Chain1' (with its two constructors) and do what you please
 -- with it.  You can also /construct/ 'Chain1' using normal constructors
 -- and functions.
 --
--- You can convert in between @'SF' t f@ and @'Chain1' t f@ with 'unrollSF'
--- and 'rerollSF'.  You can fully "collapse" a @'Chain1' t f@ into an @f@
+-- You can convert in between @'NonEmptyBy' t f@ and @'Chain1' t f@ with 'unrollNEB'
+-- and 'rerollNEB'.  You can fully "collapse" a @'Chain1' t f@ into an @f@
 -- with 'retract', if @t@ is 'Semigroupoidal'; this could be considered
 -- a fundamental property of semigroupoidal-ness.
 --
@@ -201,36 +201,36 @@ instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
           Done1 x  -> f x
           More1 xs -> binterpret f go xs
 
--- | A type @'SF' t@ is supposed to represent the successive application of
+-- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
 -- @t@s to itself.  The type @'Chain1' t f@ is an actual concrete ADT that contains
 -- successive applications of @t@ to itself, and you can pattern match on
 -- each layer.
 --
--- 'unrollingSF' states that the two types are isormorphic.  Use 'unrollSF'
--- and 'rerollSF' to convert between the two.
-unrollingSF :: forall t f. (SemigroupIn t f, Functor f) => SF t f <~> Chain1 t f
-unrollingSF = isoF unrollSF rerollSF
+-- 'unrollingNEB' states that the two types are isormorphic.  Use 'unrollNEB'
+-- and 'rerollNEB' to convert between the two.
+unrollingNEB :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f <~> Chain1 t f
+unrollingNEB = isoF unrollNEB rerollNEB
 
--- | A type @'SF' t@ is supposed to represent the successive application of
--- @t@s to itself.  'unrollSF' makes that successive application explicit,
+-- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
+-- @t@s to itself.  'unrollNEB' makes that successive application explicit,
 -- buy converting it to a literal 'Chain1' of applications of @t@ to
 -- itself.
 --
 -- @
--- 'unrollSF' = 'unfoldChain1' 'matchSF'
+-- 'unrollNEB' = 'unfoldChain1' 'matchNEB'
 -- @
-unrollSF :: (SemigroupIn t f, Functor f) => SF t f ~> Chain1 t f
-unrollSF = unfoldChain1 matchSF
+unrollNEB :: (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> Chain1 t f
+unrollNEB = unfoldChain1 matchNEB
 
--- | A type @'SF' t@ is supposed to represent the successive application of
--- @t@s to itself.  'rerollSF' takes an explicit 'Chain1' of applications
--- of @t@ to itself and rolls it back up into an @'SF' t@.
+-- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
+-- @t@s to itself.  'rerollNEB' takes an explicit 'Chain1' of applications
+-- of @t@ to itself and rolls it back up into an @'NonEmptyBy' t@.
 --
 -- @
--- 'rerollSF' = 'foldChain1' 'inject' 'consSF'
+-- 'rerollNEB' = 'foldChain1' 'inject' 'consNEB'
 -- @
-rerollSF :: SemigroupIn t f => Chain1 t f ~> SF t f
-rerollSF = foldChain1 inject consSF
+rerollNEB :: SemigroupIn t f => Chain1 t f ~> NonEmptyBy t f
+rerollNEB = foldChain1 inject consNEB
 
 -- | 'Chain1' is a semigroup with respect to @t@: we can "combine" them in
 -- an associative way.
@@ -239,18 +239,18 @@ rerollSF = foldChain1 inject consSF
 appendChain1
     :: forall t f. (SemigroupIn t f, Functor f)
     => t (Chain1 t f) (Chain1 t f) ~> Chain1 t f
-appendChain1 = unrollSF
-             . appendSF
-             . hbimap rerollSF rerollSF
+appendChain1 = unrollNEB
+             . appendNEB
+             . hbimap rerollNEB rerollNEB
 
 -- | A useful construction that works like a "linked list" of @t f@ applied
 -- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
 -- @t f (t f (t f f))@, etc, with @f@ occuring /zero or more/ times.  It is
--- meant to be the same as @'MF' t@.
+-- meant to be the same as @'ListBy' t@.
 --
 -- If @t@ is 'Monoidal', then it means we can "collapse" this linked list
--- into some final type @'MF' t@ ('rerollMF'), and also extract it back
--- into a linked list ('unrollMF').
+-- into some final type @'ListBy' t@ ('rerollLB'), and also extract it back
+-- into a linked list ('unrollLB').
 --
 -- So, a value of type @'Chain' t i f a@ is one of either:
 --
@@ -261,8 +261,8 @@ appendChain1 = unrollSF
 -- *  @t f (t f (t f f)) a@
 -- *  .. etc.
 --
--- Note that this is /exactly/ what an @'MF' t@ is supposed to be.  Using
--- 'Chain' allows us to work with all @'MF' t@s in a uniform way, with
+-- Note that this is /exactly/ what an @'ListBy' t@ is supposed to be.  Using
+-- 'Chain' allows us to work with all @'ListBy' t@s in a uniform way, with
 -- normal pattern matching and normal constructors.
 --
 -- You can fully "collapse" a @'Chain' t t f@ into an @f@ with
@@ -311,7 +311,7 @@ instance (Functor i, Read1 (t f (Chain t i f)), Read1 i) => Read1 (Chain t i f) 
          <> readsUnaryWith (liftReadsPrec rp rl) "More" More
 
 -- | Recursively fold down a 'Chain'.  Provide a function on how to handle
--- the "single @f@ case" ('nilMF'), and how to handle the "combined @t f g@
+-- the "single @f@ case" ('nilLB'), and how to handle the "combined @t f g@
 -- case", and this will fold the entire @'Chain' t i) f@ into a single @g@.
 --
 -- This is a catamorphism.
@@ -370,50 +370,50 @@ fromChain1
     => Chain1 t f ~> Chain t i f
 fromChain1 = foldChain1 (More . hright Done . intro1) More
 
--- | A type @'MF' t@ is supposed to represent the successive application of
+-- | A type @'ListBy' t@ is supposed to represent the successive application of
 -- @t@s to itself.  The type @'Chain' t i f@ is an actual concrete
 -- ADT that contains successive applications of @t@ to itself, and you can
 -- pattern match on each layer.
 --
--- 'unrollingMF' states that the two types are isormorphic.  Use 'unrollMF'
--- and 'rerollMF' to convert between the two.
-unrollingMF
+-- 'unrollingLB' states that the two types are isormorphic.  Use 'unrollLB'
+-- and 'rerollLB' to convert between the two.
+unrollingLB
     :: MonoidIn t i f
-    => MF t f <~> Chain t i f
-unrollingMF = isoF unrollMF rerollMF
+    => ListBy t f <~> Chain t i f
+unrollingLB = isoF unrollLB rerollLB
 
--- | A type @'MF' t@ is supposed to represent the successive application of
--- @t@s to itself.  'unrollMF' makes that successive application explicit,
+-- | A type @'ListBy' t@ is supposed to represent the successive application of
+-- @t@s to itself.  'unrollLB' makes that successive application explicit,
 -- buy converting it to a literal 'Chain' of applications of @t@ to
 -- itself.
 --
 -- @
--- 'unrollMF' = 'unfoldChain' 'unconsMF'
+-- 'unrollLB' = 'unfoldChain' 'unconsLB'
 -- @
-unrollMF
+unrollLB
     :: MonoidIn t i f
-    => MF t f ~> Chain t i f
-unrollMF = unfoldChain unconsMF
+    => ListBy t f ~> Chain t i f
+unrollLB = unfoldChain unconsLB
 
--- | A type @'MF' t@ is supposed to represent the successive application of
--- @t@s to itself.  'rerollSF' takes an explicit 'Chain' of applications of
--- @t@ to itself and rolls it back up into an @'MF' t@.
+-- | A type @'ListBy' t@ is supposed to represent the successive application of
+-- @t@s to itself.  'rerollNEB' takes an explicit 'Chain' of applications of
+-- @t@ to itself and rolls it back up into an @'ListBy' t@.
 --
 -- @
--- 'rerollMF' = 'foldChain' 'nilMF' 'consMF'
+-- 'rerollLB' = 'foldChain' 'nilLB' 'consLB'
 -- @
 --
 -- Because @t@ cannot be inferred from the input or output, you should call
 -- this with /-XTypeApplications/:
 --
 -- @
--- 'rerollMF' \@'Control.Monad.Freer.Church.Comp'
+-- 'rerollLB' \@'Control.Monad.Freer.Church.Comp'
 --     :: 'Chain' Comp 'Data.Functor.Identity.Identity' f a -> 'Control.Monad.Freer.Church.Free' f a
 -- @
-rerollMF
+rerollLB
     :: forall t i f. MonoidIn t i f
-    => Chain t i f ~> MF t f
-rerollMF = foldChain (nilMF @t) consMF
+    => Chain t i f ~> ListBy t f
+rerollLB = foldChain (nilLB @t) consLB
 
 -- | 'Chain' is a monoid with respect to @t@: we can "combine" them in
 -- an associative way.  The identity here is anything made with the 'Done'
@@ -423,9 +423,9 @@ rerollMF = foldChain (nilMF @t) consMF
 appendChain
     :: forall t i f. MonoidIn t i f
     => t (Chain t i f) (Chain t i f) ~> Chain t i f
-appendChain = unrollMF
-            . appendMF
-            . hbimap rerollMF rerollMF
+appendChain = unrollLB
+            . appendLB
+            . hbimap rerollLB rerollLB
 
 -- | A @'Chain1' t f@ is like a non-empty linked list of @f@s, and
 -- a @'Chain' t i f@ is a possibly-empty linked list of @f@s.  This
@@ -434,16 +434,16 @@ appendChain = unrollMF
 splittingChain1
     :: forall t i f. (MonoidIn t i f, Matchable t i, Functor f)
     => Chain1 t f <~> t f (Chain t i f)
-splittingChain1 = fromF unrollingSF
-                . splittingSF @t
-                . overHBifunctor id unrollingMF
+splittingChain1 = fromF unrollingNEB
+                . splittingNEB @t
+                . overHBifunctor id unrollingLB
 
 -- | The "forward" function representing 'splittingChain1'.  Provided here
 -- as a separate function because it does not require @'Functor' f@.
 splitChain1
     :: forall t i f. MonoidIn t i f
     => Chain1 t f ~> t f (Chain t i f)
-splitChain1 = hright (unrollMF @t) . splitSF @t . rerollSF
+splitChain1 = hright (unrollLB @t) . splitNEB @t . rerollNEB
 
 -- | A @'Chain' t i f@ is a linked list of @f@s, and a @'Chain1' t f@ is
 -- a non-empty linked list of @f@s.  This witnesses the fact that
@@ -451,13 +451,13 @@ splitChain1 = hright (unrollMF @t) . splitSF @t . rerollSF
 matchingChain
     :: forall t i f. (MonoidIn t i f, Matchable t i, Functor f)
     => Chain t i f <~> i :+: Chain1 t f
-matchingChain = fromF unrollingMF
-              . matchingMF @t
-              . overHBifunctor id unrollingSF
+matchingChain = fromF unrollingLB
+              . matchingLB @t
+              . overHBifunctor id unrollingNEB
 
 -- | The "reverse" function representing 'matchingChain'.  Provided here
 -- as a separate function because it does not require @'Functor' f@.
 unmatchChain
     :: forall t i f. MonoidIn t i f
     => i :+: Chain1 t f ~> Chain t i f
-unmatchChain = unrollMF . (nilMF @t !*! fromSF @t) . hright rerollSF
+unmatchChain = unrollLB . (nilLB @t !*! fromNEB @t) . hright rerollNEB
