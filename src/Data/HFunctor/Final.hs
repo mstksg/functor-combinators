@@ -1,8 +1,10 @@
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DefaultSignatures      #-}
+{-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE QuantifiedConstraints  #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -228,9 +230,7 @@ instance HFunctor (Final c) where
 instance Inject (Final c) where
     inject x = Final ($ x)
 
-instance Interpret (Final c) where
-    type C (Final c) = c
-
+instance c f => Interpret (Final c) f where
     retract x = runFinal x id
     interpret f x = runFinal x f
 
@@ -260,11 +260,11 @@ instance Interpret (Final c) where
 -- In the case where 'toFinal' doesn't lose any information, this will form
 -- an isomorphism with 'fromFinal', and @t@ is known as the "Free @c@".
 -- For such a situation, @t@ will have a 'FreeOf' instance.
-toFinal :: (Interpret t, C t (Final c f)) => t f ~> Final c f
+toFinal :: Interpret t (Final c f) => t f ~> Final c f
 toFinal = interpret inject
 
 -- | "Concretize" a 'Final'.
-
+--
 -- @
 -- fromFinal :: 'Final' 'Functor' f '~>' 'Coyoneda' f
 -- fromFinal :: 'Final' 'Applicative' f '~>' 'Ap' f
@@ -279,7 +279,7 @@ toFinal = interpret inject
 --
 -- In the case that this forms an isomorphism with 'toFinal', the @t@ will
 -- have an instance of 'FreeOf'.
-fromFinal :: (Interpret t, c (t f)) => Final c f ~> t f
+fromFinal :: (Inject t, c (t f)) => Final c f ~> t f
 fromFinal = interpret inject
 
 -- | A typeclass associating a free structure with the typeclass it is free
@@ -296,13 +296,13 @@ fromFinal = interpret inject
 -- This can be useful because 'Final' doesn't have a concrete structure
 -- that you can pattern match on and inspect, but @t@ might.  This lets you
 -- work on a concrete structure if you desire.
-class Interpret t => FreeOf c t | t -> c where
+class FreeOf c t | t -> c where
     fromFree :: t f ~> Final c f
     toFree   :: Functor f => Final c f ~> t f
 
-    default fromFree :: C t (Final c f) => t f ~> Final c f
+    default fromFree :: Interpret t (Final c f) => t f ~> Final c f
     fromFree = toFinal
-    default toFree :: c (t f) => Final c f ~> t f
+    default toFree :: (Inject t, c (t f)) => Final c f ~> t f
     toFree = fromFinal
 
 -- | The isomorphism between a free structure and its encoding as 'Final'.

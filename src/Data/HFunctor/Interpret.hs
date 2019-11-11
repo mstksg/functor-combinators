@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DefaultSignatures       #-}
+{-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE InstanceSigs            #-}
 {-# LANGUAGE LambdaCase              #-}
@@ -59,6 +60,7 @@ module Data.HFunctor.Interpret (
   , getI
   , collectI
   , AndC
+  , IT(..)
   ) where
 
 import           Control.Applicative
@@ -108,10 +110,6 @@ import qualified Data.Map.NonEmpty              as NEM
 -- we can give an /interpreting function/ that interprets @f@ into some
 -- target 'Monad'.
 --
--- The type family 'C' tells us the typeclass constraint of the "target"
--- functor.  For 'Free', it is 'Monad', but for other 'Interpret'
--- instances, we might have other constraints.
---
 -- We enforce that:
 --
 -- @
@@ -122,42 +120,45 @@ import qualified Data.Map.NonEmpty              as NEM
 --
 -- That is, if we lift a value into our structure, then immediately
 -- interpret it out as itself, it should lave the value unchanged.
-class Inject t => Interpret t where
-    -- | The constraint on the target context of 'interpret'.  It's
-    -- basically the constraint that allows you to "exit" or "run" an
-    -- 'Interpret'.
-    type C t :: (Type -> Type) -> Constraint
+class Inject t => Interpret t f where
+
+    -- -- | The constraint on the target context of 'interpret'.  It's
+    -- -- basically the constraint that allows you to "exit" or "run" an
+    -- -- 'Interpret'.
+    -- type C t :: (Type -> Type) -> Constraint
 
     -- | Remove the @f@ out of the enhanced @t f@ structure, provided that
     -- @f@ satisfies the necessary constraints.  If it doesn't, it needs to
     -- be properly 'interpret'ed out.
-    retract :: C t f => t f ~> f
+    retract :: t f ~> f
     retract = interpret id
 
     -- | Given an "interpeting function" from @f@ to @g@, interpret the @f@
     -- out of the @t f@ into a final context @g@.
-    interpret :: C t g => (f ~> g) -> t f ~> g
+    interpret :: (g ~> f) -> t g ~> f
     interpret f = retract . hmap f
 
     {-# MINIMAL retract | interpret #-}
 
+newtype IT t f a = IT { getIT :: t f a }
+
 -- | A convenient flipped version of 'interpret'.
 forI
-    :: (Interpret t, C t g)
-    => t f a
-    -> (f ~> g)
-    -> g a
+    :: Interpret t f
+    => t g a
+    -> (g ~> f)
+    -> f a
 forI x f = interpret f x
 
 -- | Useful wrapper over 'interpret' to allow you to directly extract
 -- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
 --
--- Note that depending on the constraints on the interpretation of @t@, you
+-- Note that depending on the constraints on @f@ in @'Interpret' t f@, you
 -- may have extra constraints on @b@.
 --
--- *    If @'C' t@ is 'Unconstrained', there are no constraints on @b@
--- *    If @'C' t@ is 'Apply', @b@ needs to be an instance of 'Semigroup'
--- *    If @'C' t@ is 'Applicative', @b@ needs to be an instance of 'Monoid'
+-- *    If @f@ is unconstrained, there are no constraints on @b@
+-- *    If @f@ must be 'Apply', @b@ needs to be an instance of 'Semigroup'
+-- *    If @f@ is 'Applicative', @b@ needs to be an instance of 'Monoid'
 --
 -- For some constraints (like 'Monad'), this will not be usable.
 --
@@ -168,7 +169,7 @@ forI x f = interpret f x
 --      -> Int
 -- @
 getI
-    :: (Interpret t, C t (Const b))
+    :: Interpret t (Const b)
     => (forall x. f x -> b)
     -> t f a
     -> b
@@ -177,7 +178,9 @@ getI f = getConst . interpret (Const . f)
 -- | Useful wrapper over 'getI' to allow you to collect a @b@ from all
 -- instances of @f@ inside a @t f a@.
 --
--- This will work if @'C' t@ is 'Unconstrained', 'Apply', or 'Applicative'.
+-- Will work if there is an instance of @'Interpret' t ('Const' [b])@,
+-- which will be the case if the constraint on the target functor is
+-- 'Functor', 'Apply', 'Applicative', or unconstrianed.
 --
 -- @
 -- -- get the lengths of all @Map String@s in the 'Ap.Ap'.
@@ -186,96 +189,75 @@ getI f = getConst . interpret (Const . f)
 --      -> [Int]
 -- @
 collectI
-    :: (Interpret t, C t (Const [b]))
+    :: Interpret t (Const [b])
     => (forall x. f x -> b)
     -> t f a
     -> [b]
 collectI f = getI ((:[]) . f)
 
 -- | A free 'Functor'
-instance Interpret Coyoneda where
-    type C Coyoneda = Functor
-
+instance Functor f => Interpret Coyoneda f where
     retract                    = lowerCoyoneda
     interpret f (Coyoneda g x) = g <$> f x
 
 -- | A free 'Applicative'
-instance Interpret Ap.Ap where
-    type C Ap.Ap = Applicative
-
+instance Applicative f => Interpret Ap.Ap f where
     retract   = \case
       Ap.Pure x  -> pure x
       Ap.Ap x xs -> x <**> retract xs
     interpret = Ap.runAp
 
 -- | A free 'Plus'
-instance Interpret ListF where
-    type C ListF = Plus
-
+instance Plus f => Interpret ListF f where
     retract     = foldr (<!>) zero . runListF
     interpret f = foldr ((<!>) . f) zero . runListF
 
 -- | A free 'Alt'
-instance Interpret NonEmptyF where
-    type C NonEmptyF = Alt
-
+instance Alt f => Interpret NonEmptyF f where
     retract     = asum1 . runNonEmptyF
     interpret f = asum1 . fmap f . runNonEmptyF
 
--- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- | Technically, @f@ is over-constrained: we only need @'zero' :: f a@,
 -- but we don't really have that typeclass in any standard hierarchies.  We
 -- use 'Plus' here instead, but we never use '<!>'.  This would only go
 -- wrong in situations where your type supports 'zero' but not '<!>', like
 -- instances of 'Control.Monad.Fail.MonadFail' without
 -- 'Control.Monad.MonadPlus'.
-instance Interpret MaybeF where
-    type C MaybeF = Plus
-
+instance Plus f => Interpret MaybeF f where
     retract     = fromMaybe zero . runMaybeF
     interpret f = maybe zero f . runMaybeF
 
-instance Monoid k => Interpret (MapF k) where
-    type C (MapF k) = Plus
-
+instance (Monoid k, Plus f) => Interpret (MapF k) f where
     retract = foldr (<!>) zero . runMapF
     interpret f = foldr ((<!>) . f) zero . runMapF
 
-instance Monoid k => Interpret (NEMapF k) where
-    type C (NEMapF k) = Alt
-
+instance (Monoid k, Alt f) => Interpret (NEMapF k) f where
     retract = asum1 . runNEMapF
     interpret f = asum1 . fmap f . runNEMapF
 
 -- | Equivalent to instance for @'EnvT' ('Data.Semigroup.Sum'
 -- 'Numeric.Natural.Natural')@.
-instance Interpret Step where
-    type C Step = Unconstrained
-
+instance Interpret Step f where
     retract = stepVal
     interpret f = f . stepVal
 
-instance Interpret Steps where
-    type C Steps = Alt
-
+instance Alt f => Interpret Steps f where
     retract     = asum1 . getSteps
     interpret f = asum1 . NEM.map f . getSteps
 
 -- | Equivalent to instance for @'EnvT' 'Data.Semigroup.Any'@ and @'HLift'
 -- 'IdentityT'@.
-instance Interpret Flagged where
-    type C Flagged = Unconstrained
-
+instance Interpret Flagged f where
     retract = flaggedVal
     interpret f = f . flaggedVal
 
--- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- | Technically, @f@ is over-constrained: we only need @'zero' :: f a@,
 -- but we don't really have that typeclass in any standard hierarchies.  We
 -- use 'Plus' here instead, but we never use '<!>'.  This would only go
 -- wrong in situations where your type supports 'zero' but not '<!>', like
 -- instances of 'Control.Monad.Fail.MonadFail' without
 -- 'Control.Monad.MonadPlus'.
-instance Interpret (These1 f) where
-    type C (These1 f) = Plus
+instance Plus f => Interpret (These1 g) f where
     retract = \case
       This1  _   -> zero
       That1    y -> y
@@ -286,17 +268,13 @@ instance Interpret (These1 f) where
       These1 _ y -> f y
 
 -- | A free 'Alternative'
-instance Interpret Alt.Alt where
-    type C Alt.Alt = Alternative
-
+instance Alternative f => Interpret Alt.Alt f where
     interpret = Alt.runAlt
 
-instance Plus f => Interpret ((:*:) f) where
-    type C ((:*:) f) = Unconstrained
+instance Plus g => Interpret ((:*:) g) f where
     retract (_ :*: y) = y
 
-instance Plus f => Interpret (Product f) where
-    type C (Product f) = Unconstrained
+instance Plus g => Interpret (Product g) f where
     retract (Pair _ y) = y
 
 -- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
@@ -305,141 +283,106 @@ instance Plus f => Interpret (Product f) where
 -- wrong in situations where your type supports 'zero' but not '<!>', like
 -- instances of 'Control.Monad.Fail.MonadFail' without
 -- 'Control.Monad.MonadPlus'.
-instance Interpret ((:+:) f) where
-    type C ((:+:) f) = Plus
+instance Plus f => Interpret ((:+:) g) f where
     retract = \case
       L1 _ -> zero
       R1 y -> y
 
--- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- | Technically, @f@ is over-constrained: we only need @'zero' :: f a@,
 -- but we don't really have that typeclass in any standard hierarchies.  We
 -- use 'Plus' here instead, but we never use '<!>'.  This would only go
 -- wrong in situations where your type supports 'zero' but not '<!>', like
 -- instances of 'Control.Monad.Fail.MonadFail' without
 -- 'Control.Monad.MonadPlus'.
-instance Interpret (Sum f) where
-    type C (Sum f) = Plus
+instance Plus f => Interpret (Sum g) f where
     retract = \case
       InL _ -> zero
       InR y -> y
 
-instance Interpret (M1 i c) where
-    type C (M1 i c) = Unconstrained
+instance Interpret (M1 i c) f where
     retract (M1 x) = x
     interpret f (M1 x) = f x
 
 -- | A free 'Monad'
-instance Interpret Free where
-    type C Free = Monad
-
+instance Monad f => Interpret Free f where
     retract   = retractFree
     interpret = interpretFree
 
 -- | A free 'Bind'
-instance Interpret Free1 where
-    type C Free1 = Bind
-
+instance Bind f => Interpret Free1 f where
     retract   = retractFree1
     interpret = interpretFree1
 
 -- | A free 'Applicative'
-instance Interpret FA.Ap where
-    type C FA.Ap = Applicative
-
+instance Applicative f => Interpret FA.Ap f where
     retract   = FA.retractAp
     interpret = FA.runAp
 
 -- | A free 'Applicative'
-instance Interpret FAF.Ap where
-    type C FAF.Ap = Applicative
-
+instance Applicative f => Interpret FAF.Ap f where
     retract   = FAF.retractAp
     interpret = FAF.runAp
 
--- | A free 'Unconstrained'
-instance Interpret IdentityT where
-    type C IdentityT = Unconstrained
-
+instance Interpret IdentityT f where
     retract = coerce
     interpret f = f . runIdentityT
 
 -- | A free 'Pointed'
-instance Interpret Lift where
-    type C Lift = Pointed
-
+instance Pointed f => Interpret Lift f where
     retract   = elimLift point id
     interpret = elimLift point
 
 -- | A free 'Pointed'
-instance Interpret MaybeApply where
-    type C MaybeApply = Pointed
-
+instance Pointed f => Interpret MaybeApply f where
     retract     = either id point . runMaybeApply
     interpret f = either f point . runMaybeApply
 
-instance Interpret Backwards where
-    type C Backwards = Unconstrained
-
+instance Interpret Backwards f where
     retract     = forwards
     interpret f = f . forwards
 
-instance Interpret WrappedApplicative where
-    type C WrappedApplicative = Unconstrained
-
+instance Interpret WrappedApplicative f where
     retract     = unwrapApplicative
     interpret f = f . unwrapApplicative
 
 -- | A free 'MonadReader', but only when applied to a 'Monad'.
-instance Interpret (ReaderT r) where
-    type C (ReaderT r) = MonadReader r
-
+instance MonadReader r f => Interpret (ReaderT r) f where
     retract     x = runReaderT x =<< ask
     interpret f x = f . runReaderT x =<< ask
 
 -- | This ignores the environment, so @'interpret' /= 'hbind'@
-instance Monoid e => Interpret (EnvT e) where
-    type C (EnvT e) = Unconstrained
-
+instance Monoid e => Interpret (EnvT e) f where
     retract     (EnvT _ x) = x
     interpret f (EnvT _ x) = f x
 
-instance Interpret Reverse where
-    type C Reverse = Unconstrained
-
+instance Interpret Reverse f where
     retract     = getReverse
     interpret f = f . getReverse
 
--- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
--- have it impossible to retract out of.
-instance Interpret ProxyF where
-    type C ProxyF = Impossible
+-- -- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
+-- -- have it impossible to retract out of.
+-- instance Impossible f => Interpret ProxyF f where
+--     retract = nope . reProxy
 
-    retract = nope . reProxy
+-- reProxy :: p f a -> Proxy f
+-- reProxy _ = Proxy
 
-reProxy :: p f a -> Proxy f
-reProxy _ = Proxy
-
--- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
--- have it impossible to retract out of.
-instance Monoid e => Interpret (ConstF e) where
-    type C (ConstF e) = Impossible
-
-    retract = nope . reProxy
+-- -- | The only way for this to obey @'retract' . 'inject' == 'id'@ is to
+-- -- have it impossible to retract out of.
+-- instance (Monoid e, Impossible f) => Interpret (ConstF e) f where
+--     retract = nope . reProxy
 
 -- | A constraint on @a@ for both @c a@ and @d a@.  Requiring @'AndC'
 -- 'Show' 'Eq' a@ is the same as requiring @('Show' a, 'Eq' a)@.
 class (c a, d a) => AndC c d a
 instance (c a, d a) => AndC c d a
 
-instance (Interpret s, Interpret t) => Interpret (ComposeT s t) where
-    type C (ComposeT s t) = AndC (C s) (C t)
-
+instance (Interpret s f, Interpret t f) => Interpret (ComposeT s t) f where
     retract     = interpret retract . getComposeT
     interpret f = interpret (interpret f) . getComposeT
 
 -- | Never uses 'inject'
-instance Interpret t => Interpret (HLift t) where
-    type C (HLift t) = C t
+instance Interpret t f => Interpret (HLift t) f where
     retract = \case
       HPure  x -> x
       HOther x -> retract x
@@ -448,8 +391,7 @@ instance Interpret t => Interpret (HLift t) where
       HOther x -> interpret f x
 
 -- | Never uses 'inject'
-instance Interpret t => Interpret (HFree t) where
-    type C (HFree t) = C t
+instance Interpret t f => Interpret (HFree t) f where
     retract = \case
       HReturn x -> x
       HJoin   x -> interpret retract x

@@ -25,9 +25,16 @@ packages:
       sha256: f199a6c270fc5d77c17f678d1c14713aa5934a6e8706a039c4bd705d989f5f0f
   original:
     hackage: trivial-constraint-0.6.0.0
+- completed:
+    hackage: vinyl-0.12.0@sha256:6136e2608c2c4be0c112944fb0f5a6a0df56b50adec12eb1b7240258abfcf9b1,3790
+    pantry-tree:
+      size: 1857
+      sha256: aeb9e0e1a3bbe2b1f048a096430d240964a31c6936a1da89f4b32e931eba9d69
+  original:
+    hackage: vinyl-0.12.0
 snapshots:
 - completed:
-    size: 519777
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/7/13.yaml
-    sha256: d69e220d244bcbf39c8bdd23150314c05256ecf163405ca02899c5af75317f83
-  original: nightly-2019-07-13
+    size: 418289
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/11/10.yaml
+    sha256: 503940a87dace1cdd2c1967f626bd189524e07c892bbd6d444a4fa39107212d2
+  original: nightly-2019-11-10

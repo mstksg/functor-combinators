@@ -1,19 +1,21 @@
-{-# LANGUAGE DeriveDataTypeable   #-}
-{-# LANGUAGE DeriveFoldable       #-}
-{-# LANGUAGE DeriveFunctor        #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE DeriveTraversable    #-}
-{-# LANGUAGE DerivingVia          #-}
-{-# LANGUAGE KindSignatures       #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeInType           #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ViewPatterns         #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveFoldable        #-}
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DeriveTraversable     #-}
+{-# LANGUAGE DerivingVia           #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 -- |
 -- Module      : Data.HBifunctor
@@ -102,19 +104,18 @@ deriveOrd1 ''RightF
 instance HBifunctor RightF where
     hbimap _ g (RightF x) = RightF (g x)
 
-deriving via (WrappedHBifunctor RightF f)
-    instance HFunctor (RightF f)
+deriving via (WrappedHBifunctor RightF g)
+    instance HFunctor (RightF g)
 
-instance HFunctor (RightF f) where
+instance HFunctor (RightF g) where
     hmap f (RightF x) = RightF (f x)
 
-instance Inject (RightF f) where
+instance Inject (RightF g) where
     inject = RightF
 
-instance HBind (RightF f) where
+instance HBind (RightF g) where
     hbind f (RightF x) = f x
 
-instance Interpret (RightF f) where
-    type C (RightF f) = Unconstrained
+instance Interpret (RightF g) f where
     retract (RightF x) = x
     interpret f (RightF x) = f x
