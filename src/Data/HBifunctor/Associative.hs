@@ -243,6 +243,9 @@ class (Associative t, Interpret (SF t)) => Semigroupoidal t where
 
     -- | The 'HBifunctor' analogy of 'retract'. It retracts /both/ @f@s
     -- into a single @f@, effectively fully mixing them together.
+    --
+    -- This function makes @f@ a semigroup in the category of endofunctors
+    -- with respect to tensor @t@.
     biretract :: CS t f => t f f ~> f
     biretract = retract . toSF
 

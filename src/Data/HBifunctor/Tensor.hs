@@ -351,6 +351,9 @@ class (Tensor t, Semigroupoidal t, Interpret (MF t)) => Monoidal t where
     -- Note that because @t@ appears nowhere in the input or output types,
     -- you must always use this with explicit type application syntax (like
     -- @pureT \@Day@)
+    --
+    -- Along with 'biretract', this function makes @f@ a monoid in the
+    -- category of endofunctors with respect to tensor @t@.
     pureT  :: CM t f => I t ~> f
     pureT  = retract . reviewF (splittingMF @t) . L1
 
