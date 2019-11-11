@@ -28,14 +28,14 @@
 </span><span id="line-28"></span><span class="hs-comment">-- tensor applications&quot;.</span><span>
 </span><span id="line-29"></span><span class="hs-comment">--</span><span>
 </span><span id="line-30"></span><span class="hs-comment">-- The type @'Chain' t@, for any @'Monoidal' t@, is meant to be the same as</span><span>
-</span><span id="line-31"></span><span class="hs-comment">-- @'MF' t@ (the monoidal functor combinator for @t@), and represents &quot;zero</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- @'ListBy' t@ (the monoidal functor combinator for @t@), and represents &quot;zero</span><span>
 </span><span id="line-32"></span><span class="hs-comment">-- or more&quot; applications of @f@ to @t@.</span><span>
 </span><span id="line-33"></span><span class="hs-comment">--</span><span>
 </span><span id="line-34"></span><span class="hs-comment">-- The type @'Chain1' t@, for any @'Semigroupoidal' t@, is meant to be the</span><span>
-</span><span id="line-35"></span><span class="hs-comment">-- same as @'SF' t@ (the semigroupoidal functor combinator for @t@) and</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- same as @'NonEmptyBy' t@ (the semigroupoidal functor combinator for @t@) and</span><span>
 </span><span id="line-36"></span><span class="hs-comment">-- represents &quot;one or more&quot; applications of @f@ to @t@.</span><span>
 </span><span id="line-37"></span><span class="hs-comment">--</span><span>
-</span><span id="line-38"></span><span class="hs-comment">-- The advantage of using 'Chain' and 'Chain1' over 'MF' or 'SF' is that</span><span>
+</span><span id="line-38"></span><span class="hs-comment">-- The advantage of using 'Chain' and 'Chain1' over 'ListBy' or 'NonEmptyBy' is that</span><span>
 </span><span id="line-39"></span><span class="hs-comment">-- they provide a universal interface for pattern matching and constructing</span><span>
 </span><span id="line-40"></span><span class="hs-comment">-- such values, which may simplify working with new such functor</span><span>
 </span><span id="line-41"></span><span class="hs-comment">-- combinators you might encounter.</span><span>
@@ -44,17 +44,17 @@
 </span><span id="line-44"></span><span>    </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier">Chain</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
 </span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#foldChain"><span class="hs-identifier">foldChain</span></a></span><span>
 </span><span id="line-46"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unfoldChain"><span class="hs-identifier">unfoldChain</span></a></span><span>
-</span><span id="line-47"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollMF"><span class="hs-identifier">unrollMF</span></a></span><span>
-</span><span id="line-48"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#rerollMF"><span class="hs-identifier">rerollMF</span></a></span><span>
-</span><span id="line-49"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingMF"><span class="hs-identifier">unrollingMF</span></a></span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollLB"><span class="hs-identifier">unrollLB</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#rerollLB"><span class="hs-identifier">rerollLB</span></a></span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingLB"><span class="hs-identifier">unrollingLB</span></a></span><span>
 </span><span id="line-50"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#appendChain"><span class="hs-identifier">appendChain</span></a></span><span>
 </span><span id="line-51"></span><span>  </span><span class="annot"><span class="hs-comment">-- * 'Chain1'</span></span><span>
 </span><span id="line-52"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier">Chain1</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
 </span><span id="line-53"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#foldChain1"><span class="hs-identifier">foldChain1</span></a></span><span>
 </span><span id="line-54"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unfoldChain1"><span class="hs-identifier">unfoldChain1</span></a></span><span>
-</span><span id="line-55"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingSF"><span class="hs-identifier">unrollingSF</span></a></span><span>
-</span><span id="line-56"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollSF"><span class="hs-identifier">unrollSF</span></a></span><span>
-</span><span id="line-57"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier">rerollSF</span></a></span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingNEB"><span class="hs-identifier">unrollingNEB</span></a></span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollNEB"><span class="hs-identifier">unrollNEB</span></a></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier">rerollNEB</span></a></span><span>
 </span><span id="line-58"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#appendChain1"><span class="hs-identifier">appendChain1</span></a></span><span>
 </span><span id="line-59"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#fromChain1"><span class="hs-identifier">fromChain1</span></a></span><span>
 </span><span id="line-60"></span><span>  </span><span class="annot"><span class="hs-comment">-- ** Matchable</span></span><span>
@@ -81,7 +81,7 @@
 </span><span id="line-81"></span><span class="hs-comment">-- | A useful construction that works like a &quot;non-empty linked list&quot; of @t</span><span>
 </span><span id="line-82"></span><span class="hs-comment">-- f@ applied to itself multiple times.  That is, it contains @t f f@, @t</span><span>
 </span><span id="line-83"></span><span class="hs-comment">-- f (t f f)@, @t f (t f (t f f))@, etc, with @f@ occuring /one or more/</span><span>
-</span><span id="line-84"></span><span class="hs-comment">-- times.  It is meant to be the same as @'SF' t@.</span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- times.  It is meant to be the same as @'NonEmptyBy' t@.</span><span>
 </span><span id="line-85"></span><span class="hs-comment">--</span><span>
 </span><span id="line-86"></span><span class="hs-comment">-- A @'Chain1' t f a@ is explicitly one of:</span><span>
 </span><span id="line-87"></span><span class="hs-comment">--</span><span>
@@ -91,20 +91,20 @@
 </span><span id="line-91"></span><span class="hs-comment">-- *  @t f (t f (t f f)) a@</span><span>
 </span><span id="line-92"></span><span class="hs-comment">-- *  .. etc</span><span>
 </span><span id="line-93"></span><span class="hs-comment">--</span><span>
-</span><span id="line-94"></span><span class="hs-comment">-- Note that this is exactly the description of @'SF' t@.  And that's &quot;the</span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- Note that this is exactly the description of @'NonEmptyBy' t@.  And that's &quot;the</span><span>
 </span><span id="line-95"></span><span class="hs-comment">-- point&quot;: for all instances of 'Semigroupoidal', @'Chain1' t@ is</span><span>
-</span><span id="line-96"></span><span class="hs-comment">-- isomorphic to @'SF' t@ (witnessed by 'unrollingSF').  That's big picture</span><span>
-</span><span id="line-97"></span><span class="hs-comment">-- of 'SF': it's supposed to be a type that consists of all possible</span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- isomorphic to @'NonEmptyBy' t@ (witnessed by 'unrollingNEB').  That's big picture</span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- of 'NonEmptyBy': it's supposed to be a type that consists of all possible</span><span>
 </span><span id="line-98"></span><span class="hs-comment">-- self-applications of @f@ to @t@.</span><span>
 </span><span id="line-99"></span><span class="hs-comment">--</span><span>
-</span><span id="line-100"></span><span class="hs-comment">-- 'Chain1' gives you a way to work with all @'SF' t@ in a uniform way.</span><span>
-</span><span id="line-101"></span><span class="hs-comment">-- Unlike for @'SF' t f@ in general, you can always explicitly /pattern</span><span>
+</span><span id="line-100"></span><span class="hs-comment">-- 'Chain1' gives you a way to work with all @'NonEmptyBy' t@ in a uniform way.</span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- Unlike for @'NonEmptyBy' t f@ in general, you can always explicitly /pattern</span><span>
 </span><span id="line-102"></span><span class="hs-comment">-- match/ on a 'Chain1' (with its two constructors) and do what you please</span><span>
 </span><span id="line-103"></span><span class="hs-comment">-- with it.  You can also /construct/ 'Chain1' using normal constructors</span><span>
 </span><span id="line-104"></span><span class="hs-comment">-- and functions.</span><span>
 </span><span id="line-105"></span><span class="hs-comment">--</span><span>
-</span><span id="line-106"></span><span class="hs-comment">-- You can convert in between @'SF' t f@ and @'Chain1' t f@ with 'unrollSF'</span><span>
-</span><span id="line-107"></span><span class="hs-comment">-- and 'rerollSF'.  You can fully &quot;collapse&quot; a @'Chain1' t f@ into an @f@</span><span>
+</span><span id="line-106"></span><span class="hs-comment">-- You can convert in between @'NonEmptyBy' t f@ and @'Chain1' t f@ with 'unrollNEB'</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- and 'rerollNEB'.  You can fully &quot;collapse&quot; a @'Chain1' t f@ into an @f@</span><span>
 </span><span id="line-108"></span><span class="hs-comment">-- with 'retract', if @t@ is 'Semigroupoidal'; this could be considered</span><span>
 </span><span id="line-109"></span><span class="hs-comment">-- a fundamental property of semigroupoidal-ness.</span><span>
 </span><span id="line-110"></span><span class="hs-comment">--</span><span>
@@ -465,72 +465,75 @@ SemigroupIn t f =&gt;
 </span><a href="#local-6989586621679416517"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">t g (Chain1 t g) x
 </span><a href="#local-6989586621679416515"><span class="hs-identifier hs-var">xs</span></a></span></span></span><span>
 </span><span id="line-203"></span><span>
-</span><span id="line-204"></span><span class="hs-comment">-- | A type @'SF' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-204"></span><span class="hs-comment">-- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of</span><span>
 </span><span id="line-205"></span><span class="hs-comment">-- @t@s to itself.  The type @'Chain1' t f@ is an actual concrete ADT that contains</span><span>
 </span><span id="line-206"></span><span class="hs-comment">-- successive applications of @t@ to itself, and you can pattern match on</span><span>
 </span><span id="line-207"></span><span class="hs-comment">-- each layer.</span><span>
 </span><span id="line-208"></span><span class="hs-comment">--</span><span>
-</span><span id="line-209"></span><span class="hs-comment">-- 'unrollingSF' states that the two types are isormorphic.  Use 'unrollSF'</span><span>
-</span><span id="line-210"></span><span class="hs-comment">-- and 'rerollSF' to convert between the two.</span><span>
-</span><span id="line-211"></span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingSF"><span class="hs-identifier hs-type">unrollingSF</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416775"><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416774"><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Associative.html#SemigroupIn"><span class="hs-identifier hs-type">SemigroupIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#SF"><span class="hs-identifier hs-type">SF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span>
-</span><span id="line-212"></span><span id="unrollingSF"><span class="annot"><span class="annottext">unrollingSF :: SF t f &lt;~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#unrollingSF"><span class="hs-identifier hs-var hs-var">unrollingSF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SF t f ~&gt; Chain1 t f)
--&gt; (Chain1 t f ~&gt; SF t f) -&gt; SF t f &lt;~&gt; Chain1 t f
+</span><span id="line-209"></span><span class="hs-comment">-- 'unrollingNEB' states that the two types are isormorphic.  Use 'unrollNEB'</span><span>
+</span><span id="line-210"></span><span class="hs-comment">-- and 'rerollNEB' to convert between the two.</span><span>
+</span><span id="line-211"></span><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingNEB"><span class="hs-identifier hs-type">unrollingNEB</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416775"><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416774"><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Associative.html#SemigroupIn"><span class="hs-identifier hs-type">SemigroupIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#NonEmptyBy"><span class="hs-identifier hs-type">NonEmptyBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416775"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416774"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-212"></span><span id="unrollingNEB"><span class="annot"><span class="annottext">unrollingNEB :: NonEmptyBy t f &lt;~&gt; Chain1 t f
+</span><a href="Data.HFunctor.Chain.html#unrollingNEB"><span class="hs-identifier hs-var hs-var">unrollingNEB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(NonEmptyBy t f ~&gt; Chain1 t f)
+-&gt; (Chain1 t f ~&gt; NonEmptyBy t f) -&gt; NonEmptyBy t f &lt;~&gt; Chain1 t f
 forall (f :: * -&gt; *) (g :: * -&gt; *). (f ~&gt; g) -&gt; (g ~&gt; f) -&gt; f &lt;~&gt; g
-</span><a href="Control.Natural.IsoF.html#isoF"><span class="hs-identifier hs-var">isoF</span></a></span><span> </span><span class="annot"><span class="annottext">SF t f ~&gt; Chain1 t f
+</span><a href="Control.Natural.IsoF.html#isoF"><span class="hs-identifier hs-var">isoF</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmptyBy t f ~&gt; Chain1 t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 (SemigroupIn t f, Functor f) =&gt;
-SF t f ~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#unrollSF"><span class="hs-identifier hs-var">unrollSF</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; SF t f
+NonEmptyBy t f ~&gt; Chain1 t f
+</span><a href="Data.HFunctor.Chain.html#unrollNEB"><span class="hs-identifier hs-var">unrollNEB</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; NonEmptyBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 SemigroupIn t f =&gt;
-Chain1 t f ~&gt; SF t f
-</span><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier hs-var">rerollSF</span></a></span><span>
+Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier hs-var">rerollNEB</span></a></span><span>
 </span><span id="line-213"></span><span>
-</span><span id="line-214"></span><span class="hs-comment">-- | A type @'SF' t@ is supposed to represent the successive application of</span><span>
-</span><span id="line-215"></span><span class="hs-comment">-- @t@s to itself.  'unrollSF' makes that successive application explicit,</span><span>
+</span><span id="line-214"></span><span class="hs-comment">-- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-215"></span><span class="hs-comment">-- @t@s to itself.  'unrollNEB' makes that successive application explicit,</span><span>
 </span><span id="line-216"></span><span class="hs-comment">-- buy converting it to a literal 'Chain1' of applications of @t@ to</span><span>
 </span><span id="line-217"></span><span class="hs-comment">-- itself.</span><span>
 </span><span id="line-218"></span><span class="hs-comment">--</span><span>
 </span><span id="line-219"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-220"></span><span class="hs-comment">-- 'unrollSF' = 'unfoldChain1' 'matchSF'</span><span>
+</span><span id="line-220"></span><span class="hs-comment">-- 'unrollNEB' = 'unfoldChain1' 'matchNEB'</span><span>
 </span><span id="line-221"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-222"></span><span id="local-6989586621679417006"><span id="local-6989586621679417007"><span class="annot"><a href="Data.HFunctor.Chain.html#unrollSF"><span class="hs-identifier hs-type">unrollSF</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Associative.html#SemigroupIn"><span class="hs-identifier hs-type">SemigroupIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417007"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#SF"><span class="hs-identifier hs-type">SF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417007"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417007"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span></span></span><span>
-</span><span id="line-223"></span><span id="unrollSF"><span class="annot"><span class="annottext">unrollSF :: SF t f ~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#unrollSF"><span class="hs-identifier hs-var hs-var">unrollSF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SF t f ~&gt; (f :+: t f (SF t f))) -&gt; SF t f ~&gt; Chain1 t f
+</span><span id="line-222"></span><span id="local-6989586621679417006"><span id="local-6989586621679417007"><span class="annot"><a href="Data.HFunctor.Chain.html#unrollNEB"><span class="hs-identifier hs-type">unrollNEB</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Associative.html#SemigroupIn"><span class="hs-identifier hs-type">SemigroupIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417007"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#NonEmptyBy"><span class="hs-identifier hs-type">NonEmptyBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417007"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417007"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417006"><span class="hs-identifier hs-type">f</span></a></span></span></span><span>
+</span><span id="line-223"></span><span id="unrollNEB"><span class="annot"><span class="annottext">unrollNEB :: NonEmptyBy t f ~&gt; Chain1 t f
+</span><a href="Data.HFunctor.Chain.html#unrollNEB"><span class="hs-identifier hs-var hs-var">unrollNEB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(NonEmptyBy t f ~&gt; (f :+: t f (NonEmptyBy t f)))
+-&gt; NonEmptyBy t f ~&gt; Chain1 t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *)
        (g :: * -&gt; *).
 HBifunctor t =&gt;
 (g ~&gt; (f :+: t f g)) -&gt; g ~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#unfoldChain1"><span class="hs-identifier hs-var">unfoldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">SF t f ~&gt; (f :+: t f (SF t f))
+</span><a href="Data.HFunctor.Chain.html#unfoldChain1"><span class="hs-identifier hs-var">unfoldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmptyBy t f ~&gt; (f :+: t f (NonEmptyBy t f))
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 (Associative t, Functor f) =&gt;
-SF t f ~&gt; (f :+: t f (SF t f))
-</span><a href="Data.HBifunctor.Associative.html#matchSF"><span class="hs-identifier hs-var">matchSF</span></a></span><span>
+NonEmptyBy t f ~&gt; (f :+: t f (NonEmptyBy t f))
+</span><a href="Data.HBifunctor.Associative.html#matchNEB"><span class="hs-identifier hs-var">matchNEB</span></a></span><span>
 </span><span id="line-224"></span><span>
-</span><span id="line-225"></span><span class="hs-comment">-- | A type @'SF' t@ is supposed to represent the successive application of</span><span>
-</span><span id="line-226"></span><span class="hs-comment">-- @t@s to itself.  'rerollSF' takes an explicit 'Chain1' of applications</span><span>
-</span><span id="line-227"></span><span class="hs-comment">-- of @t@ to itself and rolls it back up into an @'SF' t@.</span><span>
+</span><span id="line-225"></span><span class="hs-comment">-- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-226"></span><span class="hs-comment">-- @t@s to itself.  'rerollNEB' takes an explicit 'Chain1' of applications</span><span>
+</span><span id="line-227"></span><span class="hs-comment">-- of @t@ to itself and rolls it back up into an @'NonEmptyBy' t@.</span><span>
 </span><span id="line-228"></span><span class="hs-comment">--</span><span>
 </span><span id="line-229"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-230"></span><span class="hs-comment">-- 'rerollSF' = 'foldChain1' 'inject' 'consSF'</span><span>
+</span><span id="line-230"></span><span class="hs-comment">-- 'rerollNEB' = 'foldChain1' 'inject' 'consNEB'</span><span>
 </span><span id="line-231"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-232"></span><span id="local-6989586621679417004"><span id="local-6989586621679417005"><span class="annot"><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier hs-type">rerollSF</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#SemigroupIn"><span class="hs-identifier hs-type">SemigroupIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417005"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417004"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417005"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417004"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#SF"><span class="hs-identifier hs-type">SF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417005"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417004"><span class="hs-identifier hs-type">f</span></a></span></span></span><span>
-</span><span id="line-233"></span><span id="rerollSF"><span class="annot"><span class="annottext">rerollSF :: Chain1 t f ~&gt; SF t f
-</span><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier hs-var hs-var">rerollSF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; SF t f) -&gt; (t f (SF t f) ~&gt; SF t f) -&gt; Chain1 t f ~&gt; SF t f
+</span><span id="line-232"></span><span id="local-6989586621679417004"><span id="local-6989586621679417005"><span class="annot"><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier hs-type">rerollNEB</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#SemigroupIn"><span class="hs-identifier hs-type">SemigroupIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417005"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417004"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417005"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417004"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#NonEmptyBy"><span class="hs-identifier hs-type">NonEmptyBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417005"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679417004"><span class="hs-identifier hs-type">f</span></a></span></span></span><span>
+</span><span id="line-233"></span><span id="rerollNEB"><span class="annot"><span class="annottext">rerollNEB :: Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier hs-var hs-var">rerollNEB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; NonEmptyBy t f)
+-&gt; (t f (NonEmptyBy t f) ~&gt; NonEmptyBy t f)
+-&gt; Chain1 t f ~&gt; NonEmptyBy t f
 forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
        (g :: k -&gt; *).
 HBifunctor t =&gt;
 (f ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain1 t f ~&gt; g
-</span><a href="Data.HFunctor.Chain.html#foldChain1"><span class="hs-identifier hs-var">foldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; SF t f
+</span><a href="Data.HFunctor.Chain.html#foldChain1"><span class="hs-identifier hs-var">foldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; NonEmptyBy t f
 forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
 Inject t =&gt;
 f ~&gt; t f
-</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span> </span><span class="annot"><span class="annottext">t f (SF t f) ~&gt; SF t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span> </span><span class="annot"><span class="annottext">t f (NonEmptyBy t f) ~&gt; NonEmptyBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 Associative t =&gt;
-t f (SF t f) ~&gt; SF t f
-</span><a href="Data.HBifunctor.Associative.html#consSF"><span class="hs-identifier hs-var">consSF</span></a></span><span>
+t f (NonEmptyBy t f) ~&gt; NonEmptyBy t f
+</span><a href="Data.HBifunctor.Associative.html#consNEB"><span class="hs-identifier hs-var">consNEB</span></a></span><span>
 </span><span id="line-234"></span><span>
 </span><span id="line-235"></span><span class="hs-comment">-- | 'Chain1' is a semigroup with respect to @t@: we can &quot;combine&quot; them in</span><span>
 </span><span id="line-236"></span><span class="hs-comment">-- an associative way.</span><span>
@@ -540,51 +543,53 @@ t f (SF t f) ~&gt; SF t f
 </span><span id="line-240"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416511"><span class="annot"><a href="#local-6989586621679416511"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416510"><span class="annot"><a href="#local-6989586621679416510"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Associative.html#SemigroupIn"><span class="hs-identifier hs-type">SemigroupIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416511"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416510"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679416510"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-241"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679416511"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416511"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416510"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416511"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416510"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416511"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416510"><span class="hs-identifier hs-type">f</span></a></span><span>
 </span><span id="line-242"></span><span id="appendChain1"><span class="annot"><span class="annottext">appendChain1 :: t (Chain1 t f) (Chain1 t f) ~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#appendChain1"><span class="hs-identifier hs-var hs-var">appendChain1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SF t f x -&gt; Chain1 t f x
+</span><a href="Data.HFunctor.Chain.html#appendChain1"><span class="hs-identifier hs-var hs-var">appendChain1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">NonEmptyBy t f x -&gt; Chain1 t f x
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 (SemigroupIn t f, Functor f) =&gt;
-SF t f ~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#unrollSF"><span class="hs-identifier hs-var">unrollSF</span></a></span><span>
-</span><span id="line-243"></span><span>             </span><span class="annot"><span class="annottext">(SF t f x -&gt; Chain1 t f x)
--&gt; (t (Chain1 t f) (Chain1 t f) x -&gt; SF t f x)
+NonEmptyBy t f ~&gt; Chain1 t f
+</span><a href="Data.HFunctor.Chain.html#unrollNEB"><span class="hs-identifier hs-var">unrollNEB</span></a></span><span>
+</span><span id="line-243"></span><span>             </span><span class="annot"><span class="annottext">(NonEmptyBy t f x -&gt; Chain1 t f x)
+-&gt; (t (Chain1 t f) (Chain1 t f) x -&gt; NonEmptyBy t f x)
 -&gt; t (Chain1 t f) (Chain1 t f) x
 -&gt; Chain1 t f x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t (SF t f) (SF t f) x -&gt; SF t f x
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t (NonEmptyBy t f) (NonEmptyBy t f) x -&gt; NonEmptyBy t f x
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 Associative t =&gt;
-t (SF t f) (SF t f) ~&gt; SF t f
-</span><a href="Data.HBifunctor.Associative.html#appendSF"><span class="hs-identifier hs-var">appendSF</span></a></span><span>
-</span><span id="line-244"></span><span>             </span><span class="annot"><span class="annottext">(t (SF t f) (SF t f) x -&gt; SF t f x)
--&gt; (t (Chain1 t f) (Chain1 t f) x -&gt; t (SF t f) (SF t f) x)
+t (NonEmptyBy t f) (NonEmptyBy t f) ~&gt; NonEmptyBy t f
+</span><a href="Data.HBifunctor.Associative.html#appendNEB"><span class="hs-identifier hs-var">appendNEB</span></a></span><span>
+</span><span id="line-244"></span><span>             </span><span class="annot"><span class="annottext">(t (NonEmptyBy t f) (NonEmptyBy t f) x -&gt; NonEmptyBy t f x)
+-&gt; (t (Chain1 t f) (Chain1 t f) x
+    -&gt; t (NonEmptyBy t f) (NonEmptyBy t f) x)
 -&gt; t (Chain1 t f) (Chain1 t f) x
--&gt; SF t f x
+-&gt; NonEmptyBy t f x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Chain1 t f ~&gt; SF t f)
--&gt; (Chain1 t f ~&gt; SF t f)
--&gt; t (Chain1 t f) (Chain1 t f) ~&gt; t (SF t f) (SF t f)
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Chain1 t f ~&gt; NonEmptyBy t f)
+-&gt; (Chain1 t f ~&gt; NonEmptyBy t f)
+-&gt; t (Chain1 t f) (Chain1 t f)
+   ~&gt; t (NonEmptyBy t f) (NonEmptyBy t f)
 forall k k k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
        (j :: k -&gt; *) (g :: k -&gt; *) (k :: k -&gt; *).
 HBifunctor t =&gt;
 (f ~&gt; j) -&gt; (g ~&gt; k) -&gt; t f g ~&gt; t j k
-</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; SF t f
+</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; NonEmptyBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 SemigroupIn t f =&gt;
-Chain1 t f ~&gt; SF t f
-</span><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier hs-var">rerollSF</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; SF t f
+Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier hs-var">rerollNEB</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; NonEmptyBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 SemigroupIn t f =&gt;
-Chain1 t f ~&gt; SF t f
-</span><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier hs-var">rerollSF</span></a></span><span>
+Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier hs-var">rerollNEB</span></a></span><span>
 </span><span id="line-245"></span><span>
 </span><span id="line-246"></span><span class="hs-comment">-- | A useful construction that works like a &quot;linked list&quot; of @t f@ applied</span><span>
 </span><span id="line-247"></span><span class="hs-comment">-- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,</span><span>
 </span><span id="line-248"></span><span class="hs-comment">-- @t f (t f (t f f))@, etc, with @f@ occuring /zero or more/ times.  It is</span><span>
-</span><span id="line-249"></span><span class="hs-comment">-- meant to be the same as @'MF' t@.</span><span>
+</span><span id="line-249"></span><span class="hs-comment">-- meant to be the same as @'ListBy' t@.</span><span>
 </span><span id="line-250"></span><span class="hs-comment">--</span><span>
 </span><span id="line-251"></span><span class="hs-comment">-- If @t@ is 'Monoidal', then it means we can &quot;collapse&quot; this linked list</span><span>
-</span><span id="line-252"></span><span class="hs-comment">-- into some final type @'MF' t@ ('rerollMF'), and also extract it back</span><span>
-</span><span id="line-253"></span><span class="hs-comment">-- into a linked list ('unrollMF').</span><span>
+</span><span id="line-252"></span><span class="hs-comment">-- into some final type @'ListBy' t@ ('rerollLB'), and also extract it back</span><span>
+</span><span id="line-253"></span><span class="hs-comment">-- into a linked list ('unrollLB').</span><span>
 </span><span id="line-254"></span><span class="hs-comment">--</span><span>
 </span><span id="line-255"></span><span class="hs-comment">-- So, a value of type @'Chain' t i f a@ is one of either:</span><span>
 </span><span id="line-256"></span><span class="hs-comment">--</span><span>
@@ -595,8 +600,8 @@ Chain1 t f ~&gt; SF t f
 </span><span id="line-261"></span><span class="hs-comment">-- *  @t f (t f (t f f)) a@</span><span>
 </span><span id="line-262"></span><span class="hs-comment">-- *  .. etc.</span><span>
 </span><span id="line-263"></span><span class="hs-comment">--</span><span>
-</span><span id="line-264"></span><span class="hs-comment">-- Note that this is /exactly/ what an @'MF' t@ is supposed to be.  Using</span><span>
-</span><span id="line-265"></span><span class="hs-comment">-- 'Chain' allows us to work with all @'MF' t@s in a uniform way, with</span><span>
+</span><span id="line-264"></span><span class="hs-comment">-- Note that this is /exactly/ what an @'ListBy' t@ is supposed to be.  Using</span><span>
+</span><span id="line-265"></span><span class="hs-comment">-- 'Chain' allows us to work with all @'ListBy' t@s in a uniform way, with</span><span>
 </span><span id="line-266"></span><span class="hs-comment">-- normal pattern matching and normal constructors.</span><span>
 </span><span id="line-267"></span><span class="hs-comment">--</span><span>
 </span><span id="line-268"></span><span class="hs-comment">-- You can fully &quot;collapse&quot; a @'Chain' t t f@ into an @f@ with</span><span>
@@ -769,7 +774,7 @@ t f (Chain t i f) a -&gt; Chain t i f a
 </span><a href="Data.HFunctor.Chain.html#More"><span class="hs-identifier hs-var">More</span></a></span></span></span></span><span>
 </span><span id="line-312"></span><span>
 </span><span id="line-313"></span><span class="hs-comment">-- | Recursively fold down a 'Chain'.  Provide a function on how to handle</span><span>
-</span><span id="line-314"></span><span class="hs-comment">-- the &quot;single @f@ case&quot; ('nilMF'), and how to handle the &quot;combined @t f g@</span><span>
+</span><span id="line-314"></span><span class="hs-comment">-- the &quot;single @f@ case&quot; ('nilLB'), and how to handle the &quot;combined @t f g@</span><span>
 </span><span id="line-315"></span><span class="hs-comment">-- case&quot;, and this will fold the entire @'Chain' t i) f@ into a single @g@.</span><span>
 </span><span id="line-316"></span><span class="hs-comment">--</span><span>
 </span><span id="line-317"></span><span class="hs-comment">-- This is a catamorphism.</span><span>
@@ -989,91 +994,95 @@ forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
 t f (Chain t i f) a -&gt; Chain t i f a
 </span><a href="Data.HFunctor.Chain.html#More"><span class="hs-identifier hs-var">More</span></a></span><span>
 </span><span id="line-372"></span><span>
-</span><span id="line-373"></span><span class="hs-comment">-- | A type @'MF' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-373"></span><span class="hs-comment">-- | A type @'ListBy' t@ is supposed to represent the successive application of</span><span>
 </span><span id="line-374"></span><span class="hs-comment">-- @t@s to itself.  The type @'Chain' t i f@ is an actual concrete</span><span>
 </span><span id="line-375"></span><span class="hs-comment">-- ADT that contains successive applications of @t@ to itself, and you can</span><span>
 </span><span id="line-376"></span><span class="hs-comment">-- pattern match on each layer.</span><span>
 </span><span id="line-377"></span><span class="hs-comment">--</span><span>
-</span><span id="line-378"></span><span class="hs-comment">-- 'unrollingMF' states that the two types are isormorphic.  Use 'unrollMF'</span><span>
-</span><span id="line-379"></span><span class="hs-comment">-- and 'rerollMF' to convert between the two.</span><span>
-</span><span id="line-380"></span><span id="local-6989586621679416762"><span id="local-6989586621679416763"><span id="local-6989586621679416764"><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingMF"><span class="hs-identifier hs-type">unrollingMF</span></a></span><span>
+</span><span id="line-378"></span><span class="hs-comment">-- 'unrollingLB' states that the two types are isormorphic.  Use 'unrollLB'</span><span>
+</span><span id="line-379"></span><span class="hs-comment">-- and 'rerollLB' to convert between the two.</span><span>
+</span><span id="line-380"></span><span id="local-6989586621679416762"><span id="local-6989586621679416763"><span id="local-6989586621679416764"><span class="annot"><a href="Data.HFunctor.Chain.html#unrollingLB"><span class="hs-identifier hs-type">unrollingLB</span></a></span><span>
 </span><span id="line-381"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416764"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416763"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416762"><span class="hs-identifier hs-type">f</span></a></span><span>
-</span><span id="line-382"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MF"><span class="hs-identifier hs-type">MF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416764"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416762"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416764"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416763"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416762"><span class="hs-identifier hs-type">f</span></a></span></span></span></span><span>
-</span><span id="line-383"></span><span id="unrollingMF"><span class="annot"><span class="annottext">unrollingMF :: MF t f &lt;~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollingMF"><span class="hs-identifier hs-var hs-var">unrollingMF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(MF t f ~&gt; Chain t i f)
--&gt; (Chain t i f ~&gt; MF t f) -&gt; MF t f &lt;~&gt; Chain t i f
+</span><span id="line-382"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416764"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416762"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416764"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416763"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416762"><span class="hs-identifier hs-type">f</span></a></span></span></span></span><span>
+</span><span id="line-383"></span><span id="unrollingLB"><span class="annot"><span class="annottext">unrollingLB :: ListBy t f &lt;~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollingLB"><span class="hs-identifier hs-var hs-var">unrollingLB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f ~&gt; Chain t i f)
+-&gt; (Chain t i f ~&gt; ListBy t f) -&gt; ListBy t f &lt;~&gt; Chain t i f
 forall (f :: * -&gt; *) (g :: * -&gt; *). (f ~&gt; g) -&gt; (g ~&gt; f) -&gt; f &lt;~&gt; g
-</span><a href="Control.Natural.IsoF.html#isoF"><span class="hs-identifier hs-var">isoF</span></a></span><span> </span><span class="annot"><span class="annottext">MF t f ~&gt; Chain t i f
+</span><a href="Control.Natural.IsoF.html#isoF"><span class="hs-identifier hs-var">isoF</span></a></span><span> </span><span class="annot"><span class="annottext">ListBy t f ~&gt; Chain t i f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-MF t f ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollMF"><span class="hs-identifier hs-var">unrollMF</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; MF t f
+ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollLB"><span class="hs-identifier hs-var">unrollLB</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-Chain t i f ~&gt; MF t f
-</span><a href="Data.HFunctor.Chain.html#rerollMF"><span class="hs-identifier hs-var">rerollMF</span></a></span><span>
+Chain t i f ~&gt; ListBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollLB"><span class="hs-identifier hs-var">rerollLB</span></a></span><span>
 </span><span id="line-384"></span><span>
-</span><span id="line-385"></span><span class="hs-comment">-- | A type @'MF' t@ is supposed to represent the successive application of</span><span>
-</span><span id="line-386"></span><span class="hs-comment">-- @t@s to itself.  'unrollMF' makes that successive application explicit,</span><span>
+</span><span id="line-385"></span><span class="hs-comment">-- | A type @'ListBy' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-386"></span><span class="hs-comment">-- @t@s to itself.  'unrollLB' makes that successive application explicit,</span><span>
 </span><span id="line-387"></span><span class="hs-comment">-- buy converting it to a literal 'Chain' of applications of @t@ to</span><span>
 </span><span id="line-388"></span><span class="hs-comment">-- itself.</span><span>
 </span><span id="line-389"></span><span class="hs-comment">--</span><span>
 </span><span id="line-390"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-391"></span><span class="hs-comment">-- 'unrollMF' = 'unfoldChain' 'unconsMF'</span><span>
+</span><span id="line-391"></span><span class="hs-comment">-- 'unrollLB' = 'unfoldChain' 'unconsLB'</span><span>
 </span><span id="line-392"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-393"></span><span id="local-6989586621679416814"><span id="local-6989586621679416815"><span id="local-6989586621679416816"><span class="annot"><a href="Data.HFunctor.Chain.html#unrollMF"><span class="hs-identifier hs-type">unrollMF</span></a></span><span>
+</span><span id="line-393"></span><span id="local-6989586621679416814"><span id="local-6989586621679416815"><span id="local-6989586621679416816"><span class="annot"><a href="Data.HFunctor.Chain.html#unrollLB"><span class="hs-identifier hs-type">unrollLB</span></a></span><span>
 </span><span id="line-394"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416816"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416815"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416814"><span class="hs-identifier hs-type">f</span></a></span><span>
-</span><span id="line-395"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MF"><span class="hs-identifier hs-type">MF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416816"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416814"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416816"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416815"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416814"><span class="hs-identifier hs-type">f</span></a></span></span></span></span><span>
-</span><span id="line-396"></span><span id="unrollMF"><span class="annot"><span class="annottext">unrollMF :: MF t f ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollMF"><span class="hs-identifier hs-var hs-var">unrollMF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(MF t f ~&gt; (i :+: t f (MF t f))) -&gt; MF t f ~&gt; Chain t i f
+</span><span id="line-395"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416816"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416814"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416816"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416815"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416814"><span class="hs-identifier hs-type">f</span></a></span></span></span></span><span>
+</span><span id="line-396"></span><span id="unrollLB"><span class="annot"><span class="annottext">unrollLB :: ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollLB"><span class="hs-identifier hs-var hs-var">unrollLB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f ~&gt; (i :+: t f (ListBy t f)))
+-&gt; ListBy t f ~&gt; Chain t i f
 forall k (t :: (k -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: k -&gt; *)
        (g :: * -&gt; *) (i :: * -&gt; *).
 HBifunctor t =&gt;
 (g ~&gt; (i :+: t f g)) -&gt; g ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unfoldChain"><span class="hs-identifier hs-var">unfoldChain</span></a></span><span> </span><span class="annot"><span class="annottext">MF t f ~&gt; (i :+: t f (MF t f))
+</span><a href="Data.HFunctor.Chain.html#unfoldChain"><span class="hs-identifier hs-var">unfoldChain</span></a></span><span> </span><span class="annot"><span class="annottext">ListBy t f ~&gt; (i :+: t f (ListBy t f))
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 Tensor t i =&gt;
-MF t f ~&gt; (i :+: t f (MF t f))
-</span><a href="Data.HBifunctor.Tensor.html#unconsMF"><span class="hs-identifier hs-var">unconsMF</span></a></span><span>
+ListBy t f ~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.html#unconsLB"><span class="hs-identifier hs-var">unconsLB</span></a></span><span>
 </span><span id="line-397"></span><span>
-</span><span id="line-398"></span><span class="hs-comment">-- | A type @'MF' t@ is supposed to represent the successive application of</span><span>
-</span><span id="line-399"></span><span class="hs-comment">-- @t@s to itself.  'rerollSF' takes an explicit 'Chain' of applications of</span><span>
-</span><span id="line-400"></span><span class="hs-comment">-- @t@ to itself and rolls it back up into an @'MF' t@.</span><span>
+</span><span id="line-398"></span><span class="hs-comment">-- | A type @'ListBy' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-399"></span><span class="hs-comment">-- @t@s to itself.  'rerollNEB' takes an explicit 'Chain' of applications of</span><span>
+</span><span id="line-400"></span><span class="hs-comment">-- @t@ to itself and rolls it back up into an @'ListBy' t@.</span><span>
 </span><span id="line-401"></span><span class="hs-comment">--</span><span>
 </span><span id="line-402"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-403"></span><span class="hs-comment">-- 'rerollMF' = 'foldChain' 'nilMF' 'consMF'</span><span>
+</span><span id="line-403"></span><span class="hs-comment">-- 'rerollLB' = 'foldChain' 'nilLB' 'consLB'</span><span>
 </span><span id="line-404"></span><span class="hs-comment">-- @</span><span>
 </span><span id="line-405"></span><span class="hs-comment">--</span><span>
 </span><span id="line-406"></span><span class="hs-comment">-- Because @t@ cannot be inferred from the input or output, you should call</span><span>
 </span><span id="line-407"></span><span class="hs-comment">-- this with /-XTypeApplications/:</span><span>
 </span><span id="line-408"></span><span class="hs-comment">--</span><span>
 </span><span id="line-409"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-410"></span><span class="hs-comment">-- 'rerollMF' \@'Control.Monad.Freer.Church.Comp'</span><span>
+</span><span id="line-410"></span><span class="hs-comment">-- 'rerollLB' \@'Control.Monad.Freer.Church.Comp'</span><span>
 </span><span id="line-411"></span><span class="hs-comment">--     :: 'Chain' Comp 'Data.Functor.Identity.Identity' f a -&gt; 'Control.Monad.Freer.Church.Free' f a</span><span>
 </span><span id="line-412"></span><span class="hs-comment">-- @</span><span>
-</span><span id="line-413"></span><span class="annot"><a href="Data.HFunctor.Chain.html#rerollMF"><span class="hs-identifier hs-type">rerollMF</span></a></span><span>
+</span><span id="line-413"></span><span class="annot"><a href="Data.HFunctor.Chain.html#rerollLB"><span class="hs-identifier hs-type">rerollLB</span></a></span><span>
 </span><span id="line-414"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416813"><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416812"><span class="annot"><a href="#local-6989586621679416812"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679416811"><span class="annot"><a href="#local-6989586621679416811"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416812"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416811"><span class="hs-identifier hs-type">f</span></a></span><span>
-</span><span id="line-415"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416812"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416811"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MF"><span class="hs-identifier hs-type">MF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416811"><span class="hs-identifier hs-type">f</span></a></span><span>
-</span><span id="line-416"></span><span id="rerollMF"><span class="annot"><span class="annottext">rerollMF :: Chain t i f ~&gt; MF t f
-</span><a href="Data.HFunctor.Chain.html#rerollMF"><span class="hs-identifier hs-var hs-var">rerollMF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(i ~&gt; MF t f) -&gt; (t f (MF t f) ~&gt; MF t f) -&gt; Chain t i f ~&gt; MF t f
+</span><span id="line-415"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416812"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416811"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416811"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-416"></span><span id="rerollLB"><span class="annot"><span class="annottext">rerollLB :: Chain t i f ~&gt; ListBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollLB"><span class="hs-identifier hs-var hs-var">rerollLB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(i ~&gt; ListBy t f)
+-&gt; (t f (ListBy t f) ~&gt; ListBy t f) -&gt; Chain t i f ~&gt; ListBy t f
 forall k k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *)
        (f :: k -&gt; *) (g :: k -&gt; *).
 HBifunctor t =&gt;
 (i ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain t i f ~&gt; g
-</span><a href="Data.HFunctor.Chain.html#foldChain"><span class="hs-identifier hs-var">foldChain</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *). MonoidIn t i f =&gt; i ~&gt; MF t f
+</span><a href="Data.HFunctor.Chain.html#foldChain"><span class="hs-identifier hs-var">foldChain</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+MonoidIn t i f =&gt;
+i ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-i ~&gt; MF t f
-</span><a href="Data.HBifunctor.Tensor.html#nilMF"><span class="hs-identifier hs-var">nilMF</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">t f (MF t f) ~&gt; MF t f
+i ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.html#nilLB"><span class="hs-identifier hs-var">nilLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416813"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">t f (ListBy t f) ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-t f (MF t f) ~&gt; MF t f
-</span><a href="Data.HBifunctor.Tensor.html#consMF"><span class="hs-identifier hs-var">consMF</span></a></span><span>
+t f (ListBy t f) ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.html#consLB"><span class="hs-identifier hs-var">consLB</span></a></span><span>
 </span><span id="line-417"></span><span>
 </span><span id="line-418"></span><span class="hs-comment">-- | 'Chain' is a monoid with respect to @t@: we can &quot;combine&quot; them in</span><span>
 </span><span id="line-419"></span><span class="hs-comment">-- an associative way.  The identity here is anything made with the 'Done'</span><span>
@@ -1084,46 +1093,47 @@ t f (MF t f) ~&gt; MF t f
 </span><span id="line-424"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416314"><span class="annot"><a href="#local-6989586621679416314"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416313"><span class="annot"><a href="#local-6989586621679416313"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679416312"><span class="annot"><a href="#local-6989586621679416312"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416314"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416313"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416312"><span class="hs-identifier hs-type">f</span></a></span><span>
 </span><span id="line-425"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679416314"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416314"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416313"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416312"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416314"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416313"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416312"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416314"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416313"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416312"><span class="hs-identifier hs-type">f</span></a></span><span>
 </span><span id="line-426"></span><span id="appendChain"><span class="annot"><span class="annottext">appendChain :: t (Chain t i f) (Chain t i f) ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#appendChain"><span class="hs-identifier hs-var hs-var">appendChain</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MF t f x -&gt; Chain t i f x
+</span><a href="Data.HFunctor.Chain.html#appendChain"><span class="hs-identifier hs-var hs-var">appendChain</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ListBy t f x -&gt; Chain t i f x
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-MF t f ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollMF"><span class="hs-identifier hs-var">unrollMF</span></a></span><span>
-</span><span id="line-427"></span><span>            </span><span class="annot"><span class="annottext">(MF t f x -&gt; Chain t i f x)
--&gt; (t (Chain t i f) (Chain t i f) x -&gt; MF t f x)
+ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollLB"><span class="hs-identifier hs-var">unrollLB</span></a></span><span>
+</span><span id="line-427"></span><span>            </span><span class="annot"><span class="annottext">(ListBy t f x -&gt; Chain t i f x)
+-&gt; (t (Chain t i f) (Chain t i f) x -&gt; ListBy t f x)
 -&gt; t (Chain t i f) (Chain t i f) x
 -&gt; Chain t i f x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t (MF t f) (MF t f) x -&gt; MF t f x
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t (ListBy t f) (ListBy t f) x -&gt; ListBy t f x
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 Tensor t i =&gt;
-t (MF t f) (MF t f) ~&gt; MF t f
-</span><a href="Data.HBifunctor.Tensor.html#appendMF"><span class="hs-identifier hs-var">appendMF</span></a></span><span>
-</span><span id="line-428"></span><span>            </span><span class="annot"><span class="annottext">(t (MF t f) (MF t f) x -&gt; MF t f x)
--&gt; (t (Chain t i f) (Chain t i f) x -&gt; t (MF t f) (MF t f) x)
+t (ListBy t f) (ListBy t f) ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.html#appendLB"><span class="hs-identifier hs-var">appendLB</span></a></span><span>
+</span><span id="line-428"></span><span>            </span><span class="annot"><span class="annottext">(t (ListBy t f) (ListBy t f) x -&gt; ListBy t f x)
+-&gt; (t (Chain t i f) (Chain t i f) x
+    -&gt; t (ListBy t f) (ListBy t f) x)
 -&gt; t (Chain t i f) (Chain t i f) x
--&gt; MF t f x
+-&gt; ListBy t f x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Chain t i f ~&gt; MF t f)
--&gt; (Chain t i f ~&gt; MF t f)
--&gt; t (Chain t i f) (Chain t i f) ~&gt; t (MF t f) (MF t f)
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Chain t i f ~&gt; ListBy t f)
+-&gt; (Chain t i f ~&gt; ListBy t f)
+-&gt; t (Chain t i f) (Chain t i f) ~&gt; t (ListBy t f) (ListBy t f)
 forall k k k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
        (j :: k -&gt; *) (g :: k -&gt; *) (k :: k -&gt; *).
 HBifunctor t =&gt;
 (f ~&gt; j) -&gt; (g ~&gt; k) -&gt; t f g ~&gt; t j k
-</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; MF t f
+</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-Chain t i f ~&gt; MF t f
-</span><a href="Data.HFunctor.Chain.html#rerollMF"><span class="hs-identifier hs-var">rerollMF</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; MF t f
+Chain t i f ~&gt; ListBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollLB"><span class="hs-identifier hs-var">rerollLB</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-Chain t i f ~&gt; MF t f
-</span><a href="Data.HFunctor.Chain.html#rerollMF"><span class="hs-identifier hs-var">rerollMF</span></a></span><span>
+Chain t i f ~&gt; ListBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollLB"><span class="hs-identifier hs-var">rerollLB</span></a></span><span>
 </span><span id="line-429"></span><span>
 </span><span id="line-430"></span><span class="hs-comment">-- | A @'Chain1' t f@ is like a non-empty linked list of @f@s, and</span><span>
 </span><span id="line-431"></span><span class="hs-comment">-- a @'Chain' t i f@ is a possibly-empty linked list of @f@s.  This</span><span>
@@ -1133,47 +1143,50 @@ Chain t i f ~&gt; MF t f
 </span><span id="line-435"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416310"><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416309"><span class="annot"><a href="#local-6989586621679416309"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679416308"><span class="annot"><a href="#local-6989586621679416308"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416309"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416308"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#Matchable"><span class="hs-identifier hs-type">Matchable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416309"><span class="hs-identifier hs-type">i</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679416308"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-436"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416308"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416308"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416309"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416308"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-437"></span><span id="splittingChain1"><span class="annot"><span class="annottext">splittingChain1 :: Chain1 t f &lt;~&gt; t f (Chain t i f)
-</span><a href="Data.HFunctor.Chain.html#splittingChain1"><span class="hs-identifier hs-var hs-var">splittingChain1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SF t f &lt;~&gt; Chain1 t f) -&gt; Chain1 t f &lt;~&gt; SF t f
+</span><a href="Data.HFunctor.Chain.html#splittingChain1"><span class="hs-identifier hs-var hs-var">splittingChain1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(NonEmptyBy t f &lt;~&gt; Chain1 t f) -&gt; Chain1 t f &lt;~&gt; NonEmptyBy t f
 forall (f :: * -&gt; *) (g :: * -&gt; *). (f &lt;~&gt; g) -&gt; g &lt;~&gt; f
-</span><a href="Control.Natural.IsoF.html#fromF"><span class="hs-identifier hs-var">fromF</span></a></span><span> </span><span class="annot"><span class="annottext">SF t f &lt;~&gt; Chain1 t f
+</span><a href="Control.Natural.IsoF.html#fromF"><span class="hs-identifier hs-var">fromF</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmptyBy t f &lt;~&gt; Chain1 t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 (SemigroupIn t f, Functor f) =&gt;
-SF t f &lt;~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#unrollingSF"><span class="hs-identifier hs-var">unrollingSF</span></a></span><span>
-</span><span id="line-438"></span><span>                </span><span class="annot"><span class="annottext">(p (SF t f a) (SF t f a) -&gt; p (Chain1 t f a) (Chain1 t f a))
+NonEmptyBy t f &lt;~&gt; Chain1 t f
+</span><a href="Data.HFunctor.Chain.html#unrollingNEB"><span class="hs-identifier hs-var">unrollingNEB</span></a></span><span>
+</span><span id="line-438"></span><span>                </span><span class="annot"><span class="annottext">(p (NonEmptyBy t f a) (NonEmptyBy t f a)
+ -&gt; p (Chain1 t f a) (Chain1 t f a))
 -&gt; (p (t f (Chain t i f) a) (t f (Chain t i f) a)
-    -&gt; p (SF t f a) (SF t f a))
+    -&gt; p (NonEmptyBy t f a) (NonEmptyBy t f a))
 -&gt; p (t f (Chain t i f) a) (t f (Chain t i f) a)
 -&gt; p (Chain1 t f a) (Chain1 t f a)
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
 Matchable t i =&gt;
-SF t f &lt;~&gt; t f (MF t f)
+NonEmptyBy t f &lt;~&gt; t f (ListBy t f)
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 Matchable t i =&gt;
-SF t f &lt;~&gt; t f (MF t f)
-</span><a href="Data.HBifunctor.Tensor.html#splittingSF"><span class="hs-identifier hs-var">splittingSF</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span><span>
-</span><span id="line-439"></span><span>                </span><span class="annot"><span class="annottext">(p (t f (MF t f) a) (t f (MF t f) a) -&gt; p (SF t f a) (SF t f a))
+NonEmptyBy t f &lt;~&gt; t f (ListBy t f)
+</span><a href="Data.HBifunctor.Tensor.html#splittingNEB"><span class="hs-identifier hs-var">splittingNEB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416310"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-439"></span><span>                </span><span class="annot"><span class="annottext">(p (t f (ListBy t f) a) (t f (ListBy t f) a)
+ -&gt; p (NonEmptyBy t f a) (NonEmptyBy t f a))
 -&gt; (p (t f (Chain t i f) a) (t f (Chain t i f) a)
-    -&gt; p (t f (MF t f) a) (t f (MF t f) a))
+    -&gt; p (t f (ListBy t f) a) (t f (ListBy t f) a))
 -&gt; p (t f (Chain t i f) a) (t f (Chain t i f) a)
--&gt; p (SF t f a) (SF t f a)
+-&gt; p (NonEmptyBy t f a) (NonEmptyBy t f a)
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(f &lt;~&gt; f)
--&gt; (MF t f &lt;~&gt; Chain t i f) -&gt; t f (MF t f) &lt;~&gt; t f (Chain t i f)
+-&gt; (ListBy t f &lt;~&gt; Chain t i f)
+-&gt; t f (ListBy t f) &lt;~&gt; t f (Chain t i f)
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *)
        (f' :: * -&gt; *) (g :: * -&gt; *) (g' :: * -&gt; *).
 HBifunctor t =&gt;
 (f &lt;~&gt; f') -&gt; (g &lt;~&gt; g') -&gt; t f g &lt;~&gt; t f' g'
 </span><a href="Data.HBifunctor.html#overHBifunctor"><span class="hs-identifier hs-var">overHBifunctor</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
 f &lt;~&gt; f
-</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">MF t f &lt;~&gt; Chain t i f
+</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">ListBy t f &lt;~&gt; Chain t i f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-MF t f &lt;~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollingMF"><span class="hs-identifier hs-var">unrollingMF</span></a></span><span>
+ListBy t f &lt;~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollingLB"><span class="hs-identifier hs-var">unrollingLB</span></a></span><span>
 </span><span id="line-440"></span><span>
 </span><span id="line-441"></span><span class="hs-comment">-- | The &quot;forward&quot; function representing 'splittingChain1'.  Provided here</span><span>
 </span><span id="line-442"></span><span class="hs-comment">-- as a separate function because it does not require @'Functor' f@.</span><span>
@@ -1181,38 +1194,41 @@ MF t f &lt;~&gt; Chain t i f
 </span><span id="line-444"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416304"><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416303"><span class="annot"><a href="#local-6989586621679416303"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679416302"><span class="annot"><a href="#local-6989586621679416302"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416303"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416302"><span class="hs-identifier hs-type">f</span></a></span><span>
 </span><span id="line-445"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416302"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416302"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416303"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416302"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-446"></span><span id="splitChain1"><span class="annot"><span class="annottext">splitChain1 :: Chain1 t f ~&gt; t f (Chain t i f)
-</span><a href="Data.HFunctor.Chain.html#splitChain1"><span class="hs-identifier hs-var hs-var">splitChain1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(MF t f ~&gt; Chain t i f) -&gt; t f (MF t f) ~&gt; t f (Chain t i f)
+</span><a href="Data.HFunctor.Chain.html#splitChain1"><span class="hs-identifier hs-var hs-var">splitChain1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f ~&gt; Chain t i f)
+-&gt; t f (ListBy t f) ~&gt; t f (Chain t i f)
 forall k k k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (g :: k -&gt; *)
        (k :: k -&gt; *) (f :: k -&gt; *).
 HBifunctor t =&gt;
 (g ~&gt; k) -&gt; t f g ~&gt; t f k
 </span><a href="Data.HFunctor.Internal.html#hright"><span class="hs-identifier hs-var">hright</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-MF t f ~&gt; Chain t i f
+ListBy t f ~&gt; Chain t i f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-MF t f ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollMF"><span class="hs-identifier hs-var">unrollMF</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(t f (MF t f) x -&gt; t f (Chain t i f) x)
--&gt; (Chain1 t f x -&gt; t f (MF t f) x)
+ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollLB"><span class="hs-identifier hs-var">unrollLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(t f (ListBy t f) x -&gt; t f (Chain t i f) x)
+-&gt; (Chain1 t f x -&gt; t f (ListBy t f) x)
 -&gt; Chain1 t f x
 -&gt; t f (Chain t i f) x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
 Tensor t i =&gt;
-SF t f ~&gt; t f (MF t f)
+NonEmptyBy t f ~&gt; t f (ListBy t f)
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 Tensor t i =&gt;
-SF t f ~&gt; t f (MF t f)
-</span><a href="Data.HBifunctor.Tensor.html#splitSF"><span class="hs-identifier hs-var">splitSF</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><span class="annottext">(SF t f x -&gt; t f (MF t f) x)
--&gt; (Chain1 t f x -&gt; SF t f x) -&gt; Chain1 t f x -&gt; t f (MF t f) x
+NonEmptyBy t f ~&gt; t f (ListBy t f)
+</span><a href="Data.HBifunctor.Tensor.html#splitNEB"><span class="hs-identifier hs-var">splitNEB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416304"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><span class="annottext">(NonEmptyBy t f x -&gt; t f (ListBy t f) x)
+-&gt; (Chain1 t f x -&gt; NonEmptyBy t f x)
+-&gt; Chain1 t f x
+-&gt; t f (ListBy t f) x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Chain1 t f x -&gt; SF t f x
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Chain1 t f x -&gt; NonEmptyBy t f x
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 SemigroupIn t f =&gt;
-Chain1 t f ~&gt; SF t f
-</span><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier hs-var">rerollSF</span></a></span><span>
+Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier hs-var">rerollNEB</span></a></span><span>
 </span><span id="line-447"></span><span>
 </span><span id="line-448"></span><span class="hs-comment">-- | A @'Chain' t i f@ is a linked list of @f@s, and a @'Chain1' t f@ is</span><span>
 </span><span id="line-449"></span><span class="hs-comment">-- a non-empty linked list of @f@s.  This witnesses the fact that</span><span>
@@ -1221,48 +1237,50 @@ Chain1 t f ~&gt; SF t f
 </span><span id="line-452"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416300"><span class="annot"><a href="#local-6989586621679416300"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416299"><span class="annot"><a href="#local-6989586621679416299"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679416298"><span class="annot"><a href="#local-6989586621679416298"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416300"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416299"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416298"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#Matchable"><span class="hs-identifier hs-type">Matchable</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416300"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416299"><span class="hs-identifier hs-type">i</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679416298"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-453"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416300"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416299"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416298"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416299"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">:+:</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416300"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416298"><span class="hs-identifier hs-type">f</span></a></span><span>
 </span><span id="line-454"></span><span id="matchingChain"><span class="annot"><span class="annottext">matchingChain :: Chain t i f &lt;~&gt; (i :+: Chain1 t f)
-</span><a href="Data.HFunctor.Chain.html#matchingChain"><span class="hs-identifier hs-var hs-var">matchingChain</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(MF t f &lt;~&gt; Chain t i f) -&gt; Chain t i f &lt;~&gt; MF t f
+</span><a href="Data.HFunctor.Chain.html#matchingChain"><span class="hs-identifier hs-var hs-var">matchingChain</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f &lt;~&gt; Chain t i f) -&gt; Chain t i f &lt;~&gt; ListBy t f
 forall (f :: * -&gt; *) (g :: * -&gt; *). (f &lt;~&gt; g) -&gt; g &lt;~&gt; f
-</span><a href="Control.Natural.IsoF.html#fromF"><span class="hs-identifier hs-var">fromF</span></a></span><span> </span><span class="annot"><span class="annottext">MF t f &lt;~&gt; Chain t i f
+</span><a href="Control.Natural.IsoF.html#fromF"><span class="hs-identifier hs-var">fromF</span></a></span><span> </span><span class="annot"><span class="annottext">ListBy t f &lt;~&gt; Chain t i f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-MF t f &lt;~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollingMF"><span class="hs-identifier hs-var">unrollingMF</span></a></span><span>
-</span><span id="line-455"></span><span>              </span><span class="annot"><span class="annottext">(p (MF t f a) (MF t f a) -&gt; p (Chain t i f a) (Chain t i f a))
+ListBy t f &lt;~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollingLB"><span class="hs-identifier hs-var">unrollingLB</span></a></span><span>
+</span><span id="line-455"></span><span>              </span><span class="annot"><span class="annottext">(p (ListBy t f a) (ListBy t f a)
+ -&gt; p (Chain t i f a) (Chain t i f a))
 -&gt; (p ((:+:) i (Chain1 t f) a) ((:+:) i (Chain1 t f) a)
-    -&gt; p (MF t f a) (MF t f a))
+    -&gt; p (ListBy t f a) (ListBy t f a))
 -&gt; p ((:+:) i (Chain1 t f) a) ((:+:) i (Chain1 t f) a)
 -&gt; p (Chain t i f a) (Chain t i f a)
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
 (Matchable t i, MonoidIn t i f) =&gt;
-MF t f &lt;~&gt; (i :+: SF t f)
+ListBy t f &lt;~&gt; (i :+: NonEmptyBy t f)
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 (Matchable t i, MonoidIn t i f) =&gt;
-MF t f &lt;~&gt; (i :+: SF t f)
-</span><a href="Data.HBifunctor.Tensor.html#matchingMF"><span class="hs-identifier hs-var">matchingMF</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416300"><span class="hs-identifier hs-type">t</span></a></span><span>
-</span><span id="line-456"></span><span>              </span><span class="annot"><span class="annottext">(p ((:+:) i (SF t f) a) ((:+:) i (SF t f) a)
- -&gt; p (MF t f a) (MF t f a))
+ListBy t f &lt;~&gt; (i :+: NonEmptyBy t f)
+</span><a href="Data.HBifunctor.Tensor.html#matchingLB"><span class="hs-identifier hs-var">matchingLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416300"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-456"></span><span>              </span><span class="annot"><span class="annottext">(p ((:+:) i (NonEmptyBy t f) a) ((:+:) i (NonEmptyBy t f) a)
+ -&gt; p (ListBy t f a) (ListBy t f a))
 -&gt; (p ((:+:) i (Chain1 t f) a) ((:+:) i (Chain1 t f) a)
-    -&gt; p ((:+:) i (SF t f) a) ((:+:) i (SF t f) a))
+    -&gt; p ((:+:) i (NonEmptyBy t f) a) ((:+:) i (NonEmptyBy t f) a))
 -&gt; p ((:+:) i (Chain1 t f) a) ((:+:) i (Chain1 t f) a)
--&gt; p (MF t f a) (MF t f a)
+-&gt; p (ListBy t f a) (ListBy t f a)
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
 </span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(i &lt;~&gt; i)
--&gt; (SF t f &lt;~&gt; Chain1 t f) -&gt; (i :+: SF t f) &lt;~&gt; (i :+: Chain1 t f)
+-&gt; (NonEmptyBy t f &lt;~&gt; Chain1 t f)
+-&gt; (i :+: NonEmptyBy t f) &lt;~&gt; (i :+: Chain1 t f)
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *)
        (f' :: * -&gt; *) (g :: * -&gt; *) (g' :: * -&gt; *).
 HBifunctor t =&gt;
 (f &lt;~&gt; f') -&gt; (g &lt;~&gt; g') -&gt; t f g &lt;~&gt; t f' g'
 </span><a href="Data.HBifunctor.html#overHBifunctor"><span class="hs-identifier hs-var">overHBifunctor</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
 i &lt;~&gt; i
-</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">SF t f &lt;~&gt; Chain1 t f
+</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">NonEmptyBy t f &lt;~&gt; Chain1 t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 (SemigroupIn t f, Functor f) =&gt;
-SF t f &lt;~&gt; Chain1 t f
-</span><a href="Data.HFunctor.Chain.html#unrollingSF"><span class="hs-identifier hs-var">unrollingSF</span></a></span><span>
+NonEmptyBy t f &lt;~&gt; Chain1 t f
+</span><a href="Data.HFunctor.Chain.html#unrollingNEB"><span class="hs-identifier hs-var">unrollingNEB</span></a></span><span>
 </span><span id="line-457"></span><span>
 </span><span id="line-458"></span><span class="hs-comment">-- | The &quot;reverse&quot; function representing 'matchingChain'.  Provided here</span><span>
 </span><span id="line-459"></span><span class="hs-comment">-- as a separate function because it does not require @'Functor' f@.</span><span>
@@ -1270,45 +1288,51 @@ SF t f &lt;~&gt; Chain1 t f
 </span><span id="line-461"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679416296"><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679416295"><span class="annot"><a href="#local-6989586621679416295"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679416294"><span class="annot"><a href="#local-6989586621679416294"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.html#MonoidIn"><span class="hs-identifier hs-type">MonoidIn</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416295"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416294"><span class="hs-identifier hs-type">f</span></a></span><span>
 </span><span id="line-462"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679416295"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">:+:</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416294"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416295"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679416294"><span class="hs-identifier hs-type">f</span></a></span><span>
 </span><span id="line-463"></span><span id="unmatchChain"><span class="annot"><span class="annottext">unmatchChain :: (i :+: Chain1 t f) ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unmatchChain"><span class="hs-identifier hs-var hs-var">unmatchChain</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">MF t f x -&gt; Chain t i f x
+</span><a href="Data.HFunctor.Chain.html#unmatchChain"><span class="hs-identifier hs-var hs-var">unmatchChain</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ListBy t f x -&gt; Chain t i f x
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-MF t f ~&gt; Chain t i f
-</span><a href="Data.HFunctor.Chain.html#unrollMF"><span class="hs-identifier hs-var">unrollMF</span></a></span><span> </span><span class="annot"><span class="annottext">(MF t f x -&gt; Chain t i f x)
--&gt; ((:+:) i (Chain1 t f) x -&gt; MF t f x)
+ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.html#unrollLB"><span class="hs-identifier hs-var">unrollLB</span></a></span><span> </span><span class="annot"><span class="annottext">(ListBy t f x -&gt; Chain t i f x)
+-&gt; ((:+:) i (Chain1 t f) x -&gt; ListBy t f x)
 -&gt; (:+:) i (Chain1 t f) x
 -&gt; Chain t i f x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *). MonoidIn t i f =&gt; i ~&gt; MF t f
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+MonoidIn t i f =&gt;
+i ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 MonoidIn t i f =&gt;
-i ~&gt; MF t f
-</span><a href="Data.HBifunctor.Tensor.html#nilMF"><span class="hs-identifier hs-var">nilMF</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><span class="annottext">(forall x. i x -&gt; MF t f x)
--&gt; (SF t f ~&gt; MF t f) -&gt; (i :+: SF t f) ~&gt; MF t f
+i ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.html#nilLB"><span class="hs-identifier hs-var">nilLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><span class="annottext">(forall x. i x -&gt; ListBy t f x)
+-&gt; (NonEmptyBy t f ~&gt; ListBy t f)
+-&gt; (i :+: NonEmptyBy t f) ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (h :: * -&gt; *)
        (f :: * -&gt; *) (g :: * -&gt; *).
 SemigroupIn t h =&gt;
 (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; t f g ~&gt; h
-</span><a href="Data.HBifunctor.Associative.html#%21%2A%21"><span class="hs-operator hs-var">!*!</span></a></span><span> </span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *). Tensor t i =&gt; SF t f ~&gt; MF t f
+</span><a href="Data.HBifunctor.Associative.html#%21%2A%21"><span class="hs-operator hs-var">!*!</span></a></span><span> </span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+Tensor t i =&gt;
+NonEmptyBy t f ~&gt; ListBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
        (f :: * -&gt; *).
 Tensor t i =&gt;
-SF t f ~&gt; MF t f
-</span><a href="Data.HBifunctor.Tensor.html#fromSF"><span class="hs-identifier hs-var">fromSF</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((:+:) i (SF t f) x -&gt; MF t f x)
--&gt; ((:+:) i (Chain1 t f) x -&gt; (:+:) i (SF t f) x)
+NonEmptyBy t f ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.html#fromNEB"><span class="hs-identifier hs-var">fromNEB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679416296"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((:+:) i (NonEmptyBy t f) x -&gt; ListBy t f x)
+-&gt; ((:+:) i (Chain1 t f) x -&gt; (:+:) i (NonEmptyBy t f) x)
 -&gt; (:+:) i (Chain1 t f) x
--&gt; MF t f x
+-&gt; ListBy t f x
 forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
-</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Chain1 t f ~&gt; SF t f) -&gt; (i :+: Chain1 t f) ~&gt; (i :+: SF t f)
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Chain1 t f ~&gt; NonEmptyBy t f)
+-&gt; (i :+: Chain1 t f) ~&gt; (i :+: NonEmptyBy t f)
 forall k k k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (g :: k -&gt; *)
        (k :: k -&gt; *) (f :: k -&gt; *).
 HBifunctor t =&gt;
 (g ~&gt; k) -&gt; t f g ~&gt; t f k
-</span><a href="Data.HFunctor.Internal.html#hright"><span class="hs-identifier hs-var">hright</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; SF t f
+</span><a href="Data.HFunctor.Internal.html#hright"><span class="hs-identifier hs-var">hright</span></a></span><span> </span><span class="annot"><span class="annottext">Chain1 t f ~&gt; NonEmptyBy t f
 forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
 SemigroupIn t f =&gt;
-Chain1 t f ~&gt; SF t f
-</span><a href="Data.HFunctor.Chain.html#rerollSF"><span class="hs-identifier hs-var">rerollSF</span></a></span><span>
+Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HFunctor.Chain.html#rerollNEB"><span class="hs-identifier hs-var">rerollNEB</span></a></span><span>
 </span><span id="line-464"></span></pre></body></html>
