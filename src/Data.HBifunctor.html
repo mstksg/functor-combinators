@@ -1,121 +1,1558 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable   #-}</span><span>
-</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE DeriveFoldable       #-}</span><span>
-</span><a name="line-3"></a><span class="hs-pragma">{-# LANGUAGE DeriveFunctor        #-}</span><span>
-</span><a name="line-4"></a><span class="hs-pragma">{-# LANGUAGE DeriveGeneric        #-}</span><span>
-</span><a name="line-5"></a><span class="hs-pragma">{-# LANGUAGE DeriveTraversable    #-}</span><span>
-</span><a name="line-6"></a><span class="hs-pragma">{-# LANGUAGE DerivingVia          #-}</span><span>
-</span><a name="line-7"></a><span class="hs-pragma">{-# LANGUAGE KindSignatures       #-}</span><span>
-</span><a name="line-8"></a><span class="hs-pragma">{-# LANGUAGE LambdaCase           #-}</span><span>
-</span><a name="line-9"></a><span class="hs-pragma">{-# LANGUAGE RankNTypes           #-}</span><span>
-</span><a name="line-10"></a><span class="hs-pragma">{-# LANGUAGE StandaloneDeriving   #-}</span><span>
-</span><a name="line-11"></a><span class="hs-pragma">{-# LANGUAGE TemplateHaskell      #-}</span><span>
-</span><a name="line-12"></a><span class="hs-pragma">{-# LANGUAGE TypeFamilies         #-}</span><span>
-</span><a name="line-13"></a><span class="hs-pragma">{-# LANGUAGE TypeInType           #-}</span><span>
-</span><a name="line-14"></a><span class="hs-pragma">{-# LANGUAGE TypeOperators        #-}</span><span>
-</span><a name="line-15"></a><span class="hs-pragma">{-# LANGUAGE UndecidableInstances #-}</span><span>
-</span><a name="line-16"></a><span class="hs-pragma">{-# LANGUAGE ViewPatterns         #-}</span><span>
-</span><a name="line-17"></a><span>
-</span><a name="line-18"></a><span class="hs-comment">-- |</span><span>
-</span><a name="line-19"></a><span class="hs-comment">-- Module      : Data.HBifunctor</span><span>
-</span><a name="line-20"></a><span class="hs-comment">-- Copyright   : (c) Justin Le 2019</span><span>
-</span><a name="line-21"></a><span class="hs-comment">-- License     : BSD3</span><span>
-</span><a name="line-22"></a><span class="hs-comment">--</span><span>
-</span><a name="line-23"></a><span class="hs-comment">-- Maintainer  : justin@jle.im</span><span>
-</span><a name="line-24"></a><span class="hs-comment">-- Stability   : experimental</span><span>
-</span><a name="line-25"></a><span class="hs-comment">-- Portability : non-portable</span><span>
-</span><a name="line-26"></a><span class="hs-comment">--</span><span>
-</span><a name="line-27"></a><span class="hs-comment">-- This module provides an abstraction for &quot;two-argument functor</span><span>
-</span><a name="line-28"></a><span class="hs-comment">-- combinators&quot;, 'HBifunctor', as well as some useful combinators.</span><span>
-</span><a name="line-29"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.HBifunctor</span><span> </span><span class="hs-special">(</span><span>
-</span><a name="line-30"></a><span>    </span><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier hs-type">HBifunctor</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
-</span><a name="line-31"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Data.HFunctor.Internal.html#WrappedHBifunctor"><span class="hs-identifier hs-type">WrappedHBifunctor</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
-</span><a name="line-32"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Data.HBifunctor.html#overHBifunctor"><span class="hs-identifier hs-var">overHBifunctor</span></a><span>
-</span><a name="line-33"></a><span>  </span><span class="hs-comment">-- * Simple Instances</span><span>
-</span><a name="line-34"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
-</span><a name="line-35"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
-</span><a name="line-36"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-37"></a><span>
-</span><a name="line-38"></a><span class="hs-keyword">import</span><span>           </span><a href="Control.Natural.IsoF.html"><span class="hs-identifier">Control.Natural.IsoF</span></a><span>
-</span><a name="line-39"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Biapplicative</span><span>
-</span><a name="line-40"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Bifunctor.TH</span><span>
-</span><a name="line-41"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Constraint.Trivial</span><span>
-</span><a name="line-42"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Data</span><span>
-</span><a name="line-43"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data.Deriving</span><span>
-</span><a name="line-44"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.html"><span class="hs-identifier">Data.HFunctor</span></a><span>
-</span><a name="line-45"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.Internal.html"><span class="hs-identifier">Data.HFunctor.Internal</span></a><span>
-</span><a name="line-46"></a><span class="hs-keyword">import</span><span>           </span><a href="Data.HFunctor.Interpret.html"><span class="hs-identifier">Data.HFunctor.Interpret</span></a><span>
-</span><a name="line-47"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">GHC.Generics</span><span>
-</span><a name="line-48"></a><span>
-</span><a name="line-49"></a><span class="hs-comment">-- | Lift two isomorphisms on each side of a bifunctor to become an</span><span>
-</span><a name="line-50"></a><span class="hs-comment">-- isomorphism between the two bifunctor applications.</span><span>
-</span><a name="line-51"></a><span class="hs-comment">--</span><span>
-</span><a name="line-52"></a><span class="hs-comment">-- Basically, if @f@ and @f'@ are isomorphic, and @g@ and @g'@ are</span><span>
-</span><a name="line-53"></a><span class="hs-comment">-- isomorphic, then @t f g@ is isomorphic to @t f' g'@.</span><span>
-</span><a name="line-54"></a><span class="hs-identifier">overHBifunctor</span><span>
-</span><a name="line-55"></a><span>    </span><span class="hs-glyph">::</span><span> </span><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier hs-type">HBifunctor</span></a><span> </span><a href="#local-6989586621679317340"><span class="hs-identifier hs-type">t</span></a><span>
-</span><a name="line-56"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a><span> </span><a href="#local-6989586621679317342"><span class="hs-identifier hs-type">f'</span></a><span class="hs-special">)</span><span>
-</span><a name="line-57"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-identifier hs-type">g</span></a><span> </span><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a><span> </span><a href="#local-6989586621679317344"><span class="hs-identifier hs-type">g'</span></a><span class="hs-special">)</span><span>
-</span><a name="line-58"></a><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-identifier hs-type">t</span></a><span> </span><a href="#local-6989586621679317341"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-6989586621679317343"><span class="hs-identifier hs-type">g</span></a><span> </span><span class="hs-operator">&lt;~&gt;</span><span> </span><a href="#local-6989586621679317340"><span class="hs-identifier hs-type">t</span></a><span> </span><a href="#local-6989586621679317342"><span class="hs-identifier hs-type">f'</span></a><span> </span><a href="#local-6989586621679317344"><span class="hs-identifier hs-type">g'</span></a><span>
-</span><a name="line-59"></a><a name="overHBifunctor"><a href="Data.HBifunctor.html#overHBifunctor"><span class="hs-identifier">overHBifunctor</span></a></a><span> </span><a name="local-6989586621679317345"><a href="#local-6989586621679317345"><span class="hs-identifier">f</span></a></a><span> </span><a name="local-6989586621679317346"><a href="#local-6989586621679317346"><span class="hs-identifier">g</span></a></a><span> </span><span class="hs-glyph">=</span><span>
-</span><a name="line-60"></a><span>        </span><a href="Control.Natural.IsoF.html#isoF"><span class="hs-identifier hs-var">isoF</span></a><span> </span><span class="hs-special">(</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a><span> </span><span class="hs-special">(</span><a href="Control.Natural.IsoF.html#viewF"><span class="hs-identifier hs-var">viewF</span></a><span>   </span><a href="#local-6989586621679317345"><span class="hs-identifier hs-var">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="Control.Natural.IsoF.html#viewF"><span class="hs-identifier hs-var">viewF</span></a><span>   </span><a href="#local-6989586621679317346"><span class="hs-identifier hs-var">g</span></a><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><a name="line-61"></a><span>             </span><span class="hs-special">(</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a><span> </span><span class="hs-special">(</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a><span> </span><a href="#local-6989586621679317345"><span class="hs-identifier hs-var">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a><span> </span><a href="#local-6989586621679317346"><span class="hs-identifier hs-var">g</span></a><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><a name="line-62"></a><span>
-</span><a name="line-63"></a><span class="hs-comment">-- | An 'HBifunctor' that ignores its second input.  Like</span><span>
-</span><a name="line-64"></a><span class="hs-comment">-- a 'GHC.Generics.:+:' with no 'GHC.Generics.R1'/right branch.</span><span>
-</span><a name="line-65"></a><span class="hs-comment">--</span><span>
-</span><a name="line-66"></a><span class="hs-comment">-- This is 'Data.Bifunctors.Joker.Joker' from &quot;Data.Bifunctors.Joker&quot;, but</span><span>
-</span><a name="line-67"></a><span class="hs-comment">-- given a more sensible name for its purpose.</span><span>
-</span><a name="line-68"></a><span class="hs-keyword">newtype</span><span> </span><a name="LeftF"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier">LeftF</span></a></a><span> </span><a name="local-6989586621679317337"><a href="#local-6989586621679317337"><span class="hs-identifier">f</span></a></a><span> </span><a name="local-6989586621679317338"><a href="#local-6989586621679317338"><span class="hs-identifier">g</span></a></a><span> </span><a name="local-6989586621679317339"><a href="#local-6989586621679317339"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="LeftF"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier">LeftF</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="runLeftF"><a href="Data.HBifunctor.html#runLeftF"><span class="hs-identifier">runLeftF</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679317337"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-6989586621679317339"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">}</span><span>
-</span><a name="line-69"></a><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Show</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Read</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Eq</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Ord</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Functor</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Foldable</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Traversable</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Typeable</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Generic</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Data</span><span class="hs-special">)</span><span>
-</span><a name="line-70"></a><span>
-</span><a name="line-71"></a><span class="hs-identifier hs-var">deriveShow1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">LeftF</span><span>
-</span><a name="line-72"></a><span class="hs-identifier hs-var">deriveRead1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">LeftF</span><span>
-</span><a name="line-73"></a><span class="hs-identifier hs-var">deriveEq1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">LeftF</span><span>
-</span><a name="line-74"></a><span class="hs-identifier hs-var">deriveOrd1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">LeftF</span><span>
-</span><a name="line-75"></a><span class="hs-identifier hs-var">deriveBifunctor</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">LeftF</span><span>
-</span><a name="line-76"></a><span class="hs-identifier hs-var">deriveBifoldable</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">LeftF</span><span>
-</span><a name="line-77"></a><span class="hs-identifier hs-var">deriveBitraversable</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">LeftF</span><span>
-</span><a name="line-78"></a><span>
-</span><a name="line-79"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">Applicative</span><span> </span><a href="#local-6989586621679320330"><span class="hs-identifier hs-type">f</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Biapplicative</span><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a><span> </span><a href="#local-6989586621679320330"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-80"></a><span>    </span><a name="local-8214565720323792754"><span class="hs-identifier">bipure</span></a><span> </span><span class="hs-identifier">_</span><span> </span><a name="local-6989586621679320331"><a href="#local-6989586621679320331"><span class="hs-identifier">y</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">pure</span><span> </span><a href="#local-6989586621679320331"><span class="hs-identifier hs-var">y</span></a><span class="hs-special">)</span><span>
-</span><a name="line-81"></a><span>    </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a><span> </span><a name="local-6989586621679320332"><a href="#local-6989586621679320332"><span class="hs-identifier">x</span></a></a><span> </span><a name="local-8214565720323792753"><span class="hs-operator">&lt;&lt;*&gt;&gt;</span></a><span> </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a><span> </span><a name="local-6989586621679320333"><a href="#local-6989586621679320333"><span class="hs-identifier">y</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a><span> </span><span class="hs-special">(</span><a href="#local-6989586621679320332"><span class="hs-identifier hs-var">x</span></a><span> </span><span class="hs-operator hs-var">&lt;*&gt;</span><span> </span><a href="#local-6989586621679320333"><span class="hs-identifier hs-var">y</span></a><span class="hs-special">)</span><span>
-</span><a name="line-82"></a><span>
-</span><a name="line-83"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier hs-type">HBifunctor</span></a><span> </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-84"></a><span>    </span><a name="local-8214565720324040784"><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier">hbimap</span></a></a><span> </span><a name="local-6989586621679320328"><a href="#local-6989586621679320328"><span class="hs-identifier">f</span></a></a><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a><span> </span><a name="local-6989586621679320329"><a href="#local-6989586621679320329"><span class="hs-identifier">x</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a><span> </span><span class="hs-special">(</span><a href="#local-6989586621679320328"><span class="hs-identifier hs-var">f</span></a><span> </span><a href="#local-6989586621679320329"><span class="hs-identifier hs-var">x</span></a><span class="hs-special">)</span><span>
-</span><a name="line-85"></a><span>
-</span><a name="line-86"></a><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><a href="Data.HFunctor.Internal.html#WrappedHBifunctor"><span class="hs-identifier hs-type">WrappedHBifunctor</span></a><span> </span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a><span> </span><a href="#local-6989586621679320334"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span>
-</span><a name="line-87"></a><span>    </span><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Internal.html#HFunctor"><span class="hs-identifier hs-type">HFunctor</span></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a><span> </span><a href="#local-6989586621679320334"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span>
-</span><a name="line-88"></a><span>
-</span><a name="line-89"></a><span class="hs-comment">-- | An 'HBifunctor' that ignores its first input.  Like</span><span>
-</span><a name="line-90"></a><span class="hs-comment">-- a 'GHC.Generics.:+:' with no 'GHC.Generics.L1'/left branch.</span><span>
-</span><a name="line-91"></a><span class="hs-comment">--</span><span>
-</span><a name="line-92"></a><span class="hs-comment">-- In its polykinded form (on @f@), it is essentially a higher-order</span><span>
-</span><a name="line-93"></a><span class="hs-comment">-- version of 'Data.Tagged.Tagged'.</span><span>
-</span><a name="line-94"></a><span class="hs-keyword">newtype</span><span> </span><a name="RightF"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier">RightF</span></a></a><span> </span><a name="local-6989586621679320325"><a href="#local-6989586621679320325"><span class="hs-identifier">f</span></a></a><span> </span><a name="local-6989586621679320326"><a href="#local-6989586621679320326"><span class="hs-identifier">g</span></a></a><span> </span><a name="local-6989586621679320327"><a href="#local-6989586621679320327"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="RightF"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier">RightF</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="runRightF"><a href="Data.HBifunctor.html#runRightF"><span class="hs-identifier">runRightF</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679320326"><span class="hs-identifier hs-type">g</span></a><span> </span><a href="#local-6989586621679320327"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">}</span><span>
-</span><a name="line-95"></a><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Show</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Read</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Eq</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Ord</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Functor</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Foldable</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Traversable</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Typeable</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Generic</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Data</span><span class="hs-special">)</span><span>
-</span><a name="line-96"></a><span>
-</span><a name="line-97"></a><span class="hs-identifier hs-var">deriveShow1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">RightF</span><span>
-</span><a name="line-98"></a><span class="hs-identifier hs-var">deriveRead1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">RightF</span><span>
-</span><a name="line-99"></a><span class="hs-identifier hs-var">deriveEq1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">RightF</span><span>
-</span><a name="line-100"></a><span class="hs-identifier hs-var">deriveOrd1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier hs-var">RightF</span><span>
-</span><a name="line-101"></a><span>
-</span><a name="line-102"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier hs-type">HBifunctor</span></a><span> </span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-103"></a><span>    </span><a name="local-8214565720324040784"><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier">hbimap</span></a></a><span> </span><span class="hs-identifier">_</span><span> </span><a name="local-6989586621679322872"><a href="#local-6989586621679322872"><span class="hs-identifier">g</span></a></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span> </span><a name="local-6989586621679322873"><a href="#local-6989586621679322873"><span class="hs-identifier">x</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span> </span><span class="hs-special">(</span><a href="#local-6989586621679322872"><span class="hs-identifier hs-var">g</span></a><span> </span><a href="#local-6989586621679322873"><span class="hs-identifier hs-var">x</span></a><span class="hs-special">)</span><span>
-</span><a name="line-104"></a><span>
-</span><a name="line-105"></a><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><a href="Data.HFunctor.Internal.html#WrappedHBifunctor"><span class="hs-identifier hs-type">WrappedHBifunctor</span></a><span> </span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><a href="#local-6989586621679322874"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span>
-</span><a name="line-106"></a><span>    </span><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Internal.html#HFunctor"><span class="hs-identifier hs-type">HFunctor</span></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><a href="#local-6989586621679322874"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span>
-</span><a name="line-107"></a><span>
-</span><a name="line-108"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Internal.html#HFunctor"><span class="hs-identifier hs-type">HFunctor</span></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><a href="#local-6989586621679322869"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-109"></a><span>    </span><a name="local-8214565720324040786"><a href="Data.HFunctor.Internal.html#hmap"><span class="hs-identifier">hmap</span></a></a><span> </span><a name="local-6989586621679322870"><a href="#local-6989586621679322870"><span class="hs-identifier">f</span></a></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span> </span><a name="local-6989586621679322871"><a href="#local-6989586621679322871"><span class="hs-identifier">x</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span> </span><span class="hs-special">(</span><a href="#local-6989586621679322870"><span class="hs-identifier hs-var">f</span></a><span> </span><a href="#local-6989586621679322871"><span class="hs-identifier hs-var">x</span></a><span class="hs-special">)</span><span>
-</span><a name="line-110"></a><span>
-</span><a name="line-111"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.html#Inject"><span class="hs-identifier hs-type">Inject</span></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><a href="#local-6989586621679322868"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-112"></a><span>    </span><a name="local-8214565720324054265"><a href="Data.HFunctor.html#inject"><span class="hs-identifier">inject</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span>
-</span><a name="line-113"></a><span>
-</span><a name="line-114"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.html#HBind"><span class="hs-identifier hs-type">HBind</span></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><a href="#local-6989586621679322865"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-115"></a><span>    </span><a name="local-8214565720324054262"><a href="Data.HFunctor.html#hbind"><span class="hs-identifier">hbind</span></a></a><span> </span><a name="local-6989586621679322866"><a href="#local-6989586621679322866"><span class="hs-identifier">f</span></a></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span> </span><a name="local-6989586621679322867"><a href="#local-6989586621679322867"><span class="hs-identifier">x</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679322866"><span class="hs-identifier hs-var">f</span></a><span> </span><a href="#local-6989586621679322867"><span class="hs-identifier hs-var">x</span></a><span>
-</span><a name="line-116"></a><span>
-</span><a name="line-117"></a><span class="hs-keyword">instance</span><span> </span><a href="Data.HFunctor.Interpret.html#Interpret"><span class="hs-identifier hs-type">Interpret</span></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><a href="#local-6989586621679322861"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-118"></a><span>    </span><span class="hs-keyword">type</span><span> </span><span class="hs-identifier">C</span><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a><span> </span><a href="#local-6989586621679322861"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-type">Unconstrained</span><span>
-</span><a name="line-119"></a><span>    </span><a name="local-8214565720324082530"><a href="Data.HFunctor.Interpret.html#retract"><span class="hs-identifier">retract</span></a></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span> </span><a name="local-6989586621679322862"><a href="#local-6989586621679322862"><span class="hs-identifier">x</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679322862"><span class="hs-identifier hs-var">x</span></a><span>
-</span><a name="line-120"></a><span>    </span><a name="local-8214565720324082531"><a href="Data.HFunctor.Interpret.html#interpret"><span class="hs-identifier">interpret</span></a></a><span> </span><a name="local-6989586621679322863"><a href="#local-6989586621679322863"><span class="hs-identifier">f</span></a></a><span> </span><span class="hs-special">(</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a><span> </span><a name="local-6989586621679322864"><a href="#local-6989586621679322864"><span class="hs-identifier">x</span></a></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-6989586621679322863"><span class="hs-identifier hs-var">f</span></a><span> </span><a href="#local-6989586621679322864"><span class="hs-identifier hs-var">x</span></a><span>
-</span><a name="line-121"></a></pre></body></html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable    #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE DeriveFoldable        #-}</span><span>
+</span><span id="line-3"></span><span class="hs-pragma">{-# LANGUAGE DeriveFunctor         #-}</span><span>
+</span><span id="line-4"></span><span class="hs-pragma">{-# LANGUAGE DeriveGeneric         #-}</span><span>
+</span><span id="line-5"></span><span class="hs-pragma">{-# LANGUAGE DeriveTraversable     #-}</span><span>
+</span><span id="line-6"></span><span class="hs-pragma">{-# LANGUAGE DerivingVia           #-}</span><span>
+</span><span id="line-7"></span><span class="hs-pragma">{-# LANGUAGE FlexibleInstances     #-}</span><span>
+</span><span id="line-8"></span><span class="hs-pragma">{-# LANGUAGE KindSignatures        #-}</span><span>
+</span><span id="line-9"></span><span class="hs-pragma">{-# LANGUAGE LambdaCase            #-}</span><span>
+</span><span id="line-10"></span><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses #-}</span><span>
+</span><span id="line-11"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes            #-}</span><span>
+</span><span id="line-12"></span><span class="hs-pragma">{-# LANGUAGE StandaloneDeriving    #-}</span><span>
+</span><span id="line-13"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell       #-}</span><span>
+</span><span id="line-14"></span><span class="hs-pragma">{-# LANGUAGE TypeFamilies          #-}</span><span>
+</span><span id="line-15"></span><span class="hs-pragma">{-# LANGUAGE TypeInType            #-}</span><span>
+</span><span id="line-16"></span><span class="hs-pragma">{-# LANGUAGE TypeOperators         #-}</span><span>
+</span><span id="line-17"></span><span class="hs-pragma">{-# LANGUAGE UndecidableInstances  #-}</span><span>
+</span><span id="line-18"></span><span class="hs-pragma">{-# LANGUAGE ViewPatterns          #-}</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-21"></span><span class="hs-comment">-- Module      : Data.HBifunctor</span><span>
+</span><span id="line-22"></span><span class="hs-comment">-- Copyright   : (c) Justin Le 2019</span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- License     : BSD3</span><span>
+</span><span id="line-24"></span><span class="hs-comment">--</span><span>
+</span><span id="line-25"></span><span class="hs-comment">-- Maintainer  : justin@jle.im</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- Stability   : experimental</span><span>
+</span><span id="line-27"></span><span class="hs-comment">-- Portability : non-portable</span><span>
+</span><span id="line-28"></span><span class="hs-comment">--</span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- This module provides an abstraction for &quot;two-argument functor</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- combinators&quot;, 'HBifunctor', as well as some useful combinators.</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.HBifunctor</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier">HBifunctor</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Internal.html#WrappedHBifunctor"><span class="hs-identifier">WrappedHBifunctor</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.html#overHBifunctor"><span class="hs-identifier">overHBifunctor</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Simple Instances</span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier">LeftF</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier">RightF</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Control.Natural.IsoF.html"><span class="hs-identifier">Control.Natural.IsoF</span></a></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Biapplicative</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Bifunctor.TH</span></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Data</span></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Deriving</span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.html"><span class="hs-identifier">Data.HFunctor</span></a></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Internal.html"><span class="hs-identifier">Data.HFunctor.Internal</span></a></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Interpret.html"><span class="hs-identifier">Data.HFunctor.Interpret</span></a></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="hs-comment">-- | Lift two isomorphisms on each side of a bifunctor to become an</span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- isomorphism between the two bifunctor applications.</span><span>
+</span><span id="line-52"></span><span class="hs-comment">--</span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- Basically, if @f@ and @f'@ are isomorphic, and @g@ and @g'@ are</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- isomorphic, then @t f g@ is isomorphic to @t f' g'@.</span><span>
+</span><span id="line-55"></span><span id="local-6989586621679412529"><span id="local-6989586621679412530"><span id="local-6989586621679412531"><span id="local-6989586621679412532"><span id="local-6989586621679412533"><span class="annot"><a href="Data.HBifunctor.html#overHBifunctor"><span class="hs-identifier hs-type">overHBifunctor</span></a></span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier hs-type">HBifunctor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412533"><span class="hs-identifier hs-type">t</span></a></span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679412532"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412531"><span class="hs-identifier hs-type">f'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679412530"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412529"><span class="hs-identifier hs-type">g'</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679412533"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412532"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412530"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412533"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412531"><span class="hs-identifier hs-type">f'</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412529"><span class="hs-identifier hs-type">g'</span></a></span></span></span></span></span></span><span>
+</span><span id="line-60"></span><span id="overHBifunctor"><span class="annot"><span class="annottext">overHBifunctor :: (f &lt;~&gt; f') -&gt; (g &lt;~&gt; g') -&gt; t f g &lt;~&gt; t f' g'
+</span><a href="Data.HBifunctor.html#overHBifunctor"><span class="hs-identifier hs-var hs-var">overHBifunctor</span></a></span></span><span> </span><span id="local-6989586621679412528"><span class="annot"><span class="annottext">f :: f &lt;~&gt; f'
+</span><a href="#local-6989586621679412528"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679412527"><span class="annot"><span class="annottext">g :: g &lt;~&gt; g'
+</span><a href="#local-6989586621679412527"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-61"></span><span>        </span><span class="annot"><span class="annottext">(t f g ~&gt; t f' g') -&gt; (t f' g' ~&gt; t f g) -&gt; t f g &lt;~&gt; t f' g'
+forall (f :: * -&gt; *) (g :: * -&gt; *). (f ~&gt; g) -&gt; (g ~&gt; f) -&gt; f &lt;~&gt; g
+</span><a href="Control.Natural.IsoF.html#isoF"><span class="hs-identifier hs-var">isoF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f ~&gt; f') -&gt; (g ~&gt; g') -&gt; t f g ~&gt; t f' g'
+forall k k k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (j :: k -&gt; *) (g :: k -&gt; *) (k :: k -&gt; *).
+HBifunctor t =&gt;
+(f ~&gt; j) -&gt; (g ~&gt; k) -&gt; t f g ~&gt; t j k
+</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f &lt;~&gt; f') -&gt; f ~&gt; f'
+forall (f :: * -&gt; *) (g :: * -&gt; *). (f &lt;~&gt; g) -&gt; f ~&gt; g
+</span><a href="Control.Natural.IsoF.html#viewF"><span class="hs-identifier hs-var">viewF</span></a></span><span>   </span><span class="annot"><span class="annottext">f &lt;~&gt; f'
+</span><a href="#local-6989586621679412528"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(g &lt;~&gt; g') -&gt; g ~&gt; g'
+forall (f :: * -&gt; *) (g :: * -&gt; *). (f &lt;~&gt; g) -&gt; f ~&gt; g
+</span><a href="Control.Natural.IsoF.html#viewF"><span class="hs-identifier hs-var">viewF</span></a></span><span>   </span><span class="annot"><span class="annottext">g &lt;~&gt; g'
+</span><a href="#local-6989586621679412527"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span>             </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f' ~&gt; f) -&gt; (g' ~&gt; g) -&gt; t f' g' ~&gt; t f g
+forall k k k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (j :: k -&gt; *) (g :: k -&gt; *) (k :: k -&gt; *).
+HBifunctor t =&gt;
+(f ~&gt; j) -&gt; (g ~&gt; k) -&gt; t f g ~&gt; t j k
+</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f &lt;~&gt; f') -&gt; f' ~&gt; f
+forall (f :: * -&gt; *) (g :: * -&gt; *). (f &lt;~&gt; g) -&gt; g ~&gt; f
+</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a></span><span> </span><span class="annot"><span class="annottext">f &lt;~&gt; f'
+</span><a href="#local-6989586621679412528"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(g &lt;~&gt; g') -&gt; g' ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *). (f &lt;~&gt; g) -&gt; g ~&gt; f
+</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a></span><span> </span><span class="annot"><span class="annottext">g &lt;~&gt; g'
+</span><a href="#local-6989586621679412527"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="hs-comment">-- | An 'HBifunctor' that ignores its second input.  Like</span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- a 'GHC.Generics.:+:' with no 'GHC.Generics.R1'/right branch.</span><span>
+</span><span id="line-66"></span><span class="hs-comment">--</span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- This is 'Data.Bifunctors.Joker.Joker' from &quot;Data.Bifunctors.Joker&quot;, but</span><span>
+</span><span id="line-68"></span><span class="hs-comment">-- given a more sensible name for its purpose.</span><span>
+</span><span id="line-69"></span><span id="local-6989586621679412521"><span id="local-6989586621679412522"></span></span><span class="hs-keyword">newtype</span><span> </span><span id="LeftF"><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a></span></span><span> </span><span id="local-6989586621679412759"><span class="annot"><a href="#local-6989586621679412759"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679412757"><span class="annot"><a href="#local-6989586621679412757"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679412758"><span class="annot"><a href="#local-6989586621679412758"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="LeftF"><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="runLeftF"><span class="annot"><span class="annottext">LeftF f g a -&gt; f a
+</span><a href="Data.HBifunctor.html#runLeftF"><span class="hs-identifier hs-var hs-var">runLeftF</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679412759"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412758"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-70"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679412513"><span id="local-6989586621679412515"><span id="local-6989586621679412517"><span class="annot"><span class="annottext">Int -&gt; LeftF f g a -&gt; ShowS
+[LeftF f g a] -&gt; ShowS
+LeftF f g a -&gt; String
+(Int -&gt; LeftF f g a -&gt; ShowS)
+-&gt; (LeftF f g a -&gt; String)
+-&gt; ([LeftF f g a] -&gt; ShowS)
+-&gt; Show (LeftF f g a)
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Show (f a) =&gt;
+Int -&gt; LeftF f g a -&gt; ShowS
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Show (f a) =&gt;
+[LeftF f g a] -&gt; ShowS
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Show (f a) =&gt;
+LeftF f g a -&gt; String
+showList :: [LeftF f g a] -&gt; ShowS
+$cshowList :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Show (f a) =&gt;
+[LeftF f g a] -&gt; ShowS
+show :: LeftF f g a -&gt; String
+$cshow :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Show (f a) =&gt;
+LeftF f g a -&gt; String
+showsPrec :: Int -&gt; LeftF f g a -&gt; ShowS
+$cshowsPrec :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Show (f a) =&gt;
+Int -&gt; LeftF f g a -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412504"><span id="local-6989586621679412506"><span id="local-6989586621679412508"><span id="local-6989586621679412510"><span class="annot"><span class="annottext">ReadPrec [LeftF f g a]
+ReadPrec (LeftF f g a)
+Int -&gt; ReadS (LeftF f g a)
+ReadS [LeftF f g a]
+(Int -&gt; ReadS (LeftF f g a))
+-&gt; ReadS [LeftF f g a]
+-&gt; ReadPrec (LeftF f g a)
+-&gt; ReadPrec [LeftF f g a]
+-&gt; Read (LeftF f g a)
+forall a.
+(Int -&gt; ReadS a)
+-&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+ReadPrec [LeftF f g a]
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+ReadPrec (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+Int -&gt; ReadS (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+ReadS [LeftF f g a]
+readListPrec :: ReadPrec [LeftF f g a]
+$creadListPrec :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+ReadPrec [LeftF f g a]
+readPrec :: ReadPrec (LeftF f g a)
+$creadPrec :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+ReadPrec (LeftF f g a)
+readList :: ReadS [LeftF f g a]
+$creadList :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+ReadS [LeftF f g a]
+readsPrec :: Int -&gt; ReadS (LeftF f g a)
+$creadsPrec :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Read (f a) =&gt;
+Int -&gt; ReadS (LeftF f g a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412499"><span id="local-6989586621679412501"><span class="annot"><span class="annottext">LeftF f g a -&gt; LeftF f g a -&gt; Bool
+(LeftF f g a -&gt; LeftF f g a -&gt; Bool)
+-&gt; (LeftF f g a -&gt; LeftF f g a -&gt; Bool) -&gt; Eq (LeftF f g a)
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Eq (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+/= :: LeftF f g a -&gt; LeftF f g a -&gt; Bool
+$c/= :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Eq (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+== :: LeftF f g a -&gt; LeftF f g a -&gt; Bool
+$c== :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Eq (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412483"><span id="local-6989586621679412485"><span id="local-6989586621679412487"><span id="local-6989586621679412489"><span id="local-6989586621679412491"><span id="local-6989586621679412493"><span id="local-6989586621679412495"><span class="annot"><span class="annottext">Eq (LeftF f g a)
+Eq (LeftF f g a) =&gt;
+(LeftF f g a -&gt; LeftF f g a -&gt; Ordering)
+-&gt; (LeftF f g a -&gt; LeftF f g a -&gt; Bool)
+-&gt; (LeftF f g a -&gt; LeftF f g a -&gt; Bool)
+-&gt; (LeftF f g a -&gt; LeftF f g a -&gt; Bool)
+-&gt; (LeftF f g a -&gt; LeftF f g a -&gt; Bool)
+-&gt; (LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a)
+-&gt; (LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a)
+-&gt; Ord (LeftF f g a)
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+LeftF f g a -&gt; LeftF f g a -&gt; Ordering
+LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+Eq (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Ordering
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a
+min :: LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a
+$cmin :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a
+max :: LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a
+$cmax :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; LeftF f g a
+&gt;= :: LeftF f g a -&gt; LeftF f g a -&gt; Bool
+$c&gt;= :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+&gt; :: LeftF f g a -&gt; LeftF f g a -&gt; Bool
+$c&gt; :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+&lt;= :: LeftF f g a -&gt; LeftF f g a -&gt; Bool
+$c&lt;= :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+&lt; :: LeftF f g a -&gt; LeftF f g a -&gt; Bool
+$c&lt; :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Bool
+compare :: LeftF f g a -&gt; LeftF f g a -&gt; Ordering
+$ccompare :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+LeftF f g a -&gt; LeftF f g a -&gt; Ordering
+$cp1Ord :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+Ord (f a) =&gt;
+Eq (LeftF f g a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412478"><span id="local-6989586621679412480"><span class="annot"><span class="annottext">a -&gt; LeftF f g b -&gt; LeftF f g a
+(a -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g b
+(forall a b. (a -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g b)
+-&gt; (forall a b. a -&gt; LeftF f g b -&gt; LeftF f g a)
+-&gt; Functor (LeftF f g)
+forall a b. a -&gt; LeftF f g b -&gt; LeftF f g a
+forall a b. (a -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+forall (f :: * -&gt; *) k (g :: k) a b.
+Functor f =&gt;
+a -&gt; LeftF f g b -&gt; LeftF f g a
+forall (f :: * -&gt; *) k (g :: k) a b.
+Functor f =&gt;
+(a -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g b
+&lt;$ :: a -&gt; LeftF f g b -&gt; LeftF f g a
+$c&lt;$ :: forall (f :: * -&gt; *) k (g :: k) a b.
+Functor f =&gt;
+a -&gt; LeftF f g b -&gt; LeftF f g a
+fmap :: (a -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g b
+$cfmap :: forall (f :: * -&gt; *) k (g :: k) a b.
+Functor f =&gt;
+(a -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412443"><span id="local-6989586621679412445"><span id="local-6989586621679412447"><span id="local-6989586621679412449"><span id="local-6989586621679412451"><span id="local-6989586621679412453"><span id="local-6989586621679412455"><span id="local-6989586621679412457"><span id="local-6989586621679412459"><span id="local-6989586621679412461"><span id="local-6989586621679412463"><span id="local-6989586621679412465"><span id="local-6989586621679412467"><span id="local-6989586621679412469"><span id="local-6989586621679412471"><span id="local-6989586621679412473"><span id="local-6989586621679412475"><span class="annot"><span class="annottext">LeftF f g a -&gt; Bool
+(a -&gt; m) -&gt; LeftF f g a -&gt; m
+(a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+(forall m. Monoid m =&gt; LeftF f g m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; LeftF f g a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; LeftF f g a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a)
+-&gt; (forall a. LeftF f g a -&gt; [a])
+-&gt; (forall a. LeftF f g a -&gt; Bool)
+-&gt; (forall a. LeftF f g a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; LeftF f g a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; LeftF f g a -&gt; a)
+-&gt; (forall a. Ord a =&gt; LeftF f g a -&gt; a)
+-&gt; (forall a. Num a =&gt; LeftF f g a -&gt; a)
+-&gt; (forall a. Num a =&gt; LeftF f g a -&gt; a)
+-&gt; Foldable (LeftF f g)
+forall a. Eq a =&gt; a -&gt; LeftF f g a -&gt; Bool
+forall a. Num a =&gt; LeftF f g a -&gt; a
+forall a. Ord a =&gt; LeftF f g a -&gt; a
+forall m. Monoid m =&gt; LeftF f g m -&gt; m
+forall a. LeftF f g a -&gt; Bool
+forall a. LeftF f g a -&gt; Int
+forall a. LeftF f g a -&gt; [a]
+forall a. (a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a
+forall m a. Monoid m =&gt; (a -&gt; m) -&gt; LeftF f g a -&gt; m
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+forall (t :: * -&gt; *).
+(forall m. Monoid m =&gt; t m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. t a -&gt; [a])
+-&gt; (forall a. t a -&gt; Bool)
+-&gt; (forall a. t a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; t a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; Foldable t
+forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Eq a) =&gt;
+a -&gt; LeftF f g a -&gt; Bool
+forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Num a) =&gt;
+LeftF f g a -&gt; a
+forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Ord a) =&gt;
+LeftF f g a -&gt; a
+forall (f :: * -&gt; *) k (g :: k) m.
+(Foldable f, Monoid m) =&gt;
+LeftF f g m -&gt; m
+forall (f :: * -&gt; *) k (g :: k) a.
+Foldable f =&gt;
+LeftF f g a -&gt; Bool
+forall (f :: * -&gt; *) k (g :: k) a. Foldable f =&gt; LeftF f g a -&gt; Int
+forall (f :: * -&gt; *) k (g :: k) a. Foldable f =&gt; LeftF f g a -&gt; [a]
+forall (f :: * -&gt; *) k (g :: k) a.
+Foldable f =&gt;
+(a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a
+forall (f :: * -&gt; *) k (g :: k) m a.
+(Foldable f, Monoid m) =&gt;
+(a -&gt; m) -&gt; LeftF f g a -&gt; m
+forall (f :: * -&gt; *) k (g :: k) b a.
+Foldable f =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+forall (f :: * -&gt; *) k (g :: k) a b.
+Foldable f =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+product :: LeftF f g a -&gt; a
+$cproduct :: forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Num a) =&gt;
+LeftF f g a -&gt; a
+sum :: LeftF f g a -&gt; a
+$csum :: forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Num a) =&gt;
+LeftF f g a -&gt; a
+minimum :: LeftF f g a -&gt; a
+$cminimum :: forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Ord a) =&gt;
+LeftF f g a -&gt; a
+maximum :: LeftF f g a -&gt; a
+$cmaximum :: forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Ord a) =&gt;
+LeftF f g a -&gt; a
+elem :: a -&gt; LeftF f g a -&gt; Bool
+$celem :: forall (f :: * -&gt; *) k (g :: k) a.
+(Foldable f, Eq a) =&gt;
+a -&gt; LeftF f g a -&gt; Bool
+length :: LeftF f g a -&gt; Int
+$clength :: forall (f :: * -&gt; *) k (g :: k) a. Foldable f =&gt; LeftF f g a -&gt; Int
+null :: LeftF f g a -&gt; Bool
+$cnull :: forall (f :: * -&gt; *) k (g :: k) a.
+Foldable f =&gt;
+LeftF f g a -&gt; Bool
+toList :: LeftF f g a -&gt; [a]
+$ctoList :: forall (f :: * -&gt; *) k (g :: k) a. Foldable f =&gt; LeftF f g a -&gt; [a]
+foldl1 :: (a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a
+$cfoldl1 :: forall (f :: * -&gt; *) k (g :: k) a.
+Foldable f =&gt;
+(a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a
+foldr1 :: (a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a
+$cfoldr1 :: forall (f :: * -&gt; *) k (g :: k) a.
+Foldable f =&gt;
+(a -&gt; a -&gt; a) -&gt; LeftF f g a -&gt; a
+foldl' :: (b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+$cfoldl' :: forall (f :: * -&gt; *) k (g :: k) b a.
+Foldable f =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+foldl :: (b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+$cfoldl :: forall (f :: * -&gt; *) k (g :: k) b a.
+Foldable f =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+foldr' :: (a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+$cfoldr' :: forall (f :: * -&gt; *) k (g :: k) a b.
+Foldable f =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+foldr :: (a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+$cfoldr :: forall (f :: * -&gt; *) k (g :: k) a b.
+Foldable f =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; LeftF f g a -&gt; b
+foldMap' :: (a -&gt; m) -&gt; LeftF f g a -&gt; m
+$cfoldMap' :: forall (f :: * -&gt; *) k (g :: k) m a.
+(Foldable f, Monoid m) =&gt;
+(a -&gt; m) -&gt; LeftF f g a -&gt; m
+foldMap :: (a -&gt; m) -&gt; LeftF f g a -&gt; m
+$cfoldMap :: forall (f :: * -&gt; *) k (g :: k) m a.
+(Foldable f, Monoid m) =&gt;
+(a -&gt; m) -&gt; LeftF f g a -&gt; m
+fold :: LeftF f g m -&gt; m
+$cfold :: forall (f :: * -&gt; *) k (g :: k) m.
+(Foldable f, Monoid m) =&gt;
+LeftF f g m -&gt; m
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Foldable</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412432"><span id="local-6989586621679412434"><span id="local-6989586621679412436"><span id="local-6989586621679412438"><span class="annot"><span class="annottext">Functor (LeftF f g)
+Foldable (LeftF f g)
+(Functor (LeftF f g), Foldable (LeftF f g)) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; LeftF f g a -&gt; f (LeftF f g b))
+-&gt; (forall (f :: * -&gt; *) a.
+    Applicative f =&gt;
+    LeftF f g (f a) -&gt; f (LeftF f g a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; LeftF f g a -&gt; m (LeftF f g b))
+-&gt; (forall (m :: * -&gt; *) a.
+    Monad m =&gt;
+    LeftF f g (m a) -&gt; m (LeftF f g a))
+-&gt; Traversable (LeftF f g)
+(a -&gt; f b) -&gt; LeftF f g a -&gt; f (LeftF f g b)
+forall (t :: * -&gt; *).
+(Functor t, Foldable t) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; t a -&gt; f (t b))
+-&gt; (forall (f :: * -&gt; *) a. Applicative f =&gt; t (f a) -&gt; f (t a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; t a -&gt; m (t b))
+-&gt; (forall (m :: * -&gt; *) a. Monad m =&gt; t (m a) -&gt; m (t a))
+-&gt; Traversable t
+forall (m :: * -&gt; *) a.
+Monad m =&gt;
+LeftF f g (m a) -&gt; m (LeftF f g a)
+forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+LeftF f g (f a) -&gt; f (LeftF f g a)
+forall (f :: * -&gt; *) k (g :: k).
+Traversable f =&gt;
+Functor (LeftF f g)
+forall (f :: * -&gt; *) k (g :: k).
+Traversable f =&gt;
+Foldable (LeftF f g)
+forall (f :: * -&gt; *) k (g :: k) (m :: * -&gt; *) a.
+(Traversable f, Monad m) =&gt;
+LeftF f g (m a) -&gt; m (LeftF f g a)
+forall (f :: * -&gt; *) k (g :: k) (f :: * -&gt; *) a.
+(Traversable f, Applicative f) =&gt;
+LeftF f g (f a) -&gt; f (LeftF f g a)
+forall (f :: * -&gt; *) k (g :: k) (m :: * -&gt; *) a b.
+(Traversable f, Monad m) =&gt;
+(a -&gt; m b) -&gt; LeftF f g a -&gt; m (LeftF f g b)
+forall (f :: * -&gt; *) k (g :: k) (f :: * -&gt; *) a b.
+(Traversable f, Applicative f) =&gt;
+(a -&gt; f b) -&gt; LeftF f g a -&gt; f (LeftF f g b)
+forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; LeftF f g a -&gt; m (LeftF f g b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; LeftF f g a -&gt; f (LeftF f g b)
+sequence :: LeftF f g (m a) -&gt; m (LeftF f g a)
+$csequence :: forall (f :: * -&gt; *) k (g :: k) (m :: * -&gt; *) a.
+(Traversable f, Monad m) =&gt;
+LeftF f g (m a) -&gt; m (LeftF f g a)
+mapM :: (a -&gt; m b) -&gt; LeftF f g a -&gt; m (LeftF f g b)
+$cmapM :: forall (f :: * -&gt; *) k (g :: k) (m :: * -&gt; *) a b.
+(Traversable f, Monad m) =&gt;
+(a -&gt; m b) -&gt; LeftF f g a -&gt; m (LeftF f g b)
+sequenceA :: LeftF f g (f a) -&gt; f (LeftF f g a)
+$csequenceA :: forall (f :: * -&gt; *) k (g :: k) (f :: * -&gt; *) a.
+(Traversable f, Applicative f) =&gt;
+LeftF f g (f a) -&gt; f (LeftF f g a)
+traverse :: (a -&gt; f b) -&gt; LeftF f g a -&gt; f (LeftF f g b)
+$ctraverse :: forall (f :: * -&gt; *) k (g :: k) (f :: * -&gt; *) a b.
+(Traversable f, Applicative f) =&gt;
+(a -&gt; f b) -&gt; LeftF f g a -&gt; f (LeftF f g b)
+$cp2Traversable :: forall (f :: * -&gt; *) k (g :: k).
+Traversable f =&gt;
+Foldable (LeftF f g)
+$cp1Traversable :: forall (f :: * -&gt; *) k (g :: k).
+Traversable f =&gt;
+Functor (LeftF f g)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Traversable</span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(forall x. LeftF f g a -&gt; Rep (LeftF f g a) x)
+-&gt; (forall x. Rep (LeftF f g a) x -&gt; LeftF f g a)
+-&gt; Generic (LeftF f g a)
+forall x. Rep (LeftF f g a) x -&gt; LeftF f g a
+forall x. LeftF f g a -&gt; Rep (LeftF f g a) x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) x.
+Rep (LeftF f g a) x -&gt; LeftF f g a
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) x.
+LeftF f g a -&gt; Rep (LeftF f g a) x
+$cto :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) x.
+Rep (LeftF f g a) x -&gt; LeftF f g a
+$cfrom :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) x.
+LeftF f g a -&gt; Rep (LeftF f g a) x
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="%24cLeftF"><span id="%24tLeftF"><span id="local-6989586621679412399"><span id="local-6989586621679412401"><span id="local-6989586621679412403"><span id="local-6989586621679412405"><span id="local-6989586621679412407"><span id="local-6989586621679412409"><span id="local-6989586621679412411"><span id="local-6989586621679412413"><span id="local-6989586621679412415"><span id="local-6989586621679412417"><span id="local-6989586621679412419"><span id="local-6989586621679412421"><span id="local-6989586621679412423"><span id="local-6989586621679412425"><span class="annot"><span class="annottext">Typeable (LeftF f g a)
+DataType
+Constr
+Typeable (LeftF f g a) =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; LeftF f g a -&gt; c (LeftF f g a))
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (LeftF f g a))
+-&gt; (LeftF f g a -&gt; Constr)
+-&gt; (LeftF f g a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (LeftF f g a)))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e))
+    -&gt; Maybe (c (LeftF f g a)))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; [u])
+-&gt; (forall u.
+    Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a))
+-&gt; Data (LeftF f g a)
+LeftF f g a -&gt; DataType
+LeftF f g a -&gt; Constr
+(forall b. Data b =&gt; b -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g a
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; LeftF f g a -&gt; c (LeftF f g a)
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (LeftF f g a)
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; [u]
+forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+Typeable (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+LeftF f g a -&gt; DataType
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+LeftF f g a -&gt; Constr
+forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall b. Data b =&gt; b -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g a
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) u.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; u
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) u.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; [u]
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) r r'.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) r r'.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) (m :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), Monad m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) (m :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; LeftF f g a -&gt; c (LeftF f g a)
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) (t :: * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (LeftF f g a))
+forall k (f :: k -&gt; *) k (g :: k) (a :: k) (t :: * -&gt; * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (LeftF f g a))
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (LeftF f g a)
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; LeftF f g a -&gt; c (LeftF f g a)
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (LeftF f g a))
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (LeftF f g a))
+$cLeftF :: Constr
+$tLeftF :: DataType
+gmapMo :: (forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+$cgmapMo :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) (m :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+gmapMp :: (forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+$cgmapMp :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) (m :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+gmapM :: (forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+$cgmapM :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) (m :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), Monad m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; LeftF f g a -&gt; m (LeftF f g a)
+gmapQi :: Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; u
+$cgmapQi :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) u.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; u
+gmapQ :: (forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; [u]
+$cgmapQ :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) u.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; LeftF f g a -&gt; [u]
+gmapQr :: (r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+$cgmapQr :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) r r'.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+gmapQl :: (r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+$cgmapQl :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) r r'.
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; LeftF f g a -&gt; r
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g a
+$cgmapT :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall b. Data b =&gt; b -&gt; b) -&gt; LeftF f g a -&gt; LeftF f g a
+dataCast2 :: (forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (LeftF f g a))
+$cdataCast2 :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) (t :: * -&gt; * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (LeftF f g a))
+dataCast1 :: (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (LeftF f g a))
+$cdataCast1 :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) (t :: * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a), Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (LeftF f g a))
+dataTypeOf :: LeftF f g a -&gt; DataType
+$cdataTypeOf :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+LeftF f g a -&gt; DataType
+toConstr :: LeftF f g a -&gt; Constr
+$ctoConstr :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+LeftF f g a -&gt; Constr
+gunfold :: (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (LeftF f g a)
+$cgunfold :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (LeftF f g a)
+gfoldl :: (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; LeftF f g a -&gt; c (LeftF f g a)
+$cgfoldl :: forall k (f :: k -&gt; *) k (g :: k) (a :: k) (c :: * -&gt; *).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; LeftF f g a -&gt; c (LeftF f g a)
+$cp1Data :: forall k (f :: k -&gt; *) k (g :: k) (a :: k).
+(Typeable g, Typeable a, Typeable f, Typeable k, Typeable k,
+ Data (f a)) =&gt;
+Typeable (LeftF f g a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span id="local-6989586621679412392"><span id="local-6989586621679412394"><span id="local-6989586621679412757"><span id="local-6989586621679412759"><span class="hs-identifier">deriveShow1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">LeftF</span></span></span></span></span><span>
+</span><span id="line-73"></span><span id="local-6989586621679412382"><span id="local-6989586621679412384"><span id="local-6989586621679412386"><span id="local-6989586621679412388"><span id="local-6989586621679412757"><span id="local-6989586621679412759"><span class="hs-identifier">deriveRead1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">LeftF</span></span></span></span></span></span></span><span>
+</span><span id="line-74"></span><span id="local-6989586621679412377"><span id="local-6989586621679412757"><span id="local-6989586621679412759"><span class="hs-identifier">deriveEq1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">LeftF</span></span></span></span><span>
+</span><span id="line-75"></span><span id="local-6989586621679412372"><span id="local-6989586621679412757"><span id="local-6989586621679412759"><span class="hs-identifier">deriveOrd1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">LeftF</span></span></span></span><span>
+</span><span id="line-76"></span><span id="local-6989586621679412364"><span id="local-6989586621679412366"><span id="local-6989586621679412368"><span id="local-6989586621679412759"><span class="hs-identifier">deriveBifunctor</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">LeftF</span></span></span></span></span><span>
+</span><span id="line-77"></span><span id="local-6989586621679412354"><span id="local-6989586621679412356"><span id="local-6989586621679412358"><span id="local-6989586621679412360"><span id="local-6989586621679412759"><span class="hs-identifier">deriveBifoldable</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">LeftF</span></span></span></span></span></span><span>
+</span><span id="line-78"></span><span id="local-6989586621679412347"><span id="local-6989586621679412759"><span class="hs-identifier">deriveBitraversable</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">LeftF</span></span></span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span id="local-6989586621679412344"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679412335"><span id="local-6989586621679412337"><span id="local-6989586621679412339"><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="#local-6989586621679412344"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Biapplicative</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412344"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>    </span><span id="local-6989586621679412333"><span class="annot"><span class="annottext">bipure :: a -&gt; b -&gt; LeftF f a b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">bipure</span></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679412331"><span class="annot"><span class="annottext">y :: b
+</span><a href="#local-6989586621679412331"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f b -&gt; LeftF f a b
+forall k k (f :: k -&gt; *) (g :: k) (a :: k). f a -&gt; LeftF f g a
+</span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">b -&gt; f b
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679412331"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span>    </span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a></span><span> </span><span id="local-6989586621679412330"><span class="annot"><span class="annottext">x :: f (c -&gt; d)
+</span><a href="#local-6989586621679412330"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679412329"><span class="annot"><span class="annottext">&lt;&lt;*&gt;&gt; :: LeftF f (a -&gt; b) (c -&gt; d) -&gt; LeftF f a c -&gt; LeftF f b d
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">&lt;&lt;*&gt;&gt;</span></span></span><span> </span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a></span><span> </span><span id="local-6989586621679412327"><span class="annot"><span class="annottext">y :: f c
+</span><a href="#local-6989586621679412327"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f d -&gt; LeftF f b d
+forall k k (f :: k -&gt; *) (g :: k) (a :: k). f a -&gt; LeftF f g a
+</span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f (c -&gt; d)
+</span><a href="#local-6989586621679412330"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">f (c -&gt; d) -&gt; f c -&gt; f d
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">f c
+</span><a href="#local-6989586621679412327"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679412323"><span id="local-6989586621679412325"><span class="annot"><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier hs-type">HBifunctor</span></a></span><span> </span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-85"></span><span>    </span><span id="local-6989586621679412320"><span class="annot"><span class="annottext">hbimap :: (f ~&gt; j) -&gt; (g ~&gt; k) -&gt; LeftF f g ~&gt; LeftF j k
+</span><a href="#local-6989586621679412320"><span class="hs-identifier hs-var hs-var hs-var hs-var">hbimap</span></a></span></span><span> </span><span id="local-6989586621679412319"><span class="annot"><span class="annottext">f :: f ~&gt; j
+</span><a href="#local-6989586621679412319"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a></span><span> </span><span id="local-6989586621679412318"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679412318"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">j x -&gt; LeftF j k x
+forall k k (f :: k -&gt; *) (g :: k) (a :: k). f a -&gt; LeftF f g a
+</span><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-var">LeftF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f x -&gt; j x
+f ~&gt; j
+</span><a href="#local-6989586621679412319"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679412318"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span id="local-6989586621679412315"><span id="local-6989586621679412317"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Internal.html#WrappedHBifunctor"><span class="hs-identifier hs-type">WrappedHBifunctor</span></a></span><span> </span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412317"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.HFunctor.Internal.html#HFunctor"><span class="hs-identifier hs-type">HFunctor</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#LeftF"><span class="hs-identifier hs-type">LeftF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412317"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="hs-comment">-- | An 'HBifunctor' that ignores its first input.  Like</span><span>
+</span><span id="line-91"></span><span class="hs-comment">-- a 'GHC.Generics.:+:' with no 'GHC.Generics.L1'/left branch.</span><span>
+</span><span id="line-92"></span><span class="hs-comment">--</span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- In its polykinded form (on @f@), it is essentially a higher-order</span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- version of 'Data.Tagged.Tagged'.</span><span>
+</span><span id="line-95"></span><span id="local-6989586621679412312"><span id="local-6989586621679412313"></span></span><span class="hs-keyword">newtype</span><span> </span><span id="RightF"><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a></span></span><span> </span><span id="local-6989586621679412581"><span class="annot"><a href="#local-6989586621679412581"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679412583"><span class="annot"><a href="#local-6989586621679412583"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679412582"><span class="annot"><a href="#local-6989586621679412582"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="RightF"><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="runRightF"><span class="annot"><span class="annottext">RightF f g a -&gt; g a
+</span><a href="Data.HBifunctor.html#runRightF"><span class="hs-identifier hs-var hs-var">runRightF</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679412583"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412582"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">}</span><span>
+</span><span id="line-96"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679412304"><span id="local-6989586621679412306"><span id="local-6989586621679412308"><span class="annot"><span class="annottext">Int -&gt; RightF f g a -&gt; ShowS
+[RightF f g a] -&gt; ShowS
+RightF f g a -&gt; String
+(Int -&gt; RightF f g a -&gt; ShowS)
+-&gt; (RightF f g a -&gt; String)
+-&gt; ([RightF f g a] -&gt; ShowS)
+-&gt; Show (RightF f g a)
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Show (g a) =&gt;
+Int -&gt; RightF f g a -&gt; ShowS
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Show (g a) =&gt;
+[RightF f g a] -&gt; ShowS
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Show (g a) =&gt;
+RightF f g a -&gt; String
+showList :: [RightF f g a] -&gt; ShowS
+$cshowList :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Show (g a) =&gt;
+[RightF f g a] -&gt; ShowS
+show :: RightF f g a -&gt; String
+$cshow :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Show (g a) =&gt;
+RightF f g a -&gt; String
+showsPrec :: Int -&gt; RightF f g a -&gt; ShowS
+$cshowsPrec :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Show (g a) =&gt;
+Int -&gt; RightF f g a -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412296"><span id="local-6989586621679412298"><span id="local-6989586621679412300"><span id="local-6989586621679412302"><span class="annot"><span class="annottext">ReadPrec [RightF f g a]
+ReadPrec (RightF f g a)
+Int -&gt; ReadS (RightF f g a)
+ReadS [RightF f g a]
+(Int -&gt; ReadS (RightF f g a))
+-&gt; ReadS [RightF f g a]
+-&gt; ReadPrec (RightF f g a)
+-&gt; ReadPrec [RightF f g a]
+-&gt; Read (RightF f g a)
+forall a.
+(Int -&gt; ReadS a)
+-&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+ReadPrec [RightF f g a]
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+ReadPrec (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+Int -&gt; ReadS (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+ReadS [RightF f g a]
+readListPrec :: ReadPrec [RightF f g a]
+$creadListPrec :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+ReadPrec [RightF f g a]
+readPrec :: ReadPrec (RightF f g a)
+$creadPrec :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+ReadPrec (RightF f g a)
+readList :: ReadS [RightF f g a]
+$creadList :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+ReadS [RightF f g a]
+readsPrec :: Int -&gt; ReadS (RightF f g a)
+$creadsPrec :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Read (g a) =&gt;
+Int -&gt; ReadS (RightF f g a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412292"><span id="local-6989586621679412294"><span class="annot"><span class="annottext">RightF f g a -&gt; RightF f g a -&gt; Bool
+(RightF f g a -&gt; RightF f g a -&gt; Bool)
+-&gt; (RightF f g a -&gt; RightF f g a -&gt; Bool) -&gt; Eq (RightF f g a)
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Eq (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+/= :: RightF f g a -&gt; RightF f g a -&gt; Bool
+$c/= :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Eq (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+== :: RightF f g a -&gt; RightF f g a -&gt; Bool
+$c== :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Eq (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412277"><span id="local-6989586621679412279"><span id="local-6989586621679412281"><span id="local-6989586621679412283"><span id="local-6989586621679412285"><span id="local-6989586621679412287"><span id="local-6989586621679412289"><span class="annot"><span class="annottext">Eq (RightF f g a)
+Eq (RightF f g a) =&gt;
+(RightF f g a -&gt; RightF f g a -&gt; Ordering)
+-&gt; (RightF f g a -&gt; RightF f g a -&gt; Bool)
+-&gt; (RightF f g a -&gt; RightF f g a -&gt; Bool)
+-&gt; (RightF f g a -&gt; RightF f g a -&gt; Bool)
+-&gt; (RightF f g a -&gt; RightF f g a -&gt; Bool)
+-&gt; (RightF f g a -&gt; RightF f g a -&gt; RightF f g a)
+-&gt; (RightF f g a -&gt; RightF f g a -&gt; RightF f g a)
+-&gt; Ord (RightF f g a)
+RightF f g a -&gt; RightF f g a -&gt; Bool
+RightF f g a -&gt; RightF f g a -&gt; Ordering
+RightF f g a -&gt; RightF f g a -&gt; RightF f g a
+forall a.
+Eq a =&gt;
+(a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+Eq (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Ordering
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; RightF f g a
+min :: RightF f g a -&gt; RightF f g a -&gt; RightF f g a
+$cmin :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; RightF f g a
+max :: RightF f g a -&gt; RightF f g a -&gt; RightF f g a
+$cmax :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; RightF f g a
+&gt;= :: RightF f g a -&gt; RightF f g a -&gt; Bool
+$c&gt;= :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+&gt; :: RightF f g a -&gt; RightF f g a -&gt; Bool
+$c&gt; :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+&lt;= :: RightF f g a -&gt; RightF f g a -&gt; Bool
+$c&lt;= :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+&lt; :: RightF f g a -&gt; RightF f g a -&gt; Bool
+$c&lt; :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Bool
+compare :: RightF f g a -&gt; RightF f g a -&gt; Ordering
+$ccompare :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+RightF f g a -&gt; RightF f g a -&gt; Ordering
+$cp1Ord :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+Ord (g a) =&gt;
+Eq (RightF f g a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412273"><span id="local-6989586621679412275"><span class="annot"><span class="annottext">a -&gt; RightF f g b -&gt; RightF f g a
+(a -&gt; b) -&gt; RightF f g a -&gt; RightF f g b
+(forall a b. (a -&gt; b) -&gt; RightF f g a -&gt; RightF f g b)
+-&gt; (forall a b. a -&gt; RightF f g b -&gt; RightF f g a)
+-&gt; Functor (RightF f g)
+forall k (f :: k) (g :: * -&gt; *) a b.
+Functor g =&gt;
+a -&gt; RightF f g b -&gt; RightF f g a
+forall k (f :: k) (g :: * -&gt; *) a b.
+Functor g =&gt;
+(a -&gt; b) -&gt; RightF f g a -&gt; RightF f g b
+forall a b. a -&gt; RightF f g b -&gt; RightF f g a
+forall a b. (a -&gt; b) -&gt; RightF f g a -&gt; RightF f g b
+forall (f :: * -&gt; *).
+(forall a b. (a -&gt; b) -&gt; f a -&gt; f b)
+-&gt; (forall a b. a -&gt; f b -&gt; f a) -&gt; Functor f
+&lt;$ :: a -&gt; RightF f g b -&gt; RightF f g a
+$c&lt;$ :: forall k (f :: k) (g :: * -&gt; *) a b.
+Functor g =&gt;
+a -&gt; RightF f g b -&gt; RightF f g a
+fmap :: (a -&gt; b) -&gt; RightF f g a -&gt; RightF f g b
+$cfmap :: forall k (f :: k) (g :: * -&gt; *) a b.
+Functor g =&gt;
+(a -&gt; b) -&gt; RightF f g a -&gt; RightF f g b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Functor</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412239"><span id="local-6989586621679412241"><span id="local-6989586621679412243"><span id="local-6989586621679412245"><span id="local-6989586621679412247"><span id="local-6989586621679412249"><span id="local-6989586621679412251"><span id="local-6989586621679412253"><span id="local-6989586621679412255"><span id="local-6989586621679412257"><span id="local-6989586621679412259"><span id="local-6989586621679412261"><span id="local-6989586621679412263"><span id="local-6989586621679412265"><span id="local-6989586621679412267"><span id="local-6989586621679412269"><span id="local-6989586621679412271"><span class="annot"><span class="annottext">RightF f g a -&gt; Bool
+(a -&gt; m) -&gt; RightF f g a -&gt; m
+(a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+(forall m. Monoid m =&gt; RightF f g m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; RightF f g a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; RightF f g a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a)
+-&gt; (forall a. RightF f g a -&gt; [a])
+-&gt; (forall a. RightF f g a -&gt; Bool)
+-&gt; (forall a. RightF f g a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; RightF f g a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; RightF f g a -&gt; a)
+-&gt; (forall a. Ord a =&gt; RightF f g a -&gt; a)
+-&gt; (forall a. Num a =&gt; RightF f g a -&gt; a)
+-&gt; (forall a. Num a =&gt; RightF f g a -&gt; a)
+-&gt; Foldable (RightF f g)
+forall a. Eq a =&gt; a -&gt; RightF f g a -&gt; Bool
+forall a. Num a =&gt; RightF f g a -&gt; a
+forall a. Ord a =&gt; RightF f g a -&gt; a
+forall m. Monoid m =&gt; RightF f g m -&gt; m
+forall a. RightF f g a -&gt; Bool
+forall a. RightF f g a -&gt; Int
+forall a. RightF f g a -&gt; [a]
+forall a. (a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a
+forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Eq a) =&gt;
+a -&gt; RightF f g a -&gt; Bool
+forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Num a) =&gt;
+RightF f g a -&gt; a
+forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Ord a) =&gt;
+RightF f g a -&gt; a
+forall k (f :: k) (g :: * -&gt; *) m.
+(Foldable g, Monoid m) =&gt;
+RightF f g m -&gt; m
+forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+RightF f g a -&gt; Bool
+forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+RightF f g a -&gt; Int
+forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+RightF f g a -&gt; [a]
+forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+(a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a
+forall k (f :: k) (g :: * -&gt; *) m a.
+(Foldable g, Monoid m) =&gt;
+(a -&gt; m) -&gt; RightF f g a -&gt; m
+forall k (f :: k) (g :: * -&gt; *) b a.
+Foldable g =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+forall k (f :: k) (g :: * -&gt; *) a b.
+Foldable g =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+forall m a. Monoid m =&gt; (a -&gt; m) -&gt; RightF f g a -&gt; m
+forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+forall (t :: * -&gt; *).
+(forall m. Monoid m =&gt; t m -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall m a. Monoid m =&gt; (a -&gt; m) -&gt; t a -&gt; m)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. (a -&gt; a -&gt; a) -&gt; t a -&gt; a)
+-&gt; (forall a. t a -&gt; [a])
+-&gt; (forall a. t a -&gt; Bool)
+-&gt; (forall a. t a -&gt; Int)
+-&gt; (forall a. Eq a =&gt; a -&gt; t a -&gt; Bool)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Ord a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; (forall a. Num a =&gt; t a -&gt; a)
+-&gt; Foldable t
+product :: RightF f g a -&gt; a
+$cproduct :: forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Num a) =&gt;
+RightF f g a -&gt; a
+sum :: RightF f g a -&gt; a
+$csum :: forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Num a) =&gt;
+RightF f g a -&gt; a
+minimum :: RightF f g a -&gt; a
+$cminimum :: forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Ord a) =&gt;
+RightF f g a -&gt; a
+maximum :: RightF f g a -&gt; a
+$cmaximum :: forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Ord a) =&gt;
+RightF f g a -&gt; a
+elem :: a -&gt; RightF f g a -&gt; Bool
+$celem :: forall k (f :: k) (g :: * -&gt; *) a.
+(Foldable g, Eq a) =&gt;
+a -&gt; RightF f g a -&gt; Bool
+length :: RightF f g a -&gt; Int
+$clength :: forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+RightF f g a -&gt; Int
+null :: RightF f g a -&gt; Bool
+$cnull :: forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+RightF f g a -&gt; Bool
+toList :: RightF f g a -&gt; [a]
+$ctoList :: forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+RightF f g a -&gt; [a]
+foldl1 :: (a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a
+$cfoldl1 :: forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+(a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a
+foldr1 :: (a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a
+$cfoldr1 :: forall k (f :: k) (g :: * -&gt; *) a.
+Foldable g =&gt;
+(a -&gt; a -&gt; a) -&gt; RightF f g a -&gt; a
+foldl' :: (b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+$cfoldl' :: forall k (f :: k) (g :: * -&gt; *) b a.
+Foldable g =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+foldl :: (b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+$cfoldl :: forall k (f :: k) (g :: * -&gt; *) b a.
+Foldable g =&gt;
+(b -&gt; a -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+foldr' :: (a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+$cfoldr' :: forall k (f :: k) (g :: * -&gt; *) a b.
+Foldable g =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+foldr :: (a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+$cfoldr :: forall k (f :: k) (g :: * -&gt; *) a b.
+Foldable g =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; RightF f g a -&gt; b
+foldMap' :: (a -&gt; m) -&gt; RightF f g a -&gt; m
+$cfoldMap' :: forall k (f :: k) (g :: * -&gt; *) m a.
+(Foldable g, Monoid m) =&gt;
+(a -&gt; m) -&gt; RightF f g a -&gt; m
+foldMap :: (a -&gt; m) -&gt; RightF f g a -&gt; m
+$cfoldMap :: forall k (f :: k) (g :: * -&gt; *) m a.
+(Foldable g, Monoid m) =&gt;
+(a -&gt; m) -&gt; RightF f g a -&gt; m
+fold :: RightF f g m -&gt; m
+$cfold :: forall k (f :: k) (g :: * -&gt; *) m.
+(Foldable g, Monoid m) =&gt;
+RightF f g m -&gt; m
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Foldable</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679412229"><span id="local-6989586621679412231"><span id="local-6989586621679412233"><span id="local-6989586621679412235"><span class="annot"><span class="annottext">Functor (RightF f g)
+Foldable (RightF f g)
+(Functor (RightF f g), Foldable (RightF f g)) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; RightF f g a -&gt; f (RightF f g b))
+-&gt; (forall (f :: * -&gt; *) a.
+    Applicative f =&gt;
+    RightF f g (f a) -&gt; f (RightF f g a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; RightF f g a -&gt; m (RightF f g b))
+-&gt; (forall (m :: * -&gt; *) a.
+    Monad m =&gt;
+    RightF f g (m a) -&gt; m (RightF f g a))
+-&gt; Traversable (RightF f g)
+(a -&gt; f b) -&gt; RightF f g a -&gt; f (RightF f g b)
+forall k (f :: k) (g :: * -&gt; *).
+Traversable g =&gt;
+Functor (RightF f g)
+forall k (f :: k) (g :: * -&gt; *).
+Traversable g =&gt;
+Foldable (RightF f g)
+forall k (f :: k) (g :: * -&gt; *) (m :: * -&gt; *) a.
+(Traversable g, Monad m) =&gt;
+RightF f g (m a) -&gt; m (RightF f g a)
+forall k (f :: k) (g :: * -&gt; *) (f :: * -&gt; *) a.
+(Traversable g, Applicative f) =&gt;
+RightF f g (f a) -&gt; f (RightF f g a)
+forall k (f :: k) (g :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable g, Monad m) =&gt;
+(a -&gt; m b) -&gt; RightF f g a -&gt; m (RightF f g b)
+forall k (f :: k) (g :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable g, Applicative f) =&gt;
+(a -&gt; f b) -&gt; RightF f g a -&gt; f (RightF f g b)
+forall (t :: * -&gt; *).
+(Functor t, Foldable t) =&gt;
+(forall (f :: * -&gt; *) a b.
+ Applicative f =&gt;
+ (a -&gt; f b) -&gt; t a -&gt; f (t b))
+-&gt; (forall (f :: * -&gt; *) a. Applicative f =&gt; t (f a) -&gt; f (t a))
+-&gt; (forall (m :: * -&gt; *) a b.
+    Monad m =&gt;
+    (a -&gt; m b) -&gt; t a -&gt; m (t b))
+-&gt; (forall (m :: * -&gt; *) a. Monad m =&gt; t (m a) -&gt; m (t a))
+-&gt; Traversable t
+forall (m :: * -&gt; *) a.
+Monad m =&gt;
+RightF f g (m a) -&gt; m (RightF f g a)
+forall (f :: * -&gt; *) a.
+Applicative f =&gt;
+RightF f g (f a) -&gt; f (RightF f g a)
+forall (m :: * -&gt; *) a b.
+Monad m =&gt;
+(a -&gt; m b) -&gt; RightF f g a -&gt; m (RightF f g b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; RightF f g a -&gt; f (RightF f g b)
+sequence :: RightF f g (m a) -&gt; m (RightF f g a)
+$csequence :: forall k (f :: k) (g :: * -&gt; *) (m :: * -&gt; *) a.
+(Traversable g, Monad m) =&gt;
+RightF f g (m a) -&gt; m (RightF f g a)
+mapM :: (a -&gt; m b) -&gt; RightF f g a -&gt; m (RightF f g b)
+$cmapM :: forall k (f :: k) (g :: * -&gt; *) (m :: * -&gt; *) a b.
+(Traversable g, Monad m) =&gt;
+(a -&gt; m b) -&gt; RightF f g a -&gt; m (RightF f g b)
+sequenceA :: RightF f g (f a) -&gt; f (RightF f g a)
+$csequenceA :: forall k (f :: k) (g :: * -&gt; *) (f :: * -&gt; *) a.
+(Traversable g, Applicative f) =&gt;
+RightF f g (f a) -&gt; f (RightF f g a)
+traverse :: (a -&gt; f b) -&gt; RightF f g a -&gt; f (RightF f g b)
+$ctraverse :: forall k (f :: k) (g :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable g, Applicative f) =&gt;
+(a -&gt; f b) -&gt; RightF f g a -&gt; f (RightF f g b)
+$cp2Traversable :: forall k (f :: k) (g :: * -&gt; *).
+Traversable g =&gt;
+Foldable (RightF f g)
+$cp1Traversable :: forall k (f :: k) (g :: * -&gt; *).
+Traversable g =&gt;
+Functor (RightF f g)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Traversable</span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Typeable</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(forall x. RightF f g a -&gt; Rep (RightF f g a) x)
+-&gt; (forall x. Rep (RightF f g a) x -&gt; RightF f g a)
+-&gt; Generic (RightF f g a)
+forall x. Rep (RightF f g a) x -&gt; RightF f g a
+forall x. RightF f g a -&gt; Rep (RightF f g a) x
+forall a.
+(forall x. a -&gt; Rep a x) -&gt; (forall x. Rep a x -&gt; a) -&gt; Generic a
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) x.
+Rep (RightF f g a) x -&gt; RightF f g a
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) x.
+RightF f g a -&gt; Rep (RightF f g a) x
+$cto :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) x.
+Rep (RightF f g a) x -&gt; RightF f g a
+$cfrom :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) x.
+RightF f g a -&gt; Rep (RightF f g a) x
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">Generic</span></span><span class="hs-special">,</span><span> </span><span id="%24cRightF"><span id="%24tRightF"><span id="local-6989586621679412198"><span id="local-6989586621679412200"><span id="local-6989586621679412202"><span id="local-6989586621679412204"><span id="local-6989586621679412206"><span id="local-6989586621679412208"><span id="local-6989586621679412210"><span id="local-6989586621679412212"><span id="local-6989586621679412214"><span id="local-6989586621679412216"><span id="local-6989586621679412218"><span id="local-6989586621679412220"><span id="local-6989586621679412222"><span id="local-6989586621679412224"><span class="annot"><span class="annottext">Typeable (RightF f g a)
+DataType
+Constr
+Typeable (RightF f g a) =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; RightF f g a -&gt; c (RightF f g a))
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (RightF f g a))
+-&gt; (RightF f g a -&gt; Constr)
+-&gt; (RightF f g a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (RightF f g a)))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e))
+    -&gt; Maybe (c (RightF f g a)))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; RightF f g a -&gt; RightF f g a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r)
+    -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; [u])
+-&gt; (forall u.
+    Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a))
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a))
+-&gt; Data (RightF f g a)
+RightF f g a -&gt; DataType
+RightF f g a -&gt; Constr
+(forall b. Data b =&gt; b -&gt; b) -&gt; RightF f g a -&gt; RightF f g a
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; RightF f g a -&gt; c (RightF f g a)
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (RightF f g a)
+forall a.
+Typeable a =&gt;
+(forall (c :: * -&gt; *).
+ (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+ -&gt; (forall g. g -&gt; c g) -&gt; a -&gt; c a)
+-&gt; (forall (c :: * -&gt; *).
+    (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+    -&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c a)
+-&gt; (a -&gt; Constr)
+-&gt; (a -&gt; DataType)
+-&gt; (forall (t :: * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c a))
+-&gt; (forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+    Typeable t =&gt;
+    (forall d e. (Data d, Data e) =&gt; c (t d e)) -&gt; Maybe (c a))
+-&gt; ((forall b. Data b =&gt; b -&gt; b) -&gt; a -&gt; a)
+-&gt; (forall r r'.
+    (r -&gt; r' -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall r r'.
+    (r' -&gt; r -&gt; r) -&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; a -&gt; r)
+-&gt; (forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; [u])
+-&gt; (forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; a -&gt; u)
+-&gt; (forall (m :: * -&gt; *).
+    Monad m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; (forall (m :: * -&gt; *).
+    MonadPlus m =&gt;
+    (forall d. Data d =&gt; d -&gt; m d) -&gt; a -&gt; m a)
+-&gt; Data a
+forall u. Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; u
+forall u. (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; [u]
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+Typeable (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+RightF f g a -&gt; DataType
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+RightF f g a -&gt; Constr
+forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall b. Data b =&gt; b -&gt; b) -&gt; RightF f g a -&gt; RightF f g a
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) u.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; u
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) u.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; [u]
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) r r'.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) r r'.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) (m :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), Monad m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) (m :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; RightF f g a -&gt; c (RightF f g a)
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) (t :: * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (RightF f g a))
+forall k (f :: k) k (g :: k -&gt; *) (a :: k) (t :: * -&gt; * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (RightF f g a))
+forall r r'.
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+forall r r'.
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+forall (m :: * -&gt; *).
+Monad m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+forall (m :: * -&gt; *).
+MonadPlus m =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+forall (c :: * -&gt; *).
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (RightF f g a)
+forall (c :: * -&gt; *).
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; RightF f g a -&gt; c (RightF f g a)
+forall (t :: * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (RightF f g a))
+forall (t :: * -&gt; * -&gt; *) (c :: * -&gt; *).
+Typeable t =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (RightF f g a))
+$cRightF :: Constr
+$tRightF :: DataType
+gmapMo :: (forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+$cgmapMo :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) (m :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+gmapMp :: (forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+$cgmapMp :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) (m :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), MonadPlus m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+gmapM :: (forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+$cgmapM :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) (m :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), Monad m) =&gt;
+(forall d. Data d =&gt; d -&gt; m d) -&gt; RightF f g a -&gt; m (RightF f g a)
+gmapQi :: Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; u
+$cgmapQi :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) u.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+Int -&gt; (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; u
+gmapQ :: (forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; [u]
+$cgmapQ :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) u.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall d. Data d =&gt; d -&gt; u) -&gt; RightF f g a -&gt; [u]
+gmapQr :: (r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+$cgmapQr :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) r r'.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(r' -&gt; r -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+gmapQl :: (r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+$cgmapQl :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) r r'.
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(r -&gt; r' -&gt; r)
+-&gt; r -&gt; (forall d. Data d =&gt; d -&gt; r') -&gt; RightF f g a -&gt; r
+gmapT :: (forall b. Data b =&gt; b -&gt; b) -&gt; RightF f g a -&gt; RightF f g a
+$cgmapT :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall b. Data b =&gt; b -&gt; b) -&gt; RightF f g a -&gt; RightF f g a
+dataCast2 :: (forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (RightF f g a))
+$cdataCast2 :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) (t :: * -&gt; * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), Typeable t) =&gt;
+(forall d e. (Data d, Data e) =&gt; c (t d e))
+-&gt; Maybe (c (RightF f g a))
+dataCast1 :: (forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (RightF f g a))
+$cdataCast1 :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) (t :: * -&gt; *)
+       (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a), Typeable t) =&gt;
+(forall d. Data d =&gt; c (t d)) -&gt; Maybe (c (RightF f g a))
+dataTypeOf :: RightF f g a -&gt; DataType
+$cdataTypeOf :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+RightF f g a -&gt; DataType
+toConstr :: RightF f g a -&gt; Constr
+$ctoConstr :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+RightF f g a -&gt; Constr
+gunfold :: (forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (RightF f g a)
+$cgunfold :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall b r. Data b =&gt; c (b -&gt; r) -&gt; c r)
+-&gt; (forall r. r -&gt; c r) -&gt; Constr -&gt; c (RightF f g a)
+gfoldl :: (forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; RightF f g a -&gt; c (RightF f g a)
+$cgfoldl :: forall k (f :: k) k (g :: k -&gt; *) (a :: k) (c :: * -&gt; *).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+(forall d b. Data d =&gt; c (d -&gt; b) -&gt; d -&gt; c b)
+-&gt; (forall g. g -&gt; c g) -&gt; RightF f g a -&gt; c (RightF f g a)
+$cp1Data :: forall k (f :: k) k (g :: k -&gt; *) (a :: k).
+(Typeable f, Typeable a, Typeable g, Typeable k, Typeable k,
+ Data (g a)) =&gt;
+Typeable (RightF f g a)
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Data</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span id="local-6989586621679412192"><span id="local-6989586621679412194"><span id="local-6989586621679412581"><span id="local-6989586621679412583"><span class="hs-identifier">deriveShow1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">RightF</span></span></span></span></span><span>
+</span><span id="line-99"></span><span id="local-6989586621679412184"><span id="local-6989586621679412186"><span id="local-6989586621679412188"><span id="local-6989586621679412190"><span id="local-6989586621679412581"><span id="local-6989586621679412583"><span class="hs-identifier">deriveRead1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">RightF</span></span></span></span></span></span></span><span>
+</span><span id="line-100"></span><span id="local-6989586621679412182"><span id="local-6989586621679412581"><span id="local-6989586621679412583"><span class="hs-identifier">deriveEq1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">RightF</span></span></span></span><span>
+</span><span id="line-101"></span><span id="local-6989586621679412179"><span id="local-6989586621679412581"><span id="local-6989586621679412583"><span class="hs-identifier">deriveOrd1</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">RightF</span></span></span></span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679412175"><span id="local-6989586621679412177"><span class="annot"><a href="Data.HFunctor.Internal.html#HBifunctor"><span class="hs-identifier hs-type">HBifunctor</span></a></span><span> </span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-104"></span><span>    </span><span id="local-6989586621679412173"><span class="annot"><span class="annottext">hbimap :: (f ~&gt; j) -&gt; (g ~&gt; k) -&gt; RightF f g ~&gt; RightF j k
+</span><a href="#local-6989586621679412173"><span class="hs-identifier hs-var hs-var hs-var hs-var">hbimap</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679412172"><span class="annot"><span class="annottext">g :: g ~&gt; k
+</span><a href="#local-6989586621679412172"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span id="local-6989586621679412171"><span class="annot"><span class="annottext">x :: g x
+</span><a href="#local-6989586621679412171"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">k x -&gt; RightF j k x
+forall k k (f :: k) (g :: k -&gt; *) (a :: k). g a -&gt; RightF f g a
+</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g x -&gt; k x
+g ~&gt; k
+</span><a href="#local-6989586621679412172"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g x
+</span><a href="#local-6989586621679412171"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span id="local-6989586621679412168"><span id="local-6989586621679412170"><span class="hs-keyword">deriving</span><span> </span><span class="hs-keyword">via</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Internal.html#WrappedHBifunctor"><span class="hs-identifier hs-type">WrappedHBifunctor</span></a></span><span> </span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412170"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.HFunctor.Internal.html#HFunctor"><span class="hs-identifier hs-type">HFunctor</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412170"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span id="local-6989586621679412167"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.HFunctor.Internal.html#HFunctor"><span class="hs-identifier hs-type">HFunctor</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412167"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-110"></span><span>    </span><span id="local-6989586621679412165"><span class="annot"><span class="annottext">hmap :: (f ~&gt; g) -&gt; RightF g f ~&gt; RightF g g
+</span><a href="Data.HFunctor.Internal.html#hmap"><span class="hs-identifier hs-var hs-var hs-var hs-var">hmap</span></a></span></span><span> </span><span id="local-6989586621679412163"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679412163"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span id="local-6989586621679412162"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679412162"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">g x -&gt; RightF g g x
+forall k k (f :: k) (g :: k -&gt; *) (a :: k). g a -&gt; RightF f g a
+</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f x -&gt; g x
+f ~&gt; g
+</span><a href="#local-6989586621679412163"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679412162"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span id="local-6989586621679412161"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.HFunctor.html#Inject"><span class="hs-identifier hs-type">Inject</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412161"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-113"></span><span>    </span><span id="local-6989586621679412157"><span class="annot"><span class="annottext">inject :: f x -&gt; RightF g f x
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var hs-var hs-var hs-var">inject</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f x -&gt; RightF g f x
+forall k k (f :: k) (g :: k -&gt; *) (a :: k). g a -&gt; RightF f g a
+</span><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-var">RightF</span></a></span></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span id="local-6989586621679412155"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679412151"><span class="annot"><a href="Data.HFunctor.html#HBind"><span class="hs-identifier hs-type">HBind</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412155"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-116"></span><span>    </span><span id="local-6989586621679412149"><span class="annot"><span class="annottext">hbind :: (f ~&gt; RightF g g) -&gt; RightF g f ~&gt; RightF g g
+</span><a href="Data.HFunctor.html#hbind"><span class="hs-identifier hs-var hs-var hs-var hs-var">hbind</span></a></span></span><span> </span><span id="local-6989586621679412147"><span class="annot"><span class="annottext">f :: f ~&gt; RightF g g
+</span><a href="#local-6989586621679412147"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span id="local-6989586621679412146"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679412146"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f x -&gt; RightF g g x
+f ~&gt; RightF g g
+</span><a href="#local-6989586621679412147"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679412146"><span class="hs-identifier hs-var">x</span></a></span></span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span id="local-6989586621679412144"><span id="local-6989586621679412145"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.HFunctor.Interpret.html#Interpret"><span class="hs-identifier hs-type">Interpret</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679412145"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679412144"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-119"></span><span>    </span><span id="local-6989586621679412139"><span class="annot"><span class="annottext">retract :: RightF g f x -&gt; f x
+</span><a href="Data.HFunctor.Interpret.html#retract"><span class="hs-identifier hs-var hs-var hs-var hs-var">retract</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span id="local-6989586621679412137"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679412137"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679412137"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-120"></span><span>    </span><span id="local-6989586621679412136"><span class="annot"><span class="annottext">interpret :: (g ~&gt; f) -&gt; RightF g g ~&gt; f
+</span><a href="Data.HFunctor.Interpret.html#interpret"><span class="hs-identifier hs-var hs-var hs-var hs-var">interpret</span></a></span></span><span> </span><span id="local-6989586621679412134"><span class="annot"><span class="annottext">f :: g ~&gt; f
+</span><a href="#local-6989586621679412134"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.html#RightF"><span class="hs-identifier hs-type">RightF</span></a></span><span> </span><span id="local-6989586621679412133"><span class="annot"><span class="annottext">x :: g x
+</span><a href="#local-6989586621679412133"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">g x -&gt; f x
+g ~&gt; f
+</span><a href="#local-6989586621679412134"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">g x
+</span><a href="#local-6989586621679412133"><span class="hs-identifier hs-var">x</span></a></span></span></span><span>
+</span><span id="line-121"></span></pre></body></html>
