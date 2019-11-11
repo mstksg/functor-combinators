@@ -53,15 +53,13 @@ module Data.Functor.Combinator (
   , HBifunctor(..)
   -- *** Associative
   , Associative(..)
-  , Semigroupoidal(SF, appendSF, consSF, toSF, biretract, binterpret)
-  , CS
+  , SemigroupIn(..)
   , biget, bicollect
   , (!*!)
   , (!$!)
   -- *** Tensor
   , Tensor(..)
-  , Monoidal(MF, appendMF, splitSF, toMF, fromSF, pureT, upgradeC)
-  , CM
+  , MonoidIn(..)
   , nilMF, consMF
   , inL, inR
   , outL, outR

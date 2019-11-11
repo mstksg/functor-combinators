@@ -309,15 +309,15 @@ class FreeOf c t | t -> c where
 finalizing :: (FreeOf c t, Functor f) => t f <~> Final c f
 finalizing = isoF fromFree toFree
 
-instance FreeOf Functor Coyoneda
-instance FreeOf Applicative Ap
-instance FreeOf Apply Ap1
-instance FreeOf Applicative FAF.Ap
-instance FreeOf Alternative Alt.Alt
-instance FreeOf Monad Free
-instance FreeOf Bind Free1
-instance FreeOf Pointed Lift
-instance FreeOf Pointed MaybeApply
-instance FreeOf Alt NonEmptyF
-instance FreeOf Plus ListF
+instance FreeOf Functor       Coyoneda
+instance FreeOf Applicative   Ap
+instance FreeOf Apply         Ap1
+instance FreeOf Applicative   FAF.Ap
+instance FreeOf Alternative   Alt.Alt
+instance FreeOf Monad         Free
+instance FreeOf Bind          Free1
+instance FreeOf Pointed       Lift
+instance FreeOf Pointed       MaybeApply
+instance FreeOf Alt           NonEmptyF
+instance FreeOf Plus          ListF
 instance FreeOf Unconstrained IdentityT

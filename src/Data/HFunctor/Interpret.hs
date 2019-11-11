@@ -75,7 +75,6 @@ import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
-import           Data.Constraint.Trivial
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
@@ -84,10 +83,8 @@ import           Data.Functor.Reverse
 import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor
-import           Data.Kind
 import           Data.Maybe
 import           Data.Pointed
-import           Data.Proxy
 import           Data.Semigroup.Foldable
 import           GHC.Generics hiding            (C)
 import qualified Control.Alternative.Free       as Alt

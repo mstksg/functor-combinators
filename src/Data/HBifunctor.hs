@@ -40,7 +40,6 @@ module Data.HBifunctor (
 import           Control.Natural.IsoF
 import           Data.Biapplicative
 import           Data.Bifunctor.TH
-import           Data.Constraint.Trivial
 import           Data.Data
 import           Data.Deriving
 import           Data.HFunctor
