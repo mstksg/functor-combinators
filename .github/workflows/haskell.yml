@@ -36,7 +36,7 @@ jobs:
         - { build: stack, resolver: "--resolver lts-14"  }   # ghc-8.6.5
         - { build: stack, resolver: "--resolver nightly" }
         - { build: stack, resolver: ""                   }
-        - { build: cabal, ghc: 8.0.2, cabal-install: "1.24" }
+        - { build: cabal, ghc: 8.0.2, cabal-install: "2.0" }
         - { build: cabal, ghc: 8.2.2, cabal-install: "2.0"  }
         - { build: cabal, ghc: 8.4.4, cabal-install: "2.2"  }
         - { build: cabal, ghc: 8.6.5, cabal-install: "2.4"  }
