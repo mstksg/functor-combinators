@@ -16,7 +16,7 @@
 --
 -- *  'HFunctor' and 'HBifunctor', used to swap out the functors that the
 --    combinators modify
--- *  'Interpret', 'Associative', 'Monoidal', used to inject and interpret
+-- *  'Interpret', 'Associative', 'Tensor', used to inject and interpret
 -- functor values with respect to their combinators.
 --
 -- We have some helpful utility functions, as well, built on top of these

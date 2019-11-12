@@ -39,9 +39,11 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- hedgehog-1.0
-- tasty-hedgehog-1.0.0.1
+# - hedgehog-1.0
+# - tasty-hedgehog-1.0.0.1
 - trivial-constraint-0.6.0.0
+- dependent-sum-0.6.2.0
+- constraints-extras-0.3.0.2
 - vinyl-0.12.0
 
 ghc-options:

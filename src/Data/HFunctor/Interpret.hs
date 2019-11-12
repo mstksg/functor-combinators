@@ -60,7 +60,6 @@ module Data.HFunctor.Interpret (
   , getI
   , collectI
   , AndC
-  , IT(..)
   ) where
 
 import           Control.Applicative
@@ -136,8 +135,6 @@ class Inject t => Interpret t f where
     interpret f = retract . hmap f
 
     {-# MINIMAL retract | interpret #-}
-
-newtype IT t f a = IT { getIT :: t f a }
 
 -- | A convenient flipped version of 'interpret'.
 forI
@@ -274,7 +271,7 @@ instance Plus g => Interpret ((:*:) g) f where
 instance Plus g => Interpret (Product g) f where
     retract (Pair _ y) = y
 
--- | Technically, 'C' is over-constrained: we only need @'zero' :: f a@,
+-- | Technically, @f@ is over-constrained: we only need @'zero' :: f a@,
 -- but we don't really have that typeclass in any standard hierarchies.  We
 -- use 'Plus' here instead, but we never use '<!>'.  This would only go
 -- wrong in situations where your type supports 'zero' but not '<!>', like
