@@ -60,65 +60,65 @@ associatingProp
     -> PropertyT m ()
 associatingProp = isoProp (associating @t)
 
-matchingSFProp
+matchingNEProp
     :: forall t f m a.
-     ( Semigroupoidal t
+     ( Associative t
      , Monad m
      , Functor f
      , Show (f a), Eq (f a)
-     , Show (SF t f a), Eq (SF t f a)
-     , Show (t f (SF t f) a), Eq (t f (SF t f) a)
+     , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
+     , Show (t f (NonEmptyBy t f) a), Eq (t f (NonEmptyBy t f) a)
      )
-    => Gen (SF t f a)
+    => Gen (NonEmptyBy t f a)
     -> Gen (f a)
-    -> Gen (t f (SF t f) a)
+    -> Gen (t f (NonEmptyBy t f) a)
     -> PropertyT m ()
-matchingSFProp gx gy gz = isoProp (matchingSF @t) gx (sumGen gy gz)
+matchingNEProp gx gy gz = isoProp (matchingNE @t) gx (sumGen gy gz)
 
-unrollingSFProp
+unrollingNEProp
     :: forall t f m a.
-     ( Semigroupoidal t
+     ( SemigroupIn t f
      , Monad m
      , Functor f
-     , Show (SF t f a), Eq (SF t f a)
+     , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
      , Show (f a), Eq (f a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
      )
-    => Gen (SF t f a)
+    => Gen (NonEmptyBy t f a)
     -> Gen (Chain1 t f a)
     -> PropertyT m ()
-unrollingSFProp = isoProp (unrollingSF @t)
+unrollingNEProp = isoProp (unrollingNE @t)
 
-consSFProp
+consNEProp
     :: forall t f m a.
-     ( Semigroupoidal t
+     ( Associative t
      , Monad m
-     , Show (t f (SF t f) a)
-     , Show (SF t f a), Eq (SF t f a)
+     , Show (t f (NonEmptyBy t f) a)
+     , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
      )
-    => Gen (t f (SF t f) a)
+    => Gen (t f (NonEmptyBy t f) a)
     -> PropertyT m ()
-consSFProp gx = do
+consNEProp gx = do
     x <- forAll gx
-    appendSF (hleft inject x) === consSF x
+    appendNE (hleft inject x) === consNE x
 
-toSFProp
+toNonEmptyByProp
     :: forall t f m a.
-     ( Semigroupoidal t
+     ( Associative t
      , Monad m
      , Show (t f f a)
-     , Show (SF t f a), Eq (SF t f a)
+     , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
      )
     => Gen (t f f a)
     -> PropertyT m ()
-toSFProp gx = do
+toNonEmptyByProp gx = do
     x <- forAll gx
-    appendSF (hbimap inject inject x) === toSF x
+    appendNE (hbimap inject inject x) === toNonEmptyBy x
 
 biretractProp
     :: forall t f m a.
-     ( Semigroupoidal t
-     , CS t f
+     ( SemigroupIn t f
+     , Interpret (NonEmptyBy t) f
      , Monad m
      , Show (t f f a)
      , Show (f a), Eq (f a)
@@ -127,12 +127,11 @@ biretractProp
     -> PropertyT m ()
 biretractProp gx = do
     x <- forAll gx
-    retract (appendSF (hbimap inject inject x)) === biretract x
+    retract (appendNE (hbimap inject inject x)) === biretract x
 
 binterpretProp
     :: forall t f m a.
-     ( Semigroupoidal t
-     , CS t f
+     ( SemigroupIn t f
      , Monad m
      , Show (t f f a)
      , Show (f a), Eq (f a)
@@ -144,142 +143,143 @@ binterpretProp gx = do
     biretract x === binterpret id id x
 
 rightIdentityProp
-    :: forall t f m a.
-     ( Tensor t
+    :: forall t i f m a.
+     ( Tensor t i
      , Monad m
      , Functor f
      , Show (f a), Eq (f a)
-     , Show (t f (I t) a), Eq (t f (I t) a)
+     , Show (t f i a), Eq (t f i a)
      )
     => Gen (f a)
-    -> Gen (t f (I t) a)
+    -> Gen (t f i a)
     -> PropertyT m ()
 rightIdentityProp = isoProp (rightIdentity @t)
 
 leftIdentityProp
-    :: forall t g m a.
-     ( Tensor t
+    :: forall t i g m a.
+     ( Tensor t i
      , Monad m
      , Functor g
      , Show (g a), Eq (g a)
-     , Show (t (I t) g a), Eq (t (I t) g a)
+     , Show (t i g a), Eq (t i g a)
      )
     => Gen (g a)
-    -> Gen (t (I t) g a)
+    -> Gen (t i g a)
     -> PropertyT m ()
 leftIdentityProp = isoProp (leftIdentity @t)
 
-splittingMFProp
-    :: forall t f m a.
-     ( Monoidal t
+splittingLBProp
+    :: forall t i f m a.
+     ( Tensor t i
      , Monad m
-     , Show (I t a), Eq (I t a)
-     , Show (MF t f a), Eq (MF t f a)
-     , Show (t f (MF t f) a), Eq (t f (MF t f) a)
+     , Show (i a), Eq (i a)
+     , Show (ListBy t f a), Eq (ListBy t f a)
+     , Show (t f (ListBy t f) a), Eq (t f (ListBy t f) a)
      )
-    => Gen (MF t f a)
-    -> Gen ((I t :+: t f (MF t f)) a)
+    => Gen (ListBy t f a)
+    -> Gen ((i :+: t f (ListBy t f)) a)
     -> PropertyT m ()
-splittingMFProp = isoProp (splittingMF @t)
+splittingLBProp = isoProp (splittingLB @t)
 
-unrollingMFProp
-    :: forall t f m a.
-     ( Monoidal t
+unrollingProp
+    :: forall t i f m a.
+     ( MonoidIn t i f
      , Monad m
-     , Show (MF t f a), Eq (MF t f a)
-     , Show (I t a), Eq (I t a)
-     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     , Show (ListBy t f a), Eq (ListBy t f a)
+     , Show (i a), Eq (i a)
+     , Show (t f (Chain t i f) a), Eq (t f (Chain t i f) a)
      )
-    => Gen (MF t f a)
-    -> Gen (Chain t (I t) f a)
+    => Gen (ListBy t f a)
+    -> Gen (Chain t i f a)
     -> PropertyT m ()
-unrollingMFProp = isoProp (unrollingMF @t)
+unrollingProp = isoProp (unrolling @t)
 
-toMFProp
-    :: forall t f m a.
-     ( Monoidal t
+toListByProp
+    :: forall t i f m a.
+     ( Tensor t i
      , Monad m
      , Show (t f f a)
-     , Show (MF t f a), Eq (MF t f a)
+     , Show (ListBy t f a), Eq (ListBy t f a)
      )
     => Gen (t f f a)
     -> PropertyT m ()
-toMFProp gx = do
+toListByProp gx = do
     x <- forAll gx
-    reviewF (splittingMF @t) (R1 (hright (inject @(MF t)) x)) === toMF @t x
+    reviewF (splittingLB @t) (R1 (hright (inject @(ListBy t)) x)) === toListBy @t x
 
-fromSFProp
-    :: forall t f m a.
-     ( Monoidal t
+fromNEProp
+    :: forall t i f m a.
+     ( Tensor t i
      , Monad m
-     , Show (SF t f a)
-     , Show (MF t f a), Eq (MF t f a)
+     , Show (NonEmptyBy t f a)
+     , Show (ListBy t f a), Eq (ListBy t f a)
      )
-    => Gen (SF t f a)
+    => Gen (NonEmptyBy t f a)
     -> PropertyT m ()
-fromSFProp gx = do
+fromNEProp gx = do
     x <- forAll gx
-    reviewF (splittingMF @t) (R1 (splitSF @t x)) === fromSF @t x
+    reviewF (splittingLB @t) (R1 (splitNE @t x)) === fromNE @t x
 
 pureTProp
-    :: forall t f m a.
-     ( Monoidal t
+    :: forall t i f m a.
+     ( MonoidIn t i f
      , Monad m
-     , C (MF t) f
-     , Show (I t a)
+     , Show (i a)
      , Show (f a), Eq (f a)
      )
-    => Gen (I t a)
+    => Gen (i a)
     -> PropertyT m ()
 pureTProp gx = do
     x <- forAll gx
-    retract (reviewF (splittingMF @t) (L1 x)) === pureT @t @f x
+    retract (reviewF (splittingLB @t) (L1 x)) === pureT @t @_ @f x
 
-splittingSFProp
-    :: forall t f m a.
-     ( Matchable t
+splittingNEProp
+    :: forall t i f m a.
+     ( Matchable t i
      , Monad m
-     , Show (SF t f a), Eq (SF t f a)
-     , Show (t f (MF t f) a), Eq (t f (MF t f) a)
+     , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
+     , Show (t f (ListBy t f) a), Eq (t f (ListBy t f) a)
      )
-    => Gen (SF t f a)
-    -> Gen (t f (MF t f) a)
+    => Gen (NonEmptyBy t f a)
+    -> Gen (t f (ListBy t f) a)
     -> PropertyT m ()
-splittingSFProp = isoProp (splittingSF @t)
+splittingNEProp = isoProp (splittingNE @t)
 
-matchingMFProp
-    :: forall t f m a.
-     ( Matchable t
+matchingLBProp
+    :: forall t i f m a.
+     ( Matchable t i
+     , MonoidIn t i f
      , Monad m
-     , Show (I t a), Eq (I t a)
-     , Show (MF t f a), Eq (MF t f a)
-     , Show (SF t f a), Eq (SF t f a)
+     , Show (i a), Eq (i a)
+     , Show (ListBy t f a), Eq (ListBy t f a)
+     , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
      )
-    => Gen (MF t f a)
-    -> Gen ((I t :+: SF t f) a)
+    => Gen (ListBy t f a)
+    -> Gen ((i :+: NonEmptyBy t f) a)
     -> PropertyT m ()
-matchingMFProp = isoProp (matchingMF @t)
+matchingLBProp = isoProp (matchingLB @t)
 
 matchingChainProp
-    :: forall t f m a.
-     ( Matchable t
+    :: forall t i f m a.
+     ( Matchable t i
+     , MonoidIn t i f
      , Monad m
      , Functor f
      , Show (f a), Eq (f a)
-     , Show (I t a), Eq (I t a)
+     , Show (i a), Eq (i a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
-     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     , Show (t f (Chain t i f) a), Eq (t f (Chain t i f) a)
      )
-    => Gen (Chain t (I t ) f a)
-    -> Gen ((I t :+: Chain1 t f) a)
+    => Gen (Chain t i f a)
+    -> Gen ((i :+: Chain1 t f) a)
     -> PropertyT m ()
 matchingChainProp = isoProp (matchingChain @t)
 
 genChain
-    :: forall t f m a. (MonadGen m, TestHBifunctor t)
+    :: forall t i f m a. (MonadGen m, TestHBifunctor t)
     => m (f a)
-    -> Maybe (m (I t a))
-    -> m (Chain t (I t) f a)
+    -> Maybe (m (i a))
+    -> m (Chain t i f a)
 genChain gx gy = go
   where
     go = case gy of
@@ -306,166 +306,165 @@ hbifunctorProps gx = testGroup "HBifunctor"
     [ ("hbimap", hbimapProp @t (genHB gx gx))
     ]
 
-semigroupoidalProps
+associativeProps
     :: forall t f a.
-     ( Semigroupoidal t
+     ( SemigroupIn t f
+     , Interpret (NonEmptyBy t) f
      , TestHBifunctor t
-     , TestHFunctor (SF t)
-     , CS t f
+     , TestHFunctor (NonEmptyBy t)
      , Functor f
      , Show (t f (t f f) a)     , Eq (t f (t f f) a)
      , Show (t (t f f) f a)     , Eq (t (t f f) f a)
      , Show (t f f a)
-     , Show (t f (SF t f) a)    , Eq (t f (SF t f) a)
-     , Show (SF t f a)          , Eq (SF t f a)
+     , Show (t f (NonEmptyBy t f) a)    , Eq (t f (NonEmptyBy t f) a)
+     , Show (NonEmptyBy t f a)          , Eq (NonEmptyBy t f a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
      , Show (f a)               , Eq (f a)
      )
     => Gen (f a)
     -> TestTree
-semigroupoidalProps gx = testGroup "Semigroupoidal"
+associativeProps gx = testGroup "Associative"
                        . map (uncurry testProperty . second property) $
     [ ("associating", associatingProp @t (genHB gx (genHB gx gx)) (genHB (genHB gx gx) gx))
-    , ("matchingSF" , matchingSFProp  @t (genHF gx) gx (genHB gx (genHF gx)))
-    , ("unrollingSF", unrollingSFProp @t (genHF gx) (genHF gx))
-    , ("consSF"     , consSFProp      @t (genHB gx (genHF gx)))
-    , ("toSF"       , toSFProp        @t (genHB gx gx))
+    , ("matchingNE" , matchingNEProp  @t (genHF gx) gx (genHB gx (genHF gx)))
+    , ("unrollingNE", unrollingNEProp @t (genHF gx) (genHF gx))
+    , ("consNE"     , consNEProp      @t (genHB gx (genHF gx)))
+    , ("toNonEmptyBy"       , toNonEmptyByProp        @t (genHB gx gx))
     , ("biretract"  , biretractProp   @t (genHB gx gx))
     , ("binterpret" , binterpretProp  @t (genHB gx gx))
     ]
 
-monoidalProps
-    :: forall t f a.
-     ( Monoidal t
+tensorProps
+    :: forall t i f a.
+     ( MonoidIn t i f
      , TestHBifunctor t
-     , TestHFunctor (MF t)
-     , TestHFunctor (SF t)
-     , CM t f
+     , TestHFunctor (ListBy t)
+     , TestHFunctor (NonEmptyBy t)
      , Functor f
-     , Show (t f (I t) a)            , Eq (t f (I t) a)
-     , Show (t (I t) f a)            , Eq (t (I t) f a)
-     , Show (t f (MF t f) a)         , Eq (t f (MF t f) a)
-     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     , Show (t f i a)            , Eq (t f i a)
+     , Show (t i f a)            , Eq (t i f a)
+     , Show (t f (ListBy t f) a)         , Eq (t f (ListBy t f) a)
+     , Show (t f (Chain t i f) a), Eq (t f (Chain t i f) a)
      , Show (t f f a)
-     , Show (MF t f a)               , Eq (MF t f a)
-     , Show (SF t f a)
-     , Show (I t a)                  , Eq (I t a)
+     , Show (ListBy t f a)               , Eq (ListBy t f a)
+     , Show (NonEmptyBy t f a)
+     , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
      )
     => Gen (f a)
-    -> Maybe (Gen (I t a))
+    -> Maybe (Gen (i a))
     -> TestTree
-monoidalProps gx gy = testGroup "Monoidal"
+tensorProps gx gy = testGroup "Tensor"
                     . map (uncurry testProperty . second property)
                     . catMaybes $
     [ gy <&> \y -> ("rightIdentity", rightIdentityProp @t gx (genHB gx y))
     , gy <&> \y -> ("leftIdentity" , leftIdentityProp  @t gx (genHB y gx))
-    , Just ("splittingMF", splittingMFProp @t (genHF gx) (maybeSumGen gy (genHB gx (genHF gx))))
-    , Just ("unrollingMF", unrollingMFProp @t (genHF gx) (genChain gx gy))
-    , Just ("toMF"       , toMFProp        @t (genHB gx gx))
-    , Just ("fromSF"     , fromSFProp      @t (genHF gx))
-    , gy <&> \y -> ("pureT"        , pureTProp          @t @f y)
+    , Just ("splittingLB", splittingLBProp @t (genHF gx) (maybeSumGen gy (genHB gx (genHF gx))))
+    , Just ("unrolling", unrollingProp @t (genHF gx) (genChain gx gy))
+    , Just ("toListBy"       , toListByProp        @t (genHB gx gx))
+    , Just ("fromNE"     , fromNEProp      @t (genHF gx))
+    , gy <&> \y -> ("pureT"        , pureTProp          @t @_ @f y)
     ]
 
 matchableProps
-    :: forall t f a.
-     ( Matchable t
+    :: forall t i f a.
+     ( Matchable t i
+     , MonoidIn t i f
      , TestHBifunctor t
-     , TestHFunctor (MF t)
-     , TestHFunctor (SF t)
+     , TestHFunctor (ListBy t)
+     , TestHFunctor (NonEmptyBy t)
      , Functor f
-     , Show (t f (MF t f) a)         , Eq (t f (MF t f) a)
-     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     , Show (t f (ListBy t f) a)         , Eq (t f (ListBy t f) a)
+     , Show (t f (Chain t i f) a), Eq (t f (Chain t i f) a)
      , Show (t f (Chain1 t f) a)     , Eq (t f (Chain1 t f) a)
-     , Show (MF t f a)               , Eq (MF t f a)
-     , Show (SF t f a)               , Eq (SF t f a)
-     , Show (I t a)                  , Eq (I t a)
+     , Show (ListBy t f a)               , Eq (ListBy t f a)
+     , Show (NonEmptyBy t f a)               , Eq (NonEmptyBy t f a)
+     , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
      )
     => Gen (f a)
-    -> Maybe (Gen (I t a))
+    -> Maybe (Gen (i a))
     -> TestTree
 matchableProps gx gy = testGroup "Matchable"
                      . map (uncurry testProperty . second property) $
-    [ ("splittingSF"  , splittingSFProp   @t (genHF gx) (genHB gx (genHF gx)))
-    , ("matchingMF"   , matchingMFProp    @t (genHF gx) (maybeSumGen gy (genHF gx)))
+    [ ("splittingNE"  , splittingNEProp   @t (genHF gx) (genHB gx (genHF gx)))
+    , ("matchingLB"   , matchingLBProp    @t (genHF gx) (maybeSumGen gy (genHF gx)))
     , ("matchingChain", matchingChainProp @t (genChain gx gy) (maybeSumGen gy (genHF gx)))
     ]
 
-semigroupoidalProps_
+associativeProps_
     :: forall t f a.
-     ( Semigroupoidal t
+     ( SemigroupIn t f
+     , Interpret (NonEmptyBy t) f
      , TestHBifunctor t
-     , TestHFunctor (SF t)
-     , CS t f
+     , TestHFunctor (NonEmptyBy t)
      , Functor f
      , Show (t f (t f f) a)     , Eq (t f (t f f) a)
      , Show (t (t f f) f a)     , Eq (t (t f f) f a)
      , Show (t f f a)           , Eq (t f f a)
-     , Show (t f (SF t f) a)    , Eq (t f (SF t f) a)
-     , Show (SF t f a)          , Eq (SF t f a)
+     , Show (t f (NonEmptyBy t f) a)    , Eq (t f (NonEmptyBy t f) a)
+     , Show (NonEmptyBy t f a)          , Eq (NonEmptyBy t f a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
      , Show (f a)               , Eq (f a)
      )
     => Gen (f a)
     -> [TestTree]
-semigroupoidalProps_ gx = [ hbifunctorProps @t gx, semigroupoidalProps @t gx ]
+associativeProps_ gx = [ hbifunctorProps @t gx, associativeProps @t gx ]
 
-monoidalProps_
-    :: forall t f a.
-     ( Monoidal t
+tensorProps_
+    :: forall t i f a.
+     ( MonoidIn t i f
+     , Interpret (NonEmptyBy t) f
      , TestHBifunctor t
-     , TestHFunctor (MF t)
-     , TestHFunctor (SF t)
-     , CM t f
-     , CS t f
+     , TestHFunctor (ListBy t)
+     , TestHFunctor (NonEmptyBy t)
      , Functor f
      , Show (t f (t f f) a)          , Eq (t f (t f f) a)
      , Show (t (t f f) f a)          , Eq (t (t f f) f a)
-     , Show (t f (I t) a)            , Eq (t f (I t) a)
-     , Show (t (I t) f a)            , Eq (t (I t) f a)
-     , Show (t f (MF t f) a)         , Eq (t f (MF t f) a)
-     , Show (t f (SF t f) a)         , Eq (t f (SF t f) a)
-     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     , Show (t f i a)            , Eq (t f i a)
+     , Show (t i f a)            , Eq (t i f a)
+     , Show (t f (ListBy t f) a)         , Eq (t f (ListBy t f) a)
+     , Show (t f (NonEmptyBy t f) a)         , Eq (t f (NonEmptyBy t f) a)
+     , Show (t f (Chain t i f) a), Eq (t f (Chain t i f) a)
      , Show (t f (Chain1 t f) a)     , Eq (t f (Chain1 t f) a)
      , Show (t f f a)                , Eq (t f f a)
-     , Show (MF t f a)               , Eq (MF t f a)
-     , Show (SF t f a)               , Eq (SF t f a)
-     , Show (I t a)                  , Eq (I t a)
+     , Show (ListBy t f a)               , Eq (ListBy t f a)
+     , Show (NonEmptyBy t f a)               , Eq (NonEmptyBy t f a)
+     , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
      )
     => Gen (f a)
-    -> Maybe (Gen (I t a))
+    -> Maybe (Gen (i a))
     -> [TestTree]
-monoidalProps_ gx gy = semigroupoidalProps_ @t gx ++ [ monoidalProps @t gx gy ]
+tensorProps_ gx gy = associativeProps_ @t gx ++ [ tensorProps @t gx gy ]
 
 matchableProps_
-    :: forall t f a.
-     ( Matchable t
+    :: forall t i f a.
+     ( Matchable t i
+     , Interpret (NonEmptyBy t) f
+     , MonoidIn t i f
      , TestHBifunctor t
-     , TestHFunctor (MF t)
-     , TestHFunctor (SF t)
-     , CM t f
-     , CS t f
+     , TestHFunctor (ListBy t)
+     , TestHFunctor (NonEmptyBy t)
      , Functor f
      , Show (t f (t f f) a)          , Eq (t f (t f f) a)
      , Show (t (t f f) f a)          , Eq (t (t f f) f a)
-     , Show (t f (I t) a)            , Eq (t f (I t) a)
-     , Show (t (I t) f a)            , Eq (t (I t) f a)
-     , Show (t f (MF t f) a)         , Eq (t f (MF t f) a)
-     , Show (t f (SF t f) a)         , Eq (t f (SF t f) a)
-     , Show (t f (Chain t (I t) f) a), Eq (t f (Chain t (I t) f) a)
+     , Show (t f i a)            , Eq (t f i a)
+     , Show (t i f a)            , Eq (t i f a)
+     , Show (t f (ListBy t f) a)         , Eq (t f (ListBy t f) a)
+     , Show (t f (NonEmptyBy t f) a)         , Eq (t f (NonEmptyBy t f) a)
+     , Show (t f (Chain t i f) a), Eq (t f (Chain t i f) a)
      , Show (t f (Chain1 t f) a)     , Eq (t f (Chain1 t f) a)
      , Show (t f f a)                , Eq (t f f a)
-     , Show (MF t f a)               , Eq (MF t f a)
-     , Show (SF t f a)               , Eq (SF t f a)
-     , Show (I t a)                  , Eq (I t a)
+     , Show (ListBy t f a)               , Eq (ListBy t f a)
+     , Show (NonEmptyBy t f a)               , Eq (NonEmptyBy t f a)
+     , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
      )
     => Gen (f a)
-    -> Maybe (Gen (I t a))
+    -> Maybe (Gen (i a))
     -> [TestTree]
-matchableProps_ gx gy = monoidalProps_ @t gx gy ++ [ matchableProps @t gx gy ]
+matchableProps_ gx gy = tensorProps_ @t gx gy ++ [ matchableProps @t gx gy ]
 
 hbifunctorTests :: TestTree
 hbifunctorTests = testGroup "HBifunctors"
@@ -473,12 +472,12 @@ hbifunctorTests = testGroup "HBifunctors"
     , testGroup "Sum'"     $ matchableProps_      @Sum     listGen Nothing
     , testGroup "Product"  $ matchableProps_      @(:*:)   listGen (Just (pure Proxy))
     , testGroup "Product'" $ matchableProps_      @Product listGen (Just (pure Proxy))
-    , testGroup "These1"   $ monoidalProps_       @These1  listGen Nothing
-    , testGroup "LeftF"    $ semigroupoidalProps_ @LeftF   listGen
-    , testGroup "Joker"    $ semigroupoidalProps_ @Joker   listGen
-    , testGroup "RightF"   $ semigroupoidalProps_ @RightF  listGen
+    , testGroup "These1"   $ tensorProps_       @These1  listGen Nothing
+    , testGroup "LeftF"    $ associativeProps_ @LeftF   listGen
+    , testGroup "Joker"    $ associativeProps_ @Joker   listGen
+    , testGroup "RightF"   $ associativeProps_ @RightF  listGen
     , testGroup "Day"      $ matchableProps_      @Day     (Const . S.Sum <$> intGen)
                                                            (Just (Identity <$> intGen))
-    , testGroup "Comp"     $ monoidalProps_       @Comp    (Gen.list (Range.linear 0 3) intGen)
+    , testGroup "Comp"     $ tensorProps_       @Comp    (Gen.list (Range.linear 0 3) intGen)
                                                            (Just (Identity <$> intGen))
     ]

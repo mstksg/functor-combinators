@@ -101,7 +101,7 @@ instance (GShow f, GShow g) => Show (Day f g a) where
     showsPrec = gshowsPrec
 
 instance GShow f => GShow (Ap1 f) where
-    gshowsPrec d (Ap1 x y) = case matchMF @Day y of
+    gshowsPrec d (Ap1 x y) = case matchLB @Day y of
       L1 _  -> showsUnaryWith gshowsPrec "inject" d x
       R1 ys -> showsBinaryWith gshowsPrec gshowsPrec "Ap1" d x ys
 

@@ -43,9 +43,8 @@ hmapProp gx = do
 
 retractingProp
     :: forall t f m a.
-     ( Interpret t
+     ( Interpret t f
      , Monad m
-     , C t f
      , Show (f a)
      , Show (t f a)
      , Eq (f a)
@@ -58,9 +57,8 @@ retractingProp gx = do
 
 interpretProp
     :: forall t f m a.
-     ( Interpret t
+     ( Interpret t f
      , Monad m
-     , C t f
      , Show (f a)
      , Show (t f a)
      , Eq (f a)
@@ -140,9 +138,8 @@ hbindProps gx = testGroup "HBind"
 
 interpretProps
     :: forall t f a.
-     ( Interpret t
+     ( Interpret t f
      , TestHFunctor t
-     , C t f
      , Show (f a)          , Eq (f a)
      , Show (t f a)
      )
@@ -170,9 +167,8 @@ hbindProps_ gx = [ hfunctorProps @t gx
 
 interpretProps_
     :: forall t f a.
-     ( Interpret t
+     ( Interpret t f
      , TestHFunctor t
-     , C t f
      , Show (f a)          , Eq (f a)
      , Show (t f a)        , Eq (t f a)
      )
@@ -186,9 +182,8 @@ interpretProps_ gx = [ hfunctorProps  @t gx
 bindInterpProps_
     :: forall t f a.
      ( HBind t
-     , Interpret t
+     , Interpret t f
      , TestHFunctor t
-     , C t f
      , Show (f a)          , Eq (f a)
      , Show (t f a)        , Eq (t f a)
      , Show (t (t f) a)
