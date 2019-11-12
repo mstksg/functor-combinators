@@ -92,7 +92,9 @@ import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
 import qualified Data.Map.NonEmpty              as NEM
 
--- | An 'Interpret' lets us move in and out of the "enhanced" 'Functor'.
+-- | An 'Interpret' lets us move in and out of the "enhanced" 'Functor' (@t
+-- f@) and the functor it enhances (@f@).  An instance @'Interpret' t f@
+-- means we have @t f a -> f a@.
 --
 -- For example, @'Free' f@ is @f@ enhanced with monadic structure.  We get:
 --
@@ -117,11 +119,6 @@ import qualified Data.Map.NonEmpty              as NEM
 -- That is, if we lift a value into our structure, then immediately
 -- interpret it out as itself, it should lave the value unchanged.
 class Inject t => Interpret t f where
-
-    -- -- | The constraint on the target context of 'interpret'.  It's
-    -- -- basically the constraint that allows you to "exit" or "run" an
-    -- -- 'Interpret'.
-    -- type C t :: (Type -> Type) -> Constraint
 
     -- | Remove the @f@ out of the enhanced @t f@ structure, provided that
     -- @f@ satisfies the necessary constraints.  If it doesn't, it needs to
