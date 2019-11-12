@@ -1398,7 +1398,9 @@ instance forall k1 (f :: k1) k2 (a :: k2). GHC.Show.Show (Data.HFunctor.ProxyF f
 module Data.HFunctor.Interpret
 
 -- | An <a>Interpret</a> lets us move in and out of the "enhanced"
---   <a>Functor</a>.
+--   <a>Functor</a> (<tt>t f</tt>) and the functor it enhances
+--   (<tt>f</tt>). An instance <tt><a>Interpret</a> t f</tt> means we have
+--   <tt>t f a -&gt; f a</tt>.
 --   
 --   For example, <tt><a>Free</a> f</tt> is <tt>f</tt> enhanced with
 --   monadic structure. We get:
@@ -2964,7 +2966,9 @@ class HFunctor t => Inject t
 inject :: Inject t => f ~> t f
 
 -- | An <a>Interpret</a> lets us move in and out of the "enhanced"
---   <a>Functor</a>.
+--   <a>Functor</a> (<tt>t f</tt>) and the functor it enhances
+--   (<tt>f</tt>). An instance <tt><a>Interpret</a> t f</tt> means we have
+--   <tt>t f a -&gt; f a</tt>.
 --   
 --   For example, <tt><a>Free</a> f</tt> is <tt>f</tt> enhanced with
 --   monadic structure. We get:
