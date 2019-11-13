@@ -81,6 +81,8 @@ module Data.HBifunctor.Associative (
   -- * 'SemigroupIn'
   , SemigroupIn(..)
   , matchingNE
+  , retractNE
+  , interpretNE
   -- ** Utility
   , biget
   , bicollect
@@ -280,6 +282,23 @@ class Associative t => SemigroupIn t f where
 
     default binterpret :: Interpret (NonEmptyBy t) f => (g ~> f) -> (h ~> f) -> t g h ~> f
     binterpret f g = retract . toNonEmptyBy . hbimap f g
+
+-- | An implementation of 'retract' that works for any instance of
+-- @'SemigroupIn' t@ for @'NonEmptyBy' t@.
+--
+-- Can be useful as a default implementation if you already have 'MonoidIn'
+-- implemented.
+retractNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> f
+retractNE = (id !*! biretract @t . hright (retractNE @t))
+          . matchNE @t
+
+-- | An implementation of 'interpret' that works for any instance of
+-- @'SemigroupIn' t@ for @'NonEmptyBy' t@.
+--
+-- Can be useful as a default implementation if you already have 'MonoidIn'
+-- implemented.
+interpretNE :: forall t g f. (SemigroupIn t f, Functor f) => (g ~> f) -> NonEmptyBy t g ~> f
+interpretNE f = retractNE @t . hmap f
 
 -- | An @'NonEmptyBy' t f@ represents the successive application of @t@ to @f@,
 -- over and over again.   So, that means that an @'NonEmptyBy' t f@ must either be

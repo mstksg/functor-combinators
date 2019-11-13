@@ -223,6 +223,7 @@ fromNEProp gx = do
 pureTProp
     :: forall t i f m a.
      ( MonoidIn t i f
+     , Interpret (ListBy t) f
      , Monad m
      , Show (i a)
      , Show (f a), Eq (f a)
@@ -248,7 +249,6 @@ splittingNEProp = isoProp (splittingNE @t)
 matchingLBProp
     :: forall t i f m a.
      ( Matchable t i
-     , MonoidIn t i f
      , Monad m
      , Show (i a), Eq (i a)
      , Show (ListBy t f a), Eq (ListBy t f a)
@@ -262,7 +262,6 @@ matchingLBProp = isoProp (matchingLB @t)
 matchingChainProp
     :: forall t i f m a.
      ( Matchable t i
-     , MonoidIn t i f
      , Monad m
      , Functor f
      , Show (f a), Eq (f a)
@@ -337,6 +336,7 @@ associativeProps gx = testGroup "Associative"
 tensorProps
     :: forall t i f a.
      ( MonoidIn t i f
+     , Interpret (ListBy t) f
      , TestHBifunctor t
      , TestHFunctor (ListBy t)
      , TestHFunctor (NonEmptyBy t)
@@ -369,7 +369,6 @@ tensorProps gx gy = testGroup "Tensor"
 matchableProps
     :: forall t i f a.
      ( Matchable t i
-     , MonoidIn t i f
      , TestHBifunctor t
      , TestHFunctor (ListBy t)
      , TestHFunctor (NonEmptyBy t)
@@ -415,6 +414,7 @@ tensorProps_
     :: forall t i f a.
      ( MonoidIn t i f
      , Interpret (NonEmptyBy t) f
+     , Interpret (ListBy t) f
      , TestHBifunctor t
      , TestHFunctor (ListBy t)
      , TestHFunctor (NonEmptyBy t)
@@ -442,6 +442,7 @@ matchableProps_
     :: forall t i f a.
      ( Matchable t i
      , Interpret (NonEmptyBy t) f
+     , Interpret (ListBy t) f
      , MonoidIn t i f
      , TestHBifunctor t
      , TestHFunctor (ListBy t)

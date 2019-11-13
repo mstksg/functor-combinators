@@ -74,6 +74,8 @@ module Data.HBifunctor.Tensor (
   , nilLB
   , consLB
   , unconsLB
+  , retractLB
+  , interpretLB
   -- ** Utility
   , inL
   , inR
@@ -360,6 +362,23 @@ class (Tensor t i, SemigroupIn t f) => MonoidIn t i f where
 
     default pureT :: Interpret (ListBy t) f => i ~> f
     pureT  = retract . reviewF (splittingLB @t) . L1
+
+-- | An implementation of 'retract' that works for any instance of
+-- @'MonoidIn' t i@ for @'ListBy' t@.
+--
+-- Can be useful as a default implementation if you already have 'MonoidIn'
+-- implemented.
+retractLB :: forall t i f. MonoidIn t i f => ListBy t f ~> f
+retractLB = (pureT @t !*! biretract @t . hright (retractLB @t))
+              . unconsLB @t
+
+-- | An implementation of 'interpret' that works for any instance of
+-- @'MonoidIn' t i@ for @'ListBy' t@.
+--
+-- Can be useful as a default implementation if you already have 'MonoidIn'
+-- implemented.
+interpretLB :: forall t i g f. MonoidIn t i f => (g ~> f) -> ListBy t g ~> f
+interpretLB f = retractLB @t . hmap f
 
 -- | Create the "empty 'ListBy'".
 --
