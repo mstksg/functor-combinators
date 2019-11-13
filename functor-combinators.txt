@@ -2152,6 +2152,20 @@ binterpret :: (SemigroupIn t f, Interpret (NonEmptyBy t) f) => (g ~> f) -> (h ~>
 --   convert between one and the other.
 matchingNE :: (Associative t, Functor f) => NonEmptyBy t f <~> (f :+: t f (NonEmptyBy t f))
 
+-- | An implementation of <a>retract</a> that works for any instance of
+--   <tt><a>SemigroupIn</a> t</tt> for <tt><a>NonEmptyBy</a> t</tt>.
+--   
+--   Can be useful as a default implementation if you already have
+--   <tt>MonoidIn</tt> implemented.
+retractNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> f
+
+-- | An implementation of <a>interpret</a> that works for any instance of
+--   <tt><a>SemigroupIn</a> t</tt> for <tt><a>NonEmptyBy</a> t</tt>.
+--   
+--   Can be useful as a default implementation if you already have
+--   <tt>MonoidIn</tt> implemented.
+interpretNE :: forall t g f. (SemigroupIn t f, Functor f) => (g ~> f) -> NonEmptyBy t g ~> f
+
 -- | Useful wrapper over <a>binterpret</a> to allow you to directly extract
 --   a value <tt>b</tt> out of the <tt>t f a</tt>, if you can convert <tt>f
 --   x</tt> into <tt>b</tt>.
@@ -2578,6 +2592,20 @@ consLB :: Tensor t i => t f (ListBy t f) ~> ListBy t f
 --   This is analogous to the function <tt><a>uncons</a> :: [a] -&gt; Maybe
 --   (a, [a])</tt>.
 unconsLB :: Tensor t i => ListBy t f ~> (i :+: t f (ListBy t f))
+
+-- | An implementation of <a>retract</a> that works for any instance of
+--   <tt><a>MonoidIn</a> t i</tt> for <tt><a>ListBy</a> t</tt>.
+--   
+--   Can be useful as a default implementation if you already have
+--   <a>MonoidIn</a> implemented.
+retractLB :: forall t i f. MonoidIn t i f => ListBy t f ~> f
+
+-- | An implementation of <a>interpret</a> that works for any instance of
+--   <tt><a>MonoidIn</a> t i</tt> for <tt><a>ListBy</a> t</tt>.
+--   
+--   Can be useful as a default implementation if you already have
+--   <a>MonoidIn</a> implemented.
+interpretLB :: forall t i g f. MonoidIn t i f => (g ~> f) -> ListBy t g ~> f
 
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
