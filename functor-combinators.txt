@@ -159,15 +159,15 @@ instance (GHC.Base.Functor f, GHC.Classes.Ord k) => Data.Functor.Alt.Alt (Contro
 instance (GHC.Base.Monoid k, Data.Pointed.Pointed f) => Data.Pointed.Pointed (Control.Applicative.ListF.NEMapF k f)
 instance (GHC.Classes.Eq k, Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.NEMapF k f)
 instance (GHC.Show.Show k, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Applicative.ListF.NEMapF k f)
-instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data k, Data.Data.Data (f a), GHC.Classes.Ord k) => Data.Data.Data (Control.Applicative.ListF.NEMapF k f a)
-instance GHC.Generics.Generic (Control.Applicative.ListF.NEMapF k f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k2, Data.Data.Data k1, Data.Data.Data (f a), GHC.Classes.Ord k1) => Data.Data.Data (Control.Applicative.ListF.NEMapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). GHC.Generics.Generic (Control.Applicative.ListF.NEMapF k1 f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.NEMapF k f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.NEMapF k f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.NEMapF k f)
-instance (GHC.Classes.Ord k, GHC.Classes.Ord (f a)) => GHC.Classes.Ord (Control.Applicative.ListF.NEMapF k f a)
-instance (GHC.Classes.Eq k, GHC.Classes.Eq (f a)) => GHC.Classes.Eq (Control.Applicative.ListF.NEMapF k f a)
-instance (GHC.Classes.Ord k, GHC.Read.Read k, GHC.Read.Read (f a)) => GHC.Read.Read (Control.Applicative.ListF.NEMapF k f a)
-instance (GHC.Show.Show k, GHC.Show.Show (f a)) => GHC.Show.Show (Control.Applicative.ListF.NEMapF k f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Classes.Ord k1, GHC.Classes.Ord (f a)) => GHC.Classes.Ord (Control.Applicative.ListF.NEMapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Classes.Eq k1, GHC.Classes.Eq (f a)) => GHC.Classes.Eq (Control.Applicative.ListF.NEMapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Classes.Ord k1, GHC.Read.Read k1, GHC.Read.Read (f a)) => GHC.Read.Read (Control.Applicative.ListF.NEMapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Show.Show k1, GHC.Show.Show (f a)) => GHC.Show.Show (Control.Applicative.ListF.NEMapF k1 f a)
 instance (GHC.Classes.Ord k, Data.Functor.Classes.Ord1 f) => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.MapF k f)
 instance (GHC.Classes.Ord k, GHC.Read.Read k, Data.Functor.Classes.Read1 f) => Data.Functor.Classes.Read1 (Control.Applicative.ListF.MapF k f)
 instance (GHC.Classes.Ord k, Data.Functor.Alt.Alt f) => GHC.Base.Semigroup (Control.Applicative.ListF.MapF k f a)
@@ -177,73 +177,73 @@ instance (GHC.Base.Functor f, GHC.Classes.Ord k) => Data.Functor.Plus.Plus (Cont
 instance (GHC.Base.Monoid k, Data.Pointed.Pointed f) => Data.Pointed.Pointed (Control.Applicative.ListF.MapF k f)
 instance (GHC.Classes.Eq k, Data.Functor.Classes.Eq1 f) => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.MapF k f)
 instance (GHC.Show.Show k, Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Control.Applicative.ListF.MapF k f)
-instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data k, Data.Data.Data (f a), GHC.Classes.Ord k) => Data.Data.Data (Control.Applicative.ListF.MapF k f a)
-instance GHC.Generics.Generic (Control.Applicative.ListF.MapF k f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k2, Data.Data.Data k1, Data.Data.Data (f a), GHC.Classes.Ord k1) => Data.Data.Data (Control.Applicative.ListF.MapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). GHC.Generics.Generic (Control.Applicative.ListF.MapF k1 f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.MapF k f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.MapF k f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.MapF k f)
-instance (GHC.Classes.Ord k, GHC.Classes.Ord (f a)) => GHC.Classes.Ord (Control.Applicative.ListF.MapF k f a)
-instance (GHC.Classes.Eq k, GHC.Classes.Eq (f a)) => GHC.Classes.Eq (Control.Applicative.ListF.MapF k f a)
-instance (GHC.Classes.Ord k, GHC.Read.Read k, GHC.Read.Read (f a)) => GHC.Read.Read (Control.Applicative.ListF.MapF k f a)
-instance (GHC.Show.Show k, GHC.Show.Show (f a)) => GHC.Show.Show (Control.Applicative.ListF.MapF k f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Classes.Ord k1, GHC.Classes.Ord (f a)) => GHC.Classes.Ord (Control.Applicative.ListF.MapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Classes.Eq k1, GHC.Classes.Eq (f a)) => GHC.Classes.Eq (Control.Applicative.ListF.MapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Classes.Ord k1, GHC.Read.Read k1, GHC.Read.Read (f a)) => GHC.Read.Read (Control.Applicative.ListF.MapF k1 f a)
+instance forall k1 k2 (f :: k2 -> *) (a :: k2). (GHC.Show.Show k1, GHC.Show.Show (f a)) => GHC.Show.Show (Control.Applicative.ListF.MapF k1 f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Applicative f => GHC.Base.Alternative (Control.Applicative.ListF.MaybeF f)
-instance GHC.Base.Semigroup (Control.Applicative.ListF.MaybeF f a)
-instance GHC.Base.Monoid (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Base.Semigroup (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Base.Monoid (Control.Applicative.ListF.MaybeF f a)
 instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.ListF.MaybeF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.MaybeF f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.MaybeF f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.MaybeF f)
-instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.MaybeF f a)
-instance GHC.Generics.Generic (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Control.Applicative.ListF.MaybeF f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.MaybeF f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.MaybeF f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.MaybeF f)
-instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.MaybeF f a)
-instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.MaybeF f a)
-instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.MaybeF f a)
-instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.MaybeF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.MaybeF f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.NonEmptyF f)
-instance GHC.Base.Semigroup (Control.Applicative.ListF.NonEmptyF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Base.Semigroup (Control.Applicative.ListF.NonEmptyF f a)
 instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.ListF.NonEmptyF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.NonEmptyF f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.NonEmptyF f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.NonEmptyF f)
-instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.NonEmptyF f a)
-instance GHC.Generics.Generic (Control.Applicative.ListF.NonEmptyF f a)
+instance forall k (f :: k -> *) (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.NonEmptyF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Control.Applicative.ListF.NonEmptyF f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.NonEmptyF f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.NonEmptyF f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.NonEmptyF f)
-instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.NonEmptyF f a)
-instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.NonEmptyF f a)
-instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.NonEmptyF f a)
-instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.NonEmptyF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.NonEmptyF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.NonEmptyF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.NonEmptyF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.NonEmptyF f a)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Bind.Class.Apply f => Data.Functor.Bind.Class.Apply (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Applicative f => GHC.Base.Applicative (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Applicative f => GHC.Base.Alternative (Control.Applicative.ListF.ListF f)
-instance GHC.Base.Semigroup (Control.Applicative.ListF.ListF f a)
-instance GHC.Base.Monoid (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Base.Semigroup (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Base.Monoid (Control.Applicative.ListF.ListF f a)
 instance Data.Pointed.Pointed f => Data.Pointed.Pointed (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Control.Applicative.ListF.ListF f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Control.Applicative.ListF.ListF f)
-instance (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.ListF f a)
-instance GHC.Generics.Generic (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k, Data.Data.Data (f a)) => Data.Data.Data (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Control.Applicative.ListF.ListF f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Control.Applicative.ListF.ListF f)
 instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Control.Applicative.ListF.ListF f)
 instance GHC.Base.Functor f => GHC.Base.Functor (Control.Applicative.ListF.ListF f)
-instance GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.ListF f a)
-instance GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.ListF f a)
-instance GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.ListF f a)
-instance GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Control.Applicative.ListF.ListF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Control.Applicative.ListF.ListF f a)
 
 
 -- | The church-encoded <a>Freer</a> Monad. Basically provides the free
@@ -587,13 +587,7 @@ overF :: (f <~> g) -> (g ~> g) -> f ~> f
 --   <a>viewF</a>   (<a>fromF</a> i) == <a>reviewF</a> i
 --   <a>reviewF</a> (<a>fromF</a> i) == <a>viewF</a> i
 --   </pre>
-fromF :: (f <~> g) -> g <~> f
-
--- | Profunctor that allows us to implement <a>fromF</a>.
-data Exchange a b s t
-Exchange :: (s -> a) -> (b -> t) -> Exchange a b s t
-instance GHC.Base.Functor (Control.Natural.IsoF.Exchange a b s)
-instance Data.Profunctor.Unsafe.Profunctor (Control.Natural.IsoF.Exchange a b)
+fromF :: forall (f :: Type -> Type) (g :: Type -> Type). () => (f <~> g) -> g <~> f
 
 
 -- | This module provides functor combinators that are the fixed points of
@@ -1292,8 +1286,8 @@ instance Data.HFunctor.Inject Control.Applicative.Free.Ap
 instance Data.HFunctor.Inject Control.Applicative.ListF.ListF
 instance Data.HFunctor.Inject Control.Applicative.ListF.NonEmptyF
 instance Data.HFunctor.Inject Control.Applicative.ListF.MaybeF
-instance GHC.Base.Monoid k => Data.HFunctor.Inject (Control.Applicative.ListF.NEMapF k)
-instance GHC.Base.Monoid k => Data.HFunctor.Inject (Control.Applicative.ListF.MapF k)
+instance GHC.Base.Monoid k2 => Data.HFunctor.Inject (Control.Applicative.ListF.NEMapF k2)
+instance GHC.Base.Monoid k2 => Data.HFunctor.Inject (Control.Applicative.ListF.MapF k2)
 instance Data.HFunctor.Inject Control.Applicative.Step.Step
 instance Data.HFunctor.Inject Control.Applicative.Step.Steps
 instance Data.HFunctor.Inject Control.Applicative.Step.Flagged
@@ -1532,6 +1526,9 @@ instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Classes.Ord 
 instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Classes.Eq (t f a) => GHC.Classes.Eq (Data.HFunctor.Interpret.WrapHF t f a)
 instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Read.Read (t f a) => GHC.Read.Read (Data.HFunctor.Interpret.WrapHF t f a)
 instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Show.Show (t f a) => GHC.Show.Show (Data.HFunctor.Interpret.WrapHF t f a)
+instance forall k (t :: k -> * -> *) (f :: k). Data.Functor.Classes.Show1 (t f) => Data.Functor.Classes.Show1 (Data.HFunctor.Interpret.WrapHF t f)
+instance forall k (t :: k -> * -> *) (f :: k). Data.Functor.Classes.Eq1 (t f) => Data.Functor.Classes.Eq1 (Data.HFunctor.Interpret.WrapHF t f)
+instance forall k (t :: k -> * -> *) (f :: k). Data.Functor.Classes.Ord1 (t f) => Data.Functor.Classes.Ord1 (Data.HFunctor.Interpret.WrapHF t f)
 instance forall k1 k2 (t :: (k1 -> *) -> k2 -> *). Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Interpret.WrapHF t)
 instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.Inject t => Data.HFunctor.Inject (Data.HFunctor.Interpret.WrapHF t)
 instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.HBind t => Data.HFunctor.HBind (Data.HFunctor.Interpret.WrapHF t)
@@ -1603,16 +1600,16 @@ module Data.HBifunctor
 --   This ensures that <a>hleft</a>, <a>hright</a>, and <a>hbimap</a> do
 --   not affect the structure that <tt>t</tt> adds on top of the underlying
 --   functors.
-class HBifunctor t
+class HBifunctor (t :: (k -> Type) -> (k -> Type) -> k -> Type)
 
 -- | Swap out the first transformed functor.
 hleft :: HBifunctor t => (f ~> j) -> t f g ~> t j g
 
 -- | Swap out the second transformed functor.
-hright :: HBifunctor t => (g ~> k) -> t f g ~> t f k
+hright :: HBifunctor t => (g ~> l) -> t f g ~> t f l
 
 -- | Swap out both transformed functors at the same time.
-hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
+hbimap :: HBifunctor t => (f ~> j) -> (g ~> l) -> t f g ~> t j l
 
 -- | Useful newtype to allow us to derive an <a>HFunctor</a> instance from
 --   any instance of <a>HBifunctor</a>, using -XDerivingVia.
@@ -1626,9 +1623,9 @@ hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
 --   
 --   to give us an automatic <a>HFunctor</a> instance and save us some
 --   work.
-newtype WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) a
-WrapHBifunctor :: t f g a -> WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) a
-[unwrapHBifunctor] :: WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) a -> t f g a
+newtype WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) (a :: k)
+WrapHBifunctor :: t f g a -> WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) (a :: k)
+[unwrapHBifunctor] :: WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) (a :: k) -> t f g a
 
 -- | Lift two isomorphisms on each side of a bifunctor to become an
 --   isomorphism between the two bifunctor applications.
@@ -1933,9 +1930,9 @@ instance Data.Functor.Alt.Alt (Data.HFunctor.Final.Final Data.Functor.Alt.Alt f)
 instance GHC.Base.Functor (Data.HFunctor.Final.Final Data.Functor.Plus.Plus f)
 instance Data.Functor.Alt.Alt (Data.HFunctor.Final.Final Data.Functor.Plus.Plus f)
 instance Data.Functor.Plus.Plus (Data.HFunctor.Final.Final Data.Functor.Plus.Plus f)
-instance Data.HFunctor.Internal.HFunctor (Data.HFunctor.Final.Final c)
-instance Data.HFunctor.Inject (Data.HFunctor.Final.Final c)
-instance c f => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Final.Final c) f
+instance forall k (c :: (k -> *) -> GHC.Types.Constraint). Data.HFunctor.Internal.HFunctor (Data.HFunctor.Final.Final c)
+instance forall k (c :: (k -> *) -> GHC.Types.Constraint). Data.HFunctor.Inject (Data.HFunctor.Final.Final c)
+instance forall k (c :: (k -> *) -> GHC.Types.Constraint) (f :: k -> *). c f => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Final.Final c) f
 
 
 -- | This module provides tools for working with binary functor combinators
@@ -2229,6 +2226,11 @@ infixr 5 !*!
 (!$!) :: SemigroupIn t (Const b) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 infixr 5 !$!
 
+-- | A version of <a>!*!</a> specifically for <a>:+:</a> that is
+--   poly-kinded
+(!?!) :: (f ~> h) -> (g ~> h) -> (f :+: g) ~> h
+infixr 5 !?!
+
 -- | A newtype wrapper meant to be used to define polymorphic
 --   <a>SemigroupIn</a> instances. See documentation for <a>SemigroupIn</a>
 --   for more information.
@@ -2253,8 +2255,11 @@ instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3
 instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Classes.Eq (t f g a) => GHC.Classes.Eq (Data.HBifunctor.Associative.WrapHBF t f g a)
 instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Read.Read (t f g a) => GHC.Read.Read (Data.HBifunctor.Associative.WrapHBF t f g a)
 instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Show.Show (t f g a) => GHC.Show.Show (Data.HBifunctor.Associative.WrapHBF t f g a)
-instance forall k1 k2 (t :: (k2 -> *) -> (k2 -> *) -> k1 -> *) (f :: k2 -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.Associative.WrapHBF t f)
-instance forall k1 k2 k3 (t :: (k1 -> *) -> (k2 -> *) -> k3 -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.Associative.WrapHBF t)
+instance forall k (t :: (k -> *) -> (k -> *) -> k -> *) (f :: k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.Associative.WrapHBF t f)
+instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Functor.Classes.Show1 (t f g) => Data.Functor.Classes.Show1 (Data.HBifunctor.Associative.WrapHBF t f g)
+instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Functor.Classes.Eq1 (t f g) => Data.Functor.Classes.Eq1 (Data.HBifunctor.Associative.WrapHBF t f g)
+instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Functor.Classes.Ord1 (t f g) => Data.Functor.Classes.Ord1 (Data.HBifunctor.Associative.WrapHBF t f g)
+instance forall k (t :: (k -> *) -> (k -> *) -> k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.Associative.WrapHBF t)
 instance Data.HBifunctor.Associative.Associative t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.Associative.WrapHBF t)
 instance Data.Functor.Alt.Alt f => Data.HBifunctor.Associative.SemigroupIn (GHC.Generics.:*:) f
 instance Data.Functor.Alt.Alt f => Data.HBifunctor.Associative.SemigroupIn Data.Functor.Product.Product f
@@ -2702,11 +2707,6 @@ splittingNE :: Matchable t i => NonEmptyBy t f <~> t f (ListBy t f)
 --   like how <tt>[a]</tt> is isomorphic to <tt><a>Maybe</a>
 --   (<a>NonEmpty</a> a)</tt>.
 matchingLB :: forall t i f. Matchable t i => ListBy t f <~> (i :+: NonEmptyBy t f)
-instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Data.HBifunctor.Tensor.WrapF f)
-instance Data.HBifunctor.Tensor.Tensor t i => Data.HBifunctor.Tensor.Tensor (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Tensor.WrapF i)
-instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Data.HBifunctor.Tensor.WrapF f)
-instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Data.HBifunctor.Tensor.WrapF f)
-instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Data.HBifunctor.Tensor.WrapF f)
 instance forall k (f :: k -> *) (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k, Data.Data.Data (f a)) => Data.Data.Data (Data.HBifunctor.Tensor.WrapF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Data.HBifunctor.Tensor.WrapF f a)
 instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Data.HBifunctor.Tensor.WrapF f)
@@ -2716,6 +2716,10 @@ instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.O
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.HBifunctor.Tensor.WrapF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Data.HBifunctor.Tensor.WrapF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Data.HBifunctor.Tensor.WrapF f a)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Data.HBifunctor.Tensor.WrapF f)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Data.HBifunctor.Tensor.WrapF f)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Data.HBifunctor.Tensor.WrapF f)
+instance Data.HBifunctor.Tensor.Tensor t i => Data.HBifunctor.Tensor.Tensor (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Tensor.WrapF i)
 instance Data.HBifunctor.Tensor.Matchable (GHC.Generics.:*:) Data.Proxy.Proxy
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Product.Product Data.Proxy.Proxy
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Day.Day Data.Functor.Identity.Identity
@@ -3049,7 +3053,7 @@ instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.F
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (Data.Functor.Classes.Ord1 i, Data.Functor.Classes.Ord1 (t f (Data.HFunctor.Chain.Chain t i f))) => Data.Functor.Classes.Ord1 (Data.HFunctor.Chain.Chain t i f)
 instance forall k (t :: k -> (* -> *) -> * -> *) (f :: k) (i :: * -> *). (Data.Functor.Classes.Show1 (t f (Data.HFunctor.Chain.Chain t i f)), Data.Functor.Classes.Show1 i) => Data.Functor.Classes.Show1 (Data.HFunctor.Chain.Chain t i f)
 instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Base.Functor i, Data.Functor.Classes.Read1 (t f (Data.HFunctor.Chain.Chain t i f)), Data.Functor.Classes.Read1 i) => Data.Functor.Classes.Read1 (Data.HFunctor.Chain.Chain t i f)
-instance forall k1 k2 (t :: (k1 -> *) -> (k2 -> *) -> k2 -> *) (i :: k2 -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain t i)
+instance forall k (t :: (k -> *) -> (k -> *) -> k -> *) (i :: k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain t i)
 instance Data.HBifunctor.Tensor.Tensor t i => Data.HFunctor.Inject (Data.HFunctor.Chain.Chain t i)
 instance Data.HBifunctor.Tensor.MonoidIn t i f => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Chain.Chain t i) f
 instance (Data.HBifunctor.Tensor.Tensor t i, GHC.Base.Functor f) => Data.HBifunctor.Associative.SemigroupIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HFunctor.Chain.Chain t i f)
@@ -3348,16 +3352,16 @@ collectI :: Interpret t (Const [b]) => (forall x. f x -> b) -> t f a -> [b]
 --   This ensures that <a>hleft</a>, <a>hright</a>, and <a>hbimap</a> do
 --   not affect the structure that <tt>t</tt> adds on top of the underlying
 --   functors.
-class HBifunctor t
+class HBifunctor (t :: (k -> Type) -> (k -> Type) -> k -> Type)
 
 -- | Swap out the first transformed functor.
 hleft :: HBifunctor t => (f ~> j) -> t f g ~> t j g
 
 -- | Swap out the second transformed functor.
-hright :: HBifunctor t => (g ~> k) -> t f g ~> t f k
+hright :: HBifunctor t => (g ~> l) -> t f g ~> t f l
 
 -- | Swap out both transformed functors at the same time.
-hbimap :: HBifunctor t => (f ~> j) -> (g ~> k) -> t f g ~> t j k
+hbimap :: HBifunctor t => (f ~> j) -> (g ~> l) -> t f g ~> t j l
 
 -- | An <a>HBifunctor</a> where it doesn't matter which binds first is
 --   <a>Associative</a>. Knowing this gives us a lot of power to rearrange
@@ -3565,6 +3569,11 @@ bicollect :: SemigroupIn t (Const [b]) => (forall x. f x -> b) -> (forall x. g x
 -- | Infix alias for <a>binterpret</a>
 (!*!) :: SemigroupIn t h => (f ~> h) -> (g ~> h) -> t f g ~> h
 infixr 5 !*!
+
+-- | A version of <a>!*!</a> specifically for <a>:+:</a> that is
+--   poly-kinded
+(!?!) :: (f ~> h) -> (g ~> h) -> (f :+: g) ~> h
+infixr 5 !?!
 
 -- | Infix alias for <a>biget</a>
 --   
