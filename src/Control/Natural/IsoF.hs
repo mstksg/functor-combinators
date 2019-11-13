@@ -1,8 +1,3 @@
-{-# LANGUAGE DeriveFunctor      #-}
-{-# LANGUAGE ExplicitNamespaces #-}
-{-# LANGUAGE RankNTypes         #-}
-{-# LANGUAGE TypeOperators      #-}
-
 -- |
 -- Module      : Control.Natural.IsoF
 -- Copyright   : (c) Justin Le 2019
@@ -20,11 +15,11 @@ module Control.Natural.IsoF (
   , isoF
   , viewF, reviewF, overF
   , fromF
-  , Exchange(..)
   ) where
 
-import           Data.Profunctor
 import           Control.Natural
+import           Data.Kind
+import           Data.Profunctor
 import           Data.Tagged
 
 -- | The type of an isomorphism between two functors.  @f '<~>' g@ means that
@@ -105,15 +100,7 @@ overF i f = i f
 -- 'reviewF' ('fromF' i) == 'viewF' i
 -- @
 fromF
-    :: f <~> g
+    :: forall (f :: Type -> Type) (g :: Type -> Type). ()
+    => f <~> g
     -> g <~> f
-fromF i = isoF g f
-  where
-    Exchange f g = i (Exchange id id)
-
--- | Profunctor that allows us to implement 'fromF'.
-data Exchange a b s t = Exchange (s -> a) (b -> t)
-  deriving Functor
-
-instance Profunctor (Exchange a b) where
-    dimap f g (Exchange x y) = Exchange (x . f) (g . y)
+fromF i = isoF (reviewF i) (viewF i)

@@ -1,25 +1,3 @@
-{-# LANGUAGE ConstraintKinds         #-}
-{-# LANGUAGE DeriveDataTypeable      #-}
-{-# LANGUAGE DeriveFoldable          #-}
-{-# LANGUAGE DeriveFunctor           #-}
-{-# LANGUAGE DeriveGeneric           #-}
-{-# LANGUAGE DeriveTraversable       #-}
-{-# LANGUAGE FlexibleInstances       #-}
-{-# LANGUAGE InstanceSigs            #-}
-{-# LANGUAGE LambdaCase              #-}
-{-# LANGUAGE MultiParamTypeClasses   #-}
-{-# LANGUAGE PolyKinds               #-}
-{-# LANGUAGE RankNTypes              #-}
-{-# LANGUAGE ScopedTypeVariables     #-}
-{-# LANGUAGE StandaloneDeriving      #-}
-{-# LANGUAGE TemplateHaskell         #-}
-{-# LANGUAGE TypeFamilies            #-}
-{-# LANGUAGE TypeInType              #-}
-{-# LANGUAGE TypeOperators           #-}
-{-# LANGUAGE UndecidableInstances    #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE ViewPatterns            #-}
-
 -- |
 -- Module      : Data.HFunctor
 -- Copyright   : (c) Justin Le 2019
@@ -75,6 +53,7 @@ import           Data.Functor.Reverse
 import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor.Internal
+import           Data.Kind
 import           Data.List.NonEmpty             (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable
@@ -407,7 +386,7 @@ instance Inject Flagged where
 instance Inject (These1 f) where
     inject = That1
 
-instance Applicative f => Inject (Comp f) where
+instance Applicative f => Inject (Comp f :: (Type -> Type) -> Type -> Type) where
     inject x = pure () :>>= const x
 
 instance Applicative f => Inject ((:.:) f) where

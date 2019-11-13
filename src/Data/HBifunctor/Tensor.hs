@@ -1,38 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes        #-}
-{-# LANGUAGE ConstraintKinds            #-}
-{-# LANGUAGE DefaultSignatures          #-}
-{-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveFoldable             #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveTraversable          #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE DerivingVia                #-}
-{-# LANGUAGE EmptyCase                  #-}
-{-# LANGUAGE EmptyDataDeriving          #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE FunctionalDependencies     #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs               #-}
-{-# LANGUAGE KindSignatures             #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE PatternSynonyms            #-}
-{-# LANGUAGE QuantifiedConstraints      #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE StandaloneDeriving         #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TupleSections              #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeInType                 #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE ViewPatterns               #-}
-
 -- |
 -- Module      : Data.HBifunctor.Tensor
 -- Copyright   : (c) Justin Le 2019
@@ -98,10 +63,10 @@ import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Data
-import           Data.Deriving
 import           Data.Function
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
+import           Data.Functor.Classes
 import           Data.Functor.Day            (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
@@ -115,7 +80,7 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty          (NonEmpty(..))
-import           GHC.Generics hiding         (C)
+import           GHC.Generics
 import qualified Data.Functor.Day            as D
 import qualified Data.Map.NonEmpty           as NEM
 
@@ -243,12 +208,12 @@ leftIdentity = isoF intro2 elim2
 -- | 'leftIdentity' ('intro1' and 'elim1') for ':+:' actually does not
 -- require 'Functor'.  This is the more general version.
 sumLeftIdentity :: f <~> V1 :+: f
-sumLeftIdentity = isoF R1 (absurd1 !*! id)
+sumLeftIdentity = isoF R1 (absurd1 !?! id)
 
 -- | 'rightIdentity' ('intro2' and 'elim2') for ':+:' actually does not
 -- require 'Functor'.  This is the more general version.
 sumRightIdentity :: f <~> f :+: V1
-sumRightIdentity = isoF L1 (id !*! absurd1)
+sumRightIdentity = isoF L1 (id !?! absurd1)
 
 -- | 'leftIdentity' ('intro1' and 'elim1') for ':*:' actually does not
 -- require 'Functor'.  This is the more general version.
@@ -727,10 +692,14 @@ instance Matchable Sum V1 where
 newtype WrapF f a = WrapF { unwrapF :: f a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
-deriveShow1 ''WrapF
-deriveRead1 ''WrapF
-deriveEq1 ''WrapF
-deriveOrd1 ''WrapF
+instance Show1 f => Show1 (WrapF f) where
+    liftShowsPrec sp sl d (WrapF x) = showsUnaryWith (liftShowsPrec sp sl) "WrapF" d x
+
+instance Eq1 f => Eq1 (WrapF f) where
+    liftEq eq (WrapF x) (WrapF y) = liftEq eq x y
+
+instance Ord1 f => Ord1 (WrapF f) where
+    liftCompare c (WrapF x) (WrapF y) = liftCompare c x y
 
 instance Tensor t i => Tensor (WrapHBF t) (WrapF i) where
     type ListBy (WrapHBF t) = ListBy t

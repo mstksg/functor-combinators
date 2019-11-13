@@ -1,5 +1,3 @@
-{-# LANGUAGE ExplicitNamespaces #-}
-
 -- |
 -- Module      : Data.Functor.Combinator
 -- Copyright   : (c) Justin Le 2019
@@ -56,6 +54,7 @@ module Data.Functor.Combinator (
   , SemigroupIn(..)
   , biget, bicollect
   , (!*!)
+  , (!?!)
   , (!$!)
   -- *** Tensor
   , Tensor(..)

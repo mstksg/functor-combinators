@@ -1,15 +1,3 @@
-{-# LANGUAGE DeriveFunctor       #-}
-{-# LANGUAGE DerivingVia         #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving  #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE TypeInType          #-}
-{-# LANGUAGE TypeOperators       #-}
-
 module Data.HFunctor.Internal (
     HFunctor(..)
   , HBifunctor(..)
@@ -49,7 +37,7 @@ import           Data.Tagged
 import           Data.Vinyl.CoRec
 import           Data.Vinyl.Core                (Rec)
 import           Data.Vinyl.Recursive
-import           GHC.Generics hiding            (C)
+import           GHC.Generics
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free.Fast  as FAF
 import qualified Control.Applicative.Free.Final as FA
@@ -131,17 +119,17 @@ class HFunctor t where
 --
 -- This ensures that 'hleft', 'hright', and 'hbimap' do not affect the
 -- structure that @t@ adds on top of the underlying functors.
-class HBifunctor t where
+class HBifunctor (t :: (k -> Type) -> (k -> Type) -> k -> Type) where
     -- | Swap out the first transformed functor.
     hleft  :: f ~> j -> t f g ~> t j g
     hleft = (`hbimap` id)
 
     -- | Swap out the second transformed functor.
-    hright :: g ~> k -> t f g ~> t f k
+    hright :: g ~> l -> t f g ~> t f l
     hright = hbimap id
 
     -- | Swap out both transformed functors at the same time.
-    hbimap :: f ~> j -> g ~> k -> t f g ~> t j k
+    hbimap :: f ~> j -> g ~> l -> t f g ~> t j l
     hbimap f g = hleft f . hright g
 
     {-# MINIMAL hleft, hright | hbimap #-}
@@ -157,7 +145,7 @@ class HBifunctor t where
 -- @
 --
 -- to give us an automatic 'HFunctor' instance and save us some work.
-newtype WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) a
+newtype WrappedHBifunctor t (f :: k -> Type) (g :: k -> Type) (a :: k)
     = WrapHBifunctor { unwrapHBifunctor :: t f g a }
   deriving Functor
 

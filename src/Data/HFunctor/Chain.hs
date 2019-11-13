@@ -1,20 +1,3 @@
-{-# LANGUAGE DeriveFoldable        #-}
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DeriveTraversable     #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE InstanceSigs          #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeInType            #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
-
 -- |
 -- Module      : Data.HFunctor.Chain
 -- Copyright   : (c) Justin Le 2019
@@ -76,7 +59,7 @@ import           Data.HFunctor
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.Typeable
-import           GHC.Generics hiding         (C)
+import           GHC.Generics
 
 -- | A useful construction that works like a "non-empty linked list" of @t
 -- f@ applied to itself multiple times.  That is, it contains @t f f@, @t

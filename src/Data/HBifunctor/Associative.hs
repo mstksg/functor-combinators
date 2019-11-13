@@ -1,38 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes        #-}
-{-# LANGUAGE ConstraintKinds            #-}
-{-# LANGUAGE DefaultSignatures          #-}
-{-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveFoldable             #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveTraversable          #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE DerivingVia                #-}
-{-# LANGUAGE EmptyCase                  #-}
-{-# LANGUAGE EmptyDataDeriving          #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE FunctionalDependencies     #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs               #-}
-{-# LANGUAGE KindSignatures             #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE PatternSynonyms            #-}
-{-# LANGUAGE QuantifiedConstraints      #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE StandaloneDeriving         #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TupleSections              #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeInType                 #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE ViewPatterns               #-}
-
 -- |
 -- Module      : Data.HBifunctor.Associative
 -- Copyright   : (c) Justin Le 2019
@@ -88,6 +53,7 @@ module Data.HBifunctor.Associative (
   , bicollect
   , (!*!)
   , (!$!)
+  , (!?!)
   , WrapHBF(..)
   ) where
 
@@ -105,6 +71,7 @@ import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
+import           Data.Functor.Classes
 import           Data.Functor.Day             (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
@@ -117,7 +84,7 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty           (NonEmpty(..))
-import           GHC.Generics hiding          (C)
+import           GHC.Generics
 import qualified Data.Functor.Day             as D
 import qualified Data.Map.NonEmpty            as NEM
 
@@ -373,6 +340,18 @@ infixr 5 !$!
     ~> h
 (!*!) = binterpret
 infixr 5 !*!
+
+-- | A version of '!*!' specifically for ':+:' that is poly-kinded
+(!?!)
+    :: (f ~> h)
+    -> (g ~> h)
+    -> (f :+: g)
+    ~> h
+(!?!) f g = \case
+    L1 x -> f x
+    R1 y -> g y
+infixr 5 !?!
+
 
 -- | Useful wrapper over 'biget' to allow you to collect a @b@ from all
 -- instances of @f@ and @g@ inside a @t f g a@.
@@ -674,10 +653,14 @@ instance SemigroupIn RightF f where
 newtype WrapHBF t f g a = WrapHBF { unwrapHBF :: t f g a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
--- deriveShow1 ''WrapHBF
--- deriveRead1 ''WrapHBF
--- deriveEq1 ''WrapHBF
--- deriveOrd1 ''WrapHBF
+instance Show1 (t f g) => Show1 (WrapHBF t f g) where
+    liftShowsPrec sp sl d (WrapHBF x) = showsUnaryWith (liftShowsPrec sp sl) "WrapHBF" d x
+
+instance Eq1 (t f g) => Eq1 (WrapHBF t f g) where
+    liftEq eq (WrapHBF x) (WrapHBF y) = liftEq eq x y
+
+instance Ord1 (t f g) => Ord1 (WrapHBF t f g) where
+    liftCompare c (WrapHBF x) (WrapHBF y) = liftCompare c x y
 
 instance HBifunctor t => HBifunctor (WrapHBF t) where
     hbimap f g (WrapHBF x) = WrapHBF (hbimap f g x)

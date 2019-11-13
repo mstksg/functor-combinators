@@ -1,13 +1,3 @@
-{-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE EmptyCase            #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeInType           #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
 
 module Tests.Util (
@@ -38,6 +28,7 @@ import           Data.Functor.Sum
 import           Data.GADT.Show
 import           Data.HBifunctor.Tensor
 import           Data.HFunctor.Chain
+import           Data.Kind
 import           Data.Semigroup                 (Any(..))
 import           Data.Semigroup.Traversable
 import           GHC.Generics                   (M1(..))
@@ -345,7 +336,7 @@ instance TestHFunctor Coyoneda
 instance TestHFunctor WrappedApplicative
 instance TestHFunctor Reverse
 instance TestHFunctor Backwards
-instance Applicative f => TestHFunctor (Comp f)
+instance Applicative f => TestHFunctor (Comp f :: (Type -> Type) -> Type -> Type)
 instance TestHFunctor (M1 i c)
 instance Plus f => TestHFunctor ((:*:) f)
 instance Plus f => TestHFunctor (Product f)

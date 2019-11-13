@@ -1,23 +1,3 @@
-{-# LANGUAGE ConstraintKinds         #-}
-{-# LANGUAGE DefaultSignatures       #-}
-{-# LANGUAGE DeriveDataTypeable      #-}
-{-# LANGUAGE DeriveFoldable          #-}
-{-# LANGUAGE DeriveFunctor           #-}
-{-# LANGUAGE DeriveGeneric           #-}
-{-# LANGUAGE DeriveTraversable       #-}
-{-# LANGUAGE FlexibleContexts        #-}
-{-# LANGUAGE FlexibleInstances       #-}
-{-# LANGUAGE InstanceSigs            #-}
-{-# LANGUAGE LambdaCase              #-}
-{-# LANGUAGE MultiParamTypeClasses   #-}
-{-# LANGUAGE PolyKinds               #-}
-{-# LANGUAGE RankNTypes              #-}
-{-# LANGUAGE ScopedTypeVariables     #-}
-{-# LANGUAGE TemplateHaskell         #-}
-{-# LANGUAGE TypeFamilies            #-}
-{-# LANGUAGE TypeOperators           #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-
 -- |
 -- Module      : Data.HFunctor.Interpret
 -- Copyright   : (c) Justin Le 2019
@@ -83,6 +63,7 @@ import           Control.Natural
 import           Data.Coerce
 import           Data.Data
 import           Data.Functor.Bind
+import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -93,7 +74,7 @@ import           Data.HFunctor
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
-import           GHC.Generics hiding            (C)
+import           GHC.Generics
 import qualified Control.Alternative.Free       as Alt
 import qualified Control.Applicative.Free       as Ap
 import qualified Control.Applicative.Free.Fast  as FAF
@@ -427,10 +408,14 @@ instance Interpret t f => Interpret (HFree t) f where
 newtype WrapHF t f a = WrapHF { unwrapHF :: t f a }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
--- deriveShow1 ''WrapHF
--- deriveRead1 ''WrapHF
--- deriveEq1 ''WrapHF
--- deriveOrd1 ''WrapHF
+instance Show1 (t f) => Show1 (WrapHF t f) where
+    liftShowsPrec sp sl d (WrapHF x) = showsUnaryWith (liftShowsPrec sp sl) "WrapHF" d x
+
+instance Eq1 (t f) => Eq1 (WrapHF t f) where
+    liftEq eq (WrapHF x) (WrapHF y) = liftEq eq x y
+
+instance Ord1 (t f) => Ord1 (WrapHF t f) where
+    liftCompare c (WrapHF x) (WrapHF y) = liftCompare c x y
 
 instance HFunctor t => HFunctor (WrapHF t) where
     hmap f (WrapHF x) = WrapHF (hmap f x)

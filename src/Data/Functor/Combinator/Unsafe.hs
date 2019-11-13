@@ -1,7 +1,3 @@
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
-
 -- |
 -- Module      : Data.Functor.Combinator.Unsafe
 -- Copyright   : (c) Justin Le 2019

@@ -41,6 +41,47 @@ ghc-options:
 - -Wredundant-constraints
 - -Werror=incomplete-patterns
 
+default-extensions:
+- AllowAmbiguousTypes
+- ConstraintKinds
+- DataKinds
+- DefaultSignatures
+- DeriveDataTypeable
+- DeriveFoldable
+- DeriveFunctor
+- DeriveGeneric
+- DeriveTraversable
+- DerivingStrategies
+- DerivingVia
+- EmptyCase
+- EmptyDataDeriving
+- ExistentialQuantification
+- ExplicitNamespaces
+- FlexibleContexts
+- FlexibleInstances
+- FunctionalDependencies
+- GADTs
+- GeneralizedNewtypeDeriving
+- InstanceSigs
+- KindSignatures
+- LambdaCase
+- MultiParamTypeClasses
+- OverloadedStrings
+- PatternSynonyms
+- QuantifiedConstraints
+- RankNTypes
+- ScopedTypeVariables
+- StandaloneDeriving
+- TemplateHaskell
+- TupleSections
+- TypeApplications
+- TypeFamilies
+- TypeInType
+- TypeOperators
+- UndecidableInstances
+- UndecidableSuperClasses
+- ViewPatterns
+
 dependencies:
 - base >= 4.12 && < 5
 - bifunctors
