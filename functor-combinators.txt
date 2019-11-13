@@ -1426,6 +1426,25 @@ module Data.HFunctor.Interpret
 --   
 --   That is, if we lift a value into our structure, then immediately
 --   interpret it out as itself, it should lave the value unchanged.
+--   
+--   Note that instances of this class are <i>intended</i> to be written
+--   with <tt>t</tt> as a fixed type constructor, and <tt>f</tt> to be
+--   allowed to vary freely:
+--   
+--   <pre>
+--   instance Monad f =&gt; Interpret Free f
+--   </pre>
+--   
+--   Any other sort of instance and it's easy to run into problems with
+--   type inference. If you want to write an instance that's "polymorphic"
+--   on tensor choice, use the <a>WrapHF</a> newtype wrapper over a type
+--   variable, where the second argument also uses a type constructor:
+--   
+--   <pre>
+--   instance Interpret (WrapHF t) (MyFunctor t)
+--   </pre>
+--   
+--   This will prevent problems with overloaded instances.
 class Inject t => Interpret t f
 
 -- | Remove the <tt>f</tt> out of the enhanced <tt>t f</tt> structure,
@@ -1488,6 +1507,34 @@ collectI :: Interpret t (Const [b]) => (forall x. f x -> b) -> t f a -> [b]
 --   Requiring <tt><a>AndC</a> <a>Show</a> <a>Eq</a> a</tt> is the same as
 --   requiring <tt>(<a>Show</a> a, <a>Eq</a> a)</tt>.
 class (c a, d a) => AndC c d a
+
+-- | A newtype wrapper meant to be used to define polymorphic
+--   <a>Interpret</a> instances. See documentation for <a>Interpret</a> for
+--   more information.
+--   
+--   Please do not ever define an instance of <a>Interpret</a> "naked" on
+--   the second parameter:
+--   
+--   <pre>
+--   instance Interpret (WrapHF t) f
+--   </pre>
+--   
+--   As that would globally ruin everything using <a>WrapHF</a>.
+newtype WrapHF t f a
+WrapHF :: t f a -> WrapHF t f a
+[unwrapHF] :: WrapHF t f a -> t f a
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable t, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Data.Data (t f a)) => Data.Data.Data (Data.HFunctor.Interpret.WrapHF t f a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Generics.Generic (Data.HFunctor.Interpret.WrapHF t f a)
+instance forall k (t :: k -> * -> *) (f :: k). Data.Traversable.Traversable (t f) => Data.Traversable.Traversable (Data.HFunctor.Interpret.WrapHF t f)
+instance forall k (t :: k -> * -> *) (f :: k). Data.Foldable.Foldable (t f) => Data.Foldable.Foldable (Data.HFunctor.Interpret.WrapHF t f)
+instance forall k (t :: k -> * -> *) (f :: k). GHC.Base.Functor (t f) => GHC.Base.Functor (Data.HFunctor.Interpret.WrapHF t f)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Classes.Ord (t f a) => GHC.Classes.Ord (Data.HFunctor.Interpret.WrapHF t f a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Classes.Eq (t f a) => GHC.Classes.Eq (Data.HFunctor.Interpret.WrapHF t f a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Read.Read (t f a) => GHC.Read.Read (Data.HFunctor.Interpret.WrapHF t f a)
+instance forall k1 k2 (t :: k1 -> k2 -> *) (f :: k1) (a :: k2). GHC.Show.Show (t f a) => GHC.Show.Show (Data.HFunctor.Interpret.WrapHF t f a)
+instance forall k1 k2 (t :: (k1 -> *) -> k2 -> *). Data.HFunctor.Internal.HFunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Interpret.WrapHF t)
+instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.Inject t => Data.HFunctor.Inject (Data.HFunctor.Interpret.WrapHF t)
+instance forall k (t :: (k -> *) -> k -> *). Data.HFunctor.HBind t => Data.HFunctor.HBind (Data.HFunctor.Interpret.WrapHF t)
 instance forall k (c :: k -> GHC.Types.Constraint) (a :: k) (d :: k -> GHC.Types.Constraint). (c a, d a) => Data.HFunctor.Interpret.AndC c d a
 instance GHC.Base.Functor f => Data.HFunctor.Interpret.Interpret Data.Functor.Coyoneda.Coyoneda f
 instance GHC.Base.Applicative f => Data.HFunctor.Interpret.Interpret Control.Applicative.Free.Ap f
@@ -2048,6 +2095,25 @@ disassoc :: (Associative t, Functor f, Functor g, Functor h) => t (t f g) h ~> t
 --   category on <a>Comp</a> is exactly the functors that are instances of
 --   <a>Bind</a>.</li>
 --   </ul>
+--   
+--   Note that instances of this class are <i>intended</i> to be written
+--   with <tt>t</tt> as a fixed type constructor, and <tt>f</tt> to be
+--   allowed to vary freely:
+--   
+--   <pre>
+--   instance Bind f =&gt; SemigroupIn Comp f
+--   </pre>
+--   
+--   Any other sort of instance and it's easy to run into problems with
+--   type inference. If you want to write an instance that's "polymorphic"
+--   on tensor choice, use the <a>WrapHBF</a> newtype wrapper over a type
+--   variable, where the second argument also uses a type constructor:
+--   
+--   <pre>
+--   instance SemigroupIn (WrapHBF t) (MyFunctor t i)
+--   </pre>
+--   
+--   This will prevent problems with overloaded instances.
 class Associative t => SemigroupIn t f
 
 -- | The <a>HBifunctor</a> analogy of <a>retract</a>. It retracts
@@ -2148,6 +2214,34 @@ infixr 5 !*!
 --   </pre>
 (!$!) :: SemigroupIn t (Const b) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> b
 infixr 5 !$!
+
+-- | A newtype wrapper meant to be used to define polymorphic
+--   <a>SemigroupIn</a> instances. See documentation for <a>SemigroupIn</a>
+--   for more information.
+--   
+--   Please do not ever define an instance of <a>SemigroupIn</a> "naked" on
+--   the second parameter:
+--   
+--   <pre>
+--   instance SemigroupIn (WrapHBF t) f
+--   </pre>
+--   
+--   As that would globally ruin everything using <a>WrapHBF</a>.
+newtype WrapHBF t f g a
+WrapHBF :: t f g a -> WrapHBF t f g a
+[unwrapHBF] :: WrapHBF t f g a -> t f g a
+instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable g, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable t, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Typeable.Internal.Typeable k3, Data.Data.Data (t f g a)) => Data.Data.Data (Data.HBifunctor.Associative.WrapHBF t f g a)
+instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Generics.Generic (Data.HBifunctor.Associative.WrapHBF t f g a)
+instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Traversable.Traversable (t f g) => Data.Traversable.Traversable (Data.HBifunctor.Associative.WrapHBF t f g)
+instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Foldable.Foldable (t f g) => Data.Foldable.Foldable (Data.HBifunctor.Associative.WrapHBF t f g)
+instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). GHC.Base.Functor (t f g) => GHC.Base.Functor (Data.HBifunctor.Associative.WrapHBF t f g)
+instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Classes.Ord (t f g a) => GHC.Classes.Ord (Data.HBifunctor.Associative.WrapHBF t f g a)
+instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Classes.Eq (t f g a) => GHC.Classes.Eq (Data.HBifunctor.Associative.WrapHBF t f g a)
+instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Read.Read (t f g a) => GHC.Read.Read (Data.HBifunctor.Associative.WrapHBF t f g a)
+instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Show.Show (t f g a) => GHC.Show.Show (Data.HBifunctor.Associative.WrapHBF t f g a)
+instance forall k1 k2 (t :: (k2 -> *) -> (k2 -> *) -> k1 -> *) (f :: k2 -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.Associative.WrapHBF t f)
+instance forall k1 k2 k3 (t :: (k1 -> *) -> (k2 -> *) -> k3 -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HBifunctor (Data.HBifunctor.Associative.WrapHBF t)
+instance Data.HBifunctor.Associative.Associative t => Data.HBifunctor.Associative.Associative (Data.HBifunctor.Associative.WrapHBF t)
 instance Data.Functor.Alt.Alt f => Data.HBifunctor.Associative.SemigroupIn (GHC.Generics.:*:) f
 instance Data.Functor.Alt.Alt f => Data.HBifunctor.Associative.SemigroupIn Data.Functor.Product.Product f
 instance Data.Functor.Bind.Class.Apply f => Data.HBifunctor.Associative.SemigroupIn Data.Functor.Day.Day f
@@ -2347,6 +2441,9 @@ prodRightIdentity :: g <~> (g :*: Proxy)
 --   possible without it: it gives us a "base case" for recursion in a lot
 --   of cases.
 --   
+--   Essentially, we get an <tt>i ~&gt; f</tt>, <a>pureT</a>, where we can
+--   introduce an <tt>f a</tt> as long as we have an <tt>i a</tt>.
+--   
 --   Formally, if we have <tt><a>Tensor</a> t i</tt>, we are enriching the
 --   category of endofunctors with monoid structure, turning it into a
 --   monoidal category. Different choices of <tt>t</tt> give different
@@ -2391,7 +2488,27 @@ prodRightIdentity :: g <~> (g :*: Proxy)
 --   monoidal, and <a>Comp</a> is just one of them. Similarly, the class of
 --   functors that are monoids in the category of endofunctors enriched by
 --   <a>Day</a> are <a>Applicative</a>.
-class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f
+--   
+--   Note that instances of this class are <i>intended</i> to be written
+--   with <tt>t</tt> and <tt>i</tt> to be fixed type constructors, and
+--   <tt>f</tt> to be allowed to vary freely:
+--   
+--   <pre>
+--   instance Monad f =&gt; MonoidIn Comp Identity f
+--   </pre>
+--   
+--   Any other sort of instance and it's easy to run into problems with
+--   type inference. If you want to write an instance that's "polymorphic"
+--   on tensor choice, use the <a>WrapHBF</a> and <a>WrapF</a> newtype
+--   wrappers over type variables, where the third argument also uses a
+--   type constructor:
+--   
+--   <pre>
+--   instance MonoidIn (WrapHBF t) (WrapF i) (MyFunctor t i)
+--   </pre>
+--   
+--   This will prevent problems with overloaded instances.
+class (Tensor t i, SemigroupIn t f) => MonoidIn t i f
 
 -- | If we have an <tt>i</tt>, we can generate an <tt>f</tt> based on how
 --   it interacts with <tt>t</tt>.
@@ -2412,6 +2529,25 @@ class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f
 --   in the category of endofunctors with respect to tensor <tt>t</tt>.
 pureT :: MonoidIn t i f => i ~> f
 
+-- | If we have an <tt>i</tt>, we can generate an <tt>f</tt> based on how
+--   it interacts with <tt>t</tt>.
+--   
+--   Specialized (and simplified), this type is:
+--   
+--   <pre>
+--   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; <a>Identity</a> a -&gt; f a  -- <a>pure</a>
+--   pureT @<a>Comp</a>  :: <a>Monad</a> f =&gt; Identity a -&gt; f a        -- <a>return</a>
+--   pureT @(<a>:*:</a>) :: <a>Plus</a> f =&gt; <a>Proxy</a> a -&gt; f a            -- <a>zero</a>
+--   </pre>
+--   
+--   Note that because <tt>t</tt> appears nowhere in the input or output
+--   types, you must always use this with explicit type application syntax
+--   (like <tt>pureT @Day</tt>)
+--   
+--   Along with <a>biretract</a>, this function makes <tt>f</tt> a monoid
+--   in the category of endofunctors with respect to tensor <tt>t</tt>.
+pureT :: (MonoidIn t i f, Interpret (ListBy t) f) => i ~> f
+
 -- | Create the "empty <a>ListBy</a>".
 --   
 --   If <tt><a>ListBy</a> t f</tt> represents multiple applications of
@@ -2427,11 +2563,11 @@ pureT :: MonoidIn t i f => i ~> f
 --   nilLB @<a>Comp</a> :: Identity ~&gt; <a>Free</a> f
 --   nilLB @(<a>:*:</a>) :: <a>Proxy</a> ~&gt; <a>ListF</a> f
 --   </pre>
-nilLB :: forall t i f. MonoidIn t i f => i ~> ListBy t f
+nilLB :: forall t i f. Tensor t i => i ~> ListBy t f
 
 -- | Lets us "cons" an application of <tt>f</tt> to the front of an
 --   <tt><a>ListBy</a> t f</tt>.
-consLB :: MonoidIn t i f => t f (ListBy t f) ~> ListBy t f
+consLB :: Tensor t i => t f (ListBy t f) ~> ListBy t f
 
 -- | "Pattern match" on an <tt><a>ListBy</a> t</tt>
 --   
@@ -2472,6 +2608,22 @@ outL :: (Tensor t Proxy, Functor f) => t f g ~> f
 --   See <a>prodOutR</a> for a version that does not require
 --   <tt><a>Functor</a> g</tt>, specifically for <a>:*:</a>.
 outR :: (Tensor t Proxy, Functor g) => t f g ~> g
+
+-- | A newtype wrapper meant to be used to define polymorphic
+--   <a>MonoidIn</a> instances. See documentation for <tt>MoniodIn</tt> for
+--   more information.
+--   
+--   Please do not ever define an instance of <a>MonoidIn</a> "naked" on
+--   the third parameter:
+--   
+--   <pre>
+--   instance MonidIn (WrapHBF t) (WrapF i) f
+--   </pre>
+--   
+--   As that would globally ruin everything using <a>WrapHBF</a>.
+newtype WrapF f a
+WrapF :: f a -> WrapF f a
+[unwrapF] :: WrapF f a -> f a
 
 -- | <a>outL</a> for <a>:*:</a> actually does not require <a>Functor</a>.
 --   This is the more general version.
@@ -2521,7 +2673,21 @@ splittingNE :: Matchable t i => NonEmptyBy t f <~> t f (ListBy t f)
 --   (<tt>i</tt>) or the non-empty case (<tt><a>NonEmptyBy</a> t f</tt>),
 --   like how <tt>[a]</tt> is isomorphic to <tt><a>Maybe</a>
 --   (<a>NonEmpty</a> a)</tt>.
-matchingLB :: forall t i f. (Matchable t i, MonoidIn t i f) => ListBy t f <~> (i :+: NonEmptyBy t f)
+matchingLB :: forall t i f. Matchable t i => ListBy t f <~> (i :+: NonEmptyBy t f)
+instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Data.HBifunctor.Tensor.WrapF f)
+instance Data.HBifunctor.Tensor.Tensor t i => Data.HBifunctor.Tensor.Tensor (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Tensor.WrapF i)
+instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Data.HBifunctor.Tensor.WrapF f)
+instance Data.Functor.Classes.Read1 f => Data.Functor.Classes.Read1 (Data.HBifunctor.Tensor.WrapF f)
+instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Data.HBifunctor.Tensor.WrapF f)
+instance forall k (f :: k -> *) (a :: k). (Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable k, Data.Data.Data (f a)) => Data.Data.Data (Data.HBifunctor.Tensor.WrapF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Generics.Generic (Data.HBifunctor.Tensor.WrapF f a)
+instance Data.Traversable.Traversable f => Data.Traversable.Traversable (Data.HBifunctor.Tensor.WrapF f)
+instance Data.Foldable.Foldable f => Data.Foldable.Foldable (Data.HBifunctor.Tensor.WrapF f)
+instance GHC.Base.Functor f => GHC.Base.Functor (Data.HBifunctor.Tensor.WrapF f)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.Ord (Data.HBifunctor.Tensor.WrapF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.HBifunctor.Tensor.WrapF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Data.HBifunctor.Tensor.WrapF f a)
+instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Data.HBifunctor.Tensor.WrapF f a)
 instance Data.HBifunctor.Tensor.Matchable (GHC.Generics.:*:) Data.Proxy.Proxy
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Product.Product Data.Proxy.Proxy
 instance Data.HBifunctor.Tensor.Matchable Data.Functor.Day.Day Data.Functor.Identity.Identity
@@ -2595,6 +2761,25 @@ module Data.HFunctor.Chain
 --   f</tt>; this could be considered a fundamental property of
 --   monoid-ness.
 --   
+--   Another way of thinking of this is that <tt><a>Chain</a> t i</tt> is
+--   the "free <tt><a>MonoidIn</a> t i</tt>". Given any functor <tt>f</tt>,
+--   <tt><a>Chain</a> t i f</tt> is a monoid in the monoidal category of
+--   endofunctors enriched by <tt>t</tt>. So, <tt><a>Chain</a>
+--   <tt>Comp</tt> <tt>Identity</tt></tt> is the "free <a>Monad</a>",
+--   <tt><a>Chain</a> <tt>Day</tt> <tt>Identity</tt></tt> is the "free
+--   <a>Applicative</a>", etc. You "lift" from <tt>f a</tt> to
+--   <tt><a>Chain</a> t i f a</tt> using <a>inject</a>.
+--   
+--   Note: this instance doesn't exist directly because of restrictions in
+--   typeclasses, but is implemented as
+--   
+--   <pre>
+--   <a>Tensor</a> t i =&gt; <a>MonoidIn</a> (<a>WrapHBF</a> t) (<a>WrapF</a> i) (<a>Chain</a> t i f)
+--   </pre>
+--   
+--   where <a>pureT</a> is <a>Done</a> and <a>biretract</a> is
+--   <a>appendChain</a>.
+--   
 --   This construction is inspired by
 --   <a>http://oleg.fi/gists/posts/2018-02-21-single-free.html</a>
 data Chain t i f a
@@ -2625,7 +2810,7 @@ unfoldChain :: forall t f (g :: Type -> Type) i. HBifunctor t => (g ~> (i :+: t 
 --   <pre>
 --   <a>unroll</a> = <a>unfoldChain</a> <a>unconsLB</a>
 --   </pre>
-unroll :: MonoidIn t i f => ListBy t f ~> Chain t i f
+unroll :: Tensor t i => ListBy t f ~> Chain t i f
 
 -- | A type <tt><a>ListBy</a> t</tt> is supposed to represent the
 --   successive application of <tt>t</tt>s to itself. <a>rerollNE</a> takes
@@ -2643,7 +2828,7 @@ unroll :: MonoidIn t i f => ListBy t f ~> Chain t i f
 --   <a>reroll</a> @<a>Comp</a>
 --       :: <a>Chain</a> Comp <a>Identity</a> f a -&gt; <a>Free</a> f a
 --   </pre>
-reroll :: forall t i f. MonoidIn t i f => Chain t i f ~> ListBy t f
+reroll :: forall t i f. Tensor t i => Chain t i f ~> ListBy t f
 
 -- | A type <tt><a>ListBy</a> t</tt> is supposed to represent the
 --   successive application of <tt>t</tt>s to itself. The type
@@ -2653,12 +2838,17 @@ reroll :: forall t i f. MonoidIn t i f => Chain t i f ~> ListBy t f
 --   
 --   <a>unrolling</a> states that the two types are isormorphic. Use
 --   <a>unroll</a> and <a>reroll</a> to convert between the two.
-unrolling :: MonoidIn t i f => ListBy t f <~> Chain t i f
+unrolling :: Tensor t i => ListBy t f <~> Chain t i f
 
 -- | <a>Chain</a> is a monoid with respect to <tt>t</tt>: we can "combine"
 --   them in an associative way. The identity here is anything made with
 --   the <a>Done</a> constructor.
-appendChain :: forall t i f. MonoidIn t i f => t (Chain t i f) (Chain t i f) ~> Chain t i f
+--   
+--   This is essentially <a>biretract</a>, but only requiring
+--   <tt><a>Tensor</a> t i</tt>: it comes from the fact that
+--   <tt><a>Chain1</a> t i</tt> is the "free <tt><a>MonoidIn</a> t i</tt>".
+--   <a>pureT</a> is <a>Done</a>.
+appendChain :: forall t i f. Tensor t i => t (Chain t i f) (Chain t i f) ~> Chain t i f
 
 -- | A useful construction that works like a "non-empty linked list" of
 --   <tt>t f</tt> applied to itself multiple times. That is, it contains
@@ -2700,6 +2890,29 @@ appendChain :: forall t i f. MonoidIn t i f => t (Chain t i f) (Chain t i f) ~> 
 --   
 --   See <a>Chain</a> for a version that has an "empty" value.
 --   
+--   Another way of thinking of this is that <tt><a>Chain1</a> t</tt> is
+--   the "free <tt><a>SemigroupIn</a> t</tt>". Given any functor
+--   <tt>f</tt>, <tt><a>Chain1</a> t f</tt> is a semigroup in the
+--   semigroupoidal category of endofunctors enriched by <tt>t</tt>. So,
+--   <tt><a>Chain1</a> <tt>Comp</tt></tt> is the "free <tt>Bind</tt>",
+--   <tt><a>Chain1</a> <tt>Day</tt></tt> is the "free <tt>Apply</tt>", etc.
+--   You "lift" from <tt>f a</tt> to <tt><a>Chain1</a> t f a</tt> using
+--   <a>inject</a>.
+--   
+--   Note: this instance doesn't exist directly because of restrictions in
+--   typeclasses, but is implemented as
+--   
+--   <pre>
+--   <a>Associative</a> t =&gt; <a>SemigroupIn</a> (<a>WrapHBF</a> t) (<a>Chain1</a> t f)
+--   </pre>
+--   
+--   where <a>biretract</a> is <a>appendChain1</a>.
+--   
+--   You can fully "collapse" a <tt><a>Chain</a> t i f</tt> into an
+--   <tt>f</tt> with <a>retract</a>, if you have <tt><a>MonoidIn</a> t i
+--   f</tt>; this could be considered a fundamental property of
+--   monoid-ness.
+--   
 --   This construction is inspired by iteratees and machines.
 data Chain1 t f a
 Done1 :: f a -> Chain1 t f a
@@ -2729,7 +2942,7 @@ unfoldChain1 :: forall t f (g :: Type -> Type). HBifunctor t => (g ~> (f :+: t f
 --   
 --   <a>unrollingNE</a> states that the two types are isormorphic. Use
 --   <a>unrollNE</a> and <a>rerollNE</a> to convert between the two.
-unrollingNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f <~> Chain1 t f
+unrollingNE :: forall t f. (Associative t, Functor f) => NonEmptyBy t f <~> Chain1 t f
 
 -- | A type <tt><a>NonEmptyBy</a> t</tt> is supposed to represent the
 --   successive application of <tt>t</tt>s to itself. <a>unrollNE</a> makes
@@ -2739,7 +2952,7 @@ unrollingNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f <~> Ch
 --   <pre>
 --   <a>unrollNE</a> = <a>unfoldChain1</a> <a>matchNE</a>
 --   </pre>
-unrollNE :: (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> Chain1 t f
+unrollNE :: (Associative t, Functor f) => NonEmptyBy t f ~> Chain1 t f
 
 -- | A type <tt><a>NonEmptyBy</a> t</tt> is supposed to represent the
 --   successive application of <tt>t</tt>s to itself. <a>rerollNE</a> takes
@@ -2749,11 +2962,15 @@ unrollNE :: (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> Chain1 t f
 --   <pre>
 --   <a>rerollNE</a> = <a>foldChain1</a> <a>inject</a> <a>consNE</a>
 --   </pre>
-rerollNE :: SemigroupIn t f => Chain1 t f ~> NonEmptyBy t f
+rerollNE :: Associative t => Chain1 t f ~> NonEmptyBy t f
 
 -- | <a>Chain1</a> is a semigroup with respect to <tt>t</tt>: we can
 --   "combine" them in an associative way.
-appendChain1 :: forall t f. (SemigroupIn t f, Functor f) => t (Chain1 t f) (Chain1 t f) ~> Chain1 t f
+--   
+--   This is essentially <a>biretract</a>, but only requiring
+--   <tt><a>Associative</a> t</tt>: it comes from the fact that
+--   <tt><a>Chain1</a> t</tt> is the "free <tt><a>SemigroupIn</a> t</tt>".
+appendChain1 :: forall t f. (Associative t, Functor f) => t (Chain1 t f) (Chain1 t f) ~> Chain1 t f
 
 -- | A <a>Chain1</a> is "one or more linked <tt>f</tt>s", and a
 --   <a>Chain</a> is "zero or more linked <tt>f</tt>s". So, we can convert
@@ -2768,23 +2985,23 @@ fromChain1 :: Tensor t i => Chain1 t f ~> Chain t i f
 --   <tt>f</tt>s, and a <tt><a>Chain</a> t i f</tt> is a possibly-empty
 --   linked list of <tt>f</tt>s. This witnesses the fact that the former is
 --   isomorphic to <tt>f</tt> consed to the latter.
-splittingChain1 :: forall t i f. (MonoidIn t i f, Matchable t i, Functor f) => Chain1 t f <~> t f (Chain t i f)
+splittingChain1 :: forall t i f. (Matchable t i, Functor f) => Chain1 t f <~> t f (Chain t i f)
 
 -- | The "forward" function representing <a>splittingChain1</a>. Provided
 --   here as a separate function because it does not require
 --   <tt><a>Functor</a> f</tt>.
-splitChain1 :: forall t i f. MonoidIn t i f => Chain1 t f ~> t f (Chain t i f)
+splitChain1 :: forall t i f. Tensor t i => Chain1 t f ~> t f (Chain t i f)
 
 -- | A <tt><a>Chain</a> t i f</tt> is a linked list of <tt>f</tt>s, and a
 --   <tt><a>Chain1</a> t f</tt> is a non-empty linked list of <tt>f</tt>s.
 --   This witnesses the fact that a <tt><a>Chain</a> t i f</tt> is either
 --   empty (<tt>i</tt>) or non-empty (<tt><a>Chain1</a> t f</tt>).
-matchingChain :: forall t i f. (MonoidIn t i f, Matchable t i, Functor f) => Chain t i f <~> (i :+: Chain1 t f)
+matchingChain :: forall t i f. (Tensor t i, Matchable t i, Functor f) => Chain t i f <~> (i :+: Chain1 t f)
 
 -- | The "reverse" function representing <a>matchingChain</a>. Provided
 --   here as a separate function because it does not require
 --   <tt><a>Functor</a> f</tt>.
-unmatchChain :: forall t i f. MonoidIn t i f => (i :+: Chain1 t f) ~> Chain t i f
+unmatchChain :: forall t i f. Tensor t i => (i :+: Chain1 t f) ~> Chain t i f
 instance forall k (t :: (k -> *) -> (k -> *) -> k -> *) (f :: k -> *) (a :: k). GHC.Generics.Generic (Data.HFunctor.Chain.Chain1 t f a)
 instance forall k (f :: k -> *) (a :: k) (t :: (k -> *) -> (k -> *) -> k -> *). (GHC.Classes.Eq (f a), GHC.Classes.Eq (t f (Data.HFunctor.Chain.Chain1 t f) a)) => GHC.Classes.Eq (Data.HFunctor.Chain.Chain1 t f a)
 instance forall k (f :: k -> *) (a :: k) (t :: (k -> *) -> (k -> *) -> k -> *). (GHC.Classes.Ord (f a), GHC.Classes.Ord (t f (Data.HFunctor.Chain.Chain1 t f) a)) => GHC.Classes.Ord (Data.HFunctor.Chain.Chain1 t f a)
@@ -2807,6 +3024,8 @@ instance forall k (i :: * -> *) (t :: k -> (* -> *) -> * -> *) (f :: k). (GHC.Ba
 instance forall k1 k2 (t :: (k1 -> *) -> (k2 -> *) -> k2 -> *) (i :: k2 -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain t i)
 instance Data.HBifunctor.Tensor.Tensor t i => Data.HFunctor.Inject (Data.HFunctor.Chain.Chain t i)
 instance Data.HBifunctor.Tensor.MonoidIn t i f => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Chain.Chain t i) f
+instance (Data.HBifunctor.Tensor.Tensor t i, GHC.Base.Functor f) => Data.HBifunctor.Associative.SemigroupIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HFunctor.Chain.Chain t i f)
+instance (Data.HBifunctor.Tensor.Tensor t i, GHC.Base.Functor f) => Data.HBifunctor.Tensor.MonoidIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Tensor.WrapF i) (Data.HFunctor.Chain.Chain t i f)
 instance (Data.Functor.Classes.Eq1 f, Data.Functor.Classes.Eq1 (t f (Data.HFunctor.Chain.Chain1 t f))) => Data.Functor.Classes.Eq1 (Data.HFunctor.Chain.Chain1 t f)
 instance (Data.Functor.Classes.Ord1 f, Data.Functor.Classes.Ord1 (t f (Data.HFunctor.Chain.Chain1 t f))) => Data.Functor.Classes.Ord1 (Data.HFunctor.Chain.Chain1 t f)
 instance (Data.Functor.Classes.Show1 (t f (Data.HFunctor.Chain.Chain1 t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.Chain.Chain1 t f)
@@ -2814,6 +3033,7 @@ instance (GHC.Base.Functor f, Data.Functor.Classes.Read1 (t f (Data.HFunctor.Cha
 instance forall k (t :: (k -> *) -> (k -> *) -> k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HFunctor.Chain.Chain1 t)
 instance forall k (t :: (k -> *) -> (k -> *) -> k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Inject (Data.HFunctor.Chain.Chain1 t)
 instance (Data.HFunctor.Internal.HBifunctor t, Data.HBifunctor.Associative.SemigroupIn t f) => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Chain.Chain1 t) f
+instance (Data.HBifunctor.Associative.Associative t, GHC.Base.Functor f) => Data.HBifunctor.Associative.SemigroupIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HFunctor.Chain.Chain1 t f)
 
 
 -- | Functor combinators and tools (typeclasses and utiility functions) to
@@ -2994,6 +3214,25 @@ inject :: Inject t => f ~> t f
 --   
 --   That is, if we lift a value into our structure, then immediately
 --   interpret it out as itself, it should lave the value unchanged.
+--   
+--   Note that instances of this class are <i>intended</i> to be written
+--   with <tt>t</tt> as a fixed type constructor, and <tt>f</tt> to be
+--   allowed to vary freely:
+--   
+--   <pre>
+--   instance Monad f =&gt; Interpret Free f
+--   </pre>
+--   
+--   Any other sort of instance and it's easy to run into problems with
+--   type inference. If you want to write an instance that's "polymorphic"
+--   on tensor choice, use the <a>WrapHF</a> newtype wrapper over a type
+--   variable, where the second argument also uses a type constructor:
+--   
+--   <pre>
+--   instance Interpret (WrapHF t) (MyFunctor t)
+--   </pre>
+--   
+--   This will prevent problems with overloaded instances.
 class Inject t => Interpret t f
 
 -- | Remove the <tt>f</tt> out of the enhanced <tt>t f</tt> structure,
@@ -3206,6 +3445,25 @@ toNonEmptyBy :: Associative t => t f f ~> NonEmptyBy t f
 --   category on <a>Comp</a> is exactly the functors that are instances of
 --   <a>Bind</a>.</li>
 --   </ul>
+--   
+--   Note that instances of this class are <i>intended</i> to be written
+--   with <tt>t</tt> as a fixed type constructor, and <tt>f</tt> to be
+--   allowed to vary freely:
+--   
+--   <pre>
+--   instance Bind f =&gt; SemigroupIn Comp f
+--   </pre>
+--   
+--   Any other sort of instance and it's easy to run into problems with
+--   type inference. If you want to write an instance that's "polymorphic"
+--   on tensor choice, use the <a>WrapHBF</a> newtype wrapper over a type
+--   variable, where the second argument also uses a type constructor:
+--   
+--   <pre>
+--   instance SemigroupIn (WrapHBF t) (MyFunctor t i)
+--   </pre>
+--   
+--   This will prevent problems with overloaded instances.
 class Associative t => SemigroupIn t f
 
 -- | The <a>HBifunctor</a> analogy of <a>retract</a>. It retracts
@@ -3421,6 +3679,9 @@ fromNE :: Tensor t i => NonEmptyBy t f ~> ListBy t f
 --   possible without it: it gives us a "base case" for recursion in a lot
 --   of cases.
 --   
+--   Essentially, we get an <tt>i ~&gt; f</tt>, <a>pureT</a>, where we can
+--   introduce an <tt>f a</tt> as long as we have an <tt>i a</tt>.
+--   
 --   Formally, if we have <tt><a>Tensor</a> t i</tt>, we are enriching the
 --   category of endofunctors with monoid structure, turning it into a
 --   monoidal category. Different choices of <tt>t</tt> give different
@@ -3465,7 +3726,27 @@ fromNE :: Tensor t i => NonEmptyBy t f ~> ListBy t f
 --   monoidal, and <a>Comp</a> is just one of them. Similarly, the class of
 --   functors that are monoids in the category of endofunctors enriched by
 --   <a>Day</a> are <a>Applicative</a>.
-class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f
+--   
+--   Note that instances of this class are <i>intended</i> to be written
+--   with <tt>t</tt> and <tt>i</tt> to be fixed type constructors, and
+--   <tt>f</tt> to be allowed to vary freely:
+--   
+--   <pre>
+--   instance Monad f =&gt; MonoidIn Comp Identity f
+--   </pre>
+--   
+--   Any other sort of instance and it's easy to run into problems with
+--   type inference. If you want to write an instance that's "polymorphic"
+--   on tensor choice, use the <a>WrapHBF</a> and <a>WrapF</a> newtype
+--   wrappers over type variables, where the third argument also uses a
+--   type constructor:
+--   
+--   <pre>
+--   instance MonoidIn (WrapHBF t) (WrapF i) (MyFunctor t i)
+--   </pre>
+--   
+--   This will prevent problems with overloaded instances.
+class (Tensor t i, SemigroupIn t f) => MonoidIn t i f
 
 -- | If we have an <tt>i</tt>, we can generate an <tt>f</tt> based on how
 --   it interacts with <tt>t</tt>.
@@ -3486,6 +3767,25 @@ class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f
 --   in the category of endofunctors with respect to tensor <tt>t</tt>.
 pureT :: MonoidIn t i f => i ~> f
 
+-- | If we have an <tt>i</tt>, we can generate an <tt>f</tt> based on how
+--   it interacts with <tt>t</tt>.
+--   
+--   Specialized (and simplified), this type is:
+--   
+--   <pre>
+--   <a>pureT</a> @<a>Day</a>   :: <a>Applicative</a> f =&gt; <a>Identity</a> a -&gt; f a  -- <a>pure</a>
+--   pureT @<a>Comp</a>  :: <a>Monad</a> f =&gt; Identity a -&gt; f a        -- <a>return</a>
+--   pureT @(<a>:*:</a>) :: <a>Plus</a> f =&gt; <a>Proxy</a> a -&gt; f a            -- <a>zero</a>
+--   </pre>
+--   
+--   Note that because <tt>t</tt> appears nowhere in the input or output
+--   types, you must always use this with explicit type application syntax
+--   (like <tt>pureT @Day</tt>)
+--   
+--   Along with <a>biretract</a>, this function makes <tt>f</tt> a monoid
+--   in the category of endofunctors with respect to tensor <tt>t</tt>.
+pureT :: (MonoidIn t i f, Interpret (ListBy t) f) => i ~> f
+
 -- | Create the "empty <a>ListBy</a>".
 --   
 --   If <tt><a>ListBy</a> t f</tt> represents multiple applications of
@@ -3501,11 +3801,11 @@ pureT :: MonoidIn t i f => i ~> f
 --   nilLB @<a>Comp</a> :: Identity ~&gt; <a>Free</a> f
 --   nilLB @(<a>:*:</a>) :: <a>Proxy</a> ~&gt; <a>ListF</a> f
 --   </pre>
-nilLB :: forall t i f. MonoidIn t i f => i ~> ListBy t f
+nilLB :: forall t i f. Tensor t i => i ~> ListBy t f
 
 -- | Lets us "cons" an application of <tt>f</tt> to the front of an
 --   <tt><a>ListBy</a> t f</tt>.
-consLB :: MonoidIn t i f => t f (ListBy t f) ~> ListBy t f
+consLB :: Tensor t i => t f (ListBy t f) ~> ListBy t f
 
 -- | Convenient wrapper over <a>intro1</a> that lets us introduce an
 --   arbitrary functor <tt>g</tt> to the right of an <tt>f</tt>.
