@@ -110,6 +110,27 @@ import           GHC.Generics hiding         (C)
 --
 -- See 'Chain' for a version that has an "empty" value.
 --
+-- Another way of thinking of this is that @'Chain1' t@ is the "free
+-- @'SemigroupIn' t@".  Given any functor @f@, @'Chain1' t f@ is
+-- a semigroup in the semigroupoidal category of endofunctors enriched by @t@.  So, @'Chain1'
+-- 'Comp'@ is the "free 'Bind'", @'Chain1' 'Day'@ is
+-- the "free 'Apply'", etc.  You "lift" from @f a@ to @'Chain1' t f a@ using
+-- 'inject'.
+--
+-- Note: this instance doesn't exist directly because of restrictions in
+-- typeclasses, but is implemented as
+--
+-- @
+-- 'Associative' t => 'SemigroupIn' ('WrapHBF' t) ('Chain1' t f)
+-- @
+--
+-- where 'biretract' is 'appendChain1'.
+--
+-- You can fully "collapse" a @'Chain' t i f@ into an @f@ with
+-- 'retract', if you have @'MonoidIn' t i f@; this could be considered
+-- a fundamental property of monoid-ness.
+--
+--
 -- This construction is inspired by iteratees and machines.
 data Chain1 t f a = Done1 (f a)
                   | More1 (t f (Chain1 t f) a)
@@ -208,7 +229,7 @@ instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
 --
 -- 'unrollingNE' states that the two types are isormorphic.  Use 'unrollNE'
 -- and 'rerollNE' to convert between the two.
-unrollingNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f <~> Chain1 t f
+unrollingNE :: forall t f. (Associative t, Functor f) => NonEmptyBy t f <~> Chain1 t f
 unrollingNE = isoF unrollNE rerollNE
 
 -- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
@@ -219,7 +240,7 @@ unrollingNE = isoF unrollNE rerollNE
 -- @
 -- 'unrollNE' = 'unfoldChain1' 'matchNE'
 -- @
-unrollNE :: (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> Chain1 t f
+unrollNE :: (Associative t, Functor f) => NonEmptyBy t f ~> Chain1 t f
 unrollNE = unfoldChain1 matchNE
 
 -- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
@@ -229,15 +250,19 @@ unrollNE = unfoldChain1 matchNE
 -- @
 -- 'rerollNE' = 'foldChain1' 'inject' 'consNE'
 -- @
-rerollNE :: SemigroupIn t f => Chain1 t f ~> NonEmptyBy t f
+rerollNE :: Associative t => Chain1 t f ~> NonEmptyBy t f
 rerollNE = foldChain1 inject consNE
 
 -- | 'Chain1' is a semigroup with respect to @t@: we can "combine" them in
 -- an associative way.
 --
+-- This is essentially 'biretract', but only requiring @'Associative' t@:
+-- it comes from the fact that @'Chain1' t@ is the "free @'SemigroupIn'
+-- t@".
+--
 -- @since 0.1.1.0
 appendChain1
-    :: forall t f. (SemigroupIn t f, Functor f)
+    :: forall t f. (Associative t, Functor f)
     => t (Chain1 t f) (Chain1 t f) ~> Chain1 t f
 appendChain1 = unrollNE
              . appendNE
@@ -268,6 +293,22 @@ appendChain1 = unrollNE
 -- You can fully "collapse" a @'Chain' t i f@ into an @f@ with
 -- 'retract', if you have @'MonoidIn' t i f@; this could be considered
 -- a fundamental property of monoid-ness.
+--
+-- Another way of thinking of this is that @'Chain' t i@ is the "free
+-- @'MonoidIn' t i@".  Given any functor @f@, @'Chain' t i f@ is a monoid
+-- in the monoidal category of endofunctors enriched by @t@.  So, @'Chain'
+-- 'Comp' 'Identity'@ is the "free 'Monad'", @'Chain' 'Day' 'Identity'@ is
+-- the "free 'Applicative'", etc.  You "lift" from @f a@ to @'Chain' t i f a@
+-- using 'inject'.
+--
+-- Note: this instance doesn't exist directly because of restrictions in
+-- typeclasses, but is implemented as
+--
+-- @
+-- 'Tensor' t i => 'MonoidIn' ('WrapHBF' t) ('WrapF' i) ('Chain' t i f)
+-- @
+--
+-- where 'pureT' is 'Done' and 'biretract' is 'appendChain'.
 --
 -- This construction is inspired by
 -- <http://oleg.fi/gists/posts/2018-02-21-single-free.html>
@@ -378,7 +419,7 @@ fromChain1 = foldChain1 (More . hright Done . intro1) More
 -- 'unrolling' states that the two types are isormorphic.  Use 'unroll'
 -- and 'reroll' to convert between the two.
 unrolling
-    :: MonoidIn t i f
+    :: Tensor t i
     => ListBy t f <~> Chain t i f
 unrolling = isoF unroll reroll
 
@@ -391,7 +432,7 @@ unrolling = isoF unroll reroll
 -- 'unroll' = 'unfoldChain' 'unconsLB'
 -- @
 unroll
-    :: MonoidIn t i f
+    :: Tensor t i
     => ListBy t f ~> Chain t i f
 unroll = unfoldChain unconsLB
 
@@ -411,7 +452,7 @@ unroll = unfoldChain unconsLB
 --     :: 'Chain' Comp 'Data.Functor.Identity.Identity' f a -> 'Control.Monad.Freer.Church.Free' f a
 -- @
 reroll
-    :: forall t i f. MonoidIn t i f
+    :: forall t i f. Tensor t i
     => Chain t i f ~> ListBy t f
 reroll = foldChain (nilLB @t) consLB
 
@@ -419,9 +460,13 @@ reroll = foldChain (nilLB @t) consLB
 -- an associative way.  The identity here is anything made with the 'Done'
 -- constructor.
 --
+-- This is essentially 'biretract', but only requiring @'Tensor' t i@: it
+-- comes from the fact that @'Chain1' t i@ is the "free @'MonoidIn' t i@".
+-- 'pureT' is 'Done'.
+--
 -- @since 0.1.1.0
 appendChain
-    :: forall t i f. MonoidIn t i f
+    :: forall t i f. Tensor t i
     => t (Chain t i f) (Chain t i f) ~> Chain t i f
 appendChain = unroll
             . appendLB
@@ -432,7 +477,7 @@ appendChain = unroll
 -- witnesses the fact that the former is isomorphic to @f@ consed to the
 -- latter.
 splittingChain1
-    :: forall t i f. (MonoidIn t i f, Matchable t i, Functor f)
+    :: forall t i f. (Matchable t i, Functor f)
     => Chain1 t f <~> t f (Chain t i f)
 splittingChain1 = fromF unrollingNE
                 . splittingNE @t
@@ -441,7 +486,7 @@ splittingChain1 = fromF unrollingNE
 -- | The "forward" function representing 'splittingChain1'.  Provided here
 -- as a separate function because it does not require @'Functor' f@.
 splitChain1
-    :: forall t i f. MonoidIn t i f
+    :: forall t i f. Tensor t i
     => Chain1 t f ~> t f (Chain t i f)
 splitChain1 = hright (unroll @t) . splitNE @t . rerollNE
 
@@ -449,7 +494,7 @@ splitChain1 = hright (unroll @t) . splitNE @t . rerollNE
 -- a non-empty linked list of @f@s.  This witnesses the fact that
 -- a @'Chain' t i f@ is either empty (@i@) or non-empty (@'Chain1' t f@).
 matchingChain
-    :: forall t i f. (MonoidIn t i f, Matchable t i, Functor f)
+    :: forall t i f. (Tensor t i, Matchable t i, Functor f)
     => Chain t i f <~> i :+: Chain1 t f
 matchingChain = fromF unrolling
               . matchingLB @t
@@ -458,6 +503,21 @@ matchingChain = fromF unrolling
 -- | The "reverse" function representing 'matchingChain'.  Provided here
 -- as a separate function because it does not require @'Functor' f@.
 unmatchChain
-    :: forall t i f. MonoidIn t i f
+    :: forall t i f. Tensor t i
     => i :+: Chain1 t f ~> Chain t i f
 unmatchChain = unroll . (nilLB @t !*! fromNE @t) . hright rerollNE
+
+-- | @'Chain1' t@ is the "free @'SemigroupIn' t@".  However, we have to
+-- wrap @t@ in 'WrapHBF' to prevent overlapping instances.
+instance (Associative t, Functor f) => SemigroupIn (WrapHBF t) (Chain1 t f) where
+    biretract = appendChain1 . unwrapHBF
+    binterpret f g = biretract . hbimap f g
+
+instance (Tensor t i, Functor f) => SemigroupIn (WrapHBF t) (Chain t i f) where
+    biretract = appendChain . unwrapHBF
+    binterpret f g = biretract . hbimap f g
+
+-- | @'Chain' t i@ is the "free @'MonoidIn' t i@".  However, we have to
+-- wrap @t@ in 'WrapHBF' and @i@ in 'WrapF' to prevent overlapping instances.
+instance (Tensor t i, Functor f) => MonoidIn (WrapHBF t) (WrapF i) (Chain t i f) where
+    pureT = Done . unwrapF

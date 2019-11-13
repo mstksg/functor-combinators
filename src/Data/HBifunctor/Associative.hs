@@ -86,6 +86,7 @@ module Data.HBifunctor.Associative (
   , bicollect
   , (!*!)
   , (!$!)
+  , WrapHBF(..)
   ) where
 
 import           Control.Applicative
@@ -240,6 +241,24 @@ disassoc = reviewF associating
 -- *  The class of functors that are semigroups in the semigroupoidal
 --    category on 'Comp' is exactly the functors that are instances of
 --    'Bind'.
+--
+-- Note that instances of this class are /intended/ to be written with @t@
+-- as a fixed type constructor, and @f@ to be allowed to vary freely:
+--
+-- @
+-- instance Bind f => SemigroupIn Comp f
+-- @
+--
+-- Any other sort of instance and it's easy to run into problems with type
+-- inference.  If you want to write an instance that's "polymorphic" on
+-- tensor choice, use the 'WrapHBF' newtype wrapper over a type variable,
+-- where the second argument also uses a type constructor:
+--
+-- @
+-- instance SemigroupIn (WrapHBF t) (MyFunctor t i)
+-- @
+--
+-- This will prevent problems with overloaded instances.
 class Associative t => SemigroupIn t f where
     -- | The 'HBifunctor' analogy of 'retract'. It retracts /both/ @f@s
     -- into a single @f@, effectively fully mixing them together.
@@ -621,3 +640,42 @@ instance Associative RightF where
 instance SemigroupIn RightF f where
     biretract      = runRightF
     binterpret _ g = g . runRightF
+
+-- | A newtype wrapper meant to be used to define polymorphic 'SemigroupIn'
+-- instances.  See documentation for 'SemigroupIn' for more information.
+--
+-- Please do not ever define an instance of 'SemigroupIn' "naked" on the
+-- second parameter:
+--
+-- @
+-- instance SemigroupIn (WrapHBF t) f
+-- @
+--
+-- As that would globally ruin everything using 'WrapHBF'.
+newtype WrapHBF t f g a = WrapHBF { unwrapHBF :: t f g a }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+-- deriveShow1 ''WrapHBF
+-- deriveRead1 ''WrapHBF
+-- deriveEq1 ''WrapHBF
+-- deriveOrd1 ''WrapHBF
+
+instance HBifunctor t => HBifunctor (WrapHBF t) where
+    hbimap f g (WrapHBF x) = WrapHBF (hbimap f g x)
+    hleft f (WrapHBF x) = WrapHBF (hleft f x)
+    hright g (WrapHBF x) = WrapHBF (hright g x)
+
+deriving via (WrappedHBifunctor (WrapHBF t) f)
+    instance HBifunctor t => HFunctor (WrapHBF t f)
+
+instance Associative t => Associative (WrapHBF t) where
+    type NonEmptyBy (WrapHBF t) = NonEmptyBy t
+    associating = isoF (hright unwrapHBF . unwrapHBF) (WrapHBF . hright WrapHBF)
+                . associating @t
+                . isoF (WrapHBF . hleft WrapHBF) (hleft unwrapHBF . unwrapHBF)
+
+    appendNE     = appendNE . unwrapHBF
+    matchNE      = hright WrapHBF . matchNE
+    consNE       = consNE . unwrapHBF
+    toNonEmptyBy = toNonEmptyBy . unwrapHBF
+

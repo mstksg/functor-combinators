@@ -1,8 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE DerivingVia                #-}
@@ -22,6 +24,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -76,8 +79,7 @@ module Data.HBifunctor.Tensor (
   , inR
   , outL
   , outR
-  -- , biretractT
-  -- , binterpretT
+  , WrapF(..)
   , prodOutL
   , prodOutR
   -- * 'Matchable'
@@ -93,6 +95,8 @@ import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Data
+import           Data.Deriving
 import           Data.Function
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
@@ -109,7 +113,6 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty          (NonEmpty(..))
-import           Data.Proxy
 import           GHC.Generics hiding         (C)
 import qualified Data.Functor.Day            as D
 import qualified Data.Map.NonEmpty           as NEM
@@ -271,6 +274,9 @@ prodOutR (_ :*: y) = y
 -- 'SemigroupIn' that weren't possible without it: it gives us a "base
 -- case" for recursion in a lot of cases.
 --
+-- Essentially, we get an @i ~> f@, 'pureT', where we can introduce an @f
+-- a@ as long as we have an @i a@.
+--
 -- Formally, if we have @'Tensor' t i@, we are enriching the category of
 -- endofunctors with monoid structure, turning it into a monoidal category.
 -- Different choices of @t@ give different monoidal categories.
@@ -312,7 +318,26 @@ prodOutR (_ :*: y) = y
 --    monoidal, and 'Comp' is just one of them.  Similarly, the class of
 --    functors that are monoids in the category of endofunctors enriched by
 --    'Day' are 'Applicative'.
-class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f where
+--
+-- Note that instances of this class are /intended/ to be written with @t@
+-- and @i@ to be fixed type constructors, and @f@ to be allowed to vary
+-- freely:
+--
+-- @
+-- instance Monad f => MonoidIn Comp Identity f
+-- @
+--
+-- Any other sort of instance and it's easy to run into problems with type
+-- inference.  If you want to write an instance that's "polymorphic" on
+-- tensor choice, use the 'WrapHBF' and 'WrapF' newtype wrappers over type
+-- variables, where the third argument also uses a type constructor:
+--
+-- @
+-- instance MonoidIn (WrapHBF t) (WrapF i) (MyFunctor t i)
+-- @
+--
+-- This will prevent problems with overloaded instances.
+class (Tensor t i, SemigroupIn t f) => MonoidIn t i f where
 
     -- | If we have an @i@, we can generate an @f@ based on how it
     -- interacts with @t@.
@@ -332,6 +357,8 @@ class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f wh
     -- Along with 'biretract', this function makes @f@ a monoid in the
     -- category of endofunctors with respect to tensor @t@.
     pureT  :: i ~> f
+
+    default pureT :: Interpret (ListBy t) f => i ~> f
     pureT  = retract . reviewF (splittingLB @t) . L1
 
 -- | Create the "empty 'ListBy'".
@@ -347,11 +374,11 @@ class (Tensor t i, SemigroupIn t f, Interpret (ListBy t) f) => MonoidIn t i f wh
 -- nilLB \@'Comp' :: Identity ~> 'Free' f
 -- nilLB \@(':*:') :: 'Proxy' ~> 'ListF' f
 -- @
-nilLB    :: forall t i f. MonoidIn t i f => i ~> ListBy t f
+nilLB    :: forall t i f. Tensor t i => i ~> ListBy t f
 nilLB    = reviewF (splittingLB @t) . L1
 
 -- | Lets us "cons" an application of @f@ to the front of an @'ListBy' t f@.
-consLB   :: MonoidIn t i f => t f (ListBy t f) ~> ListBy t f
+consLB   :: Tensor t i => t f (ListBy t f) ~> ListBy t f
 consLB   = reviewF splittingLB . R1
 
 -- | "Pattern match" on an @'ListBy' t@
@@ -444,7 +471,7 @@ splittingNE = isoF splitNE unsplitNE
 -- non-empty case (@'NonEmptyBy' t f@), like how @[a]@ is isomorphic to @'Maybe'
 -- ('Data.List.NonEmpty.NonEmpty' a)@.
 matchingLB
-    :: forall t i f. (Matchable t i, MonoidIn t i f)
+    :: forall t i f. Matchable t i
     => ListBy t f <~> i :+: NonEmptyBy t f
 matchingLB = isoF (matchLB @t) (nilLB @t !*! fromNE @t)
 
@@ -666,3 +693,36 @@ instance Matchable Sum V1 where
 -- instance Matchable These1 where
 --     unsplitNE = stepsUp
 --     matchLB   = R1
+
+-- | A newtype wrapper meant to be used to define polymorphic 'MonoidIn'
+-- instances.  See documentation for 'MoniodIn' for more information.
+--
+-- Please do not ever define an instance of 'MonoidIn' "naked" on the
+-- third parameter:
+--
+-- @
+-- instance MonidIn (WrapHBF t) (WrapF i) f
+-- @
+--
+-- As that would globally ruin everything using 'WrapHBF'.
+newtype WrapF f a = WrapF { unwrapF :: f a }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+deriveShow1 ''WrapF
+deriveRead1 ''WrapF
+deriveEq1 ''WrapF
+deriveOrd1 ''WrapF
+
+instance Tensor t i => Tensor (WrapHBF t) (WrapF i) where
+    type ListBy (WrapHBF t) = ListBy t
+
+    intro1 = WrapHBF . hright WrapF .  intro1
+    intro2 = WrapHBF . hleft WrapF . intro2
+    elim1 = elim1 . hright unwrapF . unwrapHBF
+    elim2 = elim2 . hleft unwrapF . unwrapHBF
+    appendLB = appendLB . unwrapHBF
+    splitNE = WrapHBF . splitNE
+    splittingLB = splittingLB @t
+                . overHBifunctor (isoF WrapF unwrapF) (isoF WrapHBF unwrapHBF)
+    toListBy = toListBy . unwrapHBF
+    fromNE = fromNE @t

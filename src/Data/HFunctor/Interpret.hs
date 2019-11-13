@@ -1,5 +1,10 @@
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DefaultSignatures       #-}
+{-# LANGUAGE DeriveDataTypeable      #-}
+{-# LANGUAGE DeriveFoldable          #-}
+{-# LANGUAGE DeriveFunctor           #-}
+{-# LANGUAGE DeriveGeneric           #-}
+{-# LANGUAGE DeriveTraversable       #-}
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE InstanceSigs            #-}
@@ -8,6 +13,7 @@
 {-# LANGUAGE PolyKinds               #-}
 {-# LANGUAGE RankNTypes              #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TemplateHaskell         #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -60,6 +66,7 @@ module Data.HFunctor.Interpret (
   , getI
   , collectI
   , AndC
+  , WrapHF(..)
   ) where
 
 import           Control.Applicative
@@ -74,6 +81,7 @@ import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
+import           Data.Data
 import           Data.Functor.Bind
 import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
@@ -118,6 +126,24 @@ import qualified Data.Map.NonEmpty              as NEM
 --
 -- That is, if we lift a value into our structure, then immediately
 -- interpret it out as itself, it should lave the value unchanged.
+--
+-- Note that instances of this class are /intended/ to be written with @t@
+-- as a fixed type constructor, and @f@ to be allowed to vary freely:
+--
+-- @
+-- instance Monad f => Interpret Free f
+-- @
+--
+-- Any other sort of instance and it's easy to run into problems with type
+-- inference.  If you want to write an instance that's "polymorphic" on
+-- tensor choice, use the 'WrapHF' newtype wrapper over a type variable,
+-- where the second argument also uses a type constructor:
+--
+-- @
+-- instance Interpret (WrapHF t) (MyFunctor t)
+-- @
+--
+-- This will prevent problems with overloaded instances.
 class Inject t => Interpret t f where
 
     -- | Remove the @f@ out of the enhanced @t f@ structure, provided that
@@ -386,3 +412,33 @@ instance Interpret t f => Interpret (HFree t) f where
     retract = \case
       HReturn x -> x
       HJoin   x -> interpret retract x
+
+-- | A newtype wrapper meant to be used to define polymorphic 'Interpret'
+-- instances.  See documentation for 'Interpret' for more information.
+--
+-- Please do not ever define an instance of 'Interpret' "naked" on the
+-- second parameter:
+--
+-- @
+-- instance Interpret (WrapHF t) f
+-- @
+--
+-- As that would globally ruin everything using 'WrapHF'.
+newtype WrapHF t f a = WrapHF { unwrapHF :: t f a }
+  deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
+
+-- deriveShow1 ''WrapHF
+-- deriveRead1 ''WrapHF
+-- deriveEq1 ''WrapHF
+-- deriveOrd1 ''WrapHF
+
+instance HFunctor t => HFunctor (WrapHF t) where
+    hmap f (WrapHF x) = WrapHF (hmap f x)
+
+instance Inject t => Inject (WrapHF t) where
+    inject = WrapHF . inject
+
+instance HBind t => HBind (WrapHF t) where
+    hbind f (WrapHF x) = WrapHF (hbind (unwrapHF . f) x)
+    hjoin (WrapHF x) = WrapHF (hbind unwrapHF x)
+
