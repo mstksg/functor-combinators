@@ -2132,11 +2132,21 @@ biretract :: (SemigroupIn t f, Interpret (NonEmptyBy t) f) => t f f ~> f
 -- | The <a>HBifunctor</a> analogy of <a>interpret</a>. It takes two
 --   interpreting functions, and mixes them together into a target functor
 --   <tt>h</tt>.
+--   
+--   Note that this is useful in the poly-kinded case, but it is not
+--   possible to define generically for all <a>SemigroupIn</a> because it
+--   only is defined for <tt>Type -&gt; Type</tt> inputes. See <a>!+!</a>
+--   for a version that is poly-kinded for <a>:+:</a> in specific.
 binterpret :: SemigroupIn t f => (g ~> f) -> (h ~> f) -> t g h ~> f
 
 -- | The <a>HBifunctor</a> analogy of <a>interpret</a>. It takes two
 --   interpreting functions, and mixes them together into a target functor
 --   <tt>h</tt>.
+--   
+--   Note that this is useful in the poly-kinded case, but it is not
+--   possible to define generically for all <a>SemigroupIn</a> because it
+--   only is defined for <tt>Type -&gt; Type</tt> inputes. See <a>!+!</a>
+--   for a version that is poly-kinded for <a>:+:</a> in specific.
 binterpret :: (SemigroupIn t f, Interpret (NonEmptyBy t) f) => (g ~> f) -> (h ~> f) -> t g h ~> f
 
 -- | An <tt><a>NonEmptyBy</a> t f</tt> represents the successive
@@ -2153,14 +2163,14 @@ matchingNE :: (Associative t, Functor f) => NonEmptyBy t f <~> (f :+: t f (NonEm
 --   <tt><a>SemigroupIn</a> t</tt> for <tt><a>NonEmptyBy</a> t</tt>.
 --   
 --   Can be useful as a default implementation if you already have
---   <tt>MonoidIn</tt> implemented.
+--   <a>SemigroupIn</a> implemented.
 retractNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> f
 
 -- | An implementation of <a>interpret</a> that works for any instance of
 --   <tt><a>SemigroupIn</a> t</tt> for <tt><a>NonEmptyBy</a> t</tt>.
 --   
 --   Can be useful as a default implementation if you already have
---   <tt>MonoidIn</tt> implemented.
+--   <a>SemigroupIn</a> implemented.
 interpretNE :: forall t g f. (SemigroupIn t f, Functor f) => (g ~> f) -> NonEmptyBy t g ~> f
 
 -- | Useful wrapper over <a>binterpret</a> to allow you to directly extract
@@ -2206,6 +2216,11 @@ biget :: SemigroupIn t (Const b) => (forall x. f x -> b) -> (forall x. g x -> b)
 bicollect :: SemigroupIn t (Const [b]) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
 -- | Infix alias for <a>binterpret</a>
+--   
+--   Note that this is useful in the poly-kinded case, but it is not
+--   possible to define generically for all <a>SemigroupIn</a> because it
+--   only is defined for <tt>Type -&gt; Type</tt> inputes. See <a>!+!</a>
+--   for a version that is poly-kinded for <a>:+:</a> in specific.
 (!*!) :: SemigroupIn t h => (f ~> h) -> (g ~> h) -> t f g ~> h
 infixr 5 !*!
 
@@ -2228,8 +2243,8 @@ infixr 5 !$!
 
 -- | A version of <a>!*!</a> specifically for <a>:+:</a> that is
 --   poly-kinded
-(!?!) :: (f ~> h) -> (g ~> h) -> (f :+: g) ~> h
-infixr 5 !?!
+(!+!) :: (f ~> h) -> (g ~> h) -> (f :+: g) ~> h
+infixr 5 !+!
 
 -- | A newtype wrapper meant to be used to define polymorphic
 --   <a>SemigroupIn</a> instances. See documentation for <a>SemigroupIn</a>
@@ -2643,7 +2658,7 @@ outL :: (Tensor t Proxy, Functor f) => t f g ~> f
 outR :: (Tensor t Proxy, Functor g) => t f g ~> g
 
 -- | A newtype wrapper meant to be used to define polymorphic
---   <a>MonoidIn</a> instances. See documentation for <tt>MoniodIn</tt> for
+--   <a>MonoidIn</a> instances. See documentation for <a>MonoidIn</a> for
 --   more information.
 --   
 --   Please do not ever define an instance of <a>MonoidIn</a> "naked" on
@@ -2796,11 +2811,11 @@ module Data.HFunctor.Chain
 --   Another way of thinking of this is that <tt><a>Chain</a> t i</tt> is
 --   the "free <tt><a>MonoidIn</a> t i</tt>". Given any functor <tt>f</tt>,
 --   <tt><a>Chain</a> t i f</tt> is a monoid in the monoidal category of
---   endofunctors enriched by <tt>t</tt>. So, <tt><a>Chain</a>
---   <tt>Comp</tt> <tt>Identity</tt></tt> is the "free <a>Monad</a>",
---   <tt><a>Chain</a> <tt>Day</tt> <tt>Identity</tt></tt> is the "free
---   <a>Applicative</a>", etc. You "lift" from <tt>f a</tt> to
---   <tt><a>Chain</a> t i f a</tt> using <a>inject</a>.
+--   endofunctors enriched by <tt>t</tt>. So, <tt><a>Chain</a> <a>Comp</a>
+--   <a>Identity</a></tt> is the "free <a>Monad</a>", <tt><a>Chain</a>
+--   <a>Day</a> <a>Identity</a></tt> is the "free <a>Applicative</a>", etc.
+--   You "lift" from <tt>f a</tt> to <tt><a>Chain</a> t i f a</tt> using
+--   <a>inject</a>.
 --   
 --   Note: this instance doesn't exist directly because of restrictions in
 --   typeclasses, but is implemented as
@@ -2926,9 +2941,9 @@ appendChain :: forall t i f. Tensor t i => t (Chain t i f) (Chain t i f) ~> Chai
 --   the "free <tt><a>SemigroupIn</a> t</tt>". Given any functor
 --   <tt>f</tt>, <tt><a>Chain1</a> t f</tt> is a semigroup in the
 --   semigroupoidal category of endofunctors enriched by <tt>t</tt>. So,
---   <tt><a>Chain1</a> <tt>Comp</tt></tt> is the "free <tt>Bind</tt>",
---   <tt><a>Chain1</a> <tt>Day</tt></tt> is the "free <tt>Apply</tt>", etc.
---   You "lift" from <tt>f a</tt> to <tt><a>Chain1</a> t f a</tt> using
+--   <tt><a>Chain1</a> <a>Comp</a></tt> is the "free <a>Bind</a>",
+--   <tt><a>Chain1</a> <a>Day</a></tt> is the "free <a>Apply</a>", etc. You
+--   "lift" from <tt>f a</tt> to <tt><a>Chain1</a> t f a</tt> using
 --   <a>inject</a>.
 --   
 --   Note: this instance doesn't exist directly because of restrictions in
@@ -3058,6 +3073,16 @@ instance Data.HBifunctor.Tensor.Tensor t i => Data.HFunctor.Inject (Data.HFuncto
 instance Data.HBifunctor.Tensor.MonoidIn t i f => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Chain.Chain t i) f
 instance (Data.HBifunctor.Tensor.Tensor t i, GHC.Base.Functor f) => Data.HBifunctor.Associative.SemigroupIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HFunctor.Chain.Chain t i f)
 instance (Data.HBifunctor.Tensor.Tensor t i, GHC.Base.Functor f) => Data.HBifunctor.Tensor.MonoidIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Tensor.WrapF i) (Data.HFunctor.Chain.Chain t i f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Chain.Chain Data.Functor.Day.Day Data.Functor.Identity.Identity f)
+instance GHC.Base.Applicative (Data.HFunctor.Chain.Chain Data.Functor.Day.Day Data.Functor.Identity.Identity f)
+instance Data.Functor.Bind.Class.Apply (Data.HFunctor.Chain.Chain Control.Monad.Freer.Church.Comp Data.Functor.Identity.Identity f)
+instance GHC.Base.Applicative (Data.HFunctor.Chain.Chain Control.Monad.Freer.Church.Comp Data.Functor.Identity.Identity f)
+instance Data.Functor.Bind.Class.Bind (Data.HFunctor.Chain.Chain Control.Monad.Freer.Church.Comp Data.Functor.Identity.Identity f)
+instance GHC.Base.Monad (Data.HFunctor.Chain.Chain Control.Monad.Freer.Church.Comp Data.Functor.Identity.Identity f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Data.HFunctor.Chain.Chain (GHC.Generics.:*:) Data.Proxy.Proxy f)
+instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Data.HFunctor.Chain.Chain (GHC.Generics.:*:) Data.Proxy.Proxy f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Data.HFunctor.Chain.Chain Data.Functor.Product.Product Data.Proxy.Proxy f)
+instance GHC.Base.Functor f => Data.Functor.Plus.Plus (Data.HFunctor.Chain.Chain Data.Functor.Product.Product Data.Proxy.Proxy f)
 instance (Data.Functor.Classes.Eq1 f, Data.Functor.Classes.Eq1 (t f (Data.HFunctor.Chain.Chain1 t f))) => Data.Functor.Classes.Eq1 (Data.HFunctor.Chain.Chain1 t f)
 instance (Data.Functor.Classes.Ord1 f, Data.Functor.Classes.Ord1 (t f (Data.HFunctor.Chain.Chain1 t f))) => Data.Functor.Classes.Ord1 (Data.HFunctor.Chain.Chain1 t f)
 instance (Data.Functor.Classes.Show1 (t f (Data.HFunctor.Chain.Chain1 t f)), Data.Functor.Classes.Show1 f) => Data.Functor.Classes.Show1 (Data.HFunctor.Chain.Chain1 t f)
@@ -3066,6 +3091,11 @@ instance forall k (t :: (k -> *) -> (k -> *) -> k -> *). Data.HFunctor.Internal.
 instance forall k (t :: (k -> *) -> (k -> *) -> k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Inject (Data.HFunctor.Chain.Chain1 t)
 instance (Data.HFunctor.Internal.HBifunctor t, Data.HBifunctor.Associative.SemigroupIn t f) => Data.HFunctor.Interpret.Interpret (Data.HFunctor.Chain.Chain1 t) f
 instance (Data.HBifunctor.Associative.Associative t, GHC.Base.Functor f) => Data.HBifunctor.Associative.SemigroupIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HFunctor.Chain.Chain1 t f)
+instance GHC.Base.Functor f => Data.Functor.Bind.Class.Apply (Data.HFunctor.Chain.Chain1 Data.Functor.Day.Day f)
+instance GHC.Base.Functor f => Data.Functor.Bind.Class.Apply (Data.HFunctor.Chain.Chain1 Control.Monad.Freer.Church.Comp f)
+instance GHC.Base.Functor f => Data.Functor.Bind.Class.Bind (Data.HFunctor.Chain.Chain1 Control.Monad.Freer.Church.Comp f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Data.HFunctor.Chain.Chain1 (GHC.Generics.:*:) f)
+instance GHC.Base.Functor f => Data.Functor.Alt.Alt (Data.HFunctor.Chain.Chain1 Data.Functor.Product.Product f)
 
 
 -- | Functor combinators and tools (typeclasses and utiility functions) to
@@ -3517,11 +3547,21 @@ biretract :: (SemigroupIn t f, Interpret (NonEmptyBy t) f) => t f f ~> f
 -- | The <a>HBifunctor</a> analogy of <a>interpret</a>. It takes two
 --   interpreting functions, and mixes them together into a target functor
 --   <tt>h</tt>.
+--   
+--   Note that this is useful in the poly-kinded case, but it is not
+--   possible to define generically for all <a>SemigroupIn</a> because it
+--   only is defined for <tt>Type -&gt; Type</tt> inputes. See <a>!+!</a>
+--   for a version that is poly-kinded for <a>:+:</a> in specific.
 binterpret :: SemigroupIn t f => (g ~> f) -> (h ~> f) -> t g h ~> f
 
 -- | The <a>HBifunctor</a> analogy of <a>interpret</a>. It takes two
 --   interpreting functions, and mixes them together into a target functor
 --   <tt>h</tt>.
+--   
+--   Note that this is useful in the poly-kinded case, but it is not
+--   possible to define generically for all <a>SemigroupIn</a> because it
+--   only is defined for <tt>Type -&gt; Type</tt> inputes. See <a>!+!</a>
+--   for a version that is poly-kinded for <a>:+:</a> in specific.
 binterpret :: (SemigroupIn t f, Interpret (NonEmptyBy t) f) => (g ~> f) -> (h ~> f) -> t g h ~> f
 
 -- | Useful wrapper over <a>binterpret</a> to allow you to directly extract
@@ -3567,13 +3607,18 @@ biget :: SemigroupIn t (Const b) => (forall x. f x -> b) -> (forall x. g x -> b)
 bicollect :: SemigroupIn t (Const [b]) => (forall x. f x -> b) -> (forall x. g x -> b) -> t f g a -> [b]
 
 -- | Infix alias for <a>binterpret</a>
+--   
+--   Note that this is useful in the poly-kinded case, but it is not
+--   possible to define generically for all <a>SemigroupIn</a> because it
+--   only is defined for <tt>Type -&gt; Type</tt> inputes. See <a>!+!</a>
+--   for a version that is poly-kinded for <a>:+:</a> in specific.
 (!*!) :: SemigroupIn t h => (f ~> h) -> (g ~> h) -> t f g ~> h
 infixr 5 !*!
 
 -- | A version of <a>!*!</a> specifically for <a>:+:</a> that is
 --   poly-kinded
-(!?!) :: (f ~> h) -> (g ~> h) -> (f :+: g) ~> h
-infixr 5 !?!
+(!+!) :: (f ~> h) -> (g ~> h) -> (f :+: g) ~> h
+infixr 5 !+!
 
 -- | Infix alias for <a>biget</a>
 --   
