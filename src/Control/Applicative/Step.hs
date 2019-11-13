@@ -1,3 +1,5 @@
+{-# LANGUAGE EmptyDataDeriving #-}
+
 -- |
 -- Module      : Control.Applicative.Step
 -- Copyright   : (c) Justin Le 2019

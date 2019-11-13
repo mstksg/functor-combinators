@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingVia #-}
+
 module Data.HFunctor.Internal (
     HFunctor(..)
   , HBifunctor(..)

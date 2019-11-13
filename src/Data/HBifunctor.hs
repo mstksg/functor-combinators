@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingVia #-}
+
 -- |
 -- Module      : Data.HBifunctor
 -- Copyright   : (c) Justin Le 2019
