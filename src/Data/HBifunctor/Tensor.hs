@@ -208,12 +208,12 @@ leftIdentity = isoF intro2 elim2
 -- | 'leftIdentity' ('intro1' and 'elim1') for ':+:' actually does not
 -- require 'Functor'.  This is the more general version.
 sumLeftIdentity :: f <~> V1 :+: f
-sumLeftIdentity = isoF R1 (absurd1 !?! id)
+sumLeftIdentity = isoF R1 (absurd1 !+! id)
 
 -- | 'rightIdentity' ('intro2' and 'elim2') for ':+:' actually does not
 -- require 'Functor'.  This is the more general version.
 sumRightIdentity :: f <~> f :+: V1
-sumRightIdentity = isoF L1 (id !?! absurd1)
+sumRightIdentity = isoF L1 (id !+! absurd1)
 
 -- | 'leftIdentity' ('intro1' and 'elim1') for ':*:' actually does not
 -- require 'Functor'.  This is the more general version.
@@ -679,7 +679,7 @@ instance Matchable Sum V1 where
 --     matchLB   = R1
 
 -- | A newtype wrapper meant to be used to define polymorphic 'MonoidIn'
--- instances.  See documentation for 'MoniodIn' for more information.
+-- instances.  See documentation for 'MonoidIn' for more information.
 --
 -- Please do not ever define an instance of 'MonoidIn' "naked" on the
 -- third parameter:

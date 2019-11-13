@@ -54,7 +54,7 @@ module Data.Functor.Combinator (
   , SemigroupIn(..)
   , biget, bicollect
   , (!*!)
-  , (!?!)
+  , (!+!)
   , (!$!)
   -- *** Tensor
   , Tensor(..)

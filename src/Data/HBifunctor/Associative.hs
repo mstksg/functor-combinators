@@ -55,7 +55,7 @@ module Data.HBifunctor.Associative (
   , bicollect
   , (!*!)
   , (!$!)
-  , (!?!)
+  , (!+!)
   , WrapHBF(..)
   ) where
 
@@ -244,6 +244,11 @@ class Associative t => SemigroupIn t f where
     -- | The 'HBifunctor' analogy of 'interpret'.  It takes two
     -- interpreting functions, and mixes them together into a target
     -- functor @h@.
+    --
+    -- Note that this is useful in the poly-kinded case, but it is not possible
+    -- to define generically for all 'SemigroupIn' because it only is defined
+    -- for @Type -> Type@ inputes.  See '!+!' for a version that is poly-kinded
+    -- for ':+:' in specific.
     binterpret
         :: g ~> f
         -> h ~> f
@@ -255,8 +260,8 @@ class Associative t => SemigroupIn t f where
 -- | An implementation of 'retract' that works for any instance of
 -- @'SemigroupIn' t@ for @'NonEmptyBy' t@.
 --
--- Can be useful as a default implementation if you already have 'MonoidIn'
--- implemented.
+-- Can be useful as a default implementation if you already have
+-- 'SemigroupIn' implemented.
 retractNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> f
 retractNE = (id !*! biretract @t . hright (retractNE @t))
           . matchNE @t
@@ -264,8 +269,8 @@ retractNE = (id !*! biretract @t . hright (retractNE @t))
 -- | An implementation of 'interpret' that works for any instance of
 -- @'SemigroupIn' t@ for @'NonEmptyBy' t@.
 --
--- Can be useful as a default implementation if you already have 'MonoidIn'
--- implemented.
+-- Can be useful as a default implementation if you already have
+-- 'SemigroupIn' implemented.
 interpretNE :: forall t g f. (SemigroupIn t f, Functor f) => (g ~> f) -> NonEmptyBy t g ~> f
 interpretNE f = retractNE @t . hmap f
 
@@ -334,6 +339,11 @@ biget f g = getConst . binterpret (Const . f) (Const . g)
 infixr 5 !$!
 
 -- | Infix alias for 'binterpret'
+--
+-- Note that this is useful in the poly-kinded case, but it is not possible
+-- to define generically for all 'SemigroupIn' because it only is defined
+-- for @Type -> Type@ inputes.  See '!+!' for a version that is poly-kinded
+-- for ':+:' in specific.
 (!*!)
     :: SemigroupIn t h
     => (f ~> h)
@@ -344,15 +354,15 @@ infixr 5 !$!
 infixr 5 !*!
 
 -- | A version of '!*!' specifically for ':+:' that is poly-kinded
-(!?!)
+(!+!)
     :: (f ~> h)
     -> (g ~> h)
     -> (f :+: g)
     ~> h
-(!?!) f g = \case
+(!+!) f g = \case
     L1 x -> f x
     R1 y -> g y
-infixr 5 !?!
+infixr 5 !+!
 
 
 -- | Useful wrapper over 'biget' to allow you to collect a @b@ from all

@@ -49,9 +49,16 @@ module Data.HFunctor.Chain (
   , unmatchChain
   ) where
 
+import           Control.Monad
+import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Functor.Bind
 import           Data.Functor.Classes
+import           Data.Functor.Day hiding     (intro1, intro2, elim1, elim2)
+import           Data.Functor.Identity
+import           Data.Functor.Plus
+import           Data.Functor.Product
 import           Data.HBifunctor
 import           Data.HBifunctor.Associative
 import           Data.HBifunctor.Tensor
@@ -95,10 +102,11 @@ import           GHC.Generics
 --
 -- Another way of thinking of this is that @'Chain1' t@ is the "free
 -- @'SemigroupIn' t@".  Given any functor @f@, @'Chain1' t f@ is
--- a semigroup in the semigroupoidal category of endofunctors enriched by @t@.  So, @'Chain1'
--- 'Comp'@ is the "free 'Bind'", @'Chain1' 'Day'@ is
--- the "free 'Apply'", etc.  You "lift" from @f a@ to @'Chain1' t f a@ using
--- 'inject'.
+-- a semigroup in the semigroupoidal category of endofunctors enriched by
+-- @t@.  So, @'Chain1' 'Control.Monad.Freer.Church.Comp'@ is the "free
+-- 'Data.Functor.Bind.Bind'", @'Chain1' 'Day'@ is the "free
+-- 'Data.Functor.Apply.Apply'", etc. You "lift" from @f a@ to @'Chain1'
+-- t f a@ using 'inject'.
 --
 -- Note: this instance doesn't exist directly because of restrictions in
 -- typeclasses, but is implemented as
@@ -251,6 +259,35 @@ appendChain1 = unrollNE
              . appendNE
              . hbimap rerollNE rerollNE
 
+-- | @'Chain1' t@ is the "free @'SemigroupIn' t@".  However, we have to
+-- wrap @t@ in 'WrapHBF' to prevent overlapping instances.
+instance (Associative t, Functor f) => SemigroupIn (WrapHBF t) (Chain1 t f) where
+    biretract = appendChain1 . unwrapHBF
+    binterpret f g = biretract . hbimap f g
+
+-- | @'Chain1' 'Day'@ is the free "semigroup in the semigroupoidal category
+-- of endofunctors enriched by 'Day'" --- aka, the free 'Apply'.
+instance Functor f => Apply (Chain1 Day f) where
+    f <.> x = appendChain1 $ Day f x ($)
+
+instance Functor f => Apply (Chain1 Comp f) where
+    (<.>) = apDefault
+
+-- | @'Chain1' 'Comp'@ is the free "semigroup in the semigroupoidal
+-- category of endofunctors enriched by 'Comp'" --- aka, the free 'Bind'.
+instance Functor f => Bind (Chain1 Comp f) where
+    x >>- f = appendChain1 (x :>>= f)
+
+-- | @'Chain1' (':*:')@ is the free "semigroup in the semigroupoidal
+-- category of endofunctors enriched by ':*:'" --- aka, the free 'Alt'.
+instance Functor f => Alt (Chain1 (:*:) f) where
+    x <!> y = appendChain1 (x :*: y)
+
+-- | @'Chain1' 'Product'@ is the free "semigroup in the semigroupoidal
+-- category of endofunctors enriched by 'Product'" --- aka, the free 'Alt'.
+instance Functor f => Alt (Chain1 Product f) where
+    x <!> y = appendChain1 (Pair x y)
+
 -- | A useful construction that works like a "linked list" of @t f@ applied
 -- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
 -- @t f (t f (t f f))@, etc, with @f@ occuring /zero or more/ times.  It is
@@ -280,9 +317,10 @@ appendChain1 = unrollNE
 -- Another way of thinking of this is that @'Chain' t i@ is the "free
 -- @'MonoidIn' t i@".  Given any functor @f@, @'Chain' t i f@ is a monoid
 -- in the monoidal category of endofunctors enriched by @t@.  So, @'Chain'
--- 'Comp' 'Identity'@ is the "free 'Monad'", @'Chain' 'Day' 'Identity'@ is
--- the "free 'Applicative'", etc.  You "lift" from @f a@ to @'Chain' t i f a@
--- using 'inject'.
+-- 'Control.Monad.Freer.Church.Comp' 'Data.Functor.Identity.Identity'@ is
+-- the "free 'Monad'", @'Chain' 'Data.Functor.Day.Day'
+-- 'Data.Functor.Identity.Identity'@ is the "free 'Applicative'", etc.  You
+-- "lift" from @f a@ to @'Chain' t i f a@ using 'inject'.
 --
 -- Note: this instance doesn't exist directly because of restrictions in
 -- typeclasses, but is implemented as
@@ -490,12 +528,7 @@ unmatchChain
     => i :+: Chain1 t f ~> Chain t i f
 unmatchChain = unroll . (nilLB @t !*! fromNE @t) . hright rerollNE
 
--- | @'Chain1' t@ is the "free @'SemigroupIn' t@".  However, we have to
--- wrap @t@ in 'WrapHBF' to prevent overlapping instances.
-instance (Associative t, Functor f) => SemigroupIn (WrapHBF t) (Chain1 t f) where
-    biretract = appendChain1 . unwrapHBF
-    binterpret f g = biretract . hbimap f g
-
+-- | We have to wrap @t@ in 'WrapHBF' to prevent overlapping instances.
 instance (Tensor t i, Functor f) => SemigroupIn (WrapHBF t) (Chain t i f) where
     biretract = appendChain . unwrapHBF
     binterpret f g = biretract . hbimap f g
@@ -504,3 +537,47 @@ instance (Tensor t i, Functor f) => SemigroupIn (WrapHBF t) (Chain t i f) where
 -- wrap @t@ in 'WrapHBF' and @i@ in 'WrapF' to prevent overlapping instances.
 instance (Tensor t i, Functor f) => MonoidIn (WrapHBF t) (WrapF i) (Chain t i f) where
     pureT = Done . unwrapF
+
+instance Apply (Chain Day Identity f) where
+    f <.> x = appendChain $ Day f x ($)
+
+-- | @'Chain' 'Day' 'Identity'@ is the free "monoid in the monoidal
+-- category of endofunctors enriched by 'Day'" --- aka, the free
+-- 'Applicative'.
+instance Applicative (Chain Day Identity f) where
+    pure  = Done . Identity
+    (<*>) = (<.>)
+
+instance Apply (Chain Comp Identity f) where
+    (<.>) = apDefault
+
+instance Applicative (Chain Comp Identity f) where
+    pure  = Done . Identity
+    (<*>) = (<.>)
+
+instance Bind (Chain Comp Identity f) where
+    x >>- f = appendChain (x :>>= f)
+
+-- | @'Chain' 'Comp' 'Identity'@ is the free "monoid in the monoidal
+-- category of endofunctors enriched by 'Comp'" --- aka, the free
+-- 'Monad'.
+instance Monad (Chain Comp Identity f) where
+    (>>=) = (>>-)
+
+instance Functor f => Alt (Chain (:*:) Proxy f) where
+    x <!> y = appendChain (x :*: y)
+
+-- | @'Chain' (':*:') 'Proxy'@ is the free "monoid in the monoidal
+-- category of endofunctors enriched by ':*:'" --- aka, the free
+-- 'Plus'.
+instance Functor f => Plus (Chain (:*:) Proxy f) where
+    zero = Done Proxy
+
+instance Functor f => Alt (Chain Product Proxy f) where
+    x <!> y = appendChain (Pair x y)
+
+-- | @'Chain' (':*:') 'Proxy'@ is the free "monoid in the monoidal
+-- category of endofunctors enriched by ':*:'" --- aka, the free
+-- 'Plus'.
+instance Functor f => Plus (Chain Product Proxy f) where
+    zero = Done Proxy
