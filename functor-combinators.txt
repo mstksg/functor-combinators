@@ -1945,31 +1945,20 @@ instance forall k (c :: (k -> *) -> GHC.Types.Constraint) (f :: k -> *). c f => 
 --   The high-level usage of this is
 --   
 --   <pre>
---   <a>biretract</a> :: t f f ~&gt; f
+--   <a>biretract</a> :: <a>SemigroupIn</a> t f =&gt; t f f ~&gt; f
 --   </pre>
 --   
 --   which lets you fully "mix" together the two input functors.
 --   
---   This class also associates each <a>HBifunctor</a> with its "semigroup
---   functor combinator", so we can "squish together" repeated applications
---   of <tt>t</tt>.
+--   <pre>
+--   <a>biretract</a> :: (f <a>:+:</a> f) a -&gt; f a
+--   biretract :: <a>Plus</a> f =&gt; (f <a>:*:</a> f) a -&gt; f a
+--   biretract :: <a>Applicative</a> f =&gt; <a>Day</a> f f a -&gt; f a
+--   biretract :: <a>Monad</a> f =&gt; <a>Comp</a> f f a -&gt; f a
+--   </pre>
 --   
---   That is, an <tt><a>NonEmptyBy</a> t f a</tt> is either:
---   
---   <ul>
---   <li><pre>f a</pre></li>
---   <li><pre>t f f a</pre></li>
---   <li><pre>t f (t f f) a</pre></li>
---   <li><pre>t f (t f (t f f)) a</pre></li>
---   <li>.. etc.</li>
---   </ul>
---   
---   which means we can have "list-like" schemas that represent multiple
---   copies of <tt>f</tt>.
---   
---   See <a>Data.HBifunctor.Tensor</a> for a version that also provides an
---   analogy to <a>inject</a>, and a more flexible "squished" combinator
---   <a>ListBy</a> that has an "empty" element.
+--   See <a>Data.HBifunctor.Tensor</a> for the next stage of structure in
+--   tensors and moving in and out of them.
 module Data.HBifunctor.Associative
 
 -- | An <a>HBifunctor</a> where it doesn't matter which binds first is
@@ -2019,6 +2008,8 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where {
     --   
     --   You can create an "singleton" one with <a>inject</a>, or else one from
     --   a single <tt>t f f</tt> with <a>toNonEmptyBy</a>.
+    --   
+    --   See <a>ListBy</a> for a "possibly empty" version of this type.
     type family NonEmptyBy t :: (Type -> Type) -> Type -> Type;
 }
 
@@ -2030,6 +2021,10 @@ associating :: (Associative t, Functor f, Functor g, Functor h) => t f (t g h) <
 --   of <tt>t f</tt> to itself, then we can also "append" two
 --   <tt><a>NonEmptyBy</a> t f</tt>s applied to themselves into one giant
 --   <tt><a>NonEmptyBy</a> t f</tt> containing all of the <tt>t f</tt>s.
+--   
+--   Note that this essentially gives an instance for
+--   <tt><a>SemigroupIn</a> t (NonEmptyBy t f)</tt>, for any functor
+--   <tt>f</tt>.
 appendNE :: Associative t => t (NonEmptyBy t f) (NonEmptyBy t f) ~> NonEmptyBy t f
 
 -- | If a <tt><a>NonEmptyBy</a> t f</tt> represents multiple applications
@@ -2261,6 +2256,14 @@ infixr 5 !+!
 newtype WrapHBF t f g a
 WrapHBF :: t f g a -> WrapHBF t f g a
 [unwrapHBF] :: WrapHBF t f g a -> t f g a
+
+-- | Any <tt><a>NonEmptyBy</a> t f</tt> is a <tt><a>SemigroupIn</a> t</tt>
+--   if we have <tt><a>Associative</a> t</tt>. This newtype wrapper
+--   witnesses that fact. We require a newtype wrapper to avoid overlapping
+--   instances.
+newtype WrapNE t f a
+WrapNE :: NonEmptyBy t f a -> WrapNE t f a
+[unwrapNE] :: WrapNE t f a -> NonEmptyBy t f a
 instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). (Data.Typeable.Internal.Typeable f, Data.Typeable.Internal.Typeable g, Data.Typeable.Internal.Typeable a, Data.Typeable.Internal.Typeable t, Data.Typeable.Internal.Typeable k1, Data.Typeable.Internal.Typeable k2, Data.Typeable.Internal.Typeable k3, Data.Data.Data (t f g a)) => Data.Data.Data (Data.HBifunctor.Associative.WrapHBF t f g a)
 instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Generics.Generic (Data.HBifunctor.Associative.WrapHBF t f g a)
 instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Traversable.Traversable (t f g) => Data.Traversable.Traversable (Data.HBifunctor.Associative.WrapHBF t f g)
@@ -2271,6 +2274,7 @@ instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3
 instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Read.Read (t f g a) => GHC.Read.Read (Data.HBifunctor.Associative.WrapHBF t f g a)
 instance forall k1 k2 k3 (t :: k1 -> k2 -> k3 -> *) (f :: k1) (g :: k2) (a :: k3). GHC.Show.Show (t f g a) => GHC.Show.Show (Data.HBifunctor.Associative.WrapHBF t f g a)
 instance forall k (t :: (k -> *) -> (k -> *) -> k -> *) (f :: k -> *). Data.HFunctor.Internal.HBifunctor t => Data.HFunctor.Internal.HFunctor (Data.HBifunctor.Associative.WrapHBF t f)
+instance Data.HBifunctor.Associative.Associative t => Data.HBifunctor.Associative.SemigroupIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Associative.WrapNE t f)
 instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Functor.Classes.Show1 (t f g) => Data.Functor.Classes.Show1 (Data.HBifunctor.Associative.WrapHBF t f g)
 instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Functor.Classes.Eq1 (t f g) => Data.Functor.Classes.Eq1 (Data.HBifunctor.Associative.WrapHBF t f g)
 instance forall k1 k2 (t :: k1 -> k2 -> * -> *) (f :: k1) (g :: k2). Data.Functor.Classes.Ord1 (t f g) => Data.Functor.Classes.Ord1 (Data.HBifunctor.Associative.WrapHBF t f g)
@@ -2312,14 +2316,27 @@ instance Data.HBifunctor.Associative.Associative Data.HBifunctor.RightF
 --   a structure-transforming function over both of the transformed
 --   functors.
 --   
---   The binary analog of <a>Interpret</a> is <a>Tensor</a>. If your
---   combinator is an instance of <a>Tensor</a>, it means that you can
---   "squish" both arguments together into an <a>Inject</a>. For example:
+--   <a>Tensor</a> gives some extra properties of your binary functor
+--   combinator: associativity and identity (see docs for <a>Tensor</a> for
+--   more details).
+--   
+--   The binary analog of <a>Interpret</a> is <a>MonoidIn</a>. If your
+--   combinator <tt>t</tt> and target functor <tt>f</tt> is an instance of
+--   <tt><a>MonoidIn</a> t f</tt>, it means you can "interpret" out of your
+--   tensored values, and also "generate" values of <tt>f</tt>.
 --   
 --   <pre>
---   <a>toListBy</a> :: (f <a>:*:</a> f) a -&gt; <a>ListF</a> f a
---   <a>toListBy</a> :: <a>Comp</a> f f a -&gt; <a>Free</a> f a
---   <a>toListBy</a> :: <a>Day</a> f f a -&gt; <a>Ap</a> f a
+--   <a>biretract</a> :: (f <a>:+:</a> f) a -&gt; f a
+--   <a>pureT</a>     :: <a>V1</a> a -&gt; f a
+--   
+--   biretract :: <a>Plus</a> f =&gt; (f <a>:*:</a> f) a -&gt; f a
+--   pureT     :: Plus f =&gt; <a>Proxy</a> a -&gt; f a
+--   
+--   biretract :: <a>Applicative</a> f =&gt; <a>Day</a> f f a -&gt; f a
+--   pureT     :: Applicative f =&gt; <a>Identity</a> a -&gt; f a
+--   
+--   biretract :: <a>Monad</a> f =&gt; <a>Comp</a> f f a -&gt; f a
+--   pureT     :: Monad f =&gt; <a>Identity</a> a -&gt; f a
 --   </pre>
 module Data.HBifunctor.Tensor
 
@@ -2371,6 +2388,8 @@ class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where {
     --   You can create an "empty" one with <a>nilLB</a>, a "singleton" one
     --   with <a>inject</a>, or else one from a single <tt>t f f</tt> with
     --   <a>toListBy</a>.
+    --   
+    --   See <a>NonEmptyBy</a> for a "non-empty" version of this type.
     type family ListBy t :: (Type -> Type) -> Type -> Type;
 }
 
@@ -2402,6 +2421,10 @@ elim2 :: (Tensor t i, Functor g) => t i g ~> g
 --   <tt>t f</tt> to itself, then we can also "append" two
 --   <tt><a>ListBy</a> t f</tt>s applied to themselves into one giant
 --   <tt><a>ListBy</a> t f</tt> containing all of the <tt>t f</tt>s.
+--   
+--   Note that this essentially gives an instance for
+--   <tt><a>SemigroupIn</a> t (ListBy t f)</tt>, for any functor
+--   <tt>f</tt>; this is witnessed by <a>WrapLB</a>.
 appendLB :: Tensor t i => t (ListBy t f) (ListBy t f) ~> ListBy t f
 
 -- | Lets you convert an <tt><a>NonEmptyBy</a> t f</tt> into a single
@@ -2597,6 +2620,10 @@ pureT :: (MonoidIn t i f, Interpret (ListBy t) f) => i ~> f
 --   nilLB @<a>Comp</a> :: Identity ~&gt; <a>Free</a> f
 --   nilLB @(<a>:*:</a>) :: <a>Proxy</a> ~&gt; <a>ListF</a> f
 --   </pre>
+--   
+--   Note that this essentially gives an instance for <tt><a>MonoidIn</a> t
+--   i (ListBy t f)</tt>, for any functor <tt>f</tt>; this is witnessed by
+--   <a>WrapLB</a>.
 nilLB :: forall t i f. Tensor t i => i ~> ListBy t f
 
 -- | Lets us "cons" an application of <tt>f</tt> to the front of an
@@ -2657,6 +2684,14 @@ outL :: (Tensor t Proxy, Functor f) => t f g ~> f
 --   <tt><a>Functor</a> g</tt>, specifically for <a>:*:</a>.
 outR :: (Tensor t Proxy, Functor g) => t f g ~> g
 
+-- | <a>outL</a> for <a>:*:</a> actually does not require <a>Functor</a>.
+--   This is the more general version.
+prodOutL :: (f :*: g) ~> f
+
+-- | <a>outR</a> for <a>:*:</a> actually does not require <a>Functor</a>.
+--   This is the more general version.
+prodOutR :: (f :*: g) ~> g
+
 -- | A newtype wrapper meant to be used to define polymorphic
 --   <a>MonoidIn</a> instances. See documentation for <a>MonoidIn</a> for
 --   more information.
@@ -2673,13 +2708,13 @@ newtype WrapF f a
 WrapF :: f a -> WrapF f a
 [unwrapF] :: WrapF f a -> f a
 
--- | <a>outL</a> for <a>:*:</a> actually does not require <a>Functor</a>.
---   This is the more general version.
-prodOutL :: (f :*: g) ~> f
-
--- | <a>outR</a> for <a>:*:</a> actually does not require <a>Functor</a>.
---   This is the more general version.
-prodOutR :: (f :*: g) ~> g
+-- | Any <tt><a>ListBy</a> t f</tt> is a <tt><a>SemigroupIn</a> t</tt> and
+--   a <tt><a>MonoidIn</a> t i</tt>, if we have <tt><a>Tensor</a> t i</tt>.
+--   This newtype wrapper witnesses that fact. We require a newtype wrapper
+--   to avoid overlapping instances.
+newtype WrapLB t f a
+WrapLB :: ListBy t f a -> WrapLB t f a
+[unwrapLB] :: WrapLB t f a -> ListBy t f a
 
 -- | For some <tt>t</tt>, we have the ability to "statically analyze" the
 --   <tt><a>ListBy</a> t</tt> and pattern match and manipulate the
@@ -2731,6 +2766,8 @@ instance forall k (f :: k -> *) (a :: k). GHC.Classes.Ord (f a) => GHC.Classes.O
 instance forall k (f :: k -> *) (a :: k). GHC.Classes.Eq (f a) => GHC.Classes.Eq (Data.HBifunctor.Tensor.WrapF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Read.Read (f a) => GHC.Read.Read (Data.HBifunctor.Tensor.WrapF f a)
 instance forall k (f :: k -> *) (a :: k). GHC.Show.Show (f a) => GHC.Show.Show (Data.HBifunctor.Tensor.WrapF f a)
+instance Data.HBifunctor.Tensor.Tensor t i => Data.HBifunctor.Associative.SemigroupIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Tensor.WrapLB t f)
+instance Data.HBifunctor.Tensor.Tensor t i => Data.HBifunctor.Tensor.MonoidIn (Data.HBifunctor.Associative.WrapHBF t) (Data.HBifunctor.Tensor.WrapF i) (Data.HBifunctor.Tensor.WrapLB t f)
 instance Data.Functor.Classes.Show1 f => Data.Functor.Classes.Show1 (Data.HBifunctor.Tensor.WrapF f)
 instance Data.Functor.Classes.Eq1 f => Data.Functor.Classes.Eq1 (Data.HBifunctor.Tensor.WrapF f)
 instance Data.Functor.Classes.Ord1 f => Data.Functor.Classes.Ord1 (Data.HBifunctor.Tensor.WrapF f)
@@ -3440,6 +3477,8 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where {
     --   
     --   You can create an "singleton" one with <a>inject</a>, or else one from
     --   a single <tt>t f f</tt> with <a>toNonEmptyBy</a>.
+    --   
+    --   See <a>ListBy</a> for a "possibly empty" version of this type.
     type family NonEmptyBy t :: (Type -> Type) -> Type -> Type;
 }
 
@@ -3451,6 +3490,10 @@ associating :: (Associative t, Functor f, Functor g, Functor h) => t f (t g h) <
 --   of <tt>t f</tt> to itself, then we can also "append" two
 --   <tt><a>NonEmptyBy</a> t f</tt>s applied to themselves into one giant
 --   <tt><a>NonEmptyBy</a> t f</tt> containing all of the <tt>t f</tt>s.
+--   
+--   Note that this essentially gives an instance for
+--   <tt><a>SemigroupIn</a> t (NonEmptyBy t f)</tt>, for any functor
+--   <tt>f</tt>.
 appendNE :: Associative t => t (NonEmptyBy t f) (NonEmptyBy t f) ~> NonEmptyBy t f
 
 -- | If a <tt><a>NonEmptyBy</a> t f</tt> represents multiple applications
@@ -3685,6 +3728,8 @@ class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where {
     --   You can create an "empty" one with <a>nilLB</a>, a "singleton" one
     --   with <a>inject</a>, or else one from a single <tt>t f f</tt> with
     --   <a>toListBy</a>.
+    --   
+    --   See <a>NonEmptyBy</a> for a "non-empty" version of this type.
     type family ListBy t :: (Type -> Type) -> Type -> Type;
 }
 
@@ -3716,6 +3761,10 @@ elim2 :: (Tensor t i, Functor g) => t i g ~> g
 --   <tt>t f</tt> to itself, then we can also "append" two
 --   <tt><a>ListBy</a> t f</tt>s applied to themselves into one giant
 --   <tt><a>ListBy</a> t f</tt> containing all of the <tt>t f</tt>s.
+--   
+--   Note that this essentially gives an instance for
+--   <tt><a>SemigroupIn</a> t (ListBy t f)</tt>, for any functor
+--   <tt>f</tt>; this is witnessed by <a>WrapLB</a>.
 appendLB :: Tensor t i => t (ListBy t f) (ListBy t f) ~> ListBy t f
 
 -- | Lets you convert an <tt><a>NonEmptyBy</a> t f</tt> into a single
@@ -3883,6 +3932,10 @@ pureT :: (MonoidIn t i f, Interpret (ListBy t) f) => i ~> f
 --   nilLB @<a>Comp</a> :: Identity ~&gt; <a>Free</a> f
 --   nilLB @(<a>:*:</a>) :: <a>Proxy</a> ~&gt; <a>ListF</a> f
 --   </pre>
+--   
+--   Note that this essentially gives an instance for <tt><a>MonoidIn</a> t
+--   i (ListBy t f)</tt>, for any functor <tt>f</tt>; this is witnessed by
+--   <a>WrapLB</a>.
 nilLB :: forall t i f. Tensor t i => i ~> ListBy t f
 
 -- | Lets us "cons" an application of <tt>f</tt> to the front of an
