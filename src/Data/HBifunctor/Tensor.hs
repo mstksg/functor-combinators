@@ -16,15 +16,28 @@
 -- The binary analog of 'HFunctor' is 'HBifunctor': we can map
 -- a structure-transforming function over both of the transformed functors.
 --
--- The binary analog of 'Interpret' is 'Tensor'.  If your combinator is an
--- instance of 'Tensor', it means that you can "squish" both arguments
--- together into an 'Inject'.  For example:
+-- 'Tensor' gives some extra properties of your binary functor combinator:
+-- associativity and identity (see docs for 'Tensor' for more details).
+--
+-- The binary analog of 'Interpret' is 'MonoidIn'.  If your combinator @t@
+-- and target functor @f@ is an instance of @'MonoidIn' t f@, it means you
+-- can "interpret" out of your tensored values, and also "generate" values
+-- of @f@.
 --
 -- @
--- 'toListBy' :: (f ':*:' f) a -> 'ListF' f a
--- 'toListBy' :: 'Comp' f f a -> 'Free' f a
--- 'toListBy' :: 'Day' f f a -> 'Ap' f a
+-- 'biretract' :: (f ':+:' f) a -> f a
+-- 'pureT'     :: 'V1' a -> f a
+--
+-- biretract :: 'Plus' f => (f ':*:' f) a -> f a
+-- pureT     :: Plus f => 'Proxy' a -> f a
+--
+-- biretract :: 'Applicative' f => 'Day' f f a -> f a
+-- pureT     :: Applicative f => 'Identity' a -> f a
+--
+-- biretract :: 'Monad' f => 'Comp' f f a -> f a
+-- pureT     :: Monad f => 'Identity' a -> f a
 -- @
+--
 module Data.HBifunctor.Tensor (
   -- * 'Tensor'
     Tensor(..)
@@ -46,9 +59,10 @@ module Data.HBifunctor.Tensor (
   , inR
   , outL
   , outR
-  , WrapF(..)
   , prodOutL
   , prodOutR
+  , WrapF(..)
+  , WrapLB(..)
   -- * 'Matchable'
   , Matchable(..)
   , splittingNE
@@ -126,6 +140,9 @@ class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where
     --
     -- You can create an "empty" one with 'nilLB', a "singleton" one with
     -- 'inject', or else one from a single @t f f@ with 'toListBy'.
+    --
+    -- See 'Data.HBifunctor.Associative.NonEmptyBy' for a "non-empty"
+    -- version of this type.
     type ListBy t :: (Type -> Type) -> Type -> Type
 
     -- | Because @t f (I t)@ is equivalent to @f@, we can always "insert"
@@ -152,6 +169,10 @@ class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where
     -- | If a @'ListBy' t f@ represents multiple applications of @t f@ to
     -- itself, then we can also "append" two @'ListBy' t f@s applied to
     -- themselves into one giant @'ListBy' t f@ containing all of the @t f@s.
+    --
+    -- Note that this essentially gives an instance for @'SemigroupIn'
+    -- t (ListBy t f)@, for any functor @f@; this is witnessed by
+    -- 'WrapLB'.
     appendLB    :: t (ListBy t f) (ListBy t f) ~> ListBy t f
 
     -- | Lets you convert an @'NonEmptyBy' t f@ into a single application of @f@ to
@@ -358,6 +379,9 @@ interpretLB f = retractLB @t . hmap f
 -- nilLB \@'Comp' :: Identity ~> 'Free' f
 -- nilLB \@(':*:') :: 'Proxy' ~> 'ListF' f
 -- @
+--
+-- Note that this essentially gives an instance for @'MonoidIn' t i (ListBy
+-- t f)@, for any functor @f@; this is witnessed by 'WrapLB'.
 nilLB    :: forall t i f. Tensor t i => i ~> ListBy t f
 nilLB    = reviewF (splittingLB @t) . L1
 
@@ -714,3 +738,15 @@ instance Tensor t i => Tensor (WrapHBF t) (WrapF i) where
                 . overHBifunctor (isoF WrapF unwrapF) (isoF WrapHBF unwrapHBF)
     toListBy = toListBy . unwrapHBF
     fromNE = fromNE @t
+
+-- | Any @'ListBy' t f@ is a @'SemigroupIn' t@ and a @'MonoidIn' t i@, if we
+-- have @'Tensor' t i@. This newtype wrapper witnesses that fact.  We
+-- require a newtype wrapper to avoid overlapping instances.
+newtype WrapLB t f a = WrapLB { unwrapLB :: ListBy t f a }
+
+instance Tensor t i => SemigroupIn (WrapHBF t) (WrapLB t f) where
+    biretract = WrapLB . appendLB . hbimap unwrapLB unwrapLB . unwrapHBF
+    binterpret f g = biretract . hbimap f g
+
+instance Tensor t i => MonoidIn (WrapHBF t) (WrapF i) (WrapLB t f) where
+    pureT = WrapLB . nilLB @t . unwrapF

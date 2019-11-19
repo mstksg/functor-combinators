@@ -18,28 +18,20 @@
 -- The high-level usage of this is
 --
 -- @
--- 'biretract' :: t f f ~> f
+-- 'biretract' :: 'SemigroupIn' t f => t f f ~> f
 -- @
 --
 -- which lets you fully "mix" together the two input functors.
 --
--- This class also associates each 'HBifunctor' with its "semigroup functor
--- combinator", so we can "squish together" repeated applications of @t@.
+-- @
+-- 'biretract' :: (f ':+:' f) a -> f a
+-- biretract :: 'Plus' f => (f ':*:' f) a -> f a
+-- biretract :: 'Applicative' f => 'Day' f f a -> f a
+-- biretract :: 'Monad' f => 'Comp' f f a -> f a
+-- @
 --
--- That is, an @'NonEmptyBy' t f a@ is either:
---
--- *   @f a@
--- *   @t f f a@
--- *   @t f (t f f) a@
--- *   @t f (t f (t f f)) a@
--- *   .. etc.
---
--- which means we can have "list-like" schemas that represent multiple
--- copies of @f@.
---
--- See "Data.HBifunctor.Tensor" for a version that also provides an analogy
--- to 'inject', and a more flexible "squished" combinator
--- 'Data.HBifunctor.Tensor.ListBy' that has an "empty" element.
+-- See "Data.HBifunctor.Tensor" for the next stage of structure in tensors
+-- and moving in and out of them.
 module Data.HBifunctor.Associative (
   -- * 'Associative'
     Associative(..)
@@ -57,6 +49,7 @@ module Data.HBifunctor.Associative (
   , (!$!)
   , (!+!)
   , WrapHBF(..)
+  , WrapNE(..)
   ) where
 
 import           Control.Applicative
@@ -131,6 +124,9 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where
     --
     -- You can create an "singleton" one with 'inject', or else one from
     -- a single @t f f@ with 'toNonEmptyBy'.
+    --
+    -- See 'Data.HBifunctor.Tensor.ListBy' for a "possibly empty" version
+    -- of this type.
     type NonEmptyBy t :: (Type -> Type) -> Type -> Type
 
     -- | The isomorphism between @t f (t g h) a@ and @t (t f g) h a@.  To
@@ -142,6 +138,9 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where
     -- | If a @'NonEmptyBy' t f@ represents multiple applications of @t f@ to
     -- itself, then we can also "append" two @'NonEmptyBy' t f@s applied to
     -- themselves into one giant @'NonEmptyBy' t f@ containing all of the @t f@s.
+    --
+    -- Note that this essentially gives an instance for @'SemigroupIn'
+    -- t (NonEmptyBy t f)@, for any functor @f@.
     appendNE :: t (NonEmptyBy t f) (NonEmptyBy t f) ~> NonEmptyBy t f
 
     -- | If a @'NonEmptyBy' t f@ represents multiple applications of @t f@
@@ -693,3 +692,11 @@ instance Associative t => Associative (WrapHBF t) where
     consNE       = consNE . unwrapHBF
     toNonEmptyBy = toNonEmptyBy . unwrapHBF
 
+-- | Any @'NonEmptyBy' t f@ is a @'SemigroupIn' t@ if we have
+-- @'Associative' t@. This newtype wrapper witnesses that fact.  We require
+-- a newtype wrapper to avoid overlapping instances.
+newtype WrapNE t f a = WrapNE { unwrapNE :: NonEmptyBy t f a }
+
+instance Associative t => SemigroupIn (WrapHBF t) (WrapNE t f) where
+    biretract = WrapNE . appendNE . hbimap unwrapNE unwrapNE . unwrapHBF
+    binterpret f g = biretract . hbimap f g

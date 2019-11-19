@@ -11,15 +11,37 @@ Version 0.2.0.0
 *   Major restructuring of the hbifunctor-based classes. `Data.HBifunctor.Associative`
     and `Data.HBifunctor.Tensor` are more or less completely rewritten; the
     typeclasses are restructured in order to more properly reflect the math
-    that motivates them.
+    that motivates them.  See the updated type classes to see what methods
+    ended up where.
 
     However, much of the external API that is independent of the underlying
     abstraction is effectively unchanged (`biget`, etc.)
+
+    For the most part, the migration would involve:
+
+    *   `SF`, `MF` are now `NonEmptyBy` and `ListBy`, respectively.
+    *   `-SF` and `-MF` as suffixes for function names now become `-NE` and
+        `-LB`.
 
 *   Restructuring of `Interpret`: It now takes an extra type parameter, the
     type to interpret into.  This makes it more consistent with the new `MonoidIn`
     and `SemigroupIn`.  Most of the external API should be effectively
     unchanged.
+
+    For the most part, the migration would only affect people who *write*
+    instances of `Interpret`.  Instead of
+
+    ```haskell
+    instance Interpret MyType where
+        type C MyType = Monad
+    ```
+
+    you would write:
+
+    ```haskell
+    instance Monad f => Interpret MyType f where
+    ```
+
 
 Version 0.1.1.1
 ---------------

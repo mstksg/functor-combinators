@@ -49,7 +49,6 @@ module Data.HFunctor.Chain (
   , unmatchChain
   ) where
 
-import           Control.Monad
 import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
