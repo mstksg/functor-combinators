@@ -23,6 +23,9 @@ Version 0.2.0.0
     *   `-SF` and `-MF` as suffixes for function names now become `-NE` and
         `-LB`.
 
+*   `upgradeC` no longer exists; use unsafe functions from
+    *Data.Functor.Combinator.Unsafe* instead, on a per-tensor basis.
+
 *   Restructuring of `Interpret`: It now takes an extra type parameter, the
     type to interpret into.  This makes it more consistent with the new `MonoidIn`
     and `SemigroupIn`.  Most of the external API should be effectively
