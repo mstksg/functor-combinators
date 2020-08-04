@@ -8,7 +8,7 @@ module Data.Functor.Contravariant.Night (
   , trans1, trans2
   , intro1, intro2
   , elim1, elim2
-  , Refuted(..)
+  , Not(..)
   ) where
 
 import           Control.Natural
@@ -34,9 +34,10 @@ import qualified Data.Bifunctor.Swap               as B
 -- This is a consumer of @'Either' a b@s, and it consumes 'Left' branches
 -- by feeding it to @x@, and 'Right' branches by feeding it to @y@.
 --
--- The name 'Night' comes from a pun from the fact that this could be
--- considered the dual of the covariant 'Control.Functor.Day' -- the
--- "opposite" of Day.
+-- Mathematically, this is a contravariant day convolution, except with
+-- a different choice of bifunctor ('Either') than the typical one we talk
+-- about in Haskell (which uses '(,)').  Therefore, it is an alternative to
+-- the typical 'Day' convolution --- hence, the name 'Night'.
 data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
     Night :: f b
           -> g c
@@ -88,44 +89,31 @@ trans1 f (Night x y z) = Night (f x) y z
 trans2 :: g ~> h -> Night f g ~> Night f h
 trans2 f (Night x y z) = Night x (f y) z
 
--- | A value of type @'Refuted' a@ is "proof" that @a@ is uninhabited.
-newtype Refuted a = Refuted { refute :: a -> Void }
+-- | A value of type @'Not' a@ is "proof" that @a@ is uninhabited.
+newtype Not a = Not { refute :: a -> Void }
 
-instance Contravariant Refuted where
-    contramap f (Refuted g) = Refuted (g . f)
+instance Contravariant Not where
+    contramap f (Not g) = Not (g . f)
 
-instance Semigroup (Refuted a) where
-    Refuted f <> Refuted g = Refuted (f <> g)
+instance Semigroup (Not a) where
+    Not f <> Not g = Not (f <> g)
 
--- | The left identity of 'Night' is 'Refuted'; this is one side of that
+-- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
-intro1 :: g ~> Night Refuted g
-intro1 x = Night (Refuted id) x Right
+intro1 :: g ~> Night Not g
+intro1 x = Night (Not id) x Right
 
--- | The right identity of 'Night' is 'Refuted'; this is one side of that
+-- | The right identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
-intro2 :: f ~> Night f Refuted
-intro2 x = Night x (Refuted id) Left
+intro2 :: f ~> Night f Not
+intro2 x = Night x (Not id) Left
 
--- | The left identity of 'Night' is 'Refuted'; this is one side of that
+-- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
-elim1 :: Contravariant g => Night Refuted g ~> g
+elim1 :: Contravariant g => Night Not g ~> g
 elim1 (Night x y z) = contramap (either (absurd . refute x) id . z) y
 
--- | The right identity of 'Night' is 'Refuted'; this is one side of that
+-- | The right identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
-elim2 :: Contravariant f => Night f Refuted ~> f
+elim2 :: Contravariant f => Night f Not ~> f
 elim2 (Night x y z) = contramap (either id (absurd . refute y) . z) x
--- data InvNight :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
---     InvNight
---         :: f b
---         -> g c
---         -> (Either b c -> a)
---         -> (a -> Either b c)
---         -> InvNight f g a
-
--- introInvDay :: f ~> InvNight Refuted f
--- introInvDay x = InvNight (Refuted id) x (either absurd id) Right
-
--- elimInvDay :: Invariant f => InvNight Refuted f ~> f
--- elimInvDay (InvNight x y f g) = invmap (f . Right) (either (absurd . refute x) id . g) y

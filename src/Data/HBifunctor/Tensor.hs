@@ -87,7 +87,7 @@ import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divisible.Free
-import           Data.Functor.Contravariant.Night          (Night(..), Refuted(..))
+import           Data.Functor.Contravariant.Night          (Night(..), Not(..))
 import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
@@ -103,7 +103,6 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           GHC.Generics
-import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
@@ -604,7 +603,7 @@ instance Tensor CD.Day Proxy where
 instance (Divise f, Divisible f) => MonoidIn CD.Day Proxy f where
     pureT _ = conquer
 
-instance Tensor Night Refuted where
+instance Tensor Night Not where
     type ListBy Night = Dec
     intro1 = N.intro2
     intro2 = N.intro1
@@ -616,17 +615,17 @@ instance Tensor Night Refuted where
     splittingLB = isoF to_ from_
       where
         to_ = \case
-          Lose   f      -> L1 (Refuted f)
+          Lose   f      -> L1 (Not f)
           Choose f x xs -> R1 (Night x xs f)
         from_ = \case
-          L1 (Refuted f)    -> Lose f
+          L1 (Not f)    -> Lose f
           R1 (Night x xs f) -> Choose f x xs
 
     toListBy (Night x y z) = Choose z x (inject y)
 
 -- | Instances of 'Conclude' are monoids in the monoidal category on 'Night'.
-instance Conclude f => MonoidIn Night Refuted f where
-    pureT (Refuted x) = conclude x
+instance Conclude f => MonoidIn Night Not f where
+    pureT (Not x) = conclude x
 
 instance Tensor (:+:) V1 where
     type ListBy (:+:) = Step
@@ -760,10 +759,10 @@ instance Matchable CD.Day Proxy where
       Conquer       -> L1 Proxy
       Divide f x xs -> R1 (Div1 f x xs)
 
-instance Matchable Night Refuted where
+instance Matchable Night Not where
     unsplitNE (Night x xs f) = Dec1 f x xs
     matchLB = \case
-      Lose   f      -> L1 (Refuted f)
+      Lose   f      -> L1 (Not f)
       Choose f x xs -> R1 (Dec1 f x xs)
 
 instance Matchable (:+:) V1 where

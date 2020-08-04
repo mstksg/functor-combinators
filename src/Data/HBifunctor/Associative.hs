@@ -88,11 +88,9 @@ import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           Data.Void
 import           GHC.Generics
-import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
-import qualified Data.List.NonEmpty                        as NE
 import qualified Data.Map.NonEmpty                         as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
@@ -140,6 +138,10 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where
     -- See 'Data.HBifunctor.Tensor.ListBy' for a "possibly empty" version
     -- of this type.
     type NonEmptyBy t :: (Type -> Type) -> Type -> Type
+
+    -- | A description of "what type of Functor" this tensor is expected to
+    -- be applied to.  This should typically always be either 'Functor',
+    -- 'Contravariant', or 'Invariant'.
     type FunctorBy t :: (Type -> Type) -> Constraint
     type FunctorBy t = Unconstrained
 

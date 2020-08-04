@@ -31,6 +31,7 @@ module Data.HFunctor.Chain (
   , reroll
   , unrolling
   , appendChain
+  , splittingChain
   -- * 'Chain1'
   , Chain1(..)
   , foldChain1
@@ -40,6 +41,7 @@ module Data.HFunctor.Chain (
   , rerollNE
   , appendChain1
   , fromChain1
+  , matchChain1
   -- ** Matchable
   -- | The following conversions between 'Chain' and 'Chain1' are only
   -- possible if @t@ is 'Matchable'
@@ -532,6 +534,25 @@ appendChain = unroll
             . appendLB
             . hbimap reroll reroll
 
+-- | For completeness, an isomorphism between 'Chain1' and its two
+-- constructors, to match 'matchNE'.
+matchChain1 :: Chain1 t f ~> (f :+: t f (Chain1 t f))
+matchChain1 = \case
+    Done1 x  -> L1 x
+    More1 xs -> R1 xs
+
+-- | For completeness, an isomorphism between 'Chain' and its two
+-- constructors, to match 'splittingLB'.
+splittingChain :: Chain t i f <~> (i :+: t f (Chain t i f))
+splittingChain = isoF to_ from_
+  where
+    to_ = \case
+      Done x  -> L1 x
+      More xs -> R1 xs
+    from_ = \case
+      L1 x  -> Done x
+      R1 xs -> More xs
+
 -- | A @'Chain1' t f@ is like a non-empty linked list of @f@s, and
 -- a @'Chain' t i f@ is a possibly-empty linked list of @f@s.  This
 -- witnesses the fact that the former is isomorphic to @f@ consed to the
@@ -597,14 +618,14 @@ instance Divisible (Chain CD.Day Proxy f) where
     divide f x y = appendChain $ CD.Day x y f
     conquer = Done Proxy
 
-instance Decide (Chain N.Night N.Refuted f) where
+instance Decide (Chain N.Night N.Not f) where
     decide f x y = appendChain $ N.Night x y f
 
 -- | @'Chain' 'N.Night' 'N.Refutec'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by 'N.Night'" --- aka, the free
 -- 'Conclude'.
-instance Conclude (Chain N.Night N.Refuted f) where
-    conclude = Done . N.Refuted
+instance Conclude (Chain N.Night N.Not f) where
+    conclude = Done . N.Not
 
 instance Apply (Chain Comp Identity f) where
     (<.>) = apDefault

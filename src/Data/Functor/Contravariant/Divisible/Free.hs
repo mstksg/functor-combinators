@@ -33,9 +33,9 @@ import           Data.Void
 --
 -- Note that @'Div' f@ is essentially @'ListF'
 -- ('Data.Functor.Contravariant.Coyoneda' f)@, or just @'ListF' f@ in the
--- case that @f@ is already contravariant.  However, it can be more
--- convenient to use if you are working with an intermediate @f@ that isn't
--- 'Contravariant'.
+-- case that @f@ is already contravariant.  However, this is left in here
+-- because it can be more convenient to use if you are working with an
+-- intermediate @f@ that isn't 'Contravariant'.
 data Div :: (Type -> Type) -> Type -> Type where
     Conquer :: Div f a
     Divide  :: (a -> (b, c)) -> f b -> Div f c -> Div f a

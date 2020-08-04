@@ -6,3 +6,4 @@ functor-combinators.cabal
 dist-newstyle/
 *.dump-hi
 *~
+scratch
