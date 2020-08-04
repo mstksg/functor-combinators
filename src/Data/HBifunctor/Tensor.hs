@@ -393,11 +393,11 @@ interpretLB f = retractLB @t . hmap f
 --
 -- Note that this essentially gives an instance for @'MonoidIn' t i (ListBy
 -- t f)@, for any functor @f@; this is witnessed by 'WrapLB'.
-nilLB    :: forall t i f. (Tensor t i, FunctorBy t f) => i ~> ListBy t f
+nilLB    :: forall t i f. Tensor t i => i ~> ListBy t f
 nilLB    = reviewF (splittingLB @t) . L1
 
 -- | Lets us "cons" an application of @f@ to the front of an @'ListBy' t f@.
-consLB   :: (Tensor t i, FunctorBy t f) => t f (ListBy t f) ~> ListBy t f
+consLB   :: Tensor t i => t f (ListBy t f) ~> ListBy t f
 consLB   = reviewF splittingLB . R1
 
 -- | "Pattern match" on an @'ListBy' t@
@@ -407,7 +407,7 @@ consLB   = reviewF splittingLB . R1
 --
 -- This is analogous to the function @'Data.List.uncons' :: [a] -> Maybe
 -- (a, [a])@.
-unconsLB :: (Tensor t i, FunctorBy t f) => ListBy t f ~> i :+: t f (ListBy t f)
+unconsLB :: Tensor t i => ListBy t f ~> i :+: t f (ListBy t f)
 unconsLB = viewF splittingLB
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
@@ -482,7 +482,7 @@ class Tensor t i => Matchable t i where
 -- | An @'NonEmptyBy' t f@ is isomorphic to an @f@ consed with an @'ListBy' t f@, like
 -- how a @'Data.List.NonEmpty.NonEmpty' a@ is isomorphic to @(a, [a])@.
 splittingNE
-    :: (Matchable t i, FunctorBy t f)
+    :: Matchable t i
     => NonEmptyBy t f <~> t f (ListBy t f)
 splittingNE = isoF splitNE unsplitNE
 
@@ -490,7 +490,7 @@ splittingNE = isoF splitNE unsplitNE
 -- non-empty case (@'NonEmptyBy' t f@), like how @[a]@ is isomorphic to @'Maybe'
 -- ('Data.List.NonEmpty.NonEmpty' a)@.
 matchingLB
-    :: forall t i f. (Matchable t i, FunctorBy t f)
+    :: forall t i f. Matchable t i
     => ListBy t f <~> i :+: NonEmptyBy t f
 matchingLB = isoF (matchLB @t) (nilLB @t !*! fromNE @t)
 
@@ -575,41 +575,24 @@ instance (Apply f, Applicative f) => MonoidIn Day Identity f where
     pureT            = generalize
 
 instance Tensor CD.Day Proxy where
-    type ListBy CD.Day = ComposeT ListF CCY.Coyoneda
+    type ListBy CD.Day = Div
     intro1 = CD.intro2
     intro2 = CD.intro1
     elim1 = CD.day1
     elim2 = CD.day2
 
-    -- appendLB (CD.Day x y z) = divide z x y
-    -- splitNE (NonEmptyF (x :| xs)) = CD.Day x (ListF xs) (\y -> (y,y))
-    -- splittingLB = isoF to_ from_
-    --   where
-    --     to_ = \case
-    --       ListF []     -> L1 Proxy
-    --       ListF (x:xs) -> R1 (CD.Day x (ListF xs) (\y -> (y,y)))
-    --     from_ = \case
-    --       L1 Proxy                   -> ListF []
-    --       R1 (CD.Day x (ListF xs) f) -> ListF $
-    --           contramap (fst . f) x
-    --         : (map . contramap) (snd . f) xs
+    appendLB (CD.Day x y z) = divide z x y
+    splitNE (Div1 f x xs) = CD.Day x xs f
+    splittingLB = isoF to_ from_
+      where
+        to_ = \case
+          Conquer       -> L1 Proxy
+          Divide f x xs -> R1 (CD.Day x xs f)
+        from_ = \case
+          L1 Proxy           -> Conquer
+          R1 (CD.Day x xs f) -> Divide f x xs
 
-    -- toListBy (CD.Day x y f) = ListF $
-    --     contramap (fst . f) x
-    --   : [contramap (snd . f) y]
-
-    -- appendLB (CD.Day x y z) = divide z x y
-    -- splitNE (Div1 f x xs) = CD.Day x xs f
-    -- splittingLB = isoF to_ from_
-    --   where
-    --     to_ = \case
-    --       Conquer       -> L1 Proxy
-    --       Divide f x xs -> R1 (CD.Day x xs f)
-    --     from_ = \case
-    --       L1 Proxy           -> Conquer
-    --       R1 (CD.Day x xs f) -> Divide f x xs
-
-    -- toListBy (CD.Day x y z) = Divide z x (inject y)
+    toListBy (CD.Day x y z) = Divide z x (inject y)
 
 -- | Instances of 'Divisible' are monoids in the monoidal category on
 -- contravariant 'CD.Day'.
@@ -770,6 +753,18 @@ instance Matchable Product Proxy where
 instance Matchable Day Identity where
     unsplitNE = DayAp1
     matchLB   = fromAp
+
+instance Matchable CD.Day Proxy where
+    unsplitNE (CD.Day x xs f) = Div1 f x xs
+    matchLB = \case
+      Conquer       -> L1 Proxy
+      Divide f x xs -> R1 (Div1 f x xs)
+
+instance Matchable Night Refuted where
+    unsplitNE (Night x xs f) = Dec1 f x xs
+    matchLB = \case
+      Lose   f      -> L1 (Refuted f)
+      Choose f x xs -> R1 (Dec1 f x xs)
 
 instance Matchable (:+:) V1 where
     unsplitNE   = stepUp

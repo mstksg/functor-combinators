@@ -1,18 +1,19 @@
 
 module Data.Functor.Contravariant.Divisible.Free (
     Div(..)
-  , hoistDiv, liftDiv
+  , hoistDiv, liftDiv, runDiv
+  , divListF, listFDiv
   , Div1(..)
-  , hoistDiv1, liftDiv1, toDiv
+  , hoistDiv1, liftDiv1, toDiv, runDiv1
+  , div1NonEmptyF, nonEmptyFDiv1
   , Dec(..)
-  , hoistDec, liftDec
+  , hoistDec, liftDec, runDec
   , Dec1(..)
-  , hoistDec1, liftDec1, toDec
-  , divlist, listdiv
+  , hoistDec1, liftDec1, toDec, runDec1
   ) where
 
-import           Control.Natural
 import           Control.Applicative.ListF
+import           Control.Natural
 import           Data.Bifunctor
 import           Data.Bifunctor.Assoc
 import           Data.Functor.Contravariant
@@ -23,10 +24,18 @@ import           Data.Functor.Contravariant.Divisible
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
 import           Data.Kind
+import           Data.List
+import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Void
 
 -- | The free 'Divisible'.  Used to sequence multiple contravariant
 -- consumers, splitting out the input across all consumers.
+--
+-- Note that @'Div' f@ is essentially @'ListF'
+-- ('Data.Functor.Contravariant.Coyoneda' f)@, or just @'ListF' f@ in the
+-- case that @f@ is already contravariant.  However, it can be more
+-- convenient to use if you are working with an intermediate @f@ that isn't
+-- 'Contravariant'.
 data Div :: (Type -> Type) -> Type -> Type where
     Conquer :: Div f a
     Divide  :: (a -> (b, c)) -> f b -> Div f c -> Div f a
@@ -46,20 +55,25 @@ instance Divisible (Div f) where
     conquer  = Conquer
     divide   = divise
 
-divlist :: Contravariant f => Div f ~> ListF f
-divlist = \case
-    Conquer       -> ListF []
-    Divide f x xs -> ListF
-                   . (contramap (fst . f) x :)
-                   . (map . contramap) (snd . f)
-                   . runListF
-                   $ divlist xs
+-- | 'Div' is isomorphic to 'ListF' for contravariant @f@.  This witnesses
+-- one way of that isomorphism.
+--
+-- Be aware that this is essentially O(n^2).
+divListF :: forall f. Contravariant f => Div f ~> ListF f
+divListF = ListF . unfoldr go
+  where
+    go = \case
+      Conquer       -> Nothing
+      Divide f x xs -> Just ( contramap (fst . f) x
+                            , contramap (snd . f) xs
+                            )
 
-listdiv :: ListF f ~> Div f
-listdiv = \case
-    ListF []     -> Conquer
-    ListF (x:xs) -> Divide (\y -> (y,y)) x (listdiv (ListF xs))
-
+-- | 'Div' is isomorphic to 'ListF' for contravariant @f@.  This witnesses
+-- one way of that isomorphism.
+--
+-- This direction is O(n), unlike 'divListF'.
+listFDiv :: ListF f ~> Div f
+listFDiv = foldr (Divide (\y -> (y,y))) Conquer . runListF
 
 hoistDiv :: forall f g. (f ~> g) -> Div f ~> Div g
 hoistDiv f = go
@@ -88,6 +102,12 @@ instance Divisible f => Interpret Div f where
     interpret = runDiv
 
 -- | The free 'Divise': a non-empty version of 'Div'.
+--
+-- Note that @'Div1' f@ is essentially @'NonEmptyF'
+-- ('Data.Functor.Contravariant.Coyoneda' f)@, or just @'NonEmptyF' f@ in the
+-- case that @f@ is already contravariant.  However, it can be more
+-- convenient to use if you are working with an intermediate @f@ that isn't
+-- 'Contravariant'.
 data Div1 :: (Type -> Type) -> Type -> Type where
     Div1 :: (a -> (b, c)) -> f b -> Div f c -> Div1 f a
 
@@ -133,6 +153,22 @@ runDiv1_ f = go
       Conquer       -> contramap (fst . g) (f x)
       Divide h y ys -> divise g (f x) (go h y ys)
 
+-- | 'Div1' is isomorphic to 'NonEmptyF' for contravariant @f@.  This
+-- witnesses one way of that isomorphism.
+--
+-- Be aware that this is essentially O(n^2).
+div1NonEmptyF :: Contravariant f => Div1 f ~> NonEmptyF f
+div1NonEmptyF (Div1 f x xs) = NonEmptyF $
+       contramap (fst . f) x
+    :| runListF (divListF (contramap (snd . f) xs))
+
+-- | 'Div1' is isomorphic to 'NonEmptyF' for contravariant @f@.  This
+-- witnesses one way of that isomorphism.
+--
+-- This direction is O(n), unlike 'div1NonEmptyF'.
+nonEmptyFDiv1 :: NonEmptyF f ~> Div1 f
+nonEmptyFDiv1 (NonEmptyF (x :| xs)) =
+    Div1 (\y -> (y,y)) x (listFDiv (ListF xs))
 
 -- | The free 'Decide'.  Used to aggregate multiple possible consumers,
 -- directing the input into an appropriate consumer.
@@ -220,5 +256,5 @@ runDec1_ f = go
   where
     go :: (x -> Either y z) -> f y -> Dec f z -> g x
     go g x = \case
-      Lose h -> contramap (either id (absurd . h) . g) (f x)
+      Lose h        -> contramap (either id (absurd . h) . g) (f x)
       Choose h y ys -> decide g (f x) (go h y ys)

@@ -460,29 +460,17 @@ instance Apply f => SemigroupIn Day f where
     binterpret f g (Day x y z) = z <$> f x <.> g y
 
 instance Associative CD.Day where
-    type NonEmptyBy CD.Day = ComposeT NonEmptyF CCY.Coyoneda
+    type NonEmptyBy CD.Day = Div1
     type FunctorBy CD.Day = Contravariant
     associating = isoF CD.assoc CD.disassoc
 
-    appendNE (CD.Day (ComposeT (NonEmptyF xs)) (ComposeT (NonEmptyF ys)) f) = ComposeT $
-        NonEmptyF $ (fmap . contramap) (fst . f) xs
-                 <> (fmap . contramap) (snd . f) ys
-    matchNE (ComposeT (NonEmptyF (x :| xs))) = case NE.nonEmpty xs of
-      Nothing -> L1 $ CCY.lowerCoyoneda x
-      Just ys -> R1 $ CD.Day (CCY.lowerCoyoneda x) (ComposeT (NonEmptyF ys)) (\y -> (y,y))
+    appendNE (CD.Day x y f) = divise f x y
+    matchNE (Div1 f x xs) = case xs of
+      Conquer -> L1 $ contramap (fst . f) x
+      Divide g y ys -> R1 $ CD.Day x (Div1 g y ys) f
 
-    consNE (CD.Day x (ComposeT (NonEmptyF xs)) f) = ComposeT $ NonEmptyF $
-        CCY.Coyoneda (fst . f) x :| (map . contramap) (snd . f) (toList xs)
-    toNonEmptyBy (CD.Day x y f) = ComposeT $ NonEmptyF $
-        CCY.Coyoneda (fst . f) x :| [CCY.Coyoneda (snd . f) y]
-
-    -- appendNE (CD.Day x y f) = divise f x y
-    -- matchNE (Div1 f x xs) = case xs of
-    --   Conquer -> L1 $ contramap (fst . f) x
-    --   Divide g y ys -> R1 $ CD.Day x (Div1 g y ys) f
-
-    -- consNE (CD.Day x y f) = Div1 f x (toDiv y)
-    -- toNonEmptyBy (CD.Day x y f) = Div1 f x (inject y)
+    consNE (CD.Day x y f) = Div1 f x (toDiv y)
+    toNonEmptyBy (CD.Day x y f) = Div1 f x (inject y)
 
 instance Divise f => SemigroupIn CD.Day f where
     biretract      (CD.Day x y f) = divise f x y
