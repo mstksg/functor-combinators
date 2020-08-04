@@ -54,15 +54,16 @@ import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor.Internal
 import           Data.Kind
-import           Data.List.NonEmpty             (NonEmpty(..))
+import           Data.List.NonEmpty                  (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           GHC.Generics
-import qualified Control.Alternative.Free       as Alt
-import qualified Control.Applicative.Free.Fast  as FAF
-import qualified Control.Applicative.Free.Final as FA
-import qualified Data.Map                       as M
-import qualified Data.Map.NonEmpty              as NEM
+import qualified Control.Alternative.Free            as Alt
+import qualified Control.Applicative.Free.Fast       as FAF
+import qualified Control.Applicative.Free.Final      as FA
+import qualified Data.Functor.Contravariant.Coyoneda as CCY
+import qualified Data.Map                            as M
+import qualified Data.Map.NonEmpty                   as NEM
 
 -- | Lift an isomorphism over an 'HFunctor'.
 --
@@ -343,6 +344,9 @@ class Inject t => HBind t where
 
 instance Inject Coyoneda where
     inject = liftCoyoneda
+
+instance Inject CCY.Coyoneda where
+    inject = CCY.liftCoyoneda
 
 instance Inject Ap where
     inject = liftAp

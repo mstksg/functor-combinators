@@ -36,15 +36,18 @@ import           Data.Deriving
 import           Data.Foldable
 import           Data.Functor.Bind
 import           Data.Functor.Classes
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Plus
-import           Data.List.NonEmpty         (NonEmpty(..))
+import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import           GHC.Generics
-import qualified Data.Map                   as M
-import qualified Data.Map.NonEmpty          as NEM
+import qualified Data.Map                             as M
+import qualified Data.Map.NonEmpty                    as NEM
 
 -- | A list of @f a@s.  Can be used to describe a product of many different
 -- values of type @f a@.
@@ -82,6 +85,18 @@ instance Monoid (ListF f a) where
 
 instance Pointed f => Pointed (ListF f) where
     point = ListF . (: []) . point
+
+instance Contravariant f => Contravariant (ListF f) where
+    contramap f (ListF xs) = ListF ((map . contramap) f xs)
+
+instance Contravariant f => Divise (ListF f) where
+    divise f (ListF xs) (ListF ys) = ListF $
+         (map . contramap) (fst . f) xs
+      <> (map . contramap) (snd . f) ys
+
+instance Contravariant f => Divisible (ListF f) where
+    divide  = divise
+    conquer = ListF []
 
 -- | Map a function over the inside of a 'ListF'.
 mapListF

@@ -8,9 +8,11 @@ module Data.Functor.Contravariant.Divisible.Free (
   , hoistDec, liftDec
   , Dec1(..)
   , hoistDec1, liftDec1, toDec
+  , divlist, listdiv
   ) where
 
 import           Control.Natural
+import           Control.Applicative.ListF
 import           Data.Bifunctor
 import           Data.Bifunctor.Assoc
 import           Data.Functor.Contravariant
@@ -43,6 +45,21 @@ instance Divise (Div f) where
 instance Divisible (Div f) where
     conquer  = Conquer
     divide   = divise
+
+divlist :: Contravariant f => Div f ~> ListF f
+divlist = \case
+    Conquer       -> ListF []
+    Divide f x xs -> ListF
+                   . (contramap (fst . f) x :)
+                   . (map . contramap) (snd . f)
+                   . runListF
+                   $ divlist xs
+
+listdiv :: ListF f ~> Div f
+listdiv = \case
+    ListF []     -> Conquer
+    ListF (x:xs) -> Divide (\y -> (y,y)) x (listdiv (ListF xs))
+
 
 hoistDiv :: forall f g. (f ~> g) -> Div f ~> Div g
 hoistDiv f = go

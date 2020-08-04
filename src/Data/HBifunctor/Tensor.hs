@@ -103,6 +103,7 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           GHC.Generics
+import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
@@ -392,11 +393,11 @@ interpretLB f = retractLB @t . hmap f
 --
 -- Note that this essentially gives an instance for @'MonoidIn' t i (ListBy
 -- t f)@, for any functor @f@; this is witnessed by 'WrapLB'.
-nilLB    :: forall t i f. Tensor t i => i ~> ListBy t f
+nilLB    :: forall t i f. (Tensor t i, FunctorBy t f) => i ~> ListBy t f
 nilLB    = reviewF (splittingLB @t) . L1
 
 -- | Lets us "cons" an application of @f@ to the front of an @'ListBy' t f@.
-consLB   :: Tensor t i => t f (ListBy t f) ~> ListBy t f
+consLB   :: (Tensor t i, FunctorBy t f) => t f (ListBy t f) ~> ListBy t f
 consLB   = reviewF splittingLB . R1
 
 -- | "Pattern match" on an @'ListBy' t@
@@ -406,7 +407,7 @@ consLB   = reviewF splittingLB . R1
 --
 -- This is analogous to the function @'Data.List.uncons' :: [a] -> Maybe
 -- (a, [a])@.
-unconsLB :: Tensor t i => ListBy t f ~> i :+: t f (ListBy t f)
+unconsLB :: (Tensor t i, FunctorBy t f) => ListBy t f ~> i :+: t f (ListBy t f)
 unconsLB = viewF splittingLB
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
@@ -481,7 +482,7 @@ class Tensor t i => Matchable t i where
 -- | An @'NonEmptyBy' t f@ is isomorphic to an @f@ consed with an @'ListBy' t f@, like
 -- how a @'Data.List.NonEmpty.NonEmpty' a@ is isomorphic to @(a, [a])@.
 splittingNE
-    :: Matchable t i
+    :: (Matchable t i, FunctorBy t f)
     => NonEmptyBy t f <~> t f (ListBy t f)
 splittingNE = isoF splitNE unsplitNE
 
@@ -489,7 +490,7 @@ splittingNE = isoF splitNE unsplitNE
 -- non-empty case (@'NonEmptyBy' t f@), like how @[a]@ is isomorphic to @'Maybe'
 -- ('Data.List.NonEmpty.NonEmpty' a)@.
 matchingLB
-    :: forall t i f. Matchable t i
+    :: forall t i f. (Matchable t i, FunctorBy t f)
     => ListBy t f <~> i :+: NonEmptyBy t f
 matchingLB = isoF (matchLB @t) (nilLB @t !*! fromNE @t)
 
@@ -574,24 +575,41 @@ instance (Apply f, Applicative f) => MonoidIn Day Identity f where
     pureT            = generalize
 
 instance Tensor CD.Day Proxy where
-    type ListBy CD.Day = Div
+    type ListBy CD.Day = ComposeT ListF CCY.Coyoneda
     intro1 = CD.intro2
     intro2 = CD.intro1
     elim1 = CD.day1
     elim2 = CD.day2
 
-    appendLB (CD.Day x y z) = divide z x y
-    splitNE (Div1 f x xs) = CD.Day x xs f
-    splittingLB = isoF to_ from_
-      where
-        to_ = \case
-          Conquer       -> L1 Proxy
-          Divide f x xs -> R1 (CD.Day x xs f)
-        from_ = \case
-          L1 Proxy           -> Conquer
-          R1 (CD.Day x xs f) -> Divide f x xs
+    -- appendLB (CD.Day x y z) = divide z x y
+    -- splitNE (NonEmptyF (x :| xs)) = CD.Day x (ListF xs) (\y -> (y,y))
+    -- splittingLB = isoF to_ from_
+    --   where
+    --     to_ = \case
+    --       ListF []     -> L1 Proxy
+    --       ListF (x:xs) -> R1 (CD.Day x (ListF xs) (\y -> (y,y)))
+    --     from_ = \case
+    --       L1 Proxy                   -> ListF []
+    --       R1 (CD.Day x (ListF xs) f) -> ListF $
+    --           contramap (fst . f) x
+    --         : (map . contramap) (snd . f) xs
 
-    toListBy (CD.Day x y z) = Divide z x (inject y)
+    -- toListBy (CD.Day x y f) = ListF $
+    --     contramap (fst . f) x
+    --   : [contramap (snd . f) y]
+
+    -- appendLB (CD.Day x y z) = divide z x y
+    -- splitNE (Div1 f x xs) = CD.Day x xs f
+    -- splittingLB = isoF to_ from_
+    --   where
+    --     to_ = \case
+    --       Conquer       -> L1 Proxy
+    --       Divide f x xs -> R1 (CD.Day x xs f)
+    --     from_ = \case
+    --       L1 Proxy           -> Conquer
+    --       R1 (CD.Day x xs f) -> Divide f x xs
+
+    -- toListBy (CD.Day x y z) = Divide z x (inject y)
 
 -- | Instances of 'Divisible' are monoids in the monoidal category on
 -- contravariant 'CD.Day'.
@@ -817,9 +835,9 @@ instance Contravariant (ListBy t f) => Contravariant (WrapLB t f) where
 instance Invariant (ListBy t f) => Invariant (WrapLB t f) where
     invmap f g (WrapLB x) = WrapLB (invmap f g x)
 
-instance (Tensor t i, FunctorBy t (WrapLB t f)) => SemigroupIn (WrapHBF t) (WrapLB t f) where
+instance (Tensor t i, FunctorBy t f, FunctorBy t (WrapLB t f)) => SemigroupIn (WrapHBF t) (WrapLB t f) where
     biretract = WrapLB . appendLB . hbimap unwrapLB unwrapLB . unwrapHBF
     binterpret f g = biretract . hbimap f g
 
-instance (Tensor t i, FunctorBy t (WrapLB t f)) => MonoidIn (WrapHBF t) (WrapF i) (WrapLB t f) where
+instance (Tensor t i, FunctorBy t f, FunctorBy t (WrapLB t f)) => MonoidIn (WrapHBF t) (WrapF i) (WrapLB t f) where
     pureT = WrapLB . nilLB @t . unwrapF

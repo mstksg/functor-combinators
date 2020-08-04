@@ -25,9 +25,9 @@ import           Data.Bifunctor
 import           Data.Bifunctor.Joker
 import           Data.Coerce
 import           Data.Functor.Bind
-import           Data.Functor.Contravariant.Night (Night(..))
+import           Data.Functor.Contravariant.Night    (Night(..))
 import           Data.Functor.Coyoneda
-import           Data.Functor.Day                 (Day(..))
+import           Data.Functor.Day                    (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Product
 import           Data.Functor.Reverse
@@ -38,16 +38,17 @@ import           Data.Kind
 import           Data.Proxy
 import           Data.Tagged
 import           Data.Vinyl.CoRec
-import           Data.Vinyl.Core                  (Rec)
+import           Data.Vinyl.Core                     (Rec)
 import           Data.Vinyl.Recursive
 import           GHC.Generics
-import qualified Control.Alternative.Free         as Alt
-import qualified Control.Applicative.Free.Fast    as FAF
-import qualified Control.Applicative.Free.Final   as FA
-import qualified Control.Monad.Free.Church        as MC
-import qualified Data.Functor.Contravariant.Day   as CD
-import qualified Data.Functor.Contravariant.Night as N
-import qualified Data.Functor.Day                 as D
+import qualified Control.Alternative.Free            as Alt
+import qualified Control.Applicative.Free.Fast       as FAF
+import qualified Control.Applicative.Free.Final      as FA
+import qualified Control.Monad.Free.Church           as MC
+import qualified Data.Functor.Contravariant.Coyoneda as CCY
+import qualified Data.Functor.Contravariant.Day      as CD
+import qualified Data.Functor.Contravariant.Night    as N
+import qualified Data.Functor.Day                    as D
 
 -- | An 'HFunctor' can be thought of a unary "functor transformer" ---
 -- a basic functor combinator.  It takes a functor as input and returns
@@ -186,6 +187,9 @@ absorb _ = Proxy
 
 instance HFunctor Coyoneda where
     hmap = hoistCoyoneda
+
+instance HFunctor CCY.Coyoneda where
+    hmap f (CCY.Coyoneda g x) = CCY.Coyoneda g (f x)
 
 instance HFunctor Ap where
     hmap = hoistAp

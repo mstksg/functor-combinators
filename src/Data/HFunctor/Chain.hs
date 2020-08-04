@@ -259,7 +259,7 @@ unrollNE = unfoldChain1 matchNE
 -- @
 -- 'rerollNE' = 'foldChain1' 'inject' 'consNE'
 -- @
-rerollNE :: Associative t => Chain1 t f ~> NonEmptyBy t f
+rerollNE :: (Associative t, FunctorBy t f) => Chain1 t f ~> NonEmptyBy t f
 rerollNE = foldChain1 inject consNE
 
 -- | 'Chain1' is a semigroup with respect to @t@: we can "combine" them in
@@ -479,7 +479,7 @@ fromChain1 = foldChain1 (More . hright Done . intro1) More
 -- 'unrolling' states that the two types are isormorphic.  Use 'unroll'
 -- and 'reroll' to convert between the two.
 unrolling
-    :: Tensor t i
+    :: (Tensor t i, FunctorBy t f)
     => ListBy t f <~> Chain t i f
 unrolling = isoF unroll reroll
 
@@ -492,7 +492,7 @@ unrolling = isoF unroll reroll
 -- 'unroll' = 'unfoldChain' 'unconsLB'
 -- @
 unroll
-    :: Tensor t i
+    :: (Tensor t i, FunctorBy t f)
     => ListBy t f ~> Chain t i f
 unroll = unfoldChain unconsLB
 
@@ -512,7 +512,7 @@ unroll = unfoldChain unconsLB
 --     :: 'Chain' Comp 'Data.Functor.Identity.Identity' f a -> 'Control.Monad.Freer.Church.Free' f a
 -- @
 reroll
-    :: forall t i f. Tensor t i
+    :: forall t i f. (Tensor t i, FunctorBy t f)
     => Chain t i f ~> ListBy t f
 reroll = foldChain (nilLB @t) consLB
 
@@ -526,7 +526,7 @@ reroll = foldChain (nilLB @t) consLB
 --
 -- @since 0.1.1.0
 appendChain
-    :: forall t i f. Tensor t i
+    :: forall t i f. (Tensor t i, FunctorBy t f)
     => t (Chain t i f) (Chain t i f) ~> Chain t i f
 appendChain = unroll
             . appendLB
@@ -546,7 +546,7 @@ splittingChain1 = fromF unrollingNE
 -- | The "forward" function representing 'splittingChain1'.  Provided here
 -- as a separate function because it does not require @'Functor' f@.
 splitChain1
-    :: forall t i f. Tensor t i
+    :: forall t i f. (Tensor t i, FunctorBy t f)
     => Chain1 t f ~> t f (Chain t i f)
 splitChain1 = hright (unroll @t) . splitNE @t . rerollNE
 
@@ -561,65 +561,65 @@ matchingChain = fromF unrolling
               . overHBifunctor id unrollingNE
 
 -- | The "reverse" function representing 'matchingChain'.  Provided here
--- as a separate function because it does not require @'Functor' f@.
+-- as a separate function because it does not require @'Matchable' t i@.
 unmatchChain
-    :: forall t i f. Tensor t i
+    :: forall t i f. (Tensor t i, FunctorBy t f)
     => i :+: Chain1 t f ~> Chain t i f
 unmatchChain = unroll . (nilLB @t !*! fromNE @t) . hright rerollNE
 
 -- | We have to wrap @t@ in 'WrapHBF' to prevent overlapping instances.
-instance (Tensor t i, FunctorBy t (Chain t i f)) => SemigroupIn (WrapHBF t) (Chain t i f) where
+instance (Tensor t i, FunctorBy t f, FunctorBy t (Chain t i f)) => SemigroupIn (WrapHBF t) (Chain t i f) where
     biretract = appendChain . unwrapHBF
     binterpret f g = biretract . hbimap f g
 
 -- | @'Chain' t i@ is the "free @'MonoidIn' t i@".  However, we have to
 -- wrap @t@ in 'WrapHBF' and @i@ in 'WrapF' to prevent overlapping instances.
-instance (Tensor t i, FunctorBy t (Chain t i f)) => MonoidIn (WrapHBF t) (WrapF i) (Chain t i f) where
+instance (Tensor t i, FunctorBy t f, FunctorBy t (Chain t i f)) => MonoidIn (WrapHBF t) (WrapF i) (Chain t i f) where
     pureT = Done . unwrapF
 
-instance Apply (Chain Day Identity f) where
+instance Functor f => Apply (Chain Day Identity f) where
     f <.> x = appendChain $ Day f x ($)
 
 -- | @'Chain' 'Day' 'Identity'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by 'Day'" --- aka, the free
 -- 'Applicative'.
-instance Applicative (Chain Day Identity f) where
+instance Functor f => Applicative (Chain Day Identity f) where
     pure  = Done . Identity
     (<*>) = (<.>)
 
-instance Divise (Chain CD.Day Proxy f) where
+instance Contravariant f => Divise (Chain CD.Day Proxy f) where
     divise f x y = appendChain $ CD.Day x y f
 
 -- | @'Chain' 'CD.Day' 'Proxy'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by contravariant 'CD.Day'" --- aka,
 -- the free 'Divisible'.
-instance Divisible (Chain CD.Day Proxy f) where
+instance Contravariant f => Divisible (Chain CD.Day Proxy f) where
     divide f x y = appendChain $ CD.Day x y f
     conquer = Done Proxy
 
-instance Decide (Chain N.Night N.Refuted f) where
+instance Contravariant f => Decide (Chain N.Night N.Refuted f) where
     decide f x y = appendChain $ N.Night x y f
 
 -- | @'Chain' 'N.Night' 'N.Refutec'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by 'N.Night'" --- aka, the free
 -- 'Conclude'.
-instance Conclude (Chain N.Night N.Refuted f) where
+instance Contravariant f => Conclude (Chain N.Night N.Refuted f) where
     conclude = Done . N.Refuted
 
-instance Apply (Chain Comp Identity f) where
+instance Functor f => Apply (Chain Comp Identity f) where
     (<.>) = apDefault
 
-instance Applicative (Chain Comp Identity f) where
+instance Functor f => Applicative (Chain Comp Identity f) where
     pure  = Done . Identity
     (<*>) = (<.>)
 
-instance Bind (Chain Comp Identity f) where
+instance Functor f => Bind (Chain Comp Identity f) where
     x >>- f = appendChain (x :>>= f)
 
 -- | @'Chain' 'Comp' 'Identity'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by 'Comp'" --- aka, the free
 -- 'Monad'.
-instance Monad (Chain Comp Identity f) where
+instance Functor f => Monad (Chain Comp Identity f) where
     (>>=) = (>>-)
 
 instance Functor f => Alt (Chain (:*:) Proxy f) where
