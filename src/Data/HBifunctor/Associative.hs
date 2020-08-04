@@ -62,12 +62,17 @@ import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor.Joker
 import           Data.Coerce
+import           Data.Constraint.Trivial
 import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
-import           Data.Functor.Day             (Day(..))
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.CoDay          (CoDay(..))
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible.Free
+import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -78,10 +83,13 @@ import           Data.HFunctor
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List.NonEmpty           (NonEmpty(..))
+import           Data.List.NonEmpty                        (NonEmpty(..))
+import           Data.Void
 import           GHC.Generics
-import qualified Data.Functor.Day             as D
-import qualified Data.Map.NonEmpty            as NEM
+import qualified Data.Functor.Contravariant.CoDay          as CoD
+import qualified Data.Functor.Contravariant.Day            as CD
+import qualified Data.Functor.Day                          as D
+import qualified Data.Map.NonEmpty                         as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
 -- 'Associative'.  Knowing this gives us a lot of power to rearrange the
@@ -128,11 +136,13 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where
     -- See 'Data.HBifunctor.Tensor.ListBy' for a "possibly empty" version
     -- of this type.
     type NonEmptyBy t :: (Type -> Type) -> Type -> Type
+    type FunctorBy t :: (Type -> Type) -> Constraint
+    type FunctorBy t = Unconstrained
 
     -- | The isomorphism between @t f (t g h) a@ and @t (t f g) h a@.  To
     -- use this isomorphism, see 'assoc' and 'disassoc'.
     associating
-        :: (Functor f, Functor g, Functor h)
+        :: (FunctorBy t f, FunctorBy t g, FunctorBy t h)
         => t f (t g h) <~> t (t f g) h
 
     -- | If a @'NonEmptyBy' t f@ represents multiple applications of @t f@ to
@@ -150,7 +160,7 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where
     -- Note that you can recursively "unroll" a 'NonEmptyBy' completely
     -- into a 'Data.HFunctor.Chain.Chain1' by using
     -- 'Data.HFunctor.Chain.unrollNE'.
-    matchNE  :: Functor f => NonEmptyBy t f ~> f :+: t f (NonEmptyBy t f)
+    matchNE  :: FunctorBy t f => NonEmptyBy t f ~> f :+: t f (NonEmptyBy t f)
 
     -- | Prepend an application of @t f@ to the front of a @'NonEmptyBy' t f@.
     consNE :: t f (NonEmptyBy t f) ~> NonEmptyBy t f
@@ -164,14 +174,14 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where
 
 -- | Reassociate an application of @t@.
 assoc
-    :: (Associative t, Functor f, Functor g, Functor h)
+    :: (Associative t, FunctorBy t f, FunctorBy t g, FunctorBy t h)
     => t f (t g h)
     ~> t (t f g) h
 assoc = viewF associating
 
 -- | Reassociate an application of @t@.
 disassoc
-    :: (Associative t, Functor f, Functor g, Functor h)
+    :: (Associative t, FunctorBy t f, FunctorBy t g, FunctorBy t h)
     => t (t f g) h
     ~> t f (t g h)
 disassoc = reviewF associating
@@ -261,7 +271,7 @@ class Associative t => SemigroupIn t f where
 --
 -- Can be useful as a default implementation if you already have
 -- 'SemigroupIn' implemented.
-retractNE :: forall t f. (SemigroupIn t f, Functor f) => NonEmptyBy t f ~> f
+retractNE :: forall t f. (SemigroupIn t f, FunctorBy t f) => NonEmptyBy t f ~> f
 retractNE = (id !*! biretract @t . hright (retractNE @t))
           . matchNE @t
 
@@ -270,7 +280,7 @@ retractNE = (id !*! biretract @t . hright (retractNE @t))
 --
 -- Can be useful as a default implementation if you already have
 -- 'SemigroupIn' implemented.
-interpretNE :: forall t g f. (SemigroupIn t f, Functor f) => (g ~> f) -> NonEmptyBy t g ~> f
+interpretNE :: forall t g f. (SemigroupIn t f, FunctorBy t f) => (g ~> f) -> NonEmptyBy t g ~> f
 interpretNE f = retractNE @t . hmap f
 
 -- | An @'NonEmptyBy' t f@ represents the successive application of @t@ to @f@,
@@ -279,7 +289,7 @@ interpretNE f = retractNE @t . hmap f
 --
 -- 'matchingNE' states that these two are isomorphic.  Use 'matchNE' and
 -- @'inject' '!*!' 'consNE'@ to convert between one and the other.
-matchingNE :: (Associative t, Functor f) => NonEmptyBy t f <~> f :+: t f (NonEmptyBy t f)
+matchingNE :: (Associative t, FunctorBy t f) => NonEmptyBy t f <~> f :+: t f (NonEmptyBy t f)
 matchingNE = isoF matchNE (inject !*! consNE)
 
 -- | Useful wrapper over 'binterpret' to allow you to directly extract
@@ -427,6 +437,7 @@ instance Alt f => SemigroupIn Product f where
 
 instance Associative Day where
     type NonEmptyBy Day = Ap1
+    type FunctorBy Day = Functor
     associating = isoF D.assoc D.disassoc
 
     appendNE (Day x y z) = z <$> x <.> y
@@ -443,6 +454,40 @@ instance Associative Day where
 instance Apply f => SemigroupIn Day f where
     biretract (Day x y z) = z <$> x <.> y
     binterpret f g (Day x y z) = z <$> f x <.> g y
+
+instance Associative CD.Day where
+    type NonEmptyBy CD.Day = Div1
+    type FunctorBy CD.Day = Contravariant
+    associating = isoF CD.assoc CD.disassoc
+
+    appendNE (CD.Day x y f) = divise f x y
+    matchNE (Div1 f x xs) = case xs of
+      Conquer -> L1 $ contramap (fst . f) x
+      Divide g y ys -> R1 $ CD.Day x (Div1 g y ys) f
+
+    consNE (CD.Day x y f) = Div1 f x (toDiv y)
+    toNonEmptyBy (CD.Day x y f) = Div1 f x (inject y)
+
+instance Divise f => SemigroupIn CD.Day f where
+    biretract      (CD.Day x y f) = divise f x y
+    binterpret f g (CD.Day x y h) = divise h (f x) (g y)
+
+instance Associative CoDay where
+    type NonEmptyBy CoDay = Dec1
+    type FunctorBy CoDay = Contravariant
+    associating = isoF CoD.assoc CoD.unassoc
+
+    appendNE (CoDay x y f) = choice f x y
+    matchNE (Dec1 f x xs) = case xs of
+      Lose g -> L1 $ contramap (either id (absurd . g) . f) x
+      Choose g y ys -> R1 $ CoDay x (Dec1 g y ys) f
+
+    consNE (CoDay x y f) = Dec1 f x (toDec y)
+    toNonEmptyBy (CoDay x y f) = Dec1 f x (inject y)
+
+instance Choice f => SemigroupIn CoDay f where
+    biretract      (CoDay x y f) = choice f x y
+    binterpret f g (CoDay x y h) = choice h (f x) (g y)
 
 instance Associative (:+:) where
     type NonEmptyBy (:+:) = Step
@@ -584,6 +629,8 @@ instance SemigroupIn Void3 f where
 
 instance Associative Comp where
     type NonEmptyBy Comp = Free1
+    type FunctorBy Comp = Functor
+
     associating = isoF to_ from_
       where
         to_   (x :>>= y) = (x :>>= (unComp . y)) :>>= id
@@ -637,6 +684,7 @@ instance SemigroupIn LeftF f where
 
 instance Associative RightF where
     type NonEmptyBy RightF = Step
+
     associating = isoF (RightF . runRightF . runRightF)
                        (RightF . RightF    . runRightF)
 
@@ -683,6 +731,8 @@ deriving via (WrappedHBifunctor (WrapHBF t) f)
 
 instance Associative t => Associative (WrapHBF t) where
     type NonEmptyBy (WrapHBF t) = NonEmptyBy t
+    type FunctorBy (WrapHBF t) = FunctorBy t
+
     associating = isoF (hright unwrapHBF . unwrapHBF) (WrapHBF . hright WrapHBF)
                 . associating @t
                 . isoF (WrapHBF . hleft WrapHBF) (hleft unwrapHBF . unwrapHBF)

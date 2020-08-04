@@ -219,7 +219,7 @@ instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
 --
 -- 'unrollingNE' states that the two types are isormorphic.  Use 'unrollNE'
 -- and 'rerollNE' to convert between the two.
-unrollingNE :: forall t f. (Associative t, Functor f) => NonEmptyBy t f <~> Chain1 t f
+unrollingNE :: forall t f. (Associative t, FunctorBy t f) => NonEmptyBy t f <~> Chain1 t f
 unrollingNE = isoF unrollNE rerollNE
 
 -- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
@@ -230,7 +230,7 @@ unrollingNE = isoF unrollNE rerollNE
 -- @
 -- 'unrollNE' = 'unfoldChain1' 'matchNE'
 -- @
-unrollNE :: (Associative t, Functor f) => NonEmptyBy t f ~> Chain1 t f
+unrollNE :: (Associative t, FunctorBy t f) => NonEmptyBy t f ~> Chain1 t f
 unrollNE = unfoldChain1 matchNE
 
 -- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
@@ -252,7 +252,7 @@ rerollNE = foldChain1 inject consNE
 --
 -- @since 0.1.1.0
 appendChain1
-    :: forall t f. (Associative t, Functor f)
+    :: forall t f. (Associative t, FunctorBy t f)
     => t (Chain1 t f) (Chain1 t f) ~> Chain1 t f
 appendChain1 = unrollNE
              . appendNE
@@ -260,7 +260,7 @@ appendChain1 = unrollNE
 
 -- | @'Chain1' t@ is the "free @'SemigroupIn' t@".  However, we have to
 -- wrap @t@ in 'WrapHBF' to prevent overlapping instances.
-instance (Associative t, Functor f) => SemigroupIn (WrapHBF t) (Chain1 t f) where
+instance (Associative t, FunctorBy t f) => SemigroupIn (WrapHBF t) (Chain1 t f) where
     biretract = appendChain1 . unwrapHBF
     binterpret f g = biretract . hbimap f g
 
@@ -497,7 +497,7 @@ appendChain = unroll
 -- witnesses the fact that the former is isomorphic to @f@ consed to the
 -- latter.
 splittingChain1
-    :: forall t i f. (Matchable t i, Functor f)
+    :: forall t i f. (Matchable t i, FunctorBy t f)
     => Chain1 t f <~> t f (Chain t i f)
 splittingChain1 = fromF unrollingNE
                 . splittingNE @t
@@ -514,7 +514,7 @@ splitChain1 = hright (unroll @t) . splitNE @t . rerollNE
 -- a non-empty linked list of @f@s.  This witnesses the fact that
 -- a @'Chain' t i f@ is either empty (@i@) or non-empty (@'Chain1' t f@).
 matchingChain
-    :: forall t i f. (Tensor t i, Matchable t i, Functor f)
+    :: forall t i f. (Tensor t i, Matchable t i, FunctorBy t f)
     => Chain t i f <~> i :+: Chain1 t f
 matchingChain = fromF unrolling
               . matchingLB @t

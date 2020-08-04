@@ -93,9 +93,12 @@ library:
   other-modules:
   - Data.HFunctor.Internal
   dependencies:
+  - assoc
   - comonad
   - constraints
+  - invariant
   - containers
+  - contravariant
   - deriving-compat
   - kan-extensions
   - mmorph

@@ -25,8 +25,9 @@ import           Data.Bifunctor
 import           Data.Bifunctor.Joker
 import           Data.Coerce
 import           Data.Functor.Bind
+import           Data.Functor.Contravariant.CoDay (CoDay(..))
 import           Data.Functor.Coyoneda
-import           Data.Functor.Day               (Day(..))
+import           Data.Functor.Day                 (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Product
 import           Data.Functor.Reverse
@@ -37,14 +38,16 @@ import           Data.Kind
 import           Data.Proxy
 import           Data.Tagged
 import           Data.Vinyl.CoRec
-import           Data.Vinyl.Core                (Rec)
+import           Data.Vinyl.Core                  (Rec)
 import           Data.Vinyl.Recursive
 import           GHC.Generics
-import qualified Control.Alternative.Free       as Alt
-import qualified Control.Applicative.Free.Fast  as FAF
-import qualified Control.Applicative.Free.Final as FA
-import qualified Control.Monad.Free.Church      as MC
-import qualified Data.Functor.Day               as D
+import qualified Control.Alternative.Free         as Alt
+import qualified Control.Applicative.Free.Fast    as FAF
+import qualified Control.Applicative.Free.Final   as FA
+import qualified Control.Monad.Free.Church        as MC
+import qualified Data.Functor.Contravariant.CoDay as CoD
+import qualified Data.Functor.Contravariant.Day   as CD
+import qualified Data.Functor.Day                 as D
 
 -- | An 'HFunctor' can be thought of a unary "functor transformer" ---
 -- a basic functor combinator.  It takes a functor as input and returns
@@ -300,6 +303,16 @@ instance HBifunctor Day where
     hleft  = D.trans1
     hright = D.trans2
     hbimap f g (Day x y z) = Day (f x) (g y) z
+
+instance HBifunctor CD.Day where
+    hleft  = CD.trans1
+    hright = CD.trans2
+    hbimap f g (CD.Day x y z) = CD.Day (f x) (g y) z
+
+instance HBifunctor CoDay where
+    hleft  = CoD.trans1
+    hright = CoD.trans2
+    hbimap f g (CoDay x y z) = CoDay (f x) (g y) z
 
 instance HBifunctor (:+:) where
     hleft f = \case

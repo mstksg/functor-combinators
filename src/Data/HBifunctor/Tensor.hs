@@ -81,7 +81,11 @@ import           Data.Function
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
-import           Data.Functor.Day            (Day(..))
+import           Data.Functor.Contravariant.CoDay          (CoDay(..), Refuted(..))
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Contravariant.Divisible.Free
+import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -93,10 +97,12 @@ import           Data.HFunctor
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List.NonEmpty          (NonEmpty(..))
+import           Data.List.NonEmpty                        (NonEmpty(..))
 import           GHC.Generics
-import qualified Data.Functor.Day            as D
-import qualified Data.Map.NonEmpty           as NEM
+import qualified Data.Functor.Contravariant.CoDay          as CoD
+import qualified Data.Functor.Contravariant.Day            as CD
+import qualified Data.Functor.Day                          as D
+import qualified Data.Map.NonEmpty                         as NEM
 
 -- | An 'Associative' 'HBifunctor' can be a 'Tensor' if there is some
 -- identity @i@ where @t i f@ and @t f i@ are equivalent to just @f@.
@@ -160,11 +166,11 @@ class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where
     -- | Witnesses the property that @i@ is the identity of @t@: @t
     -- f i@ always leaves @f@ unchanged, so we can always just drop the
     -- @i@.
-    elim1 :: Functor f => t f i ~> f
+    elim1 :: FunctorBy t f => t f i ~> f
 
     -- | Witnesses the property that @i@ is the identity of @t@: @t i g@
     -- always leaves @g@ unchanged, so we can always just drop the @i t@.
-    elim2 :: Functor g => t i g ~> g
+    elim2 :: FunctorBy t g => t i g ~> g
 
     -- | If a @'ListBy' t f@ represents multiple applications of @t f@ to
     -- itself, then we can also "append" two @'ListBy' t f@s applied to
@@ -218,12 +224,12 @@ class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where
 
 -- | @f@ is isomorphic to @t f i@: that is, @i@ is the identity of @t@, and
 -- leaves @f@ unchanged.
-rightIdentity :: (Tensor t i, Functor f) => f <~> t f i
+rightIdentity :: (Tensor t i, FunctorBy t f) => f <~> t f i
 rightIdentity = isoF intro1 elim1
 
 -- | @g@ is isomorphic to @t i g@: that is, @i@ is the identity of @t@, and
 -- leaves @g@ unchanged.
-leftIdentity  :: (Tensor t i, Functor g) => g <~> t i g
+leftIdentity  :: (Tensor t i, FunctorBy t g) => g <~> t i g
 leftIdentity = isoF intro2 elim2
 
 -- | 'leftIdentity' ('intro1' and 'elim1') for ':+:' actually does not
@@ -424,7 +430,7 @@ inR = hleft (pureT @t) . intro2
 -- See 'prodOutL' for a version that does not require @'Functor' f@,
 -- specifically for ':*:'.
 outL
-    :: (Tensor t Proxy, Functor f)
+    :: (Tensor t Proxy, FunctorBy t f)
     => t f g ~> f
 outL = elim1 . hright absorb
 
@@ -435,7 +441,7 @@ outL = elim1 . hright absorb
 -- See 'prodOutR' for a version that does not require @'Functor' g@,
 -- specifically for ':*:'.
 outR
-    :: (Tensor t Proxy, Functor g)
+    :: (Tensor t Proxy, FunctorBy t g)
     => t f g ~> g
 outR = elim2 . hleft absorb
 
@@ -551,7 +557,7 @@ instance Tensor Day Identity where
           L1 (Identity x) -> Pure x
           R1 (Day x xs f) -> Ap x (flip f <$> xs)
 
-    toListBy (Day x y z) = z <$> liftAp x <*> liftAp y
+    toListBy (Day x y z) = Ap x (Ap y (Pure (flip z)))
 
 -- | Instances of 'Applicative' are monoids in the monoidal category on
 -- 'Day'.
@@ -562,6 +568,60 @@ instance Tensor Day Identity where
 -- 'Data.Functor.Combinators.Unsafe.unsafeApply'.
 instance (Apply f, Applicative f) => MonoidIn Day Identity f where
     pureT            = generalize
+
+instance Tensor CD.Day Proxy where
+    type ListBy CD.Day = Div
+    intro1 = CD.intro2
+    intro2 = CD.intro1
+    elim1 = CD.day1
+    elim2 = CD.day2
+
+    appendLB (CD.Day x y z) = divide z x y
+    splitNE (Div1 f x xs) = CD.Day x xs f
+    splittingLB = isoF to_ from_
+      where
+        to_ = \case
+          Conquer       -> L1 Proxy
+          Divide f x xs -> R1 (CD.Day x xs f)
+        from_ = \case
+          L1 Proxy           -> Conquer
+          R1 (CD.Day x xs f) -> Divide f x xs
+
+    toListBy (CD.Day x y z) = Divide z x (inject y)
+
+-- | Instances of 'Divisible' are monoids in the monoidal category on
+-- contravariant 'CD.Day'.
+--
+-- Note that because of typeclass constraints, this requires 'Divise' as
+-- well as 'Divisible'.  But, you can get a "local" instance of 'Divise'
+-- for any 'Divisible' using
+-- 'Data.Functor.Combinators.Unsafe.unsafeDivise'.
+instance (Divise f, Divisible f) => MonoidIn CD.Day Proxy f where
+    pureT _ = conquer
+
+instance Tensor CoDay Refuted where
+    type ListBy CoDay = Dec
+    intro1 = CoD.intro2
+    intro2 = CoD.intro1
+    elim1 = CoD.elim2
+    elim2 = CoD.elim1
+
+    appendLB (CoDay x y z) = choice z x y
+    splitNE (Dec1 f x xs) = CoDay x xs f
+    splittingLB = isoF to_ from_
+      where
+        to_ = \case
+          Lose   f      -> L1 (Refuted f)
+          Choose f x xs -> R1 (CoDay x xs f)
+        from_ = \case
+          L1 (Refuted f)    -> Lose f
+          R1 (CoDay x xs f) -> Choose f x xs
+
+    toListBy (CoDay x y z) = Choose z x (inject y)
+
+-- | Instances of 'Loss' are monoids in the monoidal category on 'CoDay'.
+instance Loss f => MonoidIn CoDay Refuted f where
+    pureT (Refuted x) = loss x
 
 instance Tensor (:+:) V1 where
     type ListBy (:+:) = Step
