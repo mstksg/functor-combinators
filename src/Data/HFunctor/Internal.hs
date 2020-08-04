@@ -25,7 +25,7 @@ import           Data.Bifunctor
 import           Data.Bifunctor.Joker
 import           Data.Coerce
 import           Data.Functor.Bind
-import           Data.Functor.Contravariant.CoDay (CoDay(..))
+import           Data.Functor.Contravariant.Night (Night(..))
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day                 (Day(..))
 import           Data.Functor.Identity
@@ -45,8 +45,8 @@ import qualified Control.Alternative.Free         as Alt
 import qualified Control.Applicative.Free.Fast    as FAF
 import qualified Control.Applicative.Free.Final   as FA
 import qualified Control.Monad.Free.Church        as MC
-import qualified Data.Functor.Contravariant.CoDay as CoD
 import qualified Data.Functor.Contravariant.Day   as CD
+import qualified Data.Functor.Contravariant.Night as N
 import qualified Data.Functor.Day                 as D
 
 -- | An 'HFunctor' can be thought of a unary "functor transformer" ---
@@ -309,10 +309,10 @@ instance HBifunctor CD.Day where
     hright = CD.trans2
     hbimap f g (CD.Day x y z) = CD.Day (f x) (g y) z
 
-instance HBifunctor CoDay where
-    hleft  = CoD.trans1
-    hright = CoD.trans2
-    hbimap f g (CoDay x y z) = CoDay (f x) (g y) z
+instance HBifunctor Night where
+    hleft  = N.trans1
+    hright = N.trans2
+    hbimap f g (Night x y z) = Night (f x) (g y) z
 
 instance HBifunctor (:+:) where
     hleft f = \case

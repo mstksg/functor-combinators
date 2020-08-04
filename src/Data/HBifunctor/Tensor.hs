@@ -81,10 +81,10 @@ import           Data.Function
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
-import           Data.Functor.Contravariant.CoDay          (CoDay(..), Refuted(..))
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divisible.Free
+import           Data.Functor.Contravariant.Night          (Night(..), Refuted(..))
 import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
@@ -99,8 +99,8 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           GHC.Generics
-import qualified Data.Functor.Contravariant.CoDay          as CoD
 import qualified Data.Functor.Contravariant.Day            as CD
+import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
 import qualified Data.Map.NonEmpty                         as NEM
 
@@ -560,7 +560,7 @@ instance Tensor Day Identity where
     toListBy (Day x y z) = Ap x (Ap y (Pure (flip z)))
 
 -- | Instances of 'Applicative' are monoids in the monoidal category on
--- 'Day'.
+-- the covariant 'Day'.
 --
 -- Note that because of typeclass constraints, this requires 'Apply' as
 -- well as 'Applicative'.  But, you can get a "local" instance of 'Apply'
@@ -599,28 +599,28 @@ instance Tensor CD.Day Proxy where
 instance (Divise f, Divisible f) => MonoidIn CD.Day Proxy f where
     pureT _ = conquer
 
-instance Tensor CoDay Refuted where
-    type ListBy CoDay = Dec
-    intro1 = CoD.intro2
-    intro2 = CoD.intro1
-    elim1 = CoD.elim2
-    elim2 = CoD.elim1
+instance Tensor Night Refuted where
+    type ListBy Night = Dec
+    intro1 = N.intro2
+    intro2 = N.intro1
+    elim1 = N.elim2
+    elim2 = N.elim1
 
-    appendLB (CoDay x y z) = choice z x y
-    splitNE (Dec1 f x xs) = CoDay x xs f
+    appendLB (Night x y z) = choice z x y
+    splitNE (Dec1 f x xs) = Night x xs f
     splittingLB = isoF to_ from_
       where
         to_ = \case
           Lose   f      -> L1 (Refuted f)
-          Choose f x xs -> R1 (CoDay x xs f)
+          Choose f x xs -> R1 (Night x xs f)
         from_ = \case
           L1 (Refuted f)    -> Lose f
-          R1 (CoDay x xs f) -> Choose f x xs
+          R1 (Night x xs f) -> Choose f x xs
 
-    toListBy (CoDay x y z) = Choose z x (inject y)
+    toListBy (Night x y z) = Choose z x (inject y)
 
--- | Instances of 'Loss' are monoids in the monoidal category on 'CoDay'.
-instance Loss f => MonoidIn CoDay Refuted f where
+-- | Instances of 'Loss' are monoids in the monoidal category on 'Night'.
+instance Loss f => MonoidIn Night Refuted f where
     pureT (Refuted x) = loss x
 
 instance Tensor (:+:) V1 where

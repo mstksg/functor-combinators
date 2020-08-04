@@ -69,9 +69,9 @@ import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.CoDay          (CoDay(..))
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible.Free
+import           Data.Functor.Contravariant.Night          (Night(..))
 import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Plus
@@ -86,8 +86,8 @@ import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           Data.Void
 import           GHC.Generics
-import qualified Data.Functor.Contravariant.CoDay          as CoD
 import qualified Data.Functor.Contravariant.Day            as CD
+import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
 import qualified Data.Map.NonEmpty                         as NEM
 
@@ -472,22 +472,22 @@ instance Divise f => SemigroupIn CD.Day f where
     biretract      (CD.Day x y f) = divise f x y
     binterpret f g (CD.Day x y h) = divise h (f x) (g y)
 
-instance Associative CoDay where
-    type NonEmptyBy CoDay = Dec1
-    type FunctorBy CoDay = Contravariant
-    associating = isoF CoD.assoc CoD.unassoc
+instance Associative Night where
+    type NonEmptyBy Night = Dec1
+    type FunctorBy Night = Contravariant
+    associating = isoF N.assoc N.unassoc
 
-    appendNE (CoDay x y f) = choice f x y
+    appendNE (Night x y f) = choice f x y
     matchNE (Dec1 f x xs) = case xs of
       Lose g -> L1 $ contramap (either id (absurd . g) . f) x
-      Choose g y ys -> R1 $ CoDay x (Dec1 g y ys) f
+      Choose g y ys -> R1 $ Night x (Dec1 g y ys) f
 
-    consNE (CoDay x y f) = Dec1 f x (toDec y)
-    toNonEmptyBy (CoDay x y f) = Dec1 f x (inject y)
+    consNE (Night x y f) = Dec1 f x (toDec y)
+    toNonEmptyBy (Night x y f) = Dec1 f x (inject y)
 
-instance Choice f => SemigroupIn CoDay f where
-    biretract      (CoDay x y f) = choice f x y
-    binterpret f g (CoDay x y h) = choice h (f x) (g y)
+instance Choice f => SemigroupIn Night f where
+    biretract      (Night x y f) = choice f x y
+    binterpret f g (Night x y h) = choice h (f x) (g y)
 
 instance Associative (:+:) where
     type NonEmptyBy (:+:) = Step
