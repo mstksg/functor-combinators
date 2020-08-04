@@ -69,6 +69,7 @@ import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible.Free
 import           Data.Functor.Contravariant.Night          (Night(..))
@@ -478,7 +479,7 @@ instance Associative Night where
     type FunctorBy Night = Contravariant
     associating = isoF N.assoc N.unassoc
 
-    appendNE (Night x y f) = choice f x y
+    appendNE (Night x y f) = decide f x y
     matchNE (Dec1 f x xs) = case xs of
       Lose g -> L1 $ contramap (either id (absurd . g) . f) x
       Choose g y ys -> R1 $ Night x (Dec1 g y ys) f
@@ -486,9 +487,9 @@ instance Associative Night where
     consNE (Night x y f) = Dec1 f x (toDec y)
     toNonEmptyBy (Night x y f) = Dec1 f x (inject y)
 
-instance Choice f => SemigroupIn Night f where
-    biretract      (Night x y f) = choice f x y
-    binterpret f g (Night x y h) = choice h (f x) (g y)
+instance Decide f => SemigroupIn Night f where
+    biretract      (Night x y f) = decide f x y
+    binterpret f g (Night x y h) = decide h (f x) (g y)
 
 instance Associative (:+:) where
     type NonEmptyBy (:+:) = Step

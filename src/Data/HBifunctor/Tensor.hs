@@ -82,6 +82,8 @@ import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divisible.Free
@@ -608,7 +610,7 @@ instance Tensor Night Refuted where
     elim1 = N.elim2
     elim2 = N.elim1
 
-    appendLB (Night x y z) = choice z x y
+    appendLB (Night x y z) = decide z x y
     splitNE (Dec1 f x xs) = Night x xs f
     splittingLB = isoF to_ from_
       where
@@ -621,9 +623,9 @@ instance Tensor Night Refuted where
 
     toListBy (Night x y z) = Choose z x (inject y)
 
--- | Instances of 'Loss' are monoids in the monoidal category on 'Night'.
-instance Loss f => MonoidIn Night Refuted f where
-    pureT (Refuted x) = loss x
+-- | Instances of 'Conclude' are monoids in the monoidal category on 'Night'.
+instance Conclude f => MonoidIn Night Refuted f where
+    pureT (Refuted x) = conclude x
 
 instance Tensor (:+:) V1 where
     type ListBy (:+:) = Step

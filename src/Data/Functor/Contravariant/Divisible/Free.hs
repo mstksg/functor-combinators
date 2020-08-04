@@ -14,6 +14,8 @@ import           Control.Natural
 import           Data.Bifunctor
 import           Data.Bifunctor.Assoc
 import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.HFunctor
@@ -115,7 +117,7 @@ runDiv1_ f = go
       Divide h y ys -> divise g (f x) (go h y ys)
 
 
--- | The free 'Choice'.  Used to aggregate multiple possible consumers,
+-- | The free 'Decide'.  Used to aggregate multiple possible consumers,
 -- directing the input into an appropriate consumer.
 data Dec :: (Type -> Type) -> Type -> Type where
     Lose   :: (a -> Void) -> Dec f a
@@ -125,18 +127,18 @@ instance Contravariant (Dec f) where
     contramap f = \case
       Lose   g      -> Lose   (g . f)
       Choose g x xs -> Choose (g . f) x xs
-instance Choice (Dec f) where
-    choice f = \case
+instance Decide (Dec f) where
+    decide f = \case
       Lose   g      -> contramap (either (absurd . g) id . f)
       Choose g x xs -> Choose (assoc . first g . f) x
-                     . choice id xs
-instance Loss (Dec f) where
-    loss = Lose
+                     . decide id xs
+instance Conclude (Dec f) where
+    conclude = Lose
 instance HFunctor Dec where
     hmap = hoistDec
 instance Inject Dec where
     inject = liftDec
-instance Loss f => Interpret Dec f where
+instance Conclude f => Interpret Dec f where
     interpret = runDec
 
 hoistDec :: forall f g. (f ~> g) -> Dec f ~> Dec g
@@ -150,16 +152,16 @@ hoistDec f = go
 liftDec :: f ~> Dec f
 liftDec x = Choose Left x (Lose id)
 
-runDec :: forall f g. Loss g => (f ~> g) -> Dec f ~> g
+runDec :: forall f g. Conclude g => (f ~> g) -> Dec f ~> g
 runDec f = go
   where
     go :: Dec f ~> g
     go = \case
-      Lose g -> loss g
-      Choose g x xs -> choice g (f x) (go xs)
+      Lose g -> conclude g
+      Choose g x xs -> decide g (f x) (go xs)
 
 
--- | The free 'Choice': a non-empty version of 'Dec'.
+-- | The free 'Decide': a non-empty version of 'Dec'.
 data Dec1 :: (Type -> Type) -> Type -> Type where
     Dec1 :: (a -> Either b c) -> f b -> Dec f c -> Dec1 f a
 
@@ -170,15 +172,15 @@ toDec (Dec1 f x xs) = Choose f x xs
 
 instance Contravariant (Dec1 f) where
     contramap f (Dec1 g x xs) = Dec1 (g . f) x xs
-instance Choice (Dec1 f) where
-    choice f (Dec1 g x xs) = Dec1 (assoc . first g . f) x
-                           . choice id xs
+instance Decide (Dec1 f) where
+    decide f (Dec1 g x xs) = Dec1 (assoc . first g . f) x
+                           . decide id xs
                            . toDec
 instance HFunctor Dec1 where
     hmap = hoistDec1
 instance Inject Dec1 where
     inject = liftDec1
-instance Choice f => Interpret Dec1 f where
+instance Decide f => Interpret Dec1 f where
     interpret = runDec1
 
 hoistDec1 :: forall f g. (f ~> g) -> Dec1 f ~> Dec1 g
@@ -187,11 +189,11 @@ hoistDec1 f (Dec1 g x xs) = Dec1 g (f x) (hoistDec f xs)
 liftDec1 :: f ~> Dec1 f
 liftDec1 x = Dec1 Left x (Lose id)
 
-runDec1 :: Choice g => (f ~> g) -> Dec1 f ~> g
+runDec1 :: Decide g => (f ~> g) -> Dec1 f ~> g
 runDec1 f (Dec1 g x xs) = runDec1_ f g x xs
 
 runDec1_
-    :: forall f g a b c. Choice g
+    :: forall f g a b c. Decide g
     => (f ~> g)
     -> (a -> Either b c)
     -> f b
@@ -202,4 +204,4 @@ runDec1_ f = go
     go :: (x -> Either y z) -> f y -> Dec f z -> g x
     go g x = \case
       Lose h -> contramap (either id (absurd . h) . g) (f x)
-      Choose h y ys -> choice g (f x) (go h y ys)
+      Choose h y ys -> decide g (f x) (go h y ys)

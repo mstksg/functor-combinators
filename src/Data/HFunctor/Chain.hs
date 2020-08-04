@@ -55,6 +55,8 @@ import           Control.Natural.IsoF
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Day hiding              (intro1, intro2, elim1, elim2)
@@ -311,9 +313,9 @@ instance Contravariant f => Divise (Chain1 CD.Day f) where
 
 -- | @'Chain1' 'N.Night'@ is the free "semigroup in the semigroupoidal
 -- category of endofunctors enriched by 'N.Night'" --- aka, the free
--- 'Choice'.
-instance Contravariant f => Choice (Chain1 N.Night f) where
-    choice f x y = appendChain1 $ N.Night x y f
+-- 'Decide'.
+instance Contravariant f => Decide (Chain1 N.Night f) where
+    decide f x y = appendChain1 $ N.Night x y f
 
 -- | A useful construction that works like a "linked list" of @t f@ applied
 -- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
@@ -595,14 +597,14 @@ instance Divisible (Chain CD.Day Proxy f) where
     divide f x y = appendChain $ CD.Day x y f
     conquer = Done Proxy
 
-instance Choice (Chain N.Night N.Refuted f) where
-    choice f x y = appendChain $ N.Night x y f
+instance Decide (Chain N.Night N.Refuted f) where
+    decide f x y = appendChain $ N.Night x y f
 
 -- | @'Chain' 'N.Night' 'N.Refutec'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by 'N.Night'" --- aka, the free
--- 'Loss'.
-instance Loss (Chain N.Night N.Refuted f) where
-    loss = Done . N.Refuted
+-- 'Conclude'.
+instance Conclude (Chain N.Night N.Refuted f) where
+    conclude = Done . N.Refuted
 
 instance Apply (Chain Comp Identity f) where
     (<.>) = apDefault

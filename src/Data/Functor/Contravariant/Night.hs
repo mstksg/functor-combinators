@@ -14,7 +14,7 @@ module Data.Functor.Contravariant.Night (
 import           Control.Natural
 import           Data.Bifunctor
 import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Invariant
 import           Data.Kind
 import           Data.Void
@@ -59,14 +59,14 @@ night
     -> Night f g (Either a b)
 night x y = Night x y id
 
--- | Interpret out of a 'Night' into any instance of 'Choice' by providing
+-- | Interpret out of a 'Night' into any instance of 'Decide' by providing
 -- two interpreting functions.
 runNight
-    :: Choice h
+    :: Decide h
     => (f ~> h)
     -> (g ~> h)
     -> Night f g ~> h
-runNight f g (Night x y z) = choice z (f x) (g y)
+runNight f g (Night x y z) = decide z (f x) (g y)
 
 -- | 'Night' is associative.
 assoc :: Night f (Night g h) ~> Night (Night f g) h
