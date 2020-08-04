@@ -54,8 +54,12 @@ import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Functor.Bind
 import           Data.Functor.Classes
-import           Data.Functor.Day hiding     (intro1, intro2, elim1, elim2)
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Day hiding              (intro1, intro2, elim1, elim2)
 import           Data.Functor.Identity
+import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.HBifunctor
@@ -66,6 +70,8 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.Typeable
 import           GHC.Generics
+import qualified Data.Functor.Contravariant.Day       as CD
+import qualified Data.Functor.Contravariant.Night     as N
 
 -- | A useful construction that works like a "non-empty linked list" of @t
 -- f@ applied to itself multiple times.  That is, it contains @t f f@, @t
@@ -161,6 +167,17 @@ instance (Functor f, Read1 (t f (Chain1 t f)), Read1 f) => Read1 (Chain1 t f) wh
     liftReadsPrec rp rl = readsData $
             readsUnaryWith (liftReadsPrec rp rl) "Done1" Done1
          <> readsUnaryWith (liftReadsPrec rp rl) "More1" More1
+
+instance (Contravariant f, Contravariant (t f (Chain1 t f))) => Contravariant (Chain1 t f) where
+    contramap f = \case
+      Done1 x  -> Done1 (contramap f x )
+      More1 xs -> More1 (contramap f xs)
+
+instance (Invariant f, Invariant (t f (Chain1 t f))) => Invariant (Chain1 t f) where
+    invmap f g = \case
+      Done1 x  -> Done1 (invmap f g x )
+      More1 xs -> More1 (invmap f g xs)
+
 
 -- | Recursively fold down a 'Chain1'.  Provide a function on how to handle
 -- the "single @f@ case" ('inject'), and how to handle the "combined @t
@@ -260,7 +277,7 @@ appendChain1 = unrollNE
 
 -- | @'Chain1' t@ is the "free @'SemigroupIn' t@".  However, we have to
 -- wrap @t@ in 'WrapHBF' to prevent overlapping instances.
-instance (Associative t, FunctorBy t f) => SemigroupIn (WrapHBF t) (Chain1 t f) where
+instance (Associative t, FunctorBy t f, FunctorBy t (Chain1 t f)) => SemigroupIn (WrapHBF t) (Chain1 t f) where
     biretract = appendChain1 . unwrapHBF
     binterpret f g = biretract . hbimap f g
 
@@ -286,6 +303,17 @@ instance Functor f => Alt (Chain1 (:*:) f) where
 -- category of endofunctors enriched by 'Product'" --- aka, the free 'Alt'.
 instance Functor f => Alt (Chain1 Product f) where
     x <!> y = appendChain1 (Pair x y)
+
+-- | @'Chain1' 'CD.Day'@ is the free "semigroup in the semigroupoidal
+-- category of endofunctors enriched by 'CD.Day'" --- aka, the free 'Divise'.
+instance Contravariant f => Divise (Chain1 CD.Day f) where
+    divise f x y = appendChain1 $ CD.Day x y f
+
+-- | @'Chain1' 'N.Night'@ is the free "semigroup in the semigroupoidal
+-- category of endofunctors enriched by 'N.Night'" --- aka, the free
+-- 'Choice'.
+instance Contravariant f => Choice (Chain1 N.Night f) where
+    choice f x y = appendChain1 $ N.Night x y f
 
 -- | A useful construction that works like a "linked list" of @t f@ applied
 -- to itself multiple times.  That is, it contains @t f f@, @t f (t f f)@,
@@ -370,6 +398,16 @@ instance (Functor i, Read1 (t f (Chain t i f)), Read1 i) => Read1 (Chain t i f) 
     liftReadsPrec rp rl = readsData $
             readsUnaryWith (liftReadsPrec rp rl) "Done" Done
          <> readsUnaryWith (liftReadsPrec rp rl) "More" More
+
+instance (Contravariant i, Contravariant (t f (Chain t i f))) => Contravariant (Chain t i f) where
+    contramap f = \case
+      Done x  -> Done (contramap f x )
+      More xs -> More (contramap f xs)
+
+instance (Invariant i, Invariant (t f (Chain t i f))) => Invariant (Chain t i f) where
+    invmap f g = \case
+      Done x  -> Done (invmap f g x )
+      More xs -> More (invmap f g xs)
 
 -- | Recursively fold down a 'Chain'.  Provide a function on how to handle
 -- the "single @f@ case" ('nilLB'), and how to handle the "combined @t f g@
@@ -528,13 +566,13 @@ unmatchChain
 unmatchChain = unroll . (nilLB @t !*! fromNE @t) . hright rerollNE
 
 -- | We have to wrap @t@ in 'WrapHBF' to prevent overlapping instances.
-instance (Tensor t i, Functor f) => SemigroupIn (WrapHBF t) (Chain t i f) where
+instance (Tensor t i, FunctorBy t (Chain t i f)) => SemigroupIn (WrapHBF t) (Chain t i f) where
     biretract = appendChain . unwrapHBF
     binterpret f g = biretract . hbimap f g
 
 -- | @'Chain' t i@ is the "free @'MonoidIn' t i@".  However, we have to
 -- wrap @t@ in 'WrapHBF' and @i@ in 'WrapF' to prevent overlapping instances.
-instance (Tensor t i, Functor f) => MonoidIn (WrapHBF t) (WrapF i) (Chain t i f) where
+instance (Tensor t i, FunctorBy t (Chain t i f)) => MonoidIn (WrapHBF t) (WrapF i) (Chain t i f) where
     pureT = Done . unwrapF
 
 instance Apply (Chain Day Identity f) where
@@ -546,6 +584,25 @@ instance Apply (Chain Day Identity f) where
 instance Applicative (Chain Day Identity f) where
     pure  = Done . Identity
     (<*>) = (<.>)
+
+instance Divise (Chain CD.Day Proxy f) where
+    divise f x y = appendChain $ CD.Day x y f
+
+-- | @'Chain' 'CD.Day' 'Proxy'@ is the free "monoid in the monoidal
+-- category of endofunctors enriched by contravariant 'CD.Day'" --- aka,
+-- the free 'Divisible'.
+instance Divisible (Chain CD.Day Proxy f) where
+    divide f x y = appendChain $ CD.Day x y f
+    conquer = Done Proxy
+
+instance Choice (Chain N.Night N.Refuted f) where
+    choice f x y = appendChain $ N.Night x y f
+
+-- | @'Chain' 'N.Night' 'N.Refutec'@ is the free "monoid in the monoidal
+-- category of endofunctors enriched by 'N.Night'" --- aka, the free
+-- 'Loss'.
+instance Loss (Chain N.Night N.Refuted f) where
+    loss = Done . N.Refuted
 
 instance Apply (Chain Comp Identity f) where
     (<.>) = apDefault

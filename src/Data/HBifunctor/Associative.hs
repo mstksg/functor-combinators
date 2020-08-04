@@ -74,6 +74,7 @@ import           Data.Functor.Contravariant.Divisible.Free
 import           Data.Functor.Contravariant.Night          (Night(..))
 import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
+import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Sum
@@ -239,7 +240,7 @@ disassoc = reviewF associating
 -- @
 --
 -- This will prevent problems with overloaded instances.
-class Associative t => SemigroupIn t f where
+class (Associative t, FunctorBy t f) => SemigroupIn t f where
     -- | The 'HBifunctor' analogy of 'retract'. It retracts /both/ @f@s
     -- into a single @f@, effectively fully mixing them together.
     --
@@ -271,7 +272,7 @@ class Associative t => SemigroupIn t f where
 --
 -- Can be useful as a default implementation if you already have
 -- 'SemigroupIn' implemented.
-retractNE :: forall t f. (SemigroupIn t f, FunctorBy t f) => NonEmptyBy t f ~> f
+retractNE :: forall t f. SemigroupIn t f => NonEmptyBy t f ~> f
 retractNE = (id !*! biretract @t . hright (retractNE @t))
           . matchNE @t
 
@@ -280,7 +281,7 @@ retractNE = (id !*! biretract @t . hright (retractNE @t))
 --
 -- Can be useful as a default implementation if you already have
 -- 'SemigroupIn' implemented.
-interpretNE :: forall t g f. (SemigroupIn t f, FunctorBy t f) => (g ~> f) -> NonEmptyBy t g ~> f
+interpretNE :: forall t g f. SemigroupIn t f => (g ~> f) -> NonEmptyBy t g ~> f
 interpretNE f = retractNE @t . hmap f
 
 -- | An @'NonEmptyBy' t f@ represents the successive application of @t@ to @f@,
@@ -747,6 +748,15 @@ instance Associative t => Associative (WrapHBF t) where
 -- a newtype wrapper to avoid overlapping instances.
 newtype WrapNE t f a = WrapNE { unwrapNE :: NonEmptyBy t f a }
 
-instance Associative t => SemigroupIn (WrapHBF t) (WrapNE t f) where
+instance Functor (NonEmptyBy t f) => Functor (WrapNE t f) where
+    fmap f (WrapNE x) = WrapNE (fmap f x)
+
+instance Contravariant (NonEmptyBy t f) => Contravariant (WrapNE t f) where
+    contramap f (WrapNE x) = WrapNE (contramap f x)
+
+instance Invariant (NonEmptyBy t f) => Invariant (WrapNE t f) where
+    invmap f g (WrapNE x) = WrapNE (invmap f g x)
+
+instance (Associative t, FunctorBy t (WrapNE t f)) => SemigroupIn (WrapHBF t) (WrapNE t f) where
     biretract = WrapNE . appendNE . hbimap unwrapNE unwrapNE . unwrapHBF
     binterpret f g = biretract . hbimap f g

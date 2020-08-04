@@ -81,12 +81,14 @@ import           Data.Function
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
 import           Data.Functor.Classes
+import           Data.Functor.Contravariant
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divisible.Free
 import           Data.Functor.Contravariant.Night          (Night(..), Refuted(..))
 import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
+import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Sum
@@ -804,9 +806,18 @@ instance Tensor t i => Tensor (WrapHBF t) (WrapF i) where
 -- require a newtype wrapper to avoid overlapping instances.
 newtype WrapLB t f a = WrapLB { unwrapLB :: ListBy t f a }
 
-instance Tensor t i => SemigroupIn (WrapHBF t) (WrapLB t f) where
+instance Functor (ListBy t f) => Functor (WrapLB t f) where
+    fmap f (WrapLB x) = WrapLB (fmap f x)
+
+instance Contravariant (ListBy t f) => Contravariant (WrapLB t f) where
+    contramap f (WrapLB x) = WrapLB (contramap f x)
+
+instance Invariant (ListBy t f) => Invariant (WrapLB t f) where
+    invmap f g (WrapLB x) = WrapLB (invmap f g x)
+
+instance (Tensor t i, FunctorBy t (WrapLB t f)) => SemigroupIn (WrapHBF t) (WrapLB t f) where
     biretract = WrapLB . appendLB . hbimap unwrapLB unwrapLB . unwrapHBF
     binterpret f g = biretract . hbimap f g
 
-instance Tensor t i => MonoidIn (WrapHBF t) (WrapF i) (WrapLB t f) where
+instance (Tensor t i, FunctorBy t (WrapLB t f)) => MonoidIn (WrapHBF t) (WrapF i) (WrapLB t f) where
     pureT = WrapLB . nilLB @t . unwrapF

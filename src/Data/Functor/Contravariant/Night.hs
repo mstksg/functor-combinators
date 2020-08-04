@@ -15,6 +15,7 @@ import           Control.Natural
 import           Data.Bifunctor
 import           Data.Functor.Contravariant
 import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Invariant
 import           Data.Kind
 import           Data.Void
 import qualified Data.Bifunctor.Assoc              as B
@@ -41,6 +42,12 @@ data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
           -> g c
           -> (a -> Either b c)
           -> Night f g a
+
+instance Contravariant (Night f g) where
+    contramap f (Night x y g) = Night x y (g . f)
+
+instance Invariant (Night f g) where
+    invmap _ f (Night x y g) = Night x y (g . f)
 
 -- | Inject into a 'Night'.
 --
@@ -109,23 +116,6 @@ elim1 (Night x y z) = contramap (either (absurd . refute x) id . z) y
 -- isomorphism.
 elim2 :: Contravariant f => Night f Refuted ~> f
 elim2 (Night x y z) = contramap (either id (absurd . refute y) . z) x
-
--- data InvDay :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
---     InvDay :: f b
---            -> g c
---            -> (a -> (b, c))
---            -> ((b, c) -> a)
---            -> InvDay f g a
-
--- invDay :: f a -> g b -> InvDay f g (a, b)
--- invDay x y = InvDay x y id id
-
--- introInv :: f ~> InvDay Identity f
--- introInv x = InvDay (Identity ()) x ((),) snd
-
--- elimInv :: Invariant f => InvDay Identity f ~> f
--- elimInv (InvDay (Identity x) y f g) = invmap (g . (x,)) (snd . f) y
-
 -- data InvNight :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
 --     InvNight
 --         :: f b
