@@ -144,8 +144,10 @@ instance Applicative (Final Alternative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
+-- | @since 0.3.0.0
 instance Alt (Final Alternative f) where
     (<!>) = liftFinal2 (<|>)
+-- | @since 0.3.0.0
 instance Plus (Final Alternative f) where
     zero = liftFinal0 empty
 instance Alternative (Final Alternative f) where
@@ -178,8 +180,10 @@ instance Monad (Final MonadPlus f) where
     x >>= f  = Final $ \r -> do
       y <- runFinal x r
       runFinal (f y) r
+-- | @since 0.3.0.0
 instance Alt (Final MonadPlus f) where
     (<!>) = liftFinal2 (<|>)
+-- | @since 0.3.0.0
 instance Plus (Final MonadPlus f) where
     zero = liftFinal0 empty
 instance Alternative (Final MonadPlus f) where
@@ -222,47 +226,64 @@ instance Alt (Final Plus f) where
 instance Plus (Final Plus f) where
     zero = liftFinal0 zero
 
+-- | @since 0.3.0.0
 instance Contravariant (Final Contravariant f) where
     contramap f = liftFinal1 (contramap f)
 
+-- | @since 0.3.0.0
 instance Contravariant (Final Divise f) where
     contramap f = liftFinal1 (contramap f)
+-- | @since 0.3.0.0
 instance Divise (Final Divise f) where
     divise f = liftFinal2 (divise f)
 
+-- | @since 0.3.0.0
 instance Contravariant (Final Divisible f) where
     contramap f = liftFinal1 (contramap f)
+-- | @since 0.3.0.0
 instance Divise (Final Divisible f) where
     divise f = liftFinal2 (divide f)
+-- | @since 0.3.0.0
 instance Divisible (Final Divisible f) where
     divide f = liftFinal2 (divide f)
     conquer = liftFinal0 conquer
 
+-- | @since 0.3.0.0
 instance Contravariant (Final Decide f) where
     contramap f = liftFinal1 (contramap f)
+-- | @since 0.3.0.0
 instance Decide (Final Decide f) where
     decide f = liftFinal2 (decide f)
 
+-- | @since 0.3.0.0
 instance Contravariant (Final Conclude f) where
     contramap f = liftFinal1 (contramap f)
+-- | @since 0.3.0.0
 instance Decide (Final Conclude f) where
     decide f = liftFinal2 (decide f)
+-- | @since 0.3.0.0
 instance Conclude (Final Conclude f) where
     conclude f = liftFinal0 (conclude f)
 
+-- | @since 0.3.0.0
 instance Contravariant (Final Decidable f) where
     contramap f = liftFinal1 (contramap f)
+-- | @since 0.3.0.0
 instance Divisible (Final Decidable f) where
     divide f = liftFinal2 (divide f)
     conquer = liftFinal0 conquer
+-- | @since 0.3.0.0
 instance Decide (Final Decidable f) where
     decide f = liftFinal2 (choose f)
+-- | @since 0.3.0.0
 instance Conclude (Final Decidable f) where
     conclude f = liftFinal0 (lose f)
+-- | @since 0.3.0.0
 instance Decidable (Final Decidable f) where
     choose f = liftFinal2 (choose f)
     lose f = liftFinal0 (lose f)
 
+-- | @since 0.3.0.0
 instance Invariant (Final Invariant f) where
     invmap f g = liftFinal1 (invmap f g)
 
@@ -346,12 +367,15 @@ fromFinal = interpret inject
 -- that you can pattern match on and inspect, but @t@ might.  This lets you
 -- work on a concrete structure if you desire.
 class FreeOf c t | t -> c where
+    -- | What "type" of functor is expected: should be either
+    -- 'Unconstrained', 'Functor', 'Contravariant', or 'Invariant'.
+    --
+    -- @since 0.3.0.0
     type FreeFunctorBy t :: (Type -> Type) -> Constraint
     type FreeFunctorBy t = Unconstrained
 
     fromFree :: t f ~> Final c f
     toFree   :: FreeFunctorBy t f => Final c f ~> t f
-    -- toFree   :: Functor f => Final c f ~> t f
 
     default fromFree :: Interpret t (Final c f) => t f ~> Final c f
     fromFree = toFinal
@@ -363,6 +387,7 @@ finalizing :: (FreeOf c t, FreeFunctorBy t f) => t f <~> Final c f
 finalizing = isoF fromFree toFree
 
 instance FreeOf Functor       Coyoneda
+-- | @since 0.3.0.0
 instance FreeOf Contravariant CCY.Coyoneda
 instance FreeOf Applicative   Ap
 instance FreeOf Apply         Ap1
@@ -372,10 +397,20 @@ instance FreeOf Monad         Free
 instance FreeOf Bind          Free1
 instance FreeOf Pointed       Lift
 instance FreeOf Pointed       MaybeApply
+-- | This could also be @'FreeOf' 'Divise'@ if @'FreeFunctorBy' 'NonEmptyF'
+-- ~ 'Contravariant'@.  However, there isn't really a way to express this
+-- at the moment.
 instance FreeOf Alt           NonEmptyF  where type FreeFunctorBy NonEmptyF = Functor
+-- | This could also be @'FreeOf' 'Divisible'@ if @'FreeFunctorBy' 'ListF'
+-- ~ 'Contravariant'@.  However, there isn't really a way to express this
+-- at the moment.
 instance FreeOf Plus          ListF      where type FreeFunctorBy ListF = Functor
+-- | @since 0.3.0.0
 instance FreeOf Divise        Div1
+-- | @since 0.3.0.0
 instance FreeOf Divisible     Div
+-- | @since 0.3.0.0
 instance FreeOf Decide        Dec1
+-- | @since 0.3.0.0
 instance FreeOf Conclude      Dec
 instance FreeOf Unconstrained IdentityT

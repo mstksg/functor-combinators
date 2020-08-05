@@ -170,6 +170,8 @@ import qualified Data.Vinyl.Functor as V
 --          :* stringBuilder
 --          :* Nil
 -- @
+--
+-- @since 0.3.0.0
 divideN
     :: Divisible f
     => SOP.NP f as
@@ -196,6 +198,8 @@ divideN = \case
 --             :& stringBuilder
 --             :& RNil
 -- @
+--
+-- @since 0.3.0.0
 divideNRec
     :: Divisible f
     => V.Rec f as
@@ -209,6 +213,8 @@ divideNRec = \case
 
 -- | A version of 'divideNRec' that works for non-empty records, and so only
 -- requires a 'Divise' constraint.
+--
+-- @since 0.3.0.0
 diviseNRec
     :: Divise f
     => V.Rec f (a ': as)
@@ -257,6 +263,8 @@ diviseN = \case
 --            :* stringBuilder
 --            :* Nil
 -- @
+--
+-- @since 0.3.0.0
 concludeN
     :: Conclude f
     => SOP.NP f as
@@ -270,6 +278,8 @@ concludeN = \case
 
 -- | A version of 'concludeN' that works for non-empty 'SOP.NP'/'SOP.NS',
 -- and so only requires a 'Decide' constraint.
+--
+-- @since 0.3.0.0
 decideN
     :: Decide f
     => SOP.NP f (a ': as)

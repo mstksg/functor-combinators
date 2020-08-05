@@ -10,6 +10,8 @@
 --
 -- Provides an 'Invariant' version of the typical Haskell Day convolution
 -- over tuples.
+--
+-- @since 0.3.0.0
 module Data.Functor.Invariant.Day (
     Day(..)
   , day
@@ -29,8 +31,8 @@ module Data.Functor.Invariant.Day (
   , runContraDayChain
   , assembleDayChain
   , assembleDayChainRec
-  , gatherDayChain
-  , gatherDayChainRec
+  , concatDayChain
+  , concatDayChainRec
   -- * Nonempty Chain
   , DayChain1
   , pattern DayChain1
@@ -38,8 +40,8 @@ module Data.Functor.Invariant.Day (
   , runContraDayChain1
   , assembleDayChain1
   , assembleDayChain1Rec
-  , gatherDayChain1
-  , gatherDayChain1Rec
+  , concatDayChain1
+  , concatDayChain1Rec
   ) where
 
 import           Control.Natural
@@ -340,16 +342,16 @@ assembleDayChain = \case
 --
 -- @
 -- assembleDayChain (x :* y :* z :* Nil)
---   = gatherDayChain (injectChain x :* injectChain y :* injectChain z :* Nil)
+--   = concatDayChain (injectChain x :* injectChain y :* injectChain z :* Nil)
 -- @
-gatherDayChain
+concatDayChain
     :: NP (DayChain f) as
     -> DayChain f (NP I as)
-gatherDayChain = \case
+concatDayChain = \case
     Nil     -> Done $ Identity Nil
     x :* xs -> appendChain $ Day
       x
-      (gatherDayChain xs)
+      (concatDayChain xs)
       unconsNPI
       consNPI
 
@@ -369,19 +371,19 @@ assembleDayChain1 = \case
         unconsNPI
         consNPI
 
--- | A version of 'gatherDayChain' but for 'DayChain1' instead.  Can be
+-- | A version of 'concatDayChain' but for 'DayChain1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
 -- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.
-gatherDayChain1
+concatDayChain1
     :: Invariant f
     => NP (DayChain1 f) (a ': as)
     -> DayChain1 f (NP I (a ': as))
-gatherDayChain1 = \case
+concatDayChain1 = \case
     x :* xs -> case xs of
       Nil    -> invmap ((:* Nil) . I) (unI . hd) x
       _ :* _ -> appendChain1 $ Day
         x
-        (gatherDayChain1 xs)
+        (concatDayChain1 xs)
         unconsNPI
         consNPI
 
@@ -416,17 +418,17 @@ assembleDayChainRec = \case
       unconsRec
       (V.::&)
 
--- | A version of 'gatherDayChain' using 'V.XRec' from /vinyl/ instead of
+-- | A version of 'concatDayChain' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
 -- require manual unwrapping/wrapping of components.
-gatherDayChainRec
+concatDayChainRec
     :: V.Rec (DayChain f) as
     -> DayChain f (V.XRec V.Identity as)
-gatherDayChainRec = \case
+concatDayChainRec = \case
     V.RNil    -> Done $ Identity V.RNil
     x V.:& xs -> appendChain $ Day
       x
-      (gatherDayChainRec xs)
+      (concatDayChainRec xs)
       unconsRec
       (V.::&)
 
@@ -446,19 +448,19 @@ assembleDayChain1Rec = \case
         unconsRec
         (V.::&)
 
--- | A version of 'gatherDayChain1' using 'V.XRec' from /vinyl/ instead of
+-- | A version of 'concatDayChain1' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
 -- require manual unwrapping/wrapping of components.
-gatherDayChain1Rec
+concatDayChain1Rec
     :: Invariant f
     => V.Rec (DayChain1 f) (a ': as)
     -> DayChain1 f (V.XRec V.Identity (a ': as))
-gatherDayChain1Rec = \case
+concatDayChain1Rec = \case
     x V.:& xs -> case xs of
       V.RNil   -> invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
       _ V.:& _ -> appendChain1 $ Day
         x
-        (gatherDayChain1Rec xs)
+        (concatDayChain1Rec xs)
         unconsRec
         (V.::&)
 

@@ -142,6 +142,8 @@ class (HBifunctor t, Inject (NonEmptyBy t)) => Associative t where
     -- | A description of "what type of Functor" this tensor is expected to
     -- be applied to.  This should typically always be either 'Functor',
     -- 'Contravariant', or 'Invariant'.
+    --
+    -- @since 0.3.0.0
     type FunctorBy t :: (Type -> Type) -> Constraint
     type FunctorBy t = Unconstrained
 
@@ -461,6 +463,7 @@ instance Apply f => SemigroupIn Day f where
     biretract (Day x y z) = z <$> x <.> y
     binterpret f g (Day x y z) = z <$> f x <.> g y
 
+-- | @since 0.3.0.0
 instance Associative CD.Day where
     type NonEmptyBy CD.Day = Div1
     type FunctorBy CD.Day = Contravariant
@@ -474,10 +477,12 @@ instance Associative CD.Day where
     consNE (CD.Day x y f) = Div1 f x (toDiv y)
     toNonEmptyBy (CD.Day x y f) = Div1 f x (inject y)
 
+-- | @since 0.3.0.0
 instance Divise f => SemigroupIn CD.Day f where
     biretract      (CD.Day x y f) = divise f x y
     binterpret f g (CD.Day x y h) = divise h (f x) (g y)
 
+-- | @since 0.3.0.0
 instance Associative Night where
     type NonEmptyBy Night = Dec1
     type FunctorBy Night = Contravariant
@@ -491,6 +496,7 @@ instance Associative Night where
     consNE (Night x y f) = Dec1 f x (toDec y)
     toNonEmptyBy (Night x y f) = Dec1 f x (inject y)
 
+-- | @since 0.3.0.0
 instance Decide f => SemigroupIn Night f where
     biretract      (Night x y f) = decide f x y
     binterpret f g (Night x y h) = decide h (f x) (g y)

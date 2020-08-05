@@ -103,20 +103,27 @@ deriveRead1 ''ProxyF
 deriveEq1 ''ProxyF
 deriveOrd1 ''ProxyF
 
+-- | @since 0.3.0.0
 instance Contravariant (ProxyF f) where
     contramap _ = coerce
+-- | @since 0.3.0.0
 instance Divisible (ProxyF f) where
     divide _ _ _ = ProxyF
     conquer = ProxyF
+-- | @since 0.3.0.0
 instance Divise (ProxyF f) where
     divise _ _ _ = ProxyF
+-- | @since 0.3.0.0
 instance Decide (ProxyF f) where
     decide _ _ _ = ProxyF
+-- | @since 0.3.0.0
 instance Conclude (ProxyF f) where
     conclude _ = ProxyF
+-- | @since 0.3.0.0
 instance Decidable (ProxyF f) where
     choose _ _ _ = ProxyF
     lose _ = ProxyF
+-- | @since 0.3.0.0
 instance Invariant (ProxyF f) where
     invmap _ _ = coerce
 
@@ -139,13 +146,17 @@ deriveRead1 ''ConstF
 deriveEq1 ''ConstF
 deriveOrd1 ''ConstF
 
+-- | @since 0.3.0.0
 instance Contravariant (ConstF e f) where
     contramap _ = coerce
+-- | @since 0.3.0.0
 instance Monoid e => Divisible (ConstF e f) where
     divide _ (ConstF x) (ConstF y) = ConstF (x <> y)
     conquer = ConstF mempty
+-- | @since 0.3.0.0
 instance Semigroup e => Divise (ConstF e f) where
     divise _ (ConstF x) (ConstF y) = ConstF (x <> y)
+-- | @since 0.3.0.0
 instance Invariant (ConstF e f) where
     invmap _ _ = coerce
 
@@ -197,11 +208,13 @@ instance HFunctor t => HFunctor (HLift t) where
       HPure  x -> HPure  (f x)
       HOther x -> HOther (hmap f x)
 
+-- | @since 0.3.0.0
 instance (Contravariant f, Contravariant (t f)) => Contravariant (HLift t f) where
     contramap f = \case
       HPure  x  -> HPure  (contramap f x)
       HOther xs -> HOther (contramap f xs)
 
+-- | @since 0.3.0.0
 instance (Invariant f, Invariant (t f)) => Invariant (HLift t f) where
     invmap f g = \case
       HPure  x  -> HPure  (invmap f g x)
@@ -398,6 +411,7 @@ class Inject t => HBind t where
 instance Inject Coyoneda where
     inject = liftCoyoneda
 
+-- | @since 0.3.0.0
 instance Inject CCY.Coyoneda where
     inject = CCY.liftCoyoneda
 

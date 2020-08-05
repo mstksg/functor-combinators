@@ -9,6 +9,8 @@
 --
 -- Provides free structures for the various typeclasses of the 'Divisible'
 -- hierarchy.
+--
+-- @since 0.3.0.0
 module Data.Functor.Contravariant.Divisible.Free (
     Div(..)
   , hoistDiv, liftDiv, runDiv

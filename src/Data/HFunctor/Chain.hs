@@ -177,11 +177,13 @@ instance (Functor f, Read1 (t f (Chain1 t f)), Read1 f) => Read1 (Chain1 t f) wh
             readsUnaryWith (liftReadsPrec rp rl) "Done1" Done1
          <> readsUnaryWith (liftReadsPrec rp rl) "More1" More1
 
+-- | @since 0.3.0.0
 instance (Contravariant f, Contravariant (t f (Chain1 t f))) => Contravariant (Chain1 t f) where
     contramap f = \case
       Done1 x  -> Done1 (contramap f x )
       More1 xs -> More1 (contramap f xs)
 
+-- | @since 0.3.0.0
 instance (Invariant f, Invariant (t f (Chain1 t f))) => Invariant (Chain1 t f) where
     invmap f g = \case
       Done1 x  -> Done1 (invmap f g x )
@@ -239,10 +241,14 @@ instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
           More1 xs -> binterpret f go xs
 
 -- | Convert a tensor value pairing two @f@s into a two-item chain.
+--
+-- @since 0.3.0.0
 chain1Pair :: HBifunctor t => t f f ~> Chain1 t f
 chain1Pair = More1 . hright Done1
 
 -- | Create a singleton 'Chain1'.
+--
+-- @since 0.3.0.0
 injectChain1 :: f ~> Chain1 t f
 injectChain1 = Done1
 
@@ -323,12 +329,16 @@ instance Functor f => Alt (Chain1 Product f) where
 
 -- | @'Chain1' 'CD.Day'@ is the free "semigroup in the semigroupoidal
 -- category of endofunctors enriched by 'CD.Day'" --- aka, the free 'Divise'.
+--
+-- @since 0.3.0.0
 instance Contravariant f => Divise (Chain1 CD.Day f) where
     divise f x y = appendChain1 $ CD.Day x y f
 
 -- | @'Chain1' 'N.Night'@ is the free "semigroup in the semigroupoidal
 -- category of endofunctors enriched by 'N.Night'" --- aka, the free
 -- 'Decide'.
+--
+-- @since 0.3.0.0
 instance Contravariant f => Decide (Chain1 N.Night f) where
     decide f x y = appendChain1 $ N.Night x y f
 
@@ -477,10 +487,14 @@ instance MonoidIn t i f => Interpret (Chain t i) f where
           More xs -> binterpret f go xs
 
 -- | Convert a tensor value pairing two @f@s into a two-item chain.
+--
+-- @since 0.3.0.0
 chainPair :: Tensor t i => t f f ~> Chain t i f
 chainPair = More . hright inject
 
 -- | Create a singleton chain
+--
+-- @since 0.3.0.0
 injectChain :: Tensor t i => f ~> Chain t i f
 injectChain = More . hright Done . intro1
 
@@ -557,6 +571,8 @@ appendChain = unroll
 
 -- | For completeness, an isomorphism between 'Chain1' and its two
 -- constructors, to match 'matchNE'.
+--
+-- @since 0.3.0.0
 matchChain1 :: Chain1 t f ~> (f :+: t f (Chain1 t f))
 matchChain1 = \case
     Done1 x  -> L1 x
@@ -564,6 +580,8 @@ matchChain1 = \case
 
 -- | For completeness, an isomorphism between 'Chain' and its two
 -- constructors, to match 'splittingLB'.
+--
+-- @since 0.3.0.0
 splittingChain :: Chain t i f <~> (i :+: t f (Chain t i f))
 splittingChain = isoF unconsChain $ \case
       L1 x  -> Done x
@@ -571,6 +589,8 @@ splittingChain = isoF unconsChain $ \case
 
 -- | An analogue of 'unconsLB': match one of the two constructors of
 -- a 'Chain'.
+--
+-- @since 0.3.0.0
 unconsChain :: Chain t i f ~> i :+: t f (Chain t i f)
 unconsChain = \case
     Done x  -> L1 x
@@ -631,22 +651,28 @@ instance Applicative (Chain Day Identity f) where
     pure  = Done . Identity
     (<*>) = (<.>)
 
+-- | @since 0.3.0.0
 instance Divise (Chain CD.Day Proxy f) where
     divise f x y = appendChain $ CD.Day x y f
 
 -- | @'Chain' 'CD.Day' 'Proxy'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by contravariant 'CD.Day'" --- aka,
 -- the free 'Divisible'.
+--
+-- @since 0.3.0.0
 instance Divisible (Chain CD.Day Proxy f) where
     divide f x y = appendChain $ CD.Day x y f
     conquer = Done Proxy
 
+-- | @since 0.3.0.0
 instance Decide (Chain N.Night N.Not f) where
     decide f x y = appendChain $ N.Night x y f
 
 -- | @'Chain' 'N.Night' 'N.Refutec'@ is the free "monoid in the monoidal
 -- category of endofunctors enriched by 'N.Night'" --- aka, the free
 -- 'Conclude'.
+--
+-- @since 0.3.0.0
 instance Conclude (Chain N.Night N.Not f) where
     conclude = Done . N.Not
 

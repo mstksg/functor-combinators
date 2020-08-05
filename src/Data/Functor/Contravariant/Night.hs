@@ -10,6 +10,8 @@
 --
 -- Provides 'Night', a form of the day convolution that is contravariant
 -- and splits on 'Either'.
+--
+-- @since 0.3.0.0
 module Data.Functor.Contravariant.Night (
     Night(..)
   , night

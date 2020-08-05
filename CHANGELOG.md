@@ -1,6 +1,47 @@
 Changelog
 =========
 
+Version 0.3.0.0
+---------------
+
+*August 5, 2020*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.3.0.0>
+
+*   *Data.HBifunctor.Associative*, *Data.HBifunctor.Tensor*: Support for
+    `Contravariant` and `Invariant` functor combinators. Main change to the
+    infrastructure: add a `FunctorBy` associated constraint to `Associative` to
+    signal what "sort of functor" the tensor supports: it should either be
+    `Unconstrained`, `Functor`, `Contravariant`, or `Invariant`.
+*   *Data.Functor.Contravariant.Divise*, *Data.Functor.Contravariant.Decide*,
+    and *Data.Functor.Contravariant.Conclude*: Temporarily add in the
+    semigroupoidal contravariant typeclasses. These should only be needed until
+    they get merged into *semigroupoids*.
+*   *Data.Functor.Contravariant.Divisible*: Add free structures for
+    contravariant typeclass hierarchy.
+*   Added in some new day convolutions:
+
+    *   *Data.Functor.Contravariant.Night*: `Night`, a contravariant day
+        convolution using `Either`, which is the tensor that generates
+        `Conclude` (and `Decidable` kinda).
+    *   *Data.Functor.Invariant.Day*: `Day`, an *invariant* day convolution
+        using tuples.
+    *   *Data.Functor.Invariant.Night*: `Night`, an *invariant* day convolution
+        using either.
+
+    For the invariant day convolutions, we *could* write free monoids on them
+    (like `Ap`/`Div`/`Dec`).  But instead we just outsource our free structures
+    to `Chain`, providing useful pattern synonyms and folding functions to
+    pretend like we had an actual free structure.
+*   *Data.Functor.Combinator*: Useful functions in for working with divisible
+    and decidable contravariant functors: `divideN`, `diviseN`, `concludeN`,
+    `decideN`, `divideNRec`, and `diviseNRec`.
+*   `Contravariant` and `Invariant` instances for many types.
+*   *Data.HFunctor.Final*: `FreeOf` adjusted to allow for contravariant free
+    types.
+*   *Data.Functor.Combinator.Unsafe*: Add `unsafeDivise` and `unsafeConclude`,
+    to mirror the situation with `unsafeApply` and `unsafePlus`.
+
 Version 0.2.0.0
 ---------------
 

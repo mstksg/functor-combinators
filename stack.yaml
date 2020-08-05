@@ -45,8 +45,8 @@ extra-deps:
 - dependent-sum-0.6.2.0
 - constraints-extras-0.3.0.2
 - vinyl-0.12.0
-- github: mstksg/semigroupoids
-  commit: 121b5dd
+# - github: mstksg/semigroupoids
+#   commit: 121b5dd
 
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi

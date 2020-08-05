@@ -9,6 +9,8 @@
 -- Portability : non-portable
 --
 -- Provides an 'Invariant' version of a Day convolution over 'Either'.
+--
+-- @since 0.3.0.0
 module Data.Functor.Invariant.Night (
     Night(..)
   , Not(..)
@@ -28,14 +30,14 @@ module Data.Functor.Invariant.Night (
   , runCoNightChain
   , runContraNightChain
   , assembleNightChain
-  , gatherNightChain
+  , concatNightChain
   -- * Nonempty Chain
   , NightChain1
   , pattern NightChain1
   , runCoNightChain1
   , runContraNightChain1
   , assembleNightChain1
-  , gatherNightChain1
+  , concatNightChain1
   ) where
 
 import           Control.Natural
@@ -348,16 +350,16 @@ assembleNightChain = \case
 --
 -- @
 -- assembleNightChain (x :* y :* z :* Nil)
---   = gatherNightChain (injectChain x :* injectChain y :* injectChain z :* Nil)
+--   = concatNightChain (injectChain x :* injectChain y :* injectChain z :* Nil)
 -- @
-gatherNightChain
+concatNightChain
     :: NP (NightChain f) as
     -> NightChain f (NS I as)
-gatherNightChain = \case
+concatNightChain = \case
     Nil     -> Done $ Not (\case {})
     x :* xs -> appendChain $ Night
       x
-      (gatherNightChain xs)
+      (concatNightChain xs)
       unconsNSI
       (Z . I)
       S
@@ -381,20 +383,20 @@ assembleNightChain1 = \case
         (Z . I)
         S
 
--- | A version of 'gatherNightChain' but for 'NightChain1' instead.  Can be
+-- | A version of 'concatNightChain' but for 'NightChain1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
 -- a 'Decide' or 'Alt' instance, but no 'Decidable' or 'Plus' or
 -- 'Control.Applicative.Alternative'.
-gatherNightChain1
+concatNightChain1
     :: Invariant f
     => NP (NightChain1 f) (a ': as)
     -> NightChain1 f (NS I (a ': as))
-gatherNightChain1 = \case
+concatNightChain1 = \case
     x :* xs -> case xs of
       Nil    -> invmap (Z . I) (unI . unZ) x
       _ :* _ -> appendChain1 $ Night
         x
-        (gatherNightChain1 xs)
+        (concatNightChain1 xs)
         unconsNSI
         (Z . I)
         S

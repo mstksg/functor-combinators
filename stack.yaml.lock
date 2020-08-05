@@ -32,17 +32,6 @@ packages:
       sha256: aeb9e0e1a3bbe2b1f048a096430d240964a31c6936a1da89f4b32e931eba9d69
   original:
     hackage: vinyl-0.12.0
-- completed:
-    size: 30213
-    url: https://github.com/mstksg/semigroupoids/archive/121b5dd.tar.gz
-    name: semigroupoids
-    version: 5.3.4
-    sha256: d4a281af6a892043113ffaed6c6f069ec0ca589ff20e50da7390d9233c14864b
-    pantry-tree:
-      size: 2343
-      sha256: 75ec0bbfbe507d28c5b9310640894e97a955424168d340152667d6a6536aafd1
-  original:
-    url: https://github.com/mstksg/semigroupoids/archive/121b5dd.tar.gz
 snapshots:
 - completed:
     size: 418289

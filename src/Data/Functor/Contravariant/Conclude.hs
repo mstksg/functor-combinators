@@ -15,6 +15,8 @@
 -- but without needing a 'Divisible' constraint.  This is only a part of
 -- this library currently for compatibility, until it is (hopefully) merged
 -- into /semigroupoids/.
+--
+-- @since 0.3.0.0
 module Data.Functor.Contravariant.Conclude (
     Conclude(..)
   , concluded

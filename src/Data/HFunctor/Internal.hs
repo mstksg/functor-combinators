@@ -191,6 +191,7 @@ absorb _ = Proxy
 instance HFunctor Coyoneda where
     hmap = hoistCoyoneda
 
+-- | @since 0.3.0.0
 instance HFunctor CCY.Coyoneda where
     hmap f (CCY.Coyoneda g x) = CCY.Coyoneda g (f x)
 
@@ -296,9 +297,11 @@ instance HFunctor Rec where
 instance HFunctor CoRec where
     hmap f (CoRec x) = CoRec (f x)
 
+-- | @since 0.3.0.0
 instance HFunctor SOP.NP where
     hmap f = SOP.cata_NP SOP.Nil ((SOP.:*) . f)
 
+-- | @since 0.3.0.0
 instance HFunctor SOP.NS where
     hmap f = SOP.cata_NS (SOP.Z . f) SOP.S
 
@@ -317,11 +320,13 @@ instance HBifunctor Day where
     hright = D.trans2
     hbimap f g (Day x y z) = Day (f x) (g y) z
 
+-- | @since 0.3.0.0
 instance HBifunctor CD.Day where
     hleft  = CD.trans1
     hright = CD.trans2
     hbimap f g (CD.Day x y z) = CD.Day (f x) (g y) z
 
+-- | @since 0.3.0.0
 instance HBifunctor Night where
     hleft  = N.trans1
     hright = N.trans2

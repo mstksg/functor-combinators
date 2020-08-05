@@ -573,6 +573,7 @@ instance Tensor Day Identity where
 instance (Apply f, Applicative f) => MonoidIn Day Identity f where
     pureT            = generalize
 
+-- | @since 0.3.0.0
 instance Tensor CD.Day Proxy where
     type ListBy CD.Day = Div
     intro1 = CD.intro2
@@ -600,9 +601,12 @@ instance Tensor CD.Day Proxy where
 -- well as 'Divisible'.  But, you can get a "local" instance of 'Divise'
 -- for any 'Divisible' using
 -- 'Data.Functor.Combinators.Unsafe.unsafeDivise'.
+--
+-- @since 0.3.0.0
 instance (Divise f, Divisible f) => MonoidIn CD.Day Proxy f where
     pureT _ = conquer
 
+-- | @since 0.3.0.0
 instance Tensor Night Not where
     type ListBy Night = Dec
     intro1 = N.intro2
@@ -753,12 +757,16 @@ instance Matchable Day Identity where
     unsplitNE = DayAp1
     matchLB   = fromAp
 
+-- | Instances of 'Conclude' are monoids in the monoidal category on 'Night'.
+--
+-- @since 0.3.0.0
 instance Matchable CD.Day Proxy where
     unsplitNE (CD.Day x xs f) = Div1 f x xs
     matchLB = \case
       Conquer       -> L1 Proxy
       Divide f x xs -> R1 (Div1 f x xs)
 
+-- | @since 0.3.0.0
 instance Matchable Night Not where
     unsplitNE (Night x xs f) = Dec1 f x xs
     matchLB = \case
@@ -823,9 +831,11 @@ newtype WrapLB t f a = WrapLB { unwrapLB :: ListBy t f a }
 instance Functor (ListBy t f) => Functor (WrapLB t f) where
     fmap f (WrapLB x) = WrapLB (fmap f x)
 
+-- | @since 0.3.0.0
 instance Contravariant (ListBy t f) => Contravariant (WrapLB t f) where
     contramap f (WrapLB x) = WrapLB (contramap f x)
 
+-- | @since 0.3.0.0
 instance Invariant (ListBy t f) => Invariant (WrapLB t f) where
     invmap f g (WrapLB x) = WrapLB (invmap f g x)
 

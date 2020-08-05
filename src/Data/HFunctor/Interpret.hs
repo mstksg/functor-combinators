@@ -201,6 +201,8 @@ instance Functor f => Interpret Coyoneda f where
     interpret f (Coyoneda g x) = g <$> f x
 
 -- | A free 'Contravariant'
+--
+-- @since 0.3.0.0
 instance Contravariant f => Interpret CCY.Coyoneda f where
     retract                        = CCY.lowerCoyoneda
     interpret f (CCY.Coyoneda g x) = contramap g (f x)

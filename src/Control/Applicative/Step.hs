@@ -87,6 +87,7 @@ deriveRead1 ''Step
 deriveEq1 ''Step
 deriveOrd1 ''Step
 
+-- | @since 0.3.0.0
 instance Apply f => Apply (Step f) where
     Step n f <.> Step m x = Step (n + m) (f <.> x)
 
@@ -94,23 +95,30 @@ instance Applicative f => Applicative (Step f) where
     pure = Step 0 . pure
     Step n f <*> Step m x = Step (n + m) (f <*> x)
 
+-- | @since 0.3.0.0
 instance Contravariant f => Contravariant (Step f) where
     contramap f (Step x y) = Step x (contramap f y)
 
+-- | @since 0.3.0.0
 instance Divisible f => Divisible (Step f) where
     divide f (Step n x) (Step m y) = Step (n + m) (divide f x y)
     conquer = Step 0 conquer
+-- | @since 0.3.0.0
 instance Divise f => Divise (Step f) where
     divise f (Step n x) (Step m y) = Step (n + m) (divise f x y)
 
+-- | @since 0.3.0.0
 instance Decide f => Decide (Step f) where
     decide f (Step n x) (Step m y) = Step (n + m) (decide f x y)
+-- | @since 0.3.0.0
 instance Conclude f => Conclude (Step f) where
     conclude = Step 0 . conclude
+-- | @since 0.3.0.0
 instance Decidable f => Decidable (Step f) where
     choose f (Step n x) (Step m y) = Step (n + m) (choose f x y)
     lose = Step 0 . lose
 
+-- | @since 0.3.0.0
 instance Invariant f => Invariant (Step f) where
     invmap f g (Step x y) = Step x (invmap f g y)
 
@@ -246,12 +254,14 @@ instance Semigroup (Steps f a) where
       let (k, _) = NEM.findMax xs
       in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
 
+-- | @since 0.3.0.0
 instance Contravariant f => Contravariant (Steps f) where
     contramap f (Steps xs) = Steps ((fmap . contramap) f xs)
 
 -- TODO: consider what Divisible/Decidable should be.  Maybe no need to
 -- rush into this.
 
+-- | @since 0.3.0.0
 instance Invariant f => Invariant (Steps f) where
     invmap f g (Steps xs) = Steps (fmap (invmap f g) xs)
 
@@ -418,8 +428,10 @@ instance Bind (Void2 a) where
 instance Apply (Void2 a) where
     x <.> _ = case x of {}
 
+-- | @since 0.3.0.0
 instance Contravariant (Void2 a) where
     contramap _ = \case {}
+-- | @since 0.3.0.0
 instance Invariant (Void2 a) where
     invmap _ _ = \case {}
 
@@ -450,8 +462,10 @@ instance Bind (Void3 a b) where
 instance Apply (Void3 a b) where
     x <.> _ = case x of {}
 
+-- | @since 0.3.0.0
 instance Contravariant (Void3 a b) where
     contramap _ = \case {}
+-- | @since 0.3.0.0
 instance Invariant (Void3 a b) where
     invmap _ _ = \case {}
 

@@ -70,6 +70,7 @@ fromAp = \case
     Pure x  -> L1 $ Identity x
     Ap x xs -> R1 $ Ap1 x xs
 
+-- | @since 0.3.0.0
 instance Invariant (Ap1 f) where
     invmap f _ = fmap f
 

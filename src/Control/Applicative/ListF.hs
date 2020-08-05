@@ -92,28 +92,35 @@ instance Monoid (ListF f a) where
 instance Pointed f => Pointed (ListF f) where
     point = ListF . (: []) . point
 
+-- | @since 0.3.0.0
 instance Contravariant f => Contravariant (ListF f) where
     contramap f (ListF xs) = ListF ((map . contramap) f xs)
 
+-- | @since 0.3.0.0
 instance Invariant f => Invariant (ListF f) where
     invmap f g (ListF xs) = ListF (map (invmap f g) xs)
 
+-- | @since 0.3.0.0
 instance Contravariant f => Divise (ListF f) where
     divise f (ListF xs) (ListF ys) = ListF $
          (map . contramap) (fst . f) xs
       <> (map . contramap) (snd . f) ys
 
+-- | @since 0.3.0.0
 instance Contravariant f => Divisible (ListF f) where
     divide  = divise
     conquer = ListF []
 
+-- | @since 0.3.0.0
 instance Decide f => Decide (ListF f) where
     decide f (ListF xs) (ListF ys) = ListF $
         liftA2 (decide f) xs ys
 
+-- | @since 0.3.0.0
 instance Conclude f => Conclude (ListF f) where
     conclude f = ListF [conclude f]
 
+-- | @since 0.3.0.0
 instance Decidable f => Decidable (ListF f) where
     lose f = ListF [lose f]
     choose f (ListF xs) (ListF ys) = ListF $
@@ -159,14 +166,18 @@ instance Applicative f => Applicative (NonEmptyF f) where
 instance Functor f => Alt (NonEmptyF f) where
     (<!>) = (<>)
 
+-- | @since 0.3.0.0
 instance Contravariant f => Contravariant (NonEmptyF f) where
     contramap f (NonEmptyF xs) = NonEmptyF (fmap (contramap f) xs)
+-- | @since 0.3.0.0
 instance Invariant f => Invariant (NonEmptyF f) where
     invmap f g (NonEmptyF xs) = NonEmptyF (fmap (invmap f g) xs)
+-- | @since 0.3.0.0
 instance Contravariant f => Divise (NonEmptyF f) where
     divise f (NonEmptyF xs) (NonEmptyF ys) = NonEmptyF $
          (fmap . contramap) (fst . f) xs
       <> (fmap . contramap) (snd . f) ys
+-- | @since 0.3.0.0
 instance Decide f => Decide (NonEmptyF f) where
     decide f (NonEmptyF xs) (NonEmptyF ys) = NonEmptyF $
       decide f <$> xs <*> ys
