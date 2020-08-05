@@ -10,13 +10,19 @@ module Data.Functor.Invariant.Day (
   , intro1, intro2
   , elim1, elim2
   , swap
+  , runCoDayChain
+  , runContraDayChain
+  , runCoDayChain1
+  , runContraDayChain1
   ) where
 
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Functor.Apply
+import           Data.Functor.Combinator.Unsafe
 import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.HBifunctor
@@ -25,6 +31,7 @@ import           Data.HBifunctor.Tensor hiding      (elim1, elim2, intro1, intro
 import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.Kind
+import           Data.Proxy
 import qualified Data.Bifunctor.Assoc               as B
 import qualified Data.Bifunctor.Swap                as B
 import qualified Data.Functor.Contravariant.Day     as CD
@@ -89,6 +96,41 @@ elim2 (Day x (Identity y) f g) = invmap (`g` y) (fst . f) x
 
 swap :: Day f g ~> Day g f
 swap (Day x y f g) = Day y x (B.swap . f) (flip g)
+
+-- | In the covariant direction, we can interpret out of a 'Chain1' of 'Day'
+-- into any 'Apply'.
+runCoDayChain1
+    :: forall f g. Apply g
+    => f ~> g
+    -> Chain1 Day f ~> g
+runCoDayChain1 f = foldChain1 f (runDayApply f id)
+
+-- | In the contravariant direction, we can interpret out of a 'Chain1' of
+-- 'Day' into any 'Divise'.
+runContraDayChain1
+    :: forall f g. Divise g
+    => f ~> g
+    -> Chain1 Day f ~> g
+runContraDayChain1 f = foldChain1 f (runDayDivise f id)
+
+-- | In the covariant direction, we can interpret out of a 'Chain' of 'Day'
+-- into any 'Applicative'.
+runCoDayChain
+    :: forall f g. Applicative g
+    => f ~> g
+    -> Chain Day Identity f ~> g
+runCoDayChain f = unsafeApply (Proxy @g) $
+    foldChain (pure . runIdentity) (runDayApply f id)
+
+-- | In the contravariant direction, we can interpret out of a 'Chain' of
+-- 'Day' into any 'Divisible'.
+runContraDayChain
+    :: forall f g. Divisible g
+    => f ~> g
+    -> Chain Day Identity f ~> g
+runContraDayChain f = unsafeDivise (Proxy @g) $
+    foldChain (const conquer) (runDayDivise f id)
+
 
 instance HBifunctor Day where
     hbimap f g (Day x y h j) = Day (f x) (g y) h j

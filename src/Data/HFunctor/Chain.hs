@@ -32,6 +32,7 @@ module Data.HFunctor.Chain (
   , unrolling
   , appendChain
   , splittingChain
+  , chainPair
   -- * 'Chain1'
   , Chain1(..)
   , foldChain1
@@ -42,6 +43,7 @@ module Data.HFunctor.Chain (
   , appendChain1
   , fromChain1
   , matchChain1
+  , chain1Pair
   -- ** Matchable
   -- | The following conversions between 'Chain' and 'Chain1' are only
   -- possible if @t@ is 'Matchable'
@@ -232,6 +234,10 @@ instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
         go = \case
           Done1 x  -> f x
           More1 xs -> binterpret f go xs
+
+-- | Convert a tensor value pairing two @f@s into a two-item chain.
+chain1Pair :: HBifunctor t => t f f ~> Chain1 t f
+chain1Pair = More1 . hright Done1
 
 -- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
 -- @t@s to itself.  The type @'Chain1' t f@ is an actual concrete ADT that contains
@@ -462,6 +468,10 @@ instance MonoidIn t i f => Interpret (Chain t i) f where
         go = \case
           Done x  -> pureT @t x
           More xs -> binterpret f go xs
+
+-- | Convert a tensor value pairing two @f@s into a two-item chain.
+chainPair :: Tensor t i => t f f ~> Chain t i f
+chainPair = More . hright inject
 
 -- | A 'Chain1' is "one or more linked @f@s", and a 'Chain' is "zero or
 -- more linked @f@s".  So, we can convert from a 'Chain1' to a 'Chain' that

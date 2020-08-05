@@ -38,6 +38,8 @@ import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
 import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Plus
 import           Data.List.NonEmpty                   (NonEmpty(..))
@@ -97,6 +99,13 @@ instance Contravariant f => Divise (ListF f) where
 instance Contravariant f => Divisible (ListF f) where
     divide  = divise
     conquer = ListF []
+
+instance Decide f => Decide (ListF f) where
+    decide f (ListF xs) (ListF ys) = ListF $
+        liftA2 (decide f) xs ys
+
+instance Conclude f => Conclude (ListF f) where
+    conclude f = ListF [conclude f]
 
 -- | Map a function over the inside of a 'ListF'.
 mapListF

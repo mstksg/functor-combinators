@@ -765,9 +765,3 @@ instance Invariant (NonEmptyBy t f) => Invariant (WrapNE t f) where
 instance (Associative t, FunctorBy t f, FunctorBy t (WrapNE t f)) => SemigroupIn (WrapHBF t) (WrapNE t f) where
     biretract = WrapNE . appendNE . hbimap unwrapNE unwrapNE . unwrapHBF
     binterpret f g = biretract . hbimap f g
-
--- cdday :: (Contravariant f, Contravariant g) => CD.Day f g ~> (f :*: g)
--- cdday (CD.Day x y f) = contramap (fst . f) x :*: contramap (snd . f) y
-
--- daycd :: (f :*: g) ~> CD.Day f g
--- daycd (x :*: y) = CD.Day x y (\z -> (z,z))

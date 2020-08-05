@@ -20,18 +20,43 @@
 -- coherence.  Because of this, you should always use these with /specific/
 -- @f@s, and never in a polymorphic way over @f@.
 module Data.Functor.Combinator.Unsafe (
-    unsafePlus
+    unsafeAlt
+  , unsafePlus
   , unsafeApply
   , unsafeBind
   , unsafePointed
+  , unsafeDecide
+  , unsafeConclude
+  , unsafeDivise
   ) where
 
 import           Control.Applicative
 import           Data.Constraint
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Conclude
 import           Data.Constraint.Unsafe
 import           Data.Functor.Bind
 import           Data.Functor.Plus
 import           Data.Pointed
+
+-- | For any @'Alternative' f@, produce a value that would require @'Alt'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Alt' instance.
+--
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafeAlt :: forall f proxy r. Alternative f => proxy f -> (Alt f => r) -> r
+unsafeAlt _ x = case unsafeCoerceConstraint @(Alt (WrappedApplicative f)) @(Alt f) of
+    Sub Dict -> x
 
 -- | For any @'Alternative' f@, produce a value that would require @'Plus'
 -- f@.
@@ -100,5 +125,54 @@ instance Applicative f => Pointed (PointMe f) where
 -- \@MyFunctor@.
 unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
 unsafePointed _ x = case unsafeCoerceConstraint @(Pointed (PointMe f)) @(Pointed f) of
+    Sub Dict -> x
+
+-- | For any @'Divisible' f@, produce a value that would require @'Decide'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Decide' instance.
+--
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafeDecide :: forall f proxy r. Decidable f => proxy f -> (Decide f => r) -> r
+unsafeDecide _ x = case unsafeCoerceConstraint @(Decide (WrappedDivisible f)) @(Decide f) of
+    Sub Dict -> x
+
+-- | For any @'Decidable' f@, produce a value that would require @'Conclude'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Conclude' instance.
+--
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafeConclude :: forall f proxy r. Decidable f => proxy f -> (Conclude f => r) -> r
+unsafeConclude _ x = case unsafeCoerceConstraint @(Conclude (WrappedDivisible f)) @(Conclude f) of
+    Sub Dict -> x
+
+
+-- | For any @'Divisible' f@, produce a value that would require @'Divise'
+-- f@.
+--
+-- Always use with concrete and specific @f@ only, and never use with any
+-- @f@ that already has a 'Divise' instance.
+--
+-- See documentation for 'Data.HBifunctor.Tensor.upgradeC' for example
+-- usages.
+--
+-- The 'Data.Proxy.Proxy' argument allows you to specify which specific @f@
+-- you want to enhance.  You can pass in something like @'Data.Proxy.Proxy'
+-- \@MyFunctor@.
+unsafeDivise :: forall f proxy r. Divisible f => proxy f -> (Divise f => r) -> r
+unsafeDivise _ x = case unsafeCoerceConstraint @(Divise (WrappedDivisible f)) @(Divise f) of
     Sub Dict -> x
 

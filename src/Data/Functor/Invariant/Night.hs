@@ -1,6 +1,7 @@
 
 module Data.Functor.Invariant.Night (
     Night(..)
+  , Not(..)
   , night
   , runNightAlt
   , runNightDecide
@@ -10,6 +11,10 @@ module Data.Functor.Invariant.Night (
   , intro1, intro2
   , elim1, elim2
   , swap
+  , runCoNightChain
+  , runContraNightChain
+  , runCoNightChain1
+  , runContraNightChain1
   ) where
 
 import           Control.Natural
@@ -17,12 +22,13 @@ import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Functor.Alt
 import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Night   (Not(..))
 import           Data.Functor.Invariant
+import           Data.Functor.Plus
 import           Data.HBifunctor
 import           Data.HBifunctor.Associative hiding (assoc)
 import           Data.HBifunctor.Tensor hiding      (elim1, elim2, intro1, intro2)
-import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.Kind
 import           Data.Void
@@ -97,6 +103,38 @@ elim2 (Night x y f g _) = invmap g (either id (absurd . refute y) . f) x
 swap :: Night f g ~> Night g f
 swap (Night x y f g h) = Night y x (B.swap . f) h g
 
+-- | In the covariant direction, we can interpret out of a 'Chain1' of 'Night'
+-- into any 'Alt'.
+runCoNightChain1
+    :: forall f g. Alt g
+    => f ~> g
+    -> Chain1 Night f ~> g
+runCoNightChain1 f = foldChain1 f (runNightAlt f id)
+
+-- | In the contravariant direction, we can interpret out of a 'Chain1' of
+-- 'Night' into any 'Decide'.
+runContraNightChain1
+    :: forall f g. Decide g
+    => f ~> g
+    -> Chain1 Night f ~> g
+runContraNightChain1 f = foldChain1 f (runNightDecide f id)
+
+-- | In the covariant direction, we can interpret out of a 'Chain' of 'Night'
+-- into any 'Plus'.
+runCoNightChain
+    :: forall f g. Plus g
+    => f ~> g
+    -> Chain Night Not f ~> g
+runCoNightChain f = foldChain (const zero) (runNightAlt f id)
+
+-- | In the contravariant direction, we can interpret out of a 'Chain' of
+-- 'Night' into any 'Conclude'.
+runContraNightChain
+    :: forall f g. Conclude g
+    => f ~> g
+    -> Chain Night Not f ~> g
+runContraNightChain f = foldChain (conclude . refute) (runNightDecide f id)
+
 instance HBifunctor Night where
     hbimap f g (Night x y h j k) = Night (f x) (g y) h j k
 
@@ -115,7 +153,7 @@ instance Associative Night where
     matchNE = matchChain1
 
     consNE = More1
-    toNonEmptyBy = More1 . hright Done1
+    toNonEmptyBy = chain1Pair
 
 instance Tensor Night Not where
     type ListBy Night = Chain Night Not
@@ -129,4 +167,4 @@ instance Tensor Night Not where
     splitNE = splitChain1
     splittingLB = splittingChain
 
-    toListBy = More . hright inject
+    toListBy = chainPair
