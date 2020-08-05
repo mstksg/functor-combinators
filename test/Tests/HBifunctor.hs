@@ -40,8 +40,10 @@ hbimapProp gx = do
 associatingProp
     :: forall t f g h m a.
      ( Associative t
+     , FunctorBy t f
+     , FunctorBy t g
+     , FunctorBy t h
      , Monad m
-     , Functor f, Functor g, Functor h
      , Show (t f (t g h) a)
      , Show (t (t f g) h a)
      , Eq (t f (t g h) a)
@@ -55,8 +57,8 @@ associatingProp = isoProp (associating @t)
 matchingNEProp
     :: forall t f m a.
      ( Associative t
+     , FunctorBy t f
      , Monad m
-     , Functor f
      , Show (f a), Eq (f a)
      , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
      , Show (t f (NonEmptyBy t f) a), Eq (t f (NonEmptyBy t f) a)
@@ -71,7 +73,6 @@ unrollingNEProp
     :: forall t f m a.
      ( SemigroupIn t f
      , Monad m
-     , Functor f
      , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
      , Show (f a), Eq (f a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
@@ -137,8 +138,8 @@ binterpretProp gx = do
 rightIdentityProp
     :: forall t i f m a.
      ( Tensor t i
+     , FunctorBy t f
      , Monad m
-     , Functor f
      , Show (f a), Eq (f a)
      , Show (t f i a), Eq (t f i a)
      )
@@ -150,8 +151,8 @@ rightIdentityProp = isoProp (rightIdentity @t)
 leftIdentityProp
     :: forall t i g m a.
      ( Tensor t i
+     , FunctorBy t g
      , Monad m
-     , Functor g
      , Show (g a), Eq (g a)
      , Show (t i g a), Eq (t i g a)
      )
@@ -229,6 +230,7 @@ pureTProp gx = do
 splittingNEProp
     :: forall t i f m a.
      ( Matchable t i
+     , FunctorBy t f
      , Monad m
      , Show (NonEmptyBy t f a), Eq (NonEmptyBy t f a)
      , Show (t f (ListBy t f) a), Eq (t f (ListBy t f) a)
@@ -241,6 +243,7 @@ splittingNEProp = isoProp (splittingNE @t)
 matchingLBProp
     :: forall t i f m a.
      ( Matchable t i
+     , FunctorBy t f
      , Monad m
      , Show (i a), Eq (i a)
      , Show (ListBy t f a), Eq (ListBy t f a)
@@ -254,8 +257,8 @@ matchingLBProp = isoProp (matchingLB @t)
 matchingChainProp
     :: forall t i f m a.
      ( Matchable t i
+     , FunctorBy t f
      , Monad m
-     , Functor f
      , Show (f a), Eq (f a)
      , Show (i a), Eq (i a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
@@ -303,7 +306,6 @@ associativeProps
      , Interpret (NonEmptyBy t) f
      , TestHBifunctor t
      , TestHFunctor (NonEmptyBy t)
-     , Functor f
      , Show (t f (t f f) a)     , Eq (t f (t f f) a)
      , Show (t (t f f) f a)     , Eq (t (t f f) f a)
      , Show (t f f a)
@@ -311,6 +313,7 @@ associativeProps
      , Show (NonEmptyBy t f a)          , Eq (NonEmptyBy t f a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
      , Show (f a)               , Eq (f a)
+     , TestHFunctorBy (NonEmptyBy t) f
      )
     => Gen (f a)
     -> TestTree
@@ -332,7 +335,6 @@ tensorProps
      , TestHBifunctor t
      , TestHFunctor (ListBy t)
      , TestHFunctor (NonEmptyBy t)
-     , Functor f
      , Show (t f i a)            , Eq (t f i a)
      , Show (t i f a)            , Eq (t i f a)
      , Show (t f (ListBy t f) a)         , Eq (t f (ListBy t f) a)
@@ -342,6 +344,8 @@ tensorProps
      , Show (NonEmptyBy t f a)
      , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
+     , TestHFunctorBy (ListBy t) f
+     , TestHFunctorBy (NonEmptyBy t) f
      )
     => Gen (f a)
     -> Maybe (Gen (i a))
@@ -361,10 +365,10 @@ tensorProps gx gy = testGroup "Tensor"
 matchableProps
     :: forall t i f a.
      ( Matchable t i
+     , FunctorBy t f
      , TestHBifunctor t
      , TestHFunctor (ListBy t)
      , TestHFunctor (NonEmptyBy t)
-     , Functor f
      , Show (t f (ListBy t f) a)         , Eq (t f (ListBy t f) a)
      , Show (t f (Chain t i f) a), Eq (t f (Chain t i f) a)
      , Show (t f (Chain1 t f) a)     , Eq (t f (Chain1 t f) a)
@@ -372,6 +376,8 @@ matchableProps
      , Show (NonEmptyBy t f a)               , Eq (NonEmptyBy t f a)
      , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
+     , TestHFunctorBy (ListBy t) f
+     , TestHFunctorBy (NonEmptyBy t) f
      )
     => Gen (f a)
     -> Maybe (Gen (i a))
@@ -389,7 +395,6 @@ associativeProps_
      , Interpret (NonEmptyBy t) f
      , TestHBifunctor t
      , TestHFunctor (NonEmptyBy t)
-     , Functor f
      , Show (t f (t f f) a)     , Eq (t f (t f f) a)
      , Show (t (t f f) f a)     , Eq (t (t f f) f a)
      , Show (t f f a)           , Eq (t f f a)
@@ -397,6 +402,7 @@ associativeProps_
      , Show (NonEmptyBy t f a)          , Eq (NonEmptyBy t f a)
      , Show (t f (Chain1 t f) a), Eq (t f (Chain1 t f) a)
      , Show (f a)               , Eq (f a)
+     , TestHFunctorBy (NonEmptyBy t) f
      )
     => Gen (f a)
     -> [TestTree]
@@ -410,7 +416,6 @@ tensorProps_
      , TestHBifunctor t
      , TestHFunctor (ListBy t)
      , TestHFunctor (NonEmptyBy t)
-     , Functor f
      , Show (t f (t f f) a)          , Eq (t f (t f f) a)
      , Show (t (t f f) f a)          , Eq (t (t f f) f a)
      , Show (t f i a)            , Eq (t f i a)
@@ -424,6 +429,8 @@ tensorProps_
      , Show (NonEmptyBy t f a)               , Eq (NonEmptyBy t f a)
      , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
+     , TestHFunctorBy (NonEmptyBy t) f
+     , TestHFunctorBy (ListBy t) f
      )
     => Gen (f a)
     -> Maybe (Gen (i a))
@@ -439,7 +446,6 @@ matchableProps_
      , TestHBifunctor t
      , TestHFunctor (ListBy t)
      , TestHFunctor (NonEmptyBy t)
-     , Functor f
      , Show (t f (t f f) a)          , Eq (t f (t f f) a)
      , Show (t (t f f) f a)          , Eq (t (t f f) f a)
      , Show (t f i a)            , Eq (t f i a)
@@ -453,6 +459,8 @@ matchableProps_
      , Show (NonEmptyBy t f a)               , Eq (NonEmptyBy t f a)
      , Show (i a)                  , Eq (i a)
      , Show (f a)                    , Eq (f a)
+     , TestHFunctorBy (ListBy t) f
+     , TestHFunctorBy (NonEmptyBy t) f
      )
     => Gen (f a)
     -> Maybe (Gen (i a))

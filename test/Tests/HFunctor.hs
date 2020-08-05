@@ -104,6 +104,7 @@ hfunctorProps
     :: forall t f a.
      ( TestHFunctor t
      , Show (t f a), Eq (t f a)
+     , TestHFunctorBy t f
      )
     => Gen (f a)
     -> TestTree
@@ -119,6 +120,9 @@ hbindProps
      , Show (t f a)        , Eq (t f a)
      , Show (t (t f) a)
      , Show (t (t (t f)) a)
+     , TestHFunctorBy t (t (t f))
+     , TestHFunctorBy t (t f)
+     , TestHFunctorBy t f
      )
     => Gen (f a)
     -> TestTree
@@ -135,6 +139,7 @@ interpretProps
      , TestHFunctor t
      , Show (f a)          , Eq (f a)
      , Show (t f a)
+     , TestHFunctorBy t f
      )
     => Gen (f a)
     -> TestTree
@@ -151,6 +156,9 @@ hbindProps_
      , Show (t f a)        , Eq (t f a)
      , Show (t (t f) a)
      , Show (t (t (t f)) a)
+     , TestHFunctorBy t f
+     , TestHFunctorBy t (t f)
+     , TestHFunctorBy t (t (t f))
      )
     => Gen (f a)
     -> [TestTree]
@@ -164,6 +172,7 @@ interpretProps_
      , TestHFunctor t
      , Show (f a)          , Eq (f a)
      , Show (t f a)        , Eq (t f a)
+     , TestHFunctorBy t f
      )
     => Gen (f a)
     -> [TestTree]
@@ -181,6 +190,9 @@ bindInterpProps_
      , Show (t f a)        , Eq (t f a)
      , Show (t (t f) a)
      , Show (t (t (t f)) a)
+     , TestHFunctorBy t (t (t f))
+     , TestHFunctorBy t (t f)
+     , TestHFunctorBy t f
      )
     => Gen (f a)
     -> [TestTree]

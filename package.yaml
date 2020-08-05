@@ -87,6 +87,7 @@ dependencies:
 - nonempty-containers
 - semigroupoids
 - transformers
+- trivial-constraint >= 0.5
 
 library:
   source-dirs: src
@@ -108,7 +109,6 @@ library:
   - profunctors
   - tagged
   - these
-  - trivial-constraint >= 0.5
   - vinyl
   - sop-core
 

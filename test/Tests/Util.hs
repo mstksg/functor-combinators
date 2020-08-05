@@ -15,6 +15,7 @@ import           Control.Applicative.Lift
 import           Control.Monad.Freer.Church
 import           Control.Natural.IsoF
 import           Data.Bifunctor.Joker
+import           Data.Constraint.Trivial
 import           Data.Function
 import           Data.Functor
 import           Data.Functor.Bind
@@ -91,15 +92,15 @@ instance (GShow i, GShow (t f (Chain t i f))) => GShow (Chain t i f) where
 instance (GShow f, GShow g) => Show (Day f g a) where
     showsPrec = gshowsPrec
 
-instance GShow f => GShow (Ap1 f) where
+instance (GShow f, Functor f) => GShow (Ap1 f) where
     gshowsPrec d (Ap1 x y) = case matchLB @Day y of
       L1 _  -> showsUnaryWith gshowsPrec "inject" d x
       R1 ys -> showsBinaryWith gshowsPrec gshowsPrec "Ap1" d x ys
 
-instance GShow f => Eq (Ap1 f a) where
+instance (GShow f, Functor f) => Eq (Ap1 f a) where
     (==) = (==) `on` show
 
-instance GShow f => Show (Ap1 f a) where
+instance (GShow f, Functor f) => Show (Ap1 f a) where
     showsPrec = gshowsPrec
 
 instance GShow f => GShow (Ap f) where
@@ -159,8 +160,10 @@ instance Eq1 V1 where
     liftEq _ = \case {}
 
 class HFunctor t => TestHFunctor t where
+    type TestHFunctorBy t :: (Type -> Type) -> Constraint
+    type TestHFunctorBy t = Unconstrained
     genHF
-        :: MonadGen m
+        :: (MonadGen m, TestHFunctorBy t f)
         => m (f a)
         -> m (t f a)
 
@@ -240,6 +243,7 @@ instance TestHFunctor Free1 where
            <$> Gen.nonEmpty (Range.linear 1 3) gx
 
 instance TestHFunctor t => TestHFunctor (HLift t) where
+    type TestHFunctorBy (HLift t) = TestHFunctorBy t
     genHF gx = Gen.bool >>= \case
       False -> HPure  <$> gx
       True  -> HOther <$> genHF gx
@@ -247,7 +251,11 @@ instance TestHFunctor t => TestHFunctor (HLift t) where
 instance (Enum e, Bounded e) => TestHFunctor (EnvT e) where
     genHF gx = EnvT <$> Gen.enumBounded <*> gx
 
+class (c f, d f) => AndC c d f
+instance (c f, d f) => AndC c d f
+
 instance (TestHFunctor s, HTraversable s, TestHFunctor t) => TestHFunctor (ComposeT s t) where
+    type TestHFunctorBy (ComposeT s t) = AndC (TestHFunctorBy s) (TestHFunctorBy t)
     genHF gx = fmap ComposeT
              . htraverse (genHF @t . pure)
            =<< genHF @s gx
