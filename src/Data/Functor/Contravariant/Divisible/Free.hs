@@ -31,6 +31,7 @@ import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Invariant
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
 import           Data.Kind
@@ -55,6 +56,8 @@ instance Contravariant (Div f) where
     contramap f = \case
       Conquer       -> Conquer
       Divide g x xs -> Divide (g . f) x xs
+instance Invariant (Div f) where
+    invmap _ = contramap
 
 instance Divise (Div f) where
     divise f = \case
@@ -126,6 +129,8 @@ data Div1 :: (Type -> Type) -> Type -> Type where
 
 instance Contravariant (Div1 f) where
     contramap f (Div1 g x xs) = Div1 (g . f) x xs
+instance Invariant (Div1 f) where
+    invmap _ = contramap
 instance Divise (Div1 f) where
     divise f (Div1 g x xs) = Div1 (assoc . first g . f) x
                            . divise id xs
@@ -196,6 +201,8 @@ instance Contravariant (Dec f) where
     contramap f = \case
       Lose   g      -> Lose   (g . f)
       Choose g x xs -> Choose (g . f) x xs
+instance Invariant (Dec f) where
+    invmap _ = contramap
 instance Decide (Dec f) where
     decide f = \case
       Lose   g      -> contramap (either (absurd . g) id . f)
@@ -244,6 +251,8 @@ toDec (Dec1 f x xs) = Choose f x xs
 
 instance Contravariant (Dec1 f) where
     contramap f (Dec1 g x xs) = Dec1 (g . f) x xs
+instance Invariant (Dec1 f) where
+    invmap _ = contramap
 instance Decide (Dec1 f) where
     decide f (Dec1 g x xs) = Dec1 (assoc . first g . f) x
                            . decide id xs

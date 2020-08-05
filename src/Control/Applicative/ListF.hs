@@ -37,10 +37,11 @@ import           Data.Foldable
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Divise
-import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Maybe
@@ -93,6 +94,9 @@ instance Pointed f => Pointed (ListF f) where
 
 instance Contravariant f => Contravariant (ListF f) where
     contramap f (ListF xs) = ListF ((map . contramap) f xs)
+
+instance Invariant f => Invariant (ListF f) where
+    invmap f g (ListF xs) = ListF (map (invmap f g) xs)
 
 instance Contravariant f => Divise (ListF f) where
     divise f (ListF xs) (ListF ys) = ListF $
@@ -157,6 +161,8 @@ instance Functor f => Alt (NonEmptyF f) where
 
 instance Contravariant f => Contravariant (NonEmptyF f) where
     contramap f (NonEmptyF xs) = NonEmptyF (fmap (contramap f) xs)
+instance Invariant f => Invariant (NonEmptyF f) where
+    invmap f g (NonEmptyF xs) = NonEmptyF (fmap (invmap f g) xs)
 instance Contravariant f => Divise (NonEmptyF f) where
     divise f (NonEmptyF xs) (NonEmptyF ys) = NonEmptyF $
          (fmap . contramap) (fst . f) xs

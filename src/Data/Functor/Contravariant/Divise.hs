@@ -150,6 +150,7 @@ instance Divise f => Divise (Alt f) where
 
 #ifdef GHC_GENERICS
 instance Divise U1 where divise = divide
+instance Divise V1 where divise _ = \case {}
 
 instance Divise f => Divise (Rec1 f) where
   divise f (Rec1 l) (Rec1 r) = Rec1 $ divise f l r

@@ -54,7 +54,7 @@ import           Control.Applicative.Backwards
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
-import           Control.Comonad.Trans.Env      (EnvT(..))
+import           Control.Comonad.Trans.Env           (EnvT(..))
 import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Compose
@@ -64,6 +64,7 @@ import           Data.Coerce
 import           Data.Data
 import           Data.Functor.Bind
 import           Data.Functor.Classes
+import           Data.Functor.Contravariant
 import           Data.Functor.Coyoneda
 import           Data.Functor.Plus
 import           Data.Functor.Product
@@ -75,11 +76,12 @@ import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           GHC.Generics
-import qualified Control.Alternative.Free       as Alt
-import qualified Control.Applicative.Free       as Ap
-import qualified Control.Applicative.Free.Fast  as FAF
-import qualified Control.Applicative.Free.Final as FA
-import qualified Data.Map.NonEmpty              as NEM
+import qualified Control.Alternative.Free            as Alt
+import qualified Control.Applicative.Free            as Ap
+import qualified Control.Applicative.Free.Fast       as FAF
+import qualified Control.Applicative.Free.Final      as FA
+import qualified Data.Functor.Contravariant.Coyoneda as CCY
+import qualified Data.Map.NonEmpty                   as NEM
 
 -- | An 'Interpret' lets us move in and out of the "enhanced" 'Functor' (@t
 -- f@) and the functor it enhances (@f@).  An instance @'Interpret' t f@
@@ -197,6 +199,11 @@ collectI f = getI ((:[]) . f)
 instance Functor f => Interpret Coyoneda f where
     retract                    = lowerCoyoneda
     interpret f (Coyoneda g x) = g <$> f x
+
+-- | A free 'Contravariant'
+instance Contravariant f => Interpret CCY.Coyoneda f where
+    retract                        = CCY.lowerCoyoneda
+    interpret f (CCY.Coyoneda g x) = contramap g (f x)
 
 -- | A free 'Applicative'
 instance Applicative f => Interpret Ap.Ap f where

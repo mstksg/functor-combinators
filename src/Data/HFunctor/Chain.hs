@@ -34,6 +34,7 @@ module Data.HFunctor.Chain (
   , splittingChain
   , chainPair
   , injectChain
+  , splitChain
   -- * 'Chain1'
   , Chain1(..)
   , foldChain1
@@ -572,6 +573,13 @@ splittingChain = isoF to_ from_
     from_ = \case
       L1 x  -> Done x
       R1 xs -> More xs
+
+-- | An analogue of 'splitLB': match one of the two constructors of
+-- a 'Chain'.
+splitChain :: Chain t i f ~> i :+: t f (Chain t i f)
+splitChain = \case
+    Done x  -> L1 x
+    More xs -> R1 xs
 
 -- | A @'Chain1' t f@ is like a non-empty linked list of @f@s, and
 -- a @'Chain' t i f@ is a possibly-empty linked list of @f@s.  This

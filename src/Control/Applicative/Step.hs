@@ -41,8 +41,14 @@ import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Alt
 import           Data.Functor.Bind
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Invariant
 import           Data.Functor.These
-import           Data.Map.NonEmpty          (NEMap)
+import           Data.Map.NonEmpty                    (NEMap)
 import           Data.Pointed
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
@@ -50,7 +56,7 @@ import           Data.Semigroup.Traversable
 import           Data.These
 import           GHC.Generics
 import           GHC.Natural
-import qualified Data.Map.NonEmpty          as NEM
+import qualified Data.Map.NonEmpty                    as NEM
 
 -- | An @f a@, along with a 'Natural' index.
 --
@@ -81,9 +87,32 @@ deriveRead1 ''Step
 deriveEq1 ''Step
 deriveOrd1 ''Step
 
+instance Apply f => Apply (Step f) where
+    Step n f <.> Step m x = Step (n + m) (f <.> x)
+
 instance Applicative f => Applicative (Step f) where
     pure = Step 0 . pure
     Step n f <*> Step m x = Step (n + m) (f <*> x)
+
+instance Contravariant f => Contravariant (Step f) where
+    contramap f (Step x y) = Step x (contramap f y)
+
+instance Divisible f => Divisible (Step f) where
+    divide f (Step n x) (Step m y) = Step (n + m) (divide f x y)
+    conquer = Step 0 conquer
+instance Divise f => Divise (Step f) where
+    divise f (Step n x) (Step m y) = Step (n + m) (divise f x y)
+
+instance Decide f => Decide (Step f) where
+    decide f (Step n x) (Step m y) = Step (n + m) (decide f x y)
+instance Conclude f => Conclude (Step f) where
+    conclude = Step 0 . conclude
+instance Decidable f => Decidable (Step f) where
+    choose f (Step n x) (Step m y) = Step (n + m) (choose f x y)
+    lose = Step 0 . lose
+
+instance Invariant f => Invariant (Step f) where
+    invmap f g (Step x y) = Step x (invmap f g y)
 
 instance Pointed f => Pointed (Step f) where
     point = Step 0 . point
@@ -216,6 +245,16 @@ instance Semigroup (Steps f a) where
     Steps xs <> Steps ys = Steps $
       let (k, _) = NEM.findMax xs
       in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+
+instance Contravariant f => Contravariant (Steps f) where
+    contramap f (Steps xs) = Steps ((fmap . contramap) f xs)
+
+-- TODO: consider what Divisible/Decidable should be.  Maybe no need to
+-- rush into this.
+
+instance Invariant f => Invariant (Steps f) where
+    invmap f g (Steps xs) = Steps (fmap (invmap f g) xs)
+
 
 -- | Left-biased untion
 instance Functor f => Alt (Steps f) where
@@ -379,6 +418,11 @@ instance Bind (Void2 a) where
 instance Apply (Void2 a) where
     x <.> _ = case x of {}
 
+instance Contravariant (Void2 a) where
+    contramap _ = \case {}
+instance Invariant (Void2 a) where
+    invmap _ _ = \case {}
+
 -- | If you treat a @'Void2' f a@ as a functor combinator, then 'absurd2'
 -- lets you convert from a @'Void2' f a@ into a @t f a@ for any functor
 -- combinator @t@.
@@ -405,6 +449,11 @@ instance Bind (Void3 a b) where
 
 instance Apply (Void3 a b) where
     x <.> _ = case x of {}
+
+instance Contravariant (Void3 a b) where
+    contramap _ = \case {}
+instance Invariant (Void3 a b) where
+    invmap _ _ = \case {}
 
 -- | If you treat a @'Void3' f a@ as a binary functor combinator, then
 -- 'absurd3' lets you convert from a @'Void3' f a@ into a @t f a@ for any

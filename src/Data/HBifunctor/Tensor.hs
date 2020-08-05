@@ -458,7 +458,7 @@ class Tensor t i => Matchable t i where
     --
     -- This is analogous to a function @'uncurry' ('Data.List.NonEmpty.:|')
     -- :: (a, [a]) -> 'Data.List.NonEmpty.NonEmpty' a@.
-    unsplitNE :: t f (ListBy t f) ~> NonEmptyBy t f
+    unsplitNE :: FunctorBy t f => t f (ListBy t f) ~> NonEmptyBy t f
 
     -- | "Pattern match" on an @'ListBy' t f@: it is either empty, or it is
     -- non-empty (and so can be an @'NonEmptyBy' t f@).
@@ -476,12 +476,12 @@ class Tensor t i => Matchable t i where
     -- Note that you can recursively "unroll" a 'ListBy' completely into
     -- a 'Data.HFunctor.Chain.Chain' by using
     -- 'Data.HFunctor.Chain.unrollLB'.
-    matchLB   :: ListBy t f ~> i :+: NonEmptyBy t f
+    matchLB   :: FunctorBy t f => ListBy t f ~> i :+: NonEmptyBy t f
 
 -- | An @'NonEmptyBy' t f@ is isomorphic to an @f@ consed with an @'ListBy' t f@, like
 -- how a @'Data.List.NonEmpty.NonEmpty' a@ is isomorphic to @(a, [a])@.
 splittingNE
-    :: Matchable t i
+    :: (Matchable t i, FunctorBy t f)
     => NonEmptyBy t f <~> t f (ListBy t f)
 splittingNE = isoF splitNE unsplitNE
 
@@ -489,7 +489,7 @@ splittingNE = isoF splitNE unsplitNE
 -- non-empty case (@'NonEmptyBy' t f@), like how @[a]@ is isomorphic to @'Maybe'
 -- ('Data.List.NonEmpty.NonEmpty' a)@.
 matchingLB
-    :: forall t i f. Matchable t i
+    :: forall t i f. (Matchable t i, FunctorBy t f)
     => ListBy t f <~> i :+: NonEmptyBy t f
 matchingLB = isoF (matchLB @t) (nilLB @t !*! fromNE @t)
 

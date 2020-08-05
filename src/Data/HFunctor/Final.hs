@@ -25,7 +25,7 @@ import           Control.Applicative.Free
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Monad
-import           Control.Monad.Freer.Church hiding (toFree)
+import           Control.Monad.Freer.Church hiding         (toFree)
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Identity
 import           Control.Natural
@@ -33,13 +33,22 @@ import           Control.Natural.IsoF
 import           Data.Constraint.Trivial
 import           Data.Functor.Apply.Free
 import           Data.Functor.Bind
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Contravariant.Divisible.Free
 import           Data.Functor.Coyoneda
+import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
+import           Data.Kind
 import           Data.Pointed
-import qualified Control.Alternative.Free          as Alt
-import qualified Control.Applicative.Free.Fast     as FAF
+import qualified Control.Alternative.Free                  as Alt
+import qualified Control.Applicative.Free.Fast             as FAF
+import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 
 -- | A simple way to inject/reject into any eventual typeclass.
 --
@@ -135,6 +144,10 @@ instance Applicative (Final Alternative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
+instance Alt (Final Alternative f) where
+    (<!>) = liftFinal2 (<|>)
+instance Plus (Final Alternative f) where
+    zero = liftFinal0 empty
 instance Alternative (Final Alternative f) where
     empty = liftFinal0 empty
     (<|>) = liftFinal2 (<|>)
@@ -165,6 +178,10 @@ instance Monad (Final MonadPlus f) where
     x >>= f  = Final $ \r -> do
       y <- runFinal x r
       runFinal (f y) r
+instance Alt (Final MonadPlus f) where
+    (<!>) = liftFinal2 (<|>)
+instance Plus (Final MonadPlus f) where
+    zero = liftFinal0 empty
 instance Alternative (Final MonadPlus f) where
     empty = liftFinal0 empty
     (<|>) = liftFinal2 (<|>)
@@ -204,6 +221,50 @@ instance Alt (Final Plus f) where
     (<!>) = liftFinal2 (<!>)
 instance Plus (Final Plus f) where
     zero = liftFinal0 zero
+
+instance Contravariant (Final Contravariant f) where
+    contramap f = liftFinal1 (contramap f)
+
+instance Contravariant (Final Divise f) where
+    contramap f = liftFinal1 (contramap f)
+instance Divise (Final Divise f) where
+    divise f = liftFinal2 (divise f)
+
+instance Contravariant (Final Divisible f) where
+    contramap f = liftFinal1 (contramap f)
+instance Divise (Final Divisible f) where
+    divise f = liftFinal2 (divide f)
+instance Divisible (Final Divisible f) where
+    divide f = liftFinal2 (divide f)
+    conquer = liftFinal0 conquer
+
+instance Contravariant (Final Decide f) where
+    contramap f = liftFinal1 (contramap f)
+instance Decide (Final Decide f) where
+    decide f = liftFinal2 (decide f)
+
+instance Contravariant (Final Conclude f) where
+    contramap f = liftFinal1 (contramap f)
+instance Decide (Final Conclude f) where
+    decide f = liftFinal2 (decide f)
+instance Conclude (Final Conclude f) where
+    conclude f = liftFinal0 (conclude f)
+
+instance Contravariant (Final Decidable f) where
+    contramap f = liftFinal1 (contramap f)
+instance Divisible (Final Decidable f) where
+    divide f = liftFinal2 (divide f)
+    conquer = liftFinal0 conquer
+instance Decide (Final Decidable f) where
+    decide f = liftFinal2 (choose f)
+instance Conclude (Final Decidable f) where
+    conclude f = liftFinal0 (lose f)
+instance Decidable (Final Decidable f) where
+    choose f = liftFinal2 (choose f)
+    lose f = liftFinal0 (lose f)
+
+instance Invariant (Final Invariant f) where
+    invmap f g = liftFinal1 (invmap f g)
 
 -- | Re-interpret the context under a 'Final'.
 hoistFinalC
@@ -285,8 +346,12 @@ fromFinal = interpret inject
 -- that you can pattern match on and inspect, but @t@ might.  This lets you
 -- work on a concrete structure if you desire.
 class FreeOf c t | t -> c where
+    type FreeFunctorBy t :: (Type -> Type) -> Constraint
+    type FreeFunctorBy t = Unconstrained
+
     fromFree :: t f ~> Final c f
-    toFree   :: Functor f => Final c f ~> t f
+    toFree   :: FreeFunctorBy t f => Final c f ~> t f
+    -- toFree   :: Functor f => Final c f ~> t f
 
     default fromFree :: Interpret t (Final c f) => t f ~> Final c f
     fromFree = toFinal
@@ -294,10 +359,11 @@ class FreeOf c t | t -> c where
     toFree = fromFinal
 
 -- | The isomorphism between a free structure and its encoding as 'Final'.
-finalizing :: (FreeOf c t, Functor f) => t f <~> Final c f
+finalizing :: (FreeOf c t, FreeFunctorBy t f) => t f <~> Final c f
 finalizing = isoF fromFree toFree
 
 instance FreeOf Functor       Coyoneda
+instance FreeOf Contravariant CCY.Coyoneda
 instance FreeOf Applicative   Ap
 instance FreeOf Apply         Ap1
 instance FreeOf Applicative   FAF.Ap
@@ -306,6 +372,10 @@ instance FreeOf Monad         Free
 instance FreeOf Bind          Free1
 instance FreeOf Pointed       Lift
 instance FreeOf Pointed       MaybeApply
-instance FreeOf Alt           NonEmptyF
-instance FreeOf Plus          ListF
+instance FreeOf Alt           NonEmptyF  where type FreeFunctorBy NonEmptyF = Functor
+instance FreeOf Plus          ListF      where type FreeFunctorBy ListF = Functor
+instance FreeOf Divise        Div1
+instance FreeOf Divisible     Div
+instance FreeOf Decide        Dec1
+instance FreeOf Conclude      Dec
 instance FreeOf Unconstrained IdentityT

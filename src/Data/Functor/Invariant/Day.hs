@@ -24,6 +24,7 @@ module Data.Functor.Invariant.Day (
   , trans1, trans2
   -- * Chain
   , DayChain
+  , pattern Gather, pattern Knot
   , runCoDayChain
   , runContraDayChain
   , assembleDayChain
@@ -32,6 +33,7 @@ module Data.Functor.Invariant.Day (
   , gatherDayChainRec
   -- * Nonempty Chain
   , DayChain1
+  , pattern DayChain1
   , runCoDayChain1
   , runContraDayChain1
   , assembleDayChain1
@@ -57,6 +59,7 @@ import           Data.HFunctor.Chain
 import           Data.Kind
 import           Data.Proxy
 import           Data.SOP
+import           GHC.Generics
 import qualified Data.Bifunctor.Assoc                 as B
 import qualified Data.Bifunctor.Swap                  as B
 import qualified Data.Functor.Contravariant.Day       as CD
@@ -214,6 +217,26 @@ runContraDayChain f = unsafeDivise (Proxy @g) $
 -- Haskell ecosystem uses invariant functors as an abstraction.
 type DayChain  = Chain Day Identity
 
+-- | Match on a non-empty 'DayChain'; contains no @f@s, but only the
+-- terminal value.  Analogous to the 'Control.Applicative.Free.Ap'
+-- constructor.
+pattern Gather :: (a -> (b, c)) -> (b -> c -> a) -> f b -> DayChain f c -> DayChain f a
+pattern Gather f g x xs = More (Day x xs f g)
+
+-- | Match on an "empty" 'DayChain'; contains no @f@s, but only the
+-- terminal value.  Analogous to 'Control.Applicative.Free.Pure'.
+pattern Knot :: a -> DayChain f a
+pattern Knot x = Done (Identity x)
+{-# COMPLETE Gather, Knot #-}
+
+-- | Match on a 'DayChain1' to get the head and the rest of the items.
+-- Analogous to the 'Data.Functor.Apply.Free.Ap1' constructor.
+pattern DayChain1 :: Invariant f => (a -> (b, c)) -> (b -> c -> a) -> f b -> DayChain f c -> DayChain1 f a
+pattern DayChain1 f g x xs <- (splitChain1->Day x xs f g)
+  where
+    DayChain1 f g x xs = unsplitNE $ Day x xs f g
+{-# COMPLETE DayChain1 #-}
+
 -- | Instead of defining yet another separate free semigroup like
 -- 'Data.Functor.Apply.Free.Ap1',
 -- 'Data.Functor.Contravariant.Divisible.Free.Div1', or
@@ -265,6 +288,14 @@ instance Tensor Day Identity where
     splittingLB = splittingChain
 
     toListBy = More . hright inject
+
+instance Matchable Day Identity where
+    unsplitNE (Day x xs f g) = case xs of
+      Done (Identity r) -> Done1 $ invmap (`g` r) (fst . f) x
+      More ys           -> More1 $ Day x (unsplitNE ys) f g
+    matchLB = \case
+      Done x  -> L1 x
+      More xs -> R1 $ unsplitNE xs
 
 -- | Convenient wrapper to build up a 'DayChain' on by providing each
 -- component of it.  This makes it much easier to build up longer chains

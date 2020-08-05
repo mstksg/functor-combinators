@@ -24,12 +24,14 @@ module Data.Functor.Invariant.Night (
   , trans1, trans2
   -- * Chain
   , NightChain
+  , pattern Share, pattern Reject
   , runCoNightChain
   , runContraNightChain
   , assembleNightChain
   , gatherNightChain
   -- * Nonempty Chain
   , NightChain1
+  , pattern NightChain1
   , runCoNightChain1
   , runContraNightChain1
   , assembleNightChain1
@@ -232,6 +234,28 @@ type NightChain  = Chain Night Not
 -- little the Haskell ecosystem uses invariant functors as an abstraction.
 type NightChain1 = Chain1 Night
 
+-- | Match on a non-empty 'NightChain'; contains no @f@s, but only the
+-- terminal value.  Analogous to the
+-- 'Data.Functor.Contravariant.Divisible.Free.Choose' constructor.
+pattern Share :: (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> NightChain f c -> NightChain f a
+pattern Share f g h x xs = More (Night x xs f g h)
+
+-- | Match on an "empty" 'NightChain'; contains no @f@s, but only the
+-- terminal value.  Analogous to the
+-- 'Data.Functor.Contravariant.Divisible.Free.Lose' constructor.
+pattern Reject :: (a -> Void) -> NightChain f a
+pattern Reject x = Done (Not x)
+{-# COMPLETE Share, Reject #-}
+
+-- | Match on a 'NightChain1' to get the head and the rest of the items.
+-- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Dec1'
+-- constructor.
+pattern NightChain1 :: Invariant f => (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> NightChain f c -> NightChain1 f a
+pattern NightChain1 f g h x xs <- (splitChain1->Night x xs f g h)
+  where
+    NightChain1 f g h x xs = unsplitNE $ Night x xs f g h
+{-# COMPLETE NightChain1 #-}
+
 instance Invariant (Night f g) where
     invmap f g (Night x y h j k) = Night x y (h . g) (f . j) (f . k)
 
@@ -271,6 +295,14 @@ instance Tensor Night Not where
     splittingLB = splittingChain
 
     toListBy = chainPair
+
+instance Matchable Night Not where
+    unsplitNE (Night x xs f g h) = case xs of
+      Done r  -> Done1 $ invmap g (either id (absurd . refute r) . f) x
+      More ys -> More1 $ Night x (unsplitNE ys) f g h
+    matchLB = \case
+      Done x  -> L1 x
+      More xs -> R1 $ unsplitNE xs
 
 -- | Convenient wrapper to build up a 'NightChain' on by providing each
 -- component of it.  This makes it much easier to build up longer chains

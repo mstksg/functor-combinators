@@ -46,7 +46,13 @@ import           Data.Data
 import           Data.Deriving
 import           Data.Functor.Bind
 import           Data.Functor.Classes
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Coyoneda
+import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
@@ -54,16 +60,16 @@ import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor.Internal
 import           Data.Kind
-import           Data.List.NonEmpty                  (NonEmpty(..))
+import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           GHC.Generics
-import qualified Control.Alternative.Free            as Alt
-import qualified Control.Applicative.Free.Fast       as FAF
-import qualified Control.Applicative.Free.Final      as FA
-import qualified Data.Functor.Contravariant.Coyoneda as CCY
-import qualified Data.Map                            as M
-import qualified Data.Map.NonEmpty                   as NEM
+import qualified Control.Alternative.Free             as Alt
+import qualified Control.Applicative.Free.Fast        as FAF
+import qualified Control.Applicative.Free.Final       as FA
+import qualified Data.Functor.Contravariant.Coyoneda  as CCY
+import qualified Data.Map                             as M
+import qualified Data.Map.NonEmpty                    as NEM
 
 -- | Lift an isomorphism over an 'HFunctor'.
 --
@@ -97,6 +103,23 @@ deriveRead1 ''ProxyF
 deriveEq1 ''ProxyF
 deriveOrd1 ''ProxyF
 
+instance Contravariant (ProxyF f) where
+    contramap _ = coerce
+instance Divisible (ProxyF f) where
+    divide _ _ _ = ProxyF
+    conquer = ProxyF
+instance Divise (ProxyF f) where
+    divise _ _ _ = ProxyF
+instance Decide (ProxyF f) where
+    decide _ _ _ = ProxyF
+instance Conclude (ProxyF f) where
+    conclude _ = ProxyF
+instance Decidable (ProxyF f) where
+    choose _ _ _ = ProxyF
+    lose _ = ProxyF
+instance Invariant (ProxyF f) where
+    invmap _ _ = coerce
+
 instance HFunctor ProxyF where
     hmap _ = coerce
 
@@ -115,6 +138,16 @@ deriveShow1 ''ConstF
 deriveRead1 ''ConstF
 deriveEq1 ''ConstF
 deriveOrd1 ''ConstF
+
+instance Contravariant (ConstF e f) where
+    contramap _ = coerce
+instance Monoid e => Divisible (ConstF e f) where
+    divide _ (ConstF x) (ConstF y) = ConstF (x <> y)
+    conquer = ConstF mempty
+instance Semigroup e => Divise (ConstF e f) where
+    divise _ (ConstF x) (ConstF y) = ConstF (x <> y)
+instance Invariant (ConstF e f) where
+    invmap _ _ = coerce
 
 instance HFunctor (ConstF e) where
     hmap _ = coerce
@@ -163,6 +196,16 @@ instance HFunctor t => HFunctor (HLift t) where
     hmap f = \case
       HPure  x -> HPure  (f x)
       HOther x -> HOther (hmap f x)
+
+instance (Contravariant f, Contravariant (t f)) => Contravariant (HLift t f) where
+    contramap f = \case
+      HPure  x  -> HPure  (contramap f x)
+      HOther xs -> HOther (contramap f xs)
+
+instance (Invariant f, Invariant (t f)) => Invariant (HLift t f) where
+    invmap f g = \case
+      HPure  x  -> HPure  (invmap f g x)
+      HOther xs -> HOther (invmap f g xs)
 
 -- | A higher-level 'Data.HFunctor.Interpret.retract' to get a @t f a@ back
 -- out of an @'HLift' t f a@, provided @t@ is an instance of 'Inject'.
@@ -226,6 +269,16 @@ data HFree t f a = HReturn (f a)
                  | HJoin   (t (HFree t f) a)
 
 deriving instance (Functor f, Functor (t (HFree t f))) => Functor (HFree t f)
+
+instance (Contravariant f, Contravariant (t (HFree t f))) => Contravariant (HFree t f) where
+    contramap f = \case
+      HReturn x  -> HReturn (contramap f x)
+      HJoin   xs -> HJoin   (contramap f xs)
+
+instance (Invariant f, Invariant (t (HFree t f))) => Invariant (HFree t f) where
+    invmap f g = \case
+      HReturn x  -> HReturn (invmap f g x)
+      HJoin   xs -> HJoin   (invmap f g xs)
 
 -- | Recursively fold down an 'HFree' into a single @g@ result, by handling
 -- each branch.  Can be more useful than

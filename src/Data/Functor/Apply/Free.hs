@@ -26,6 +26,7 @@ import           Data.Function
 import           Data.Functor.Apply
 import           Data.Functor.Day
 import           Data.Functor.Identity
+import           Data.Functor.Invariant
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
 import           Data.Kind
@@ -68,6 +69,9 @@ fromAp :: Ap f ~> (Identity :+: Ap1 f)
 fromAp = \case
     Pure x  -> L1 $ Identity x
     Ap x xs -> R1 $ Ap1 x xs
+
+instance Invariant (Ap1 f) where
+    invmap f _ = fmap f
 
 -- | An @'Ap1' f@ is just a @'Day' f ('Ap' f)@.  This bidirectional pattern
 -- synonym lets you treat it as such.

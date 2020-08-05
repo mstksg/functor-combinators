@@ -104,6 +104,7 @@ instance Decide f => Decide (Alt f) where
 
 #ifdef GHC_GENERICS
 instance Decide U1 where decide = choose
+instance Decide V1 where decide _ = \case {}
 
 instance Decide f => Decide (Rec1 f) where
   decide f (Rec1 l) (Rec1 r) = Rec1 $ decide f l r
