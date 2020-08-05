@@ -49,6 +49,9 @@ import qualified Data.Functor.Contravariant.Coyoneda as CCY
 import qualified Data.Functor.Contravariant.Day      as CD
 import qualified Data.Functor.Contravariant.Night    as N
 import qualified Data.Functor.Day                    as D
+import qualified Data.SOP                            as SOP
+import qualified Data.SOP.NP                         as SOP
+import qualified Data.SOP.NS                         as SOP
 
 -- | An 'HFunctor' can be thought of a unary "functor transformer" ---
 -- a basic functor combinator.  It takes a functor as input and returns
@@ -292,6 +295,12 @@ instance HFunctor Rec where
 
 instance HFunctor CoRec where
     hmap f (CoRec x) = CoRec (f x)
+
+instance HFunctor SOP.NP where
+    hmap f = SOP.cata_NP SOP.Nil ((SOP.:*) . f)
+
+instance HFunctor SOP.NS where
+    hmap f = SOP.cata_NS (SOP.Z . f) SOP.S
 
 instance HBifunctor (:*:) where
     hleft  f (x :*: y) = f x :*:   y

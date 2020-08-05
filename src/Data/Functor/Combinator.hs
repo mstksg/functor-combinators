@@ -104,6 +104,13 @@ module Data.Functor.Combinator (
   -- ** Natural Transformations
   , generalize
   , absorb
+  -- ** Divisible
+  , divideN
+  , diviseN
+  , concludeN
+  , decideN
+  , divideNRec
+  , diviseNRec
   ) where
 
 import           Control.Alternative.Free
@@ -119,6 +126,11 @@ import           Control.Monad.Trans.Reader
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Functor.Apply.Free
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
 import           Data.Functor.These
@@ -130,3 +142,77 @@ import           Data.HFunctor.Final
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics
+
+import qualified Data.SOP           as SOP
+import qualified Data.Vinyl         as V
+import qualified Data.Vinyl.Functor as V
+
+
+divideNRec
+    :: Divisible f
+    => V.Rec f as
+    -> f (V.XRec V.Identity as)
+divideNRec = \case
+    V.RNil    -> conquer
+    x V.:& xs -> divide
+      (\case z V.::& zs -> (z, zs))
+      x
+      (divideNRec xs)
+
+divideN
+    :: Divisible f
+    => SOP.NP f as
+    -> f (SOP.NP SOP.I as)
+divideN = \case
+    SOP.Nil     -> conquer
+    x SOP.:* xs -> divide
+      (\case SOP.I y SOP.:* ys -> (y, ys))
+      x
+      (divideN xs)
+
+diviseNRec
+    :: Divise f
+    => V.Rec f (a ': as)
+    -> f (V.XRec V.Identity (a ': as))
+diviseNRec = \case
+    x V.:& xs -> case xs of
+      V.RNil   -> contramap (\case z V.::& _ -> z) x
+      _ V.:& _ -> divise
+        (\case z V.::& zs -> (z,zs))
+        x
+        (diviseNRec xs)
+
+diviseN
+    :: Divise f
+    => SOP.NP f (a ': as)
+    -> f (SOP.NP SOP.I (a ': as))
+diviseN = \case
+    x SOP.:* xs -> case xs of
+      SOP.Nil    -> contramap (SOP.unI . SOP.hd) x
+      _ SOP.:* _ -> divise
+        (\case SOP.I z SOP.:* zs -> (z, zs))
+        x
+        (diviseN xs)
+
+concludeN
+    :: Conclude f
+    => SOP.NP f as
+    -> f (SOP.NS SOP.I as)
+concludeN = \case
+    SOP.Nil     -> conclude (\case {})
+    x SOP.:* xs -> decide
+      (\case SOP.Z y  -> Left (SOP.unI y); SOP.S ys -> Right ys)
+      x
+      (concludeN xs)
+
+decideN
+    :: Decide f
+    => SOP.NP f (a ': as)
+    -> f (SOP.NS SOP.I (a ': as))
+decideN = \case
+    x SOP.:* xs -> case xs of
+      SOP.Nil    -> contramap (\case SOP.Z z -> SOP.unI z; SOP.S zs -> case zs of {}) x
+      _ SOP.:* _ -> decide
+        (\case SOP.Z z -> Left (SOP.unI z); SOP.S zs -> Right zs)
+        x
+        (decideN xs)

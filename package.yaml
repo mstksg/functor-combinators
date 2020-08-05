@@ -110,6 +110,7 @@ library:
   - these
   - trivial-constraint >= 0.5
   - vinyl
+  - sop-core
 
 tests:
   functor-combinators-test:

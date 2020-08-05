@@ -22,33 +22,42 @@ module Data.Functor.Invariant.Night (
   , elim1, elim2
   , swapped
   , trans1, trans2
-  , INightChain1, INightChain
+  -- * Chain
+  , NightChain
   , runCoNightChain
   , runContraNightChain
+  , assembleNightChain
+  , gatherNightChain
+  -- * Nonempty Chain
+  , NightChain1
   , runCoNightChain1
   , runContraNightChain1
+  , assembleNightChain1
+  , gatherNightChain1
   ) where
 
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Functor.Alt
-import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Conclude
-import           Data.Functor.Contravariant.Night   (Not(..))
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Night    (Not(..))
 import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.HBifunctor
-import           Data.HBifunctor.Associative hiding (assoc)
-import           Data.HBifunctor.Tensor hiding      (elim1, elim2, intro1, intro2)
+import           Data.HBifunctor.Associative hiding  (assoc)
+import           Data.HBifunctor.Tensor hiding       (elim1, elim2, intro1, intro2)
+import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.Kind
+import           Data.SOP
 import           Data.Void
 import           GHC.Generics
-import qualified Data.Bifunctor.Assoc               as B
-import qualified Data.Bifunctor.Swap                as B
-import qualified Data.Functor.Contravariant.Night   as CN
-import qualified Data.HBifunctor.Tensor             as T
+import qualified Data.Bifunctor.Assoc                as B
+import qualified Data.Bifunctor.Swap                 as B
+import qualified Data.Functor.Contravariant.Night    as CN
+import qualified Data.HBifunctor.Tensor              as T
 
 -- | A pairing of invariant functors to create a new invariant functor that
 -- represents the "choice" between the two.
@@ -170,7 +179,7 @@ trans2 f (Night x y g h j) = Night x (f y) g h j
 runCoNightChain1
     :: forall f g. Alt g
     => f ~> g
-    -> INightChain1 f ~> g
+    -> NightChain1 f ~> g
 runCoNightChain1 f = foldChain1 f (runNightAlt f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain1' of
@@ -178,7 +187,7 @@ runCoNightChain1 f = foldChain1 f (runNightAlt f id)
 runContraNightChain1
     :: forall f g. Decide g
     => f ~> g
-    -> INightChain1 f ~> g
+    -> NightChain1 f ~> g
 runContraNightChain1 f = foldChain1 f (runNightDecide f id)
 
 -- | In the covariant direction, we can interpret out of a 'Chain' of 'Night'
@@ -186,7 +195,7 @@ runContraNightChain1 f = foldChain1 f (runNightDecide f id)
 runCoNightChain
     :: forall f g. Plus g
     => f ~> g
-    -> INightChain f ~> g
+    -> NightChain f ~> g
 runCoNightChain f = foldChain (const zero) (runNightAlt f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain' of
@@ -194,7 +203,7 @@ runCoNightChain f = foldChain (const zero) (runNightAlt f id)
 runContraNightChain
     :: forall f g. Conclude g
     => f ~> g
-    -> INightChain f ~> g
+    -> NightChain f ~> g
 runContraNightChain f = foldChain (conclude . refute) (runNightDecide f id)
 
 -- | Instead of defining yet another separate free monoid like
@@ -208,7 +217,7 @@ runContraNightChain f = foldChain (conclude . refute) (runNightDecide f id)
 -- 'MonoidIn' instance for 'Night') because the typeclasses used to express
 -- the target contexts are probably not worth defining given how little the
 -- Haskell ecosystem uses invariant functors as an abstraction.
-type INightChain  = Chain Night Not
+type NightChain  = Chain Night Not
 
 -- | Instead of defining yet another separate free semigroup like
 -- 'Data.Functor.Apply.Free.Ap1',
@@ -221,13 +230,19 @@ type INightChain  = Chain Night Not
 -- 'SemigroupIn' instance for 'Night') because the typeclasses used to
 -- express the target contexts are probably not worth defining given how
 -- little the Haskell ecosystem uses invariant functors as an abstraction.
-type INightChain1 = Chain1 Night
+type NightChain1 = Chain1 Night
+
+instance Invariant (Night f g) where
+    invmap f g (Night x y h j k) = Night x y (h . g) (f . j) (f . k)
+
+instance HFunctor (Night f) where
+    hmap f = hbimap id f
 
 instance HBifunctor Night where
     hbimap f g (Night x y h j k) = Night (f x) (g y) h j k
 
 instance Associative Night where
-    type NonEmptyBy Night = INightChain1
+    type NonEmptyBy Night = NightChain1
     type FunctorBy Night = Invariant
     associating = isoF assoc unassoc
 
@@ -244,7 +259,7 @@ instance Associative Night where
     toNonEmptyBy = chain1Pair
 
 instance Tensor Night Not where
-    type ListBy Night = INightChain
+    type ListBy Night = NightChain
 
     intro1 = intro2
     intro2 = intro1
@@ -256,3 +271,102 @@ instance Tensor Night Not where
     splittingLB = splittingChain
 
     toListBy = chainPair
+
+-- | Convenient wrapper to build up a 'NightChain' on by providing each
+-- component of it.  This makes it much easier to build up longer chains
+-- because you would only need to write the splitting/joining functions in
+-- one place.
+--
+-- For example, if you had a data type
+--
+-- @
+-- data MyType = MTI Int | MTB Bool | MTS String
+-- @
+--
+-- and an invariant functor @Prim@ (representing, say, a bidirectional
+-- parser, where @Prim Int@ is a bidirectional parser for an 'Int'@),
+-- then you could assemble a bidirectional parser for a 'MyType' using:
+--
+-- @
+-- invmap (\case MTI x -> Z x; MTB y -> S (Z y); MTS z -> S (S (Z z)))
+--        (\case Z x -> MTI x; S (Z y) -> MTB y; S (S (Z z)) -> MTS z)
+--   assembleNightChain $ intPrim
+--                     :* boolPrim
+--                     :* stringPrim
+--                     :* Nil
+-- @
+--
+-- This is much more convenient than doing it using manual applications of
+-- 'decide' or 'choose' or 'Night', which would require manually peeling
+-- off eithers one-by-one.
+assembleNightChain
+    :: NP f as
+    -> NightChain f (NS I as)
+assembleNightChain = \case
+    Nil     -> Done $ Not (\case {})
+    x :* xs -> More $ Night
+      x
+      (assembleNightChain xs)
+      unconsNSI
+      (Z . I)
+      S
+
+-- | A version of 'assembleNightChain' where each component is itself
+-- a 'NightChain'.
+--
+-- @
+-- assembleNightChain (x :* y :* z :* Nil)
+--   = gatherNightChain (injectChain x :* injectChain y :* injectChain z :* Nil)
+-- @
+gatherNightChain
+    :: NP (NightChain f) as
+    -> NightChain f (NS I as)
+gatherNightChain = \case
+    Nil     -> Done $ Not (\case {})
+    x :* xs -> appendChain $ Night
+      x
+      (gatherNightChain xs)
+      unconsNSI
+      (Z . I)
+      S
+
+-- | A version of 'assembleNightChain' but for 'NightChain1' instead.  Can be
+-- useful if you intend on interpreting it into something with only
+-- a 'Decide' or 'Alt' instance, but no 'Decidable' or 'Plus' or
+-- 'Alternative'.
+assembleNightChain1
+    :: Invariant f
+    => NP f (a ': as)
+    -> NightChain1 f (NS I (a ': as))
+assembleNightChain1 = \case
+    x :* xs -> case xs of
+      Nil    -> Done1 $ invmap (Z . I) (unI . unZ) x
+      _ :* _ -> More1 $ Night
+        x
+        (assembleNightChain1 xs)
+        unconsNSI
+        (Z . I)
+        S
+
+-- | A version of 'gatherNightChain' but for 'NightChain1' instead.  Can be
+-- useful if you intend on interpreting it into something with only
+-- a 'Decide' or 'Alt' instance, but no 'Decidable' or 'Plus' or
+-- 'Alternative'.
+gatherNightChain1
+    :: Invariant f
+    => NP (NightChain1 f) (a ': as)
+    -> NightChain1 f (NS I (a ': as))
+gatherNightChain1 = \case
+    x :* xs -> case xs of
+      Nil    -> invmap (Z . I) (unI . unZ) x
+      _ :* _ -> appendChain1 $ Night
+        x
+        (gatherNightChain1 xs)
+        unconsNSI
+        (Z . I)
+        S
+
+unconsNSI :: NS I (a ': as) -> Either a (NS I as)
+unconsNSI = \case
+  Z (I x) -> Left x
+  S xs    -> Right xs

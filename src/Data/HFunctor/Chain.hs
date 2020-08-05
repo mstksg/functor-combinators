@@ -33,6 +33,7 @@ module Data.HFunctor.Chain (
   , appendChain
   , splittingChain
   , chainPair
+  , injectChain
   -- * 'Chain1'
   , Chain1(..)
   , foldChain1
@@ -44,6 +45,7 @@ module Data.HFunctor.Chain (
   , fromChain1
   , matchChain1
   , chain1Pair
+  , injectChain1
   -- ** Matchable
   -- | The following conversions between 'Chain' and 'Chain1' are only
   -- possible if @t@ is 'Matchable'
@@ -221,7 +223,7 @@ instance HBifunctor t => HFunctor (Chain1 t) where
     hmap f = foldChain1 (Done1 . f) (More1 . hleft f)
 
 instance HBifunctor t => Inject (Chain1 t) where
-    inject  = Done1
+    inject  = injectChain1
 
 instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
     retract = \case
@@ -238,6 +240,10 @@ instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
 -- | Convert a tensor value pairing two @f@s into a two-item chain.
 chain1Pair :: HBifunctor t => t f f ~> Chain1 t f
 chain1Pair = More1 . hright Done1
+
+-- | Create a singleton 'Chain1'.
+injectChain1 :: f ~> Chain1 t f
+injectChain1 = Done1
 
 -- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of
 -- @t@s to itself.  The type @'Chain1' t f@ is an actual concrete ADT that contains
@@ -454,7 +460,7 @@ instance HBifunctor t => HFunctor (Chain t i) where
     hmap f = foldChain Done (More . hleft f)
 
 instance Tensor t i => Inject (Chain t i) where
-    inject = More . hright Done . intro1
+    inject = injectChain
 
 -- | We can collapse and interpret an @'Chain' t i@ if we have @'Tensor' t@.
 instance MonoidIn t i f => Interpret (Chain t i) f where
@@ -472,6 +478,10 @@ instance MonoidIn t i f => Interpret (Chain t i) f where
 -- | Convert a tensor value pairing two @f@s into a two-item chain.
 chainPair :: Tensor t i => t f f ~> Chain t i f
 chainPair = More . hright inject
+
+-- | Create a singleton chain
+injectChain :: Tensor t i => f ~> Chain t i f
+injectChain = More . hright Done . intro1
 
 -- | A 'Chain1' is "one or more linked @f@s", and a 'Chain' is "zero or
 -- more linked @f@s".  So, we can convert from a 'Chain1' to a 'Chain' that

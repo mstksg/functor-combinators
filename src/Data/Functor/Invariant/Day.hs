@@ -22,11 +22,22 @@ module Data.Functor.Invariant.Day (
   , elim1, elim2
   , swapped
   , trans1, trans2
-  , IDayChain1, IDayChain
+  -- * Chain
+  , DayChain
   , runCoDayChain
   , runContraDayChain
+  , assembleDayChain
+  , assembleDayChainRec
+  , gatherDayChain
+  , gatherDayChainRec
+  -- * Nonempty Chain
+  , DayChain1
   , runCoDayChain1
   , runContraDayChain1
+  , assembleDayChain1
+  , assembleDayChain1Rec
+  , gatherDayChain1
+  , gatherDayChain1Rec
   ) where
 
 import           Control.Natural
@@ -39,17 +50,20 @@ import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.HBifunctor
-import           Data.HBifunctor.Associative hiding (assoc)
-import           Data.HBifunctor.Tensor hiding      (elim1, elim2, intro1, intro2)
+import           Data.HBifunctor.Associative hiding   (assoc)
+import           Data.HBifunctor.Tensor hiding        (elim1, elim2, intro1, intro2)
 import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.Kind
 import           Data.Proxy
-import qualified Data.Bifunctor.Assoc               as B
-import qualified Data.Bifunctor.Swap                as B
-import qualified Data.Functor.Contravariant.Day     as CD
-import qualified Data.Functor.Day                   as D
-import qualified Data.HBifunctor.Tensor             as T
+import           Data.SOP
+import qualified Data.Bifunctor.Assoc                 as B
+import qualified Data.Bifunctor.Swap                  as B
+import qualified Data.Functor.Contravariant.Day       as CD
+import qualified Data.Functor.Day                     as D
+import qualified Data.HBifunctor.Tensor               as T
+import qualified Data.Vinyl                           as V
+import qualified Data.Vinyl.Functor                   as V
 
 -- | A pairing of invariant functors to create a new invariant functor that
 -- represents the "combination" between the two.
@@ -158,7 +172,7 @@ trans2 f (Day x y g h) = Day x (f y) g h
 runCoDayChain1
     :: forall f g. Apply g
     => f ~> g
-    -> IDayChain1 f ~> g
+    -> DayChain1 f ~> g
 runCoDayChain1 f = foldChain1 f (runDayApply f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain1' of
@@ -166,7 +180,7 @@ runCoDayChain1 f = foldChain1 f (runDayApply f id)
 runContraDayChain1
     :: forall f g. Divise g
     => f ~> g
-    -> IDayChain1 f ~> g
+    -> DayChain1 f ~> g
 runContraDayChain1 f = foldChain1 f (runDayDivise f id)
 
 -- | In the covariant direction, we can interpret out of a 'Chain' of 'Day'
@@ -174,7 +188,7 @@ runContraDayChain1 f = foldChain1 f (runDayDivise f id)
 runCoDayChain
     :: forall f g. Applicative g
     => f ~> g
-    -> IDayChain f ~> g
+    -> DayChain f ~> g
 runCoDayChain f = unsafeApply (Proxy @g) $
     foldChain (pure . runIdentity) (runDayApply f id)
 
@@ -183,7 +197,7 @@ runCoDayChain f = unsafeApply (Proxy @g) $
 runContraDayChain
     :: forall f g. Divisible g
     => f ~> g
-    -> IDayChain f ~> g
+    -> DayChain f ~> g
 runContraDayChain f = unsafeDivise (Proxy @g) $
     foldChain (const conquer) (runDayDivise f id)
 
@@ -198,7 +212,7 @@ runContraDayChain f = unsafeDivise (Proxy @g) $
 -- 'MonoidIn' instance for 'Day') because the typeclasses used to express
 -- the target contexts are probably not worth defining given how little the
 -- Haskell ecosystem uses invariant functors as an abstraction.
-type IDayChain  = Chain Day Identity
+type DayChain  = Chain Day Identity
 
 -- | Instead of defining yet another separate free semigroup like
 -- 'Data.Functor.Apply.Free.Ap1',
@@ -211,13 +225,19 @@ type IDayChain  = Chain Day Identity
 -- 'SemigroupIn' instance for 'Day') because the typeclasses used to
 -- express the target contexts are probably not worth defining given how
 -- little the Haskell ecosystem uses invariant functors as an abstraction.
-type IDayChain1 = Chain1 Day
+type DayChain1 = Chain1 Day
+
+instance Invariant (Day f g) where
+    invmap f g (Day x y h j) = Day x y (h . g) (\q -> f . j q)
+
+instance HFunctor (Day f) where
+    hmap f = hbimap id f
 
 instance HBifunctor Day where
     hbimap f g (Day x y h j) = Day (f x) (g y) h j
 
 instance Associative Day where
-    type NonEmptyBy Day = IDayChain1
+    type NonEmptyBy Day = DayChain1
     type FunctorBy Day = Invariant
     associating = isoF assoc unassoc
 
@@ -233,7 +253,7 @@ instance Associative Day where
     toNonEmptyBy = More1 . hright Done1
 
 instance Tensor Day Identity where
-    type ListBy Day = IDayChain
+    type ListBy Day = DayChain
 
     intro1 = intro2
     intro2 = intro1
@@ -245,3 +265,171 @@ instance Tensor Day Identity where
     splittingLB = splittingChain
 
     toListBy = More . hright inject
+
+-- | Convenient wrapper to build up a 'DayChain' on by providing each
+-- component of it.  This makes it much easier to build up longer chains
+-- because you would only need to write the splitting/joining functions in
+-- one place.
+--
+-- For example, if you had a data type
+--
+-- @
+-- data MyType = MT Int Bool String
+-- @
+--
+-- and an invariant functor @Prim@ (representing, say, a bidirectional
+-- parser, where @Prim Int@ is a bidirectional parser for an 'Int'@),
+-- then you could assemble a bidirectional parser for a 'MyType' using:
+--
+-- @
+-- invmap (\(MyType x y z) -> I x :* I y :* I z :* Nil)
+--        (\(I x :* I y :* I z :* Nil) -> MyType x y z) $
+--   assembleDayChain $ intPrim
+--                   :* boolPrim
+--                   :* stringPrim
+--                   :* Nil
+-- @
+--
+-- This is much more convenient than doing it using manual applications of
+-- 'divide' or 'divise' or 'Day', which would require manually peeling off
+-- tuples one-by-one.
+assembleDayChain
+    :: NP f as
+    -> DayChain f (NP I as)
+assembleDayChain = \case
+    Nil     -> Done $ Identity Nil
+    x :* xs -> More $ Day
+      x
+      (assembleDayChain xs)
+      unconsNPI
+      consNPI
+
+-- | A version of 'assembleDayChain' where each component is itself
+-- a 'DayChain'.
+--
+-- @
+-- assembleDayChain (x :* y :* z :* Nil)
+--   = gatherDayChain (injectChain x :* injectChain y :* injectChain z :* Nil)
+-- @
+gatherDayChain
+    :: NP (DayChain f) as
+    -> DayChain f (NP I as)
+gatherDayChain = \case
+    Nil     -> Done $ Identity Nil
+    x :* xs -> appendChain $ Day
+      x
+      (gatherDayChain xs)
+      unconsNPI
+      consNPI
+
+-- | A version of 'assembleDayChain' but for 'DayChain1' instead.  Can be
+-- useful if you intend on interpreting it into something with only
+-- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.
+assembleDayChain1
+    :: Invariant f
+    => NP f (a ': as)
+    -> DayChain1 f (NP I (a ': as))
+assembleDayChain1 = \case
+    x :* xs -> case xs of
+      Nil    -> Done1 $ invmap ((:* Nil) . I) (unI . hd) x
+      _ :* _ -> More1 $ Day
+        x
+        (assembleDayChain1 xs)
+        unconsNPI
+        consNPI
+
+-- | A version of 'gatherDayChain' but for 'DayChain1' instead.  Can be
+-- useful if you intend on interpreting it into something with only
+-- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.
+gatherDayChain1
+    :: Invariant f
+    => NP (DayChain1 f) (a ': as)
+    -> DayChain1 f (NP I (a ': as))
+gatherDayChain1 = \case
+    x :* xs -> case xs of
+      Nil    -> invmap ((:* Nil) . I) (unI . hd) x
+      _ :* _ -> appendChain1 $ Day
+        x
+        (gatherDayChain1 xs)
+        unconsNPI
+        consNPI
+
+unconsNPI :: NP I (a ': as) -> (a, NP I as)
+unconsNPI (I y :* ys) = (y, ys)
+
+consNPI :: a -> NP I as -> NP I (a ': as)
+consNPI y ys = I y :* ys
+
+-- | A version of 'assembleDayChain' using 'V.XRec' from /vinyl/ instead of
+-- 'NP' from /sop-core/.  This can be more convenient because it doesn't
+-- require manual unwrapping/wrapping of components.
+--
+-- @
+-- data MyType = MT Int Bool String
+--
+-- invmap (\(MyType x y z) -> x ::& y ::& z ::& RNil)
+--        (\(x ::& y ::& z ::& RNil) -> MyType x y z) $
+--   assembleDayChain $ intPrim
+--                   :& boolPrim
+--                   :& stringPrim
+--                   :& Nil
+-- @
+assembleDayChainRec
+    :: V.Rec f as
+    -> DayChain f (V.XRec V.Identity as)
+assembleDayChainRec = \case
+    V.RNil    -> Done $ Identity V.RNil
+    x V.:& xs -> More $ Day
+      x
+      (assembleDayChainRec xs)
+      unconsRec
+      (V.::&)
+
+-- | A version of 'gatherDayChain' using 'V.XRec' from /vinyl/ instead of
+-- 'NP' from /sop-core/.  This can be more convenient because it doesn't
+-- require manual unwrapping/wrapping of components.
+gatherDayChainRec
+    :: V.Rec (DayChain f) as
+    -> DayChain f (V.XRec V.Identity as)
+gatherDayChainRec = \case
+    V.RNil    -> Done $ Identity V.RNil
+    x V.:& xs -> appendChain $ Day
+      x
+      (gatherDayChainRec xs)
+      unconsRec
+      (V.::&)
+
+-- | A version of 'assembleDayChain1' using 'V.XRec' from /vinyl/ instead of
+-- 'NP' from /sop-core/.  This can be more convenient because it doesn't
+-- require manual unwrapping/wrapping of components.
+assembleDayChain1Rec
+    :: Invariant f
+    => V.Rec f (a ': as)
+    -> DayChain1 f (V.XRec V.Identity (a ': as))
+assembleDayChain1Rec = \case
+    x V.:& xs -> case xs of
+      V.RNil   -> Done1 $ invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
+      _ V.:& _ -> More1 $ Day
+        x
+        (assembleDayChain1Rec xs)
+        unconsRec
+        (V.::&)
+
+-- | A version of 'gatherDayChain1' using 'V.XRec' from /vinyl/ instead of
+-- 'NP' from /sop-core/.  This can be more convenient because it doesn't
+-- require manual unwrapping/wrapping of components.
+gatherDayChain1Rec
+    :: Invariant f
+    => V.Rec (DayChain1 f) (a ': as)
+    -> DayChain1 f (V.XRec V.Identity (a ': as))
+gatherDayChain1Rec = \case
+    x V.:& xs -> case xs of
+      V.RNil   -> invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
+      _ V.:& _ -> appendChain1 $ Day
+        x
+        (gatherDayChain1Rec xs)
+        unconsRec
+        (V.::&)
+
+unconsRec :: V.XRec V.Identity (a ': as) -> (a, V.XRec V.Identity as)
+unconsRec (y V.::& ys) = (y, ys)
