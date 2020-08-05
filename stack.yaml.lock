@@ -5,6 +5,20 @@
 
 packages:
 - completed:
+    hackage: hedgehog-1.0.3@sha256:dd9a25bf904fe444d5de471d0933261ef2c9a1110330460e037e0fef86fac89e,4622
+    pantry-tree:
+      size: 2621
+      sha256: 44224ad162df1653b211fde65c194e46de4c137780675ba7fa43fe4879f41a58
+  original:
+    hackage: hedgehog-1.0.3
+- completed:
+    hackage: tasty-hedgehog-1.0.0.2@sha256:6d2aa8757dc0cbc7f9a68e338dd728347406ff159d3280d897e20fa6ed30596e,1845
+    pantry-tree:
+      size: 330
+      sha256: 461057df7824531513c6a54a926f8647f51b45617eb350238e0ac6f11189cab8
+  original:
+    hackage: tasty-hedgehog-1.0.0.2
+- completed:
     hackage: trivial-constraint-0.6.0.0@sha256:117b4aed290097f48fa87fd18e8e365c1b58b917cf0397d3bc36fd89fc53e0d5,4093
     pantry-tree:
       size: 234
@@ -32,6 +46,13 @@ packages:
       sha256: aeb9e0e1a3bbe2b1f048a096430d240964a31c6936a1da89f4b32e931eba9d69
   original:
     hackage: vinyl-0.12.0
+- completed:
+    hackage: assoc-1.0.1@sha256:305770dfe76319749f704a1f23240f806d22905dae1aa54e6d57dc747662dae0,1205
+    pantry-tree:
+      size: 289
+      sha256: 232774663931b69e94415d63e808f99251246a6bdd3f9ef3449a6bc2293e75c1
+  original:
+    hackage: assoc-1.0.1
 snapshots:
 - completed:
     size: 418289
