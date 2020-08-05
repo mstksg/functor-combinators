@@ -1,4 +1,15 @@
 
+-- |
+-- Module      : Data.Functor.Contravariant.Night
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- Provides 'Night', a form of the day convolution that is contravariant
+-- and splits on 'Either'.
 module Data.Functor.Contravariant.Night (
     Night(..)
   , night
@@ -36,8 +47,8 @@ import qualified Data.Bifunctor.Swap               as B
 --
 -- Mathematically, this is a contravariant day convolution, except with
 -- a different choice of bifunctor ('Either') than the typical one we talk
--- about in Haskell (which uses '(,)').  Therefore, it is an alternative to
--- the typical 'Day' convolution --- hence, the name 'Night'.
+-- about in Haskell (which uses @(,)@).  Therefore, it is an alternative to
+-- the typical 'Data.Functor.Day' convolution --- hence, the name 'Night'.
 data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
     Night :: f b
           -> g c

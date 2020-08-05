@@ -1,4 +1,14 @@
 
+-- |
+-- Module      : Data.Functor.Invariant.Night
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- Provides an 'Invariant' version of a Day convolution over 'Either'.
 module Data.Functor.Invariant.Night (
     Night(..)
   , Not(..)
@@ -10,7 +20,9 @@ module Data.Functor.Invariant.Night (
   , assoc, unassoc
   , intro1, intro2
   , elim1, elim2
-  , swap
+  , swapped
+  , trans1, trans2
+  , INightChain1, INightChain
   , runCoNightChain
   , runContraNightChain
   , runCoNightChain1
@@ -38,6 +50,25 @@ import qualified Data.Bifunctor.Swap                as B
 import qualified Data.Functor.Contravariant.Night   as CN
 import qualified Data.HBifunctor.Tensor             as T
 
+-- | A pairing of invariant functors to create a new invariant functor that
+-- represents the "choice" between the two.
+--
+-- A @'Night' f g a@ is a invariant "consumer" and "producer" of @a@, and
+-- it does this by either feeding the @a@ to @f@, or feeding the @a@ to
+-- @g@, and then collecting the result from whichever one it was fed to.
+-- Which decision of which path to takes happens at runtime depending
+-- /what/ @a@ is actually given.
+--
+-- For example, if we have @x :: f a@ and @y :: g b@, then @'night' x y ::
+-- 'Night' f g ('Either' a b)@.  This is a consumer/producer of @'Either' a b@s, and
+-- it consumes 'Left' branches by feeding it to @x@, and 'Right' branches
+-- by feeding it to @y@.  It then passes back the single result from the one of
+-- the two that was chosen.
+--
+-- Mathematically, this is a invariant day convolution, except with
+-- a different choice of bifunctor ('Either') than the typical one we talk
+-- about in Haskell (which uses @(,)@).  Therefore, it is an alternative to
+-- the typical 'Data.Functor.Day' convolution --- hence, the name 'Night'.
 data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
     Night :: f b
           -> g c
@@ -46,9 +77,15 @@ data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
           -> (c -> a)
           -> Night f g a
 
+-- | Pair two invariant actions together into a 'Night'; assigns the first
+-- one to 'Left' inputs and outputs and the second one to 'Right' inputs
+-- and outputs.
 night :: f a -> g b -> Night f g (Either a b)
 night x y = Night x y id Left Right
 
+-- | Interpret the covariant part of a 'Night' into a target context @h@,
+-- as long as the context is an instance of 'Alt'.  The 'Alt' is used to
+-- combine results back together, chosen by '<!>'.
 runNightAlt
     :: forall f g h. Alt h
     => f ~> h
@@ -56,6 +93,9 @@ runNightAlt
     -> Night f g ~> h
 runNightAlt f g (Night x y _ j k) = fmap j (f x) <!> fmap k (g y)
 
+-- | Interpret the contravariant part of a 'Night' into a target context
+-- @h@, as long as the context is an instance of 'Decide'.  The 'Decide' is
+-- used to pick which part to feed the input to.
 runNightDecide
     :: forall f g h. Decide h
     => f ~> h
@@ -63,12 +103,17 @@ runNightDecide
     -> Night f g ~> h
 runNightDecide f g (Night x y h _ _) = decide h (f x) (g y)
 
--- | There is no covariant version of 'Night' defined in any common
+-- | Convert an invariant 'Night' into the covariant version, dropping the
+-- contravariant part.
+--
+-- Note that there is no covariant version of 'Night' defined in any common
 -- library, so we use an equivalent type (if @f@ and @g@ are 'Functor's) @f
 -- ':*:' g@.
 toCoNight :: (Functor f, Functor g) => Night f g ~> f :*: g
 toCoNight (Night x y _ f g) = fmap f x :*: fmap g y
 
+-- | Convert an invariant 'Night' into the contravariant version, dropping
+-- the covariant part.
 toContraNight :: Night f g ~> CN.Night f g
 toContraNight (Night x y f _ _) = CN.Night x y f
 
@@ -88,27 +133,44 @@ unassoc (Night (Night x y f g h) z j k l) =
       (k . g)
       (either (k . h) l)
 
+-- | The left identity of 'Night' is 'Not'; this is one side of that
+-- isomorphism.
 intro1 :: g ~> Night Not g
 intro1 y = Night (Not id) y Right absurd id
 
+-- | The right identity of 'Night' is 'Not'; this is one side of that
+-- isomorphism.
 intro2 :: f ~> Night f Not
 intro2 x = Night x (Not id) Left id absurd
 
+-- | The left identity of 'Night' is 'Not'; this is one side of that
+-- isomorphism.
 elim1 :: Invariant g => Night Not g ~> g
 elim1 (Night x y f _ h) = invmap h (either (absurd . refute x) id . f) y
 
+-- | The right identity of 'Night' is 'Not'; this is one side of that
+-- isomorphism.
 elim2 :: Invariant f => Night f Not ~> f
 elim2 (Night x y f g _) = invmap g (either id (absurd . refute y) . f) x
 
-swap :: Night f g ~> Night g f
-swap (Night x y f g h) = Night y x (B.swap . f) h g
+-- | The two sides of a 'Night' can be swapped.
+swapped :: Night f g ~> Night g f
+swapped (Night x y f g h) = Night y x (B.swap . f) h g
+
+-- | Hoist a function over the left side of a 'Night'.
+trans1 :: f ~> h -> Night f g ~> Night h g
+trans1 f (Night x y g h j) = Night (f x) y g h j
+
+-- | Hoist a function over the right side of a 'Night'.
+trans2 :: g ~> h -> Night f g ~> Night f h
+trans2 f (Night x y g h j) = Night x (f y) g h j
 
 -- | In the covariant direction, we can interpret out of a 'Chain1' of 'Night'
 -- into any 'Alt'.
 runCoNightChain1
     :: forall f g. Alt g
     => f ~> g
-    -> Chain1 Night f ~> g
+    -> INightChain1 f ~> g
 runCoNightChain1 f = foldChain1 f (runNightAlt f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain1' of
@@ -116,7 +178,7 @@ runCoNightChain1 f = foldChain1 f (runNightAlt f id)
 runContraNightChain1
     :: forall f g. Decide g
     => f ~> g
-    -> Chain1 Night f ~> g
+    -> INightChain1 f ~> g
 runContraNightChain1 f = foldChain1 f (runNightDecide f id)
 
 -- | In the covariant direction, we can interpret out of a 'Chain' of 'Night'
@@ -124,7 +186,7 @@ runContraNightChain1 f = foldChain1 f (runNightDecide f id)
 runCoNightChain
     :: forall f g. Plus g
     => f ~> g
-    -> Chain Night Not f ~> g
+    -> INightChain f ~> g
 runCoNightChain f = foldChain (const zero) (runNightAlt f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain' of
@@ -132,14 +194,40 @@ runCoNightChain f = foldChain (const zero) (runNightAlt f id)
 runContraNightChain
     :: forall f g. Conclude g
     => f ~> g
-    -> Chain Night Not f ~> g
+    -> INightChain f ~> g
 runContraNightChain f = foldChain (conclude . refute) (runNightDecide f id)
+
+-- | Instead of defining yet another separate free monoid like
+-- 'Control.Applicative.Free.Ap',
+-- 'Data.Functor.Contravariant.Divisible.Free.Div', or
+-- 'Data.Functor.Contravariant.Divisible.Free.Dec', we re-use 'Chain'.
+--
+-- You can assemble values using the combinators in "Data.HFunctor.Chain",
+-- and then tear them down/interpret them using 'runCoNightChain' and
+-- 'runContraNightChain'.  There is no general invariant interpreter (and so no
+-- 'MonoidIn' instance for 'Night') because the typeclasses used to express
+-- the target contexts are probably not worth defining given how little the
+-- Haskell ecosystem uses invariant functors as an abstraction.
+type INightChain  = Chain Night Not
+
+-- | Instead of defining yet another separate free semigroup like
+-- 'Data.Functor.Apply.Free.Ap1',
+-- 'Data.Functor.Contravariant.Divisible.Free.Div1', or
+-- 'Data.Functor.Contravariant.Divisible.Free.Dec1', we re-use 'Chain1'.
+--
+-- You can assemble values using the combinators in "Data.HFunctor.Chain",
+-- and then tear them down/interpret them using 'runCoNightChain1' and
+-- 'runContraNightChain1'.  There is no general invariant interpreter (and so no
+-- 'SemigroupIn' instance for 'Night') because the typeclasses used to
+-- express the target contexts are probably not worth defining given how
+-- little the Haskell ecosystem uses invariant functors as an abstraction.
+type INightChain1 = Chain1 Night
 
 instance HBifunctor Night where
     hbimap f g (Night x y h j k) = Night (f x) (g y) h j k
 
 instance Associative Night where
-    type NonEmptyBy Night = Chain1 Night
+    type NonEmptyBy Night = INightChain1
     type FunctorBy Night = Invariant
     associating = isoF assoc unassoc
 
@@ -156,7 +244,7 @@ instance Associative Night where
     toNonEmptyBy = chain1Pair
 
 instance Tensor Night Not where
-    type ListBy Night = Chain Night Not
+    type ListBy Night = INightChain
 
     intro1 = intro2
     intro2 = intro1

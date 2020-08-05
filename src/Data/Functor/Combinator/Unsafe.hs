@@ -32,7 +32,6 @@ module Data.Functor.Combinator.Unsafe (
 
 import           Control.Applicative
 import           Data.Constraint
-import           Data.Functor.Contravariant
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Decide

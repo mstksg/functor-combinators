@@ -55,6 +55,9 @@ import qualified Data.Map.NonEmpty                    as NEM
 -- values of type @f a@.
 --
 -- This is the Free 'Plus'.
+--
+-- Incidentally, if used with a 'Contravariant' @f@, this is instead the
+-- free 'Divisible'.
 newtype ListF f a = ListF { runListF :: [f a] }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -107,6 +110,11 @@ instance Decide f => Decide (ListF f) where
 instance Conclude f => Conclude (ListF f) where
     conclude f = ListF [conclude f]
 
+instance Decidable f => Decidable (ListF f) where
+    lose f = ListF [lose f]
+    choose f (ListF xs) (ListF ys) = ListF $
+        liftA2 (choose f) xs ys
+
 -- | Map a function over the inside of a 'ListF'.
 mapListF
     :: ([f a] -> [g b])
@@ -128,7 +136,10 @@ mapListF = coerce
 --   :+: ...                        -- etc.
 -- @
 --
--- This is the Free 'Plus'.
+-- This is the Free 'Plus' on any 'Functor' @f@.
+--
+-- Incidentally, if used with a 'Contravariant' @f@, this is instead the
+-- free 'Divise'.
 newtype NonEmptyF f a = NonEmptyF { runNonEmptyF :: NonEmpty (f a) }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
@@ -143,6 +154,16 @@ instance Applicative f => Applicative (NonEmptyF f) where
 
 instance Functor f => Alt (NonEmptyF f) where
     (<!>) = (<>)
+
+instance Contravariant f => Contravariant (NonEmptyF f) where
+    contramap f (NonEmptyF xs) = NonEmptyF (fmap (contramap f) xs)
+instance Contravariant f => Divise (NonEmptyF f) where
+    divise f (NonEmptyF xs) (NonEmptyF ys) = NonEmptyF $
+         (fmap . contramap) (fst . f) xs
+      <> (fmap . contramap) (snd . f) ys
+instance Decide f => Decide (NonEmptyF f) where
+    decide f (NonEmptyF xs) (NonEmptyF ys) = NonEmptyF $
+      decide f <$> xs <*> ys
 
 instance Semigroup (NonEmptyF f a) where
     NonEmptyF xs <> NonEmptyF ys = NonEmptyF (xs <> ys)

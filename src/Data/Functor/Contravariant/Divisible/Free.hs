@@ -1,4 +1,14 @@
-
+-- |
+-- Module      : Data.Functor.Contravariant.Divisible.Free
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- Provides free structures for the various typeclasses of the 'Divisible'
+-- hierarchy.
 module Data.Functor.Contravariant.Divisible.Free (
     Div(..)
   , hoistDiv, liftDiv, runDiv
@@ -75,6 +85,7 @@ divListF = ListF . unfoldr go
 listFDiv :: ListF f ~> Div f
 listFDiv = foldr (Divide (\y -> (y,y))) Conquer . runListF
 
+-- | Map over the undering context in a 'Div'.
 hoistDiv :: forall f g. (f ~> g) -> Div f ~> Div g
 hoistDiv f = go
   where
@@ -83,9 +94,11 @@ hoistDiv f = go
       Conquer       -> Conquer
       Divide g x xs -> Divide g (f x) (go xs)
 
+-- | Inject a single action in @f@ into a @'Div' f@.
 liftDiv :: f ~> Div f
 liftDiv x = Divide (,()) x Conquer
 
+-- | Interpret a 'Div' into a context @g@, provided @g@ is 'Divisible'.
 runDiv :: forall f g. Divisible g => (f ~> g) -> Div f ~> g
 runDiv f = go
   where
@@ -130,12 +143,15 @@ instance Divise f => Interpret Div1 f where
 toDiv :: Div1 f a -> Div f a
 toDiv (Div1 f x xs) = Divide f x xs
 
+-- | Map over the undering context in a 'Div1'.
 hoistDiv1 :: (f ~> g) -> Div1 f ~> Div1 g
 hoistDiv1 f (Div1 g x xs) = Div1 g (f x) (hoistDiv f xs)
 
+-- | Inject a single action in @f@ into a @'Div' f@.
 liftDiv1 :: f ~> Div1 f
 liftDiv1 f = Div1 (,()) f Conquer
 
+-- | Interpret a 'Div1' into a context @g@, provided @g@ is 'Divise'.
 runDiv1 :: Divise g => (f ~> g) -> Div1 f ~> g
 runDiv1 f (Div1 g x xs) = runDiv1_ f g x xs
 
@@ -194,6 +210,7 @@ instance Inject Dec where
 instance Conclude f => Interpret Dec f where
     interpret = runDec
 
+-- | Map over the undering context in a 'Dec'.
 hoistDec :: forall f g. (f ~> g) -> Dec f ~> Dec g
 hoistDec f = go
   where
@@ -202,9 +219,11 @@ hoistDec f = go
       Lose g -> Lose g
       Choose g x xs -> Choose g (f x) (go xs)
 
+-- | Inject a single action in @f@ into a @'Dec' f@.
 liftDec :: f ~> Dec f
 liftDec x = Choose Left x (Lose id)
 
+-- | Interpret a 'Dec' into a context @g@, provided @g@ is 'Conclude'.
 runDec :: forall f g. Conclude g => (f ~> g) -> Dec f ~> g
 runDec f = go
   where
@@ -236,12 +255,15 @@ instance Inject Dec1 where
 instance Decide f => Interpret Dec1 f where
     interpret = runDec1
 
+-- | Map over the undering context in a 'Dec1'.
 hoistDec1 :: forall f g. (f ~> g) -> Dec1 f ~> Dec1 g
 hoistDec1 f (Dec1 g x xs) = Dec1 g (f x) (hoistDec f xs)
 
+-- | Inject a single action in @f@ into a @'Dec1' f@.
 liftDec1 :: f ~> Dec1 f
 liftDec1 x = Dec1 Left x (Lose id)
 
+-- | Interpret a 'Dec1' into a context @g@, provided @g@ is 'Decide'.
 runDec1 :: Decide g => (f ~> g) -> Dec1 f ~> g
 runDec1 f (Dec1 g x xs) = runDec1_ f g x xs
 
