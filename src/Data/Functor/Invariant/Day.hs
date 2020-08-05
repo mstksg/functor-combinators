@@ -297,7 +297,7 @@ instance Matchable Day Identity where
       Done x  -> L1 x
       More xs -> R1 $ unsplitNE xs
 
--- | Convenient wrapper to build up a 'DayChain' on by providing each
+-- | Convenient wrapper to build up a 'DayChain' by providing each
 -- component of it.  This makes it much easier to build up longer chains
 -- because you would only need to write the splitting/joining functions in
 -- one place.
@@ -310,7 +310,7 @@ instance Matchable Day Identity where
 --
 -- and an invariant functor @Prim@ (representing, say, a bidirectional
 -- parser, where @Prim Int@ is a bidirectional parser for an 'Int'@),
--- then you could assemble a bidirectional parser for a 'MyType' using:
+-- then you could assemble a bidirectional parser for a @MyType@ using:
 --
 -- @
 -- invmap (\(MyType x y z) -> I x :* I y :* I z :* Nil)
@@ -400,10 +400,10 @@ consNPI y ys = I y :* ys
 --
 -- invmap (\(MyType x y z) -> x ::& y ::& z ::& RNil)
 --        (\(x ::& y ::& z ::& RNil) -> MyType x y z) $
---   assembleDayChain $ intPrim
---                   :& boolPrim
---                   :& stringPrim
---                   :& Nil
+--   assembleDayChainRec $ intPrim
+--                      :& boolPrim
+--                      :& stringPrim
+--                      :& Nil
 -- @
 assembleDayChainRec
     :: V.Rec f as

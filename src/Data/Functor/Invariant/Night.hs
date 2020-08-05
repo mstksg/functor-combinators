@@ -317,11 +317,11 @@ instance Matchable Night Not where
 --
 -- and an invariant functor @Prim@ (representing, say, a bidirectional
 -- parser, where @Prim Int@ is a bidirectional parser for an 'Int'@),
--- then you could assemble a bidirectional parser for a 'MyType' using:
+-- then you could assemble a bidirectional parser for a @MyType@ using:
 --
 -- @
--- invmap (\case MTI x -> Z x; MTB y -> S (Z y); MTS z -> S (S (Z z)))
---        (\case Z x -> MTI x; S (Z y) -> MTB y; S (S (Z z)) -> MTS z)
+-- invmap (\case MTI x -> Z (I x); MTB y -> S (Z (I y)); MTS z -> S (S (Z (I z))))
+--        (\case Z (I x) -> MTI x; S (Z (I y)) -> MTB y; S (S (Z (I z))) -> MTS z) $
 --   assembleNightChain $ intPrim
 --                     :* boolPrim
 --                     :* stringPrim
@@ -329,8 +329,8 @@ instance Matchable Night Not where
 -- @
 --
 -- This is much more convenient than doing it using manual applications of
--- 'decide' or 'choose' or 'Night', which would require manually peeling
--- off eithers one-by-one.
+-- 'decide' or 'Data.Functor.Contravariant.Divisible.choose' or 'Night',
+-- which would require manually peeling off eithers one-by-one.
 assembleNightChain
     :: NP f as
     -> NightChain f (NS I as)
@@ -362,10 +362,11 @@ gatherNightChain = \case
       (Z . I)
       S
 
--- | A version of 'assembleNightChain' but for 'NightChain1' instead.  Can be
--- useful if you intend on interpreting it into something with only
--- a 'Decide' or 'Alt' instance, but no 'Decidable' or 'Plus' or
--- 'Alternative'.
+-- | A version of 'assembleNightChain' but for 'NightChain1' instead.  Can
+-- be useful if you intend on interpreting it into something with only
+-- a 'Decide' or 'Alt' instance, but no
+-- 'Data.Functor.Contravariant.Divisible.Decidable' or 'Plus' or
+-- 'Control.Applicative.Alternative'.
 assembleNightChain1
     :: Invariant f
     => NP f (a ': as)
@@ -383,7 +384,7 @@ assembleNightChain1 = \case
 -- | A version of 'gatherNightChain' but for 'NightChain1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
 -- a 'Decide' or 'Alt' instance, but no 'Decidable' or 'Plus' or
--- 'Alternative'.
+-- 'Control.Applicative.Alternative'.
 gatherNightChain1
     :: Invariant f
     => NP (NightChain1 f) (a ': as)

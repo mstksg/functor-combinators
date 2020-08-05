@@ -11,10 +11,10 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- The contravariant counterpart of 'Plus': like 'Decidable', but
--- without needing a 'Divisible' constraint.  This is only a part of this
--- library currently for compatibility, until it is (hopefully) merged into
--- /semigroupoids/.
+-- The contravariant counterpart of 'Data.Functor.Plus': like 'Decidable',
+-- but without needing a 'Divisible' constraint.  This is only a part of
+-- this library currently for compatibility, until it is (hopefully) merged
+-- into /semigroupoids/.
 module Data.Functor.Contravariant.Conclude (
     Conclude(..)
   , concluded

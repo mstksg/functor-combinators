@@ -148,17 +148,28 @@ import qualified Data.Vinyl         as V
 import qualified Data.Vinyl.Functor as V
 
 
-divideNRec
-    :: Divisible f
-    => V.Rec f as
-    -> f (V.XRec V.Identity as)
-divideNRec = \case
-    V.RNil    -> conquer
-    x V.:& xs -> divide
-      (\case z V.::& zs -> (z, zs))
-      x
-      (divideNRec xs)
-
+-- | Convenient helper function to build up a 'Divisible' by providing
+-- each component of it.  This makes it much easier to build up longer
+-- chains as opposed to nested calls to 'divide' and manually peeling off
+-- tuples one-by-one.
+--
+-- For example, if you had a data type
+--
+-- @
+-- data MyType = MT Int Bool String
+-- @
+--
+-- and a contravariant consumer @Builder@ (representing, say, a way to
+-- serialize an item, where @intBuilder :: Builder Int@ is a serializer of
+-- 'Int's), then you could assemble a serializer a @MyType@ using:
+--
+-- @
+-- contramap (\(MyType x y z) -> I x :* I y :* I z :* Nil) $
+--   divideN $ intBuilderj
+--          :* boolBuilder
+--          :* stringBuilder
+--          :* Nil
+-- @
 divideN
     :: Divisible f
     => SOP.NP f as
@@ -170,6 +181,34 @@ divideN = \case
       x
       (divideN xs)
 
+-- | A version of 'divideN' defined to work with 'V.XRec', which can
+-- syntactically cleaner because you don't have to manually wrap/unwrap
+-- 'SOP.I's.
+--
+-- Using the example for 'divideN':
+--
+-- @
+-- data MyType = MT Int Bool String
+--
+-- contramap (\(MyType x y z) -> x ::& y ::& z ::& Nil) $
+--   divideNRec $ intBuilderj
+--             :& boolBuilder
+--             :& stringBuilder
+--             :& RNil
+-- @
+divideNRec
+    :: Divisible f
+    => V.Rec f as
+    -> f (V.XRec V.Identity as)
+divideNRec = \case
+    V.RNil    -> conquer
+    x V.:& xs -> divide
+      (\case z V.::& zs -> (z, zs))
+      x
+      (divideNRec xs)
+
+-- | A version of 'divideNRec' that works for non-empty records, and so only
+-- requires a 'Divise' constraint.
 diviseNRec
     :: Divise f
     => V.Rec f (a ': as)
@@ -182,6 +221,8 @@ diviseNRec = \case
         x
         (diviseNRec xs)
 
+-- | A version of 'divideN' that works for non-empty 'SOP.NP', and so only
+-- requires a 'Divise' constraint.
 diviseN
     :: Divise f
     => SOP.NP f (a ': as)
@@ -194,6 +235,28 @@ diviseN = \case
         x
         (diviseN xs)
 
+-- | Convenient helper function to build up a 'Conclude' by providing
+-- each component of it.  This makes it much easier to build up longer
+-- chains as opposed to nested calls to 'decide' and manually peeling off
+-- eithers one-by-one.
+--
+-- For example, if you had a data type
+--
+-- @
+-- data MyType = MTI Int | MTB Bool | MTS String
+-- @
+--
+-- and a contravariant consumer @Builder@ (representing, say, a way to
+-- serialize an item, where @intBuilder :: Builder Int@ is a serializer of
+-- 'Int's), then you could assemble a serializer a @MyType@ using:
+--
+-- @
+-- contramap (\case MTI x -> Z (I x); MTB y -> S (Z (I y)); MTS z -> S (S (Z (I z)))) $
+--   concludeN $ intBuilder
+--            :* boolBuilder
+--            :* stringBuilder
+--            :* Nil
+-- @
 concludeN
     :: Conclude f
     => SOP.NP f as
@@ -205,13 +268,15 @@ concludeN = \case
       x
       (concludeN xs)
 
+-- | A version of 'concludeN' that works for non-empty 'SOP.NP'/'SOP.NS',
+-- and so only requires a 'Decide' constraint.
 decideN
     :: Decide f
     => SOP.NP f (a ': as)
     -> f (SOP.NS SOP.I (a ': as))
 decideN = \case
     x SOP.:* xs -> case xs of
-      SOP.Nil    -> contramap (\case SOP.Z z -> SOP.unI z; SOP.S zs -> case zs of {}) x
+      SOP.Nil    -> contramap (SOP.unI . SOP.unZ) x
       _ SOP.:* _ -> decide
         (\case SOP.Z z -> Left (SOP.unI z); SOP.S zs -> Right zs)
         x

@@ -34,7 +34,7 @@ module Data.HFunctor.Chain (
   , splittingChain
   , chainPair
   , injectChain
-  , splitChain
+  , unconsChain
   -- * 'Chain1'
   , Chain1(..)
   , foldChain1
@@ -565,19 +565,14 @@ matchChain1 = \case
 -- | For completeness, an isomorphism between 'Chain' and its two
 -- constructors, to match 'splittingLB'.
 splittingChain :: Chain t i f <~> (i :+: t f (Chain t i f))
-splittingChain = isoF to_ from_
-  where
-    to_ = \case
-      Done x  -> L1 x
-      More xs -> R1 xs
-    from_ = \case
+splittingChain = isoF unconsChain $ \case
       L1 x  -> Done x
       R1 xs -> More xs
 
--- | An analogue of 'splitLB': match one of the two constructors of
+-- | An analogue of 'unconsLB': match one of the two constructors of
 -- a 'Chain'.
-splitChain :: Chain t i f ~> i :+: t f (Chain t i f)
-splitChain = \case
+unconsChain :: Chain t i f ~> i :+: t f (Chain t i f)
+unconsChain = \case
     Done x  -> L1 x
     More xs -> R1 xs
 
