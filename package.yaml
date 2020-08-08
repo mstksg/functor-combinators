@@ -1,5 +1,5 @@
 name:                functor-combinators
-version:             0.3.1.0
+version:             0.3.2.0
 github:              "mstksg/functor-combinators"
 license:             BSD3
 author:              "Justin Le"
@@ -100,7 +100,6 @@ library:
   - containers
   - contravariant
   - deriving-compat
-  - dlist >= 1.0
   - invariant
   - kan-extensions
   - mmorph

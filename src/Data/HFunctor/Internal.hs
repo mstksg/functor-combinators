@@ -6,6 +6,7 @@ module Data.HFunctor.Internal (
   , WrappedHBifunctor(..)
   , sumSum, prodProd
   , generalize, absorb
+  , NDL, ndlSingleton, fromNDL
   ) where
 
 import           Control.Applicative.Backwards
@@ -24,6 +25,7 @@ import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Bifunctor.Joker
 import           Data.Coerce
+import           Data.Foldable
 import           Data.Functor.Bind
 import           Data.Functor.Contravariant.Night    (Night(..))
 import           Data.Functor.Coyoneda
@@ -35,6 +37,7 @@ import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.Functor.Yoneda
 import           Data.Kind
+import           Data.List.NonEmpty                  (NonEmpty(..))
 import           Data.Proxy
 import           Data.Tagged
 import           Data.Vinyl.CoRec
@@ -187,6 +190,18 @@ generalize (Identity x) = pure x
 -- 'Data.HFunctor.Interpret.interpret'.
 absorb :: f ~> Proxy
 absorb _ = Proxy
+
+-- | Internal type, used to not require dlist-1.0
+newtype NDL a = NDL ([a] -> NonEmpty a)
+
+ndlSingleton :: a -> NDL a
+ndlSingleton x = NDL (x:|)
+
+fromNDL :: NDL a -> NonEmpty a
+fromNDL (NDL f) = f []
+
+instance Semigroup (NDL a) where
+    NDL x <> NDL y = NDL (x . toList . y)
 
 instance HFunctor Coyoneda where
     hmap = hoistCoyoneda

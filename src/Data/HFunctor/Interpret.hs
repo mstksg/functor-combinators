@@ -65,7 +65,6 @@ import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
 import           Data.Data
-import           Data.Foldable
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
@@ -81,17 +80,17 @@ import           Data.Functor.Reverse
 import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor
+import           Data.HFunctor.Internal
 import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Maybe
 import           Data.Pointed
+import           Data.Semigroup                       (Endo(..))
 import           Data.Semigroup.Foldable
 import           GHC.Generics
 import qualified Control.Alternative.Free             as Alt
 import qualified Control.Applicative.Free             as Ap
 import qualified Control.Applicative.Free.Fast        as FAF
 import qualified Control.Applicative.Free.Final       as FA
-import qualified Data.DList                           as DL
-import qualified Data.DList.DNonEmpty                 as NEDL
 import qualified Data.Functor.Contravariant.Coyoneda  as CCY
 import qualified Data.Map.NonEmpty                    as NEM
 
@@ -198,8 +197,8 @@ getI = iget
 -- | Useful wrapper over 'iget' to allow you to collect a @b@ from all
 -- instances of @f@ inside a @t f a@.
 --
--- Will work if there is an instance of @'Interpret' t ('AltConst'
--- ('DL.DList' b))@, which will be the case if the constraint on the target
+-- Will work if there is an instance of @'Interpret' t m@ if @'Monoid'
+-- m@, which will be the case if the constraint on the target
 -- functor is 'Functor', 'Apply', 'Applicative', 'Alt', 'Plus',
 -- 'Data.Functor.Contravariant.Decide.Decide', 'Divisible', 'Decide',
 -- 'Conclude', or unconstrained.
@@ -213,24 +212,24 @@ getI = iget
 --
 -- @since 0.3.1.0
 icollect
-    :: Interpret t (AltConst (DL.DList b))
+    :: (forall m. Monoid m => Interpret t (AltConst m))
     => (forall x. f x -> b)
     -> t f a
     -> [b]
-icollect f = toList . iget (DL.singleton . f)
+icollect f = flip appEndo [] . iget (Endo . (:) . f)
 
 -- | (Deprecated) Old name for 'icollect'; will be removed in a future
 -- version.
-collectI :: Interpret t (AltConst (DL.DList b)) => (forall x. f x -> b) -> t f a -> [b]
+collectI :: (forall m. Monoid m => Interpret t (AltConst m)) => (forall x. f x -> b) -> t f a -> [b]
 collectI = icollect
 {-# DEPRECATED collectI "Use icollect instead" #-}
 
 -- | Useful wrapper over 'iget' to allow you to collect a @b@ from all
 -- instances of @f@ inside a @t f a@, into a non-empty collection of @b@s.
 --
--- Will work if there is an instance of @'Interpret' t ('AltConst'
--- ('NEDL.DNonEmpty' b))@, which will be the case if the constraint on the
--- target functor is 'Functor', 'Apply', 'Alt', 'Divise', 'Decide', or
+-- Will work if there is an instance of @'Interpret' t m@ if
+-- @'Semigroup' m@, which will be the case if the constraint on the target
+-- functor is 'Functor', 'Apply', 'Alt', 'Divise', 'Decide', or
 -- unconstrained.
 --
 -- @
@@ -242,11 +241,11 @@ collectI = icollect
 --
 -- @since 0.3.1.0
 icollect1
-    :: Interpret t (AltConst (NEDL.DNonEmpty b))
+    :: (forall m. Semigroup m => Interpret t (AltConst m))
     => (forall x. f x -> b)
     -> t f a
     -> NonEmpty b
-icollect1 f = NEDL.toNonEmpty . iget (NEDL.singleton . f)
+icollect1 f = fromNDL . iget (ndlSingleton . f)
 
 -- | A version of 'Const' that supports 'Alt', 'Plus', 'Decide', and
 -- 'Conclude' instances.  It does this

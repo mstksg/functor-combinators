@@ -39,14 +39,19 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- assoc-1.0.1
-- constraints-extras-0.3.0.2
-- dependent-sum-0.6.2.0
+- aeson-1.5.3.0
+- data-fix-0.3.0
+- primitive-0.7.1.0
+- strict-0.4
+- these-1.1.1.1
 - dlist-1.0
-- hedgehog-1.0.3
-- tasty-hedgehog-1.0.0.2
-- trivial-constraint-0.6.0.0
-- vinyl-0.12.0
+- vinyl-0.13.0
+# - assoc-1.0.1
+# - hedgehog-1.0.3
+# - tasty-hedgehog-1.0.0.2
+# - trivial-constraint-0.6.0.0
+# - constraints-extras-0.3.0.2
+# - dependent-sum-0.6.2.0
 # - bifunctors-5.5.5
 # - th-abstraction-0.2.11.0
 # - github: mstksg/semigroupoids
@@ -55,7 +60,7 @@ extra-deps:
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi
 
-allow-newer: true
+# allow-newer: true
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

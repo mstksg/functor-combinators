@@ -86,10 +86,9 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
+import           Data.Semigroup                            (Endo(..))
 import           Data.Void
 import           GHC.Generics
-import qualified Data.DList                                as DL
-import qualified Data.DList.DNonEmpty                      as NEDL
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
@@ -393,14 +392,14 @@ infixr 5 !+!
 -- This will work if the constraint on @f@ for @'SemigroupIn' t f@ is
 -- 'Apply', 'Applicative', 'Alt', 'Plus', 'Divise',
 -- 'Data.Functor.Contravariant.Divisible.Divisible', 'Decide',
--- 'Data.Functor.Contravariant.Conclude.Conclude', or if it is unconstrained.
+-- 'Data.Functor.Contravariant.Conclude.Conclude'.
 bicollect
-    :: SemigroupIn t (AltConst (DL.DList b))
+    :: (forall m. Monoid m => SemigroupIn t (AltConst m))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> [b]
-bicollect f g = toList . biget (DL.singleton . f) (DL.singleton . g)
+bicollect f g = flip appEndo [] . biget (Endo . (:) . f) (Endo . (:) . g)
 
 -- | Useful wrapper over 'biget' to allow you to collect a @b@ from all
 -- instances of @f@ and @g@ inside a @t f g a@ into a non-empty collection
@@ -411,12 +410,12 @@ bicollect f g = toList . biget (DL.singleton . f) (DL.singleton . g)
 --
 -- @since 0.3.1.0
 bicollect1
-    :: SemigroupIn t (AltConst (NEDL.DNonEmpty b))
+    :: (forall m. Semigroup m => SemigroupIn t (AltConst m))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> NonEmpty b
-bicollect1 f g = NEDL.toNonEmpty . biget (NEDL.singleton . f) (NEDL.singleton . g)
+bicollect1 f g = fromNDL . biget (ndlSingleton . f) (ndlSingleton . g)
 
 
 instance Associative (:*:) where

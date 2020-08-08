@@ -1,6 +1,23 @@
 Changelog
 =========
 
+Version 0.3.2.0
+---------------
+
+*Unreleased*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.3.2.0>
+
+*   *Data.HFunctor.Interpret*: `icollect`, `icollect1` now are more
+    constrained: they only work on things that have `Interpret` instances for
+    *all* `Monoid m` or `Semigroup m` in `AltConst m`.  While this doesn't
+    affect how it works on any types in this library, it does make the type
+    signature a little more clean (hiding the usage of `DList`) and prevents
+    one from making an odd `Interpret` instance that does something weird with
+    the `DList`.  This also allows us to drop the direct *dlist >= 1.0* dependency.
+*   *Data.HBifunctor.Associative*: Same modifications as above to `bicollect`
+    and `bicollect1`.
+
 Version 0.3.1.0
 ---------------
 
