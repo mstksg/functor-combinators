@@ -43,8 +43,11 @@
 module Data.HFunctor.Interpret (
     Interpret(..), forI
   -- * Utilities
-  , getI
-  , collectI
+  , iget
+  , icollect
+  , icollect1
+  , getI, collectI
+  , AltConst(..)
   , AndC
   , WrapHF(..)
   ) where
@@ -54,7 +57,7 @@ import           Control.Applicative.Backwards
 import           Control.Applicative.Lift
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
-import           Control.Comonad.Trans.Env           (EnvT(..))
+import           Control.Comonad.Trans.Env            (EnvT(..))
 import           Control.Monad.Freer.Church
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Compose
@@ -62,26 +65,35 @@ import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Data.Coerce
 import           Data.Data
+import           Data.Foldable
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
+import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Coyoneda
+import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Reverse
 import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HFunctor
+import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           GHC.Generics
-import qualified Control.Alternative.Free            as Alt
-import qualified Control.Applicative.Free            as Ap
-import qualified Control.Applicative.Free.Fast       as FAF
-import qualified Control.Applicative.Free.Final      as FA
-import qualified Data.Functor.Contravariant.Coyoneda as CCY
-import qualified Data.Map.NonEmpty                   as NEM
+import qualified Control.Alternative.Free             as Alt
+import qualified Control.Applicative.Free             as Ap
+import qualified Control.Applicative.Free.Fast        as FAF
+import qualified Control.Applicative.Free.Final       as FA
+import qualified Data.DList                           as DL
+import qualified Data.DList.DNonEmpty                 as NEDL
+import qualified Data.Functor.Contravariant.Coyoneda  as CCY
+import qualified Data.Map.NonEmpty                    as NEM
 
 -- | An 'Interpret' lets us move in and out of the "enhanced" 'Functor' (@t
 -- f@) and the functor it enhances (@f@).  An instance @'Interpret' t f@
@@ -157,43 +169,126 @@ forI x f = interpret f x
 -- may have extra constraints on @b@.
 --
 -- *    If @f@ is unconstrained, there are no constraints on @b@
--- *    If @f@ must be 'Apply', @b@ needs to be an instance of 'Semigroup'
--- *    If @f@ is 'Applicative', @b@ needs to be an instance of 'Monoid'
+-- *    If @f@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'
+-- *    If @f@ is 'Applicative', 'Plus', 'Divisible', or 'Conlude', @b@ needs to be an instance of 'Monoid'
 --
 -- For some constraints (like 'Monad'), this will not be usable.
 --
 -- @
 -- -- get the length of the @Map String@ in the 'Step'.
--- 'collectI' length
+-- 'icollect' length
 --      :: Step (Map String) Bool
 --      -> Int
 -- @
-getI
-    :: Interpret t (Const b)
+--
+-- @since 0.3.1.0
+iget
+    :: Interpret t (AltConst b)
     => (forall x. f x -> b)
     -> t f a
     -> b
-getI f = getConst . interpret (Const . f)
+iget f = getAltConst . interpret (AltConst . f)
 
--- | Useful wrapper over 'getI' to allow you to collect a @b@ from all
+-- | (Deprecated) Old name for 'getI'; will be removed in a future
+-- version.
+getI :: Interpret t (AltConst b) => (forall x. f x -> b) -> t f a -> b
+getI = iget
+{-# DEPRECATED getI "Use iget instead" #-}
+
+-- | Useful wrapper over 'iget' to allow you to collect a @b@ from all
 -- instances of @f@ inside a @t f a@.
 --
--- Will work if there is an instance of @'Interpret' t ('Const' [b])@,
+-- Will work if there is an instance of @'Interpret' t ('AltConst' ('DL.DList' b))@,
 -- which will be the case if the constraint on the target functor is
--- 'Functor', 'Apply', 'Applicative', or unconstrianed.
+-- 'Functor', 'Apply', 'Applicative', 'Alt', 'Plus', 'Divide', 'Divisible',
+-- 'Decide', 'Conclude', or unconstrianed.
 --
 -- @
 -- -- get the lengths of all @Map String@s in the 'Ap.Ap'.
--- 'collectI' length
+-- 'icollect' length
 --      :: Ap (Map String) Bool
 --      -> [Int]
 -- @
-collectI
-    :: Interpret t (Const [b])
+--
+-- @since 0.3.1.0
+icollect
+    :: Interpret t (AltConst (DL.DList b))
     => (forall x. f x -> b)
     -> t f a
     -> [b]
-collectI f = getI ((:[]) . f)
+icollect f = toList . iget (DL.singleton . f)
+
+-- | (Deprecated) Old name for 'icollect'; will be removed in a future
+-- version.
+collectI :: Interpret t (AltConst (DL.DList b)) => (forall x. f x -> b) -> t f a -> [b]
+collectI = icollect
+{-# DEPRECATED collectI "Use icollect instead" #-}
+
+-- | Useful wrapper over 'iget' to allow you to collect a @b@ from all
+-- instances of @f@ inside a @t f a@, into a non-empty collection of @b@s.
+--
+-- Will work if there is an instance of @'Interpret' t ('AltConst'
+-- ('NEDL.DNonEmpty' b))@, which will be the case if the constraint on the
+-- target functor is 'Functor', 'Apply', 'Alt', 'Divide', 'Decide', or
+-- unconstrianed.
+--
+-- @
+-- -- get the lengths of all @Map String@s in the 'Ap.Ap'.
+-- 'icollect1' length
+--      :: Ap1 (Map String) Bool
+--      -> 'NonEmpty' Int
+-- @
+--
+-- @since 0.3.1.0
+icollect1
+    :: Interpret t (AltConst (NEDL.DNonEmpty b))
+    => (forall x. f x -> b)
+    -> t f a
+    -> NonEmpty b
+icollect1 f = NEDL.toNonEmpty . iget (NEDL.singleton . f)
+
+-- | A "difference list" version of 'Const' that supports efficient 'Alt',
+-- 'Plus', 'Decide', and 'Conclude' instances.  It does this by avoiding
+-- having an 'Alternative' or 'Decidable' instance, which causes all sorts
+-- of problems with the interactions between 'Alternative'/'Applicative'
+-- and 'Decidable'/'Divisible'.  This is used to implement 'icollect' in
+-- a much more general way than would be possible with 'Const'.
+--
+-- @since 0.3.1.0
+newtype AltConst w a = AltConst { getAltConst :: w }
+  deriving (Show, Eq, Ord, Generic, Functor, Foldable, Traversable, Data)
+
+instance Show w => Show1 (AltConst w) where
+    liftShowsPrec _ _ d (AltConst x) = showsUnaryWith showsPrec "AltConst" d x
+instance Eq w => Eq1 (AltConst w) where
+    liftEq _ (AltConst x) (AltConst y) = x == y
+instance Ord w => Ord1 (AltConst w) where
+    liftCompare _ (AltConst x) (AltConst y) = compare x y
+
+instance Contravariant (AltConst w) where
+    contramap _ = coerce
+instance Invariant (AltConst w) where
+    invmap _ _ = coerce
+
+instance Semigroup w => Apply (AltConst w) where
+    AltConst x <.> AltConst y = AltConst (x <> y)
+instance Monoid w => Applicative (AltConst w) where
+    (<*>) = (<.>)
+    pure _ = AltConst mempty
+instance Semigroup w => Alt (AltConst w) where
+    AltConst x <!> AltConst y = AltConst (x <> y)
+instance Monoid w => Plus (AltConst w) where
+    zero = AltConst mempty
+
+instance Semigroup w => Divise (AltConst w) where
+    divise _ (AltConst x) (AltConst y) = AltConst (x <> y)
+instance Monoid w => Divisible (AltConst w) where
+    divide  = divise
+    conquer = AltConst mempty
+instance Semigroup w => Decide (AltConst w) where
+    decide _ (AltConst x) (AltConst y) = AltConst (x <> y)
+instance Monoid w => Conclude (AltConst w) where
+    conclude _ = AltConst mempty
 
 -- | A free 'Functor'
 instance Functor f => Interpret Coyoneda f where

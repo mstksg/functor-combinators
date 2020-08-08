@@ -275,7 +275,7 @@ instance Associative Day where
     matchNE = matchChain1
 
     consNE = More1
-    toNonEmptyBy = More1 . hright Done1
+    toNonEmptyBy = toChain1
 
 instance Tensor Day Identity where
     type ListBy Day = DayChain
@@ -289,7 +289,7 @@ instance Tensor Day Identity where
     splitNE = splitChain1
     splittingLB = splittingChain
 
-    toListBy = More . hright inject
+    toListBy = toChain
 
 instance Matchable Day Identity where
     unsplitNE (Day x xs f g) = case xs of
@@ -323,9 +323,13 @@ instance Matchable Day Identity where
 --                   :* Nil
 -- @
 --
--- This is much more convenient than doing it using manual applications of
--- 'divide' or 'divise' or 'Day', which would require manually peeling off
--- tuples one-by-one.
+-- Some notes on usefulness depending on how many components you have:
+--
+-- *    If you have 0 components, use 'Knot' directly.
+-- *    If you have 1 component, use 'inject' or 'injectChain' directly.
+-- *    If you have 2 components, use 'toListBy' or 'toChain'.
+-- *    If you have 3 or more components, these combinators may be useful;
+--      otherwise you'd need to manually peel off tuples one-by-one.
 assembleDayChain
     :: NP f as
     -> DayChain f (NP I as)

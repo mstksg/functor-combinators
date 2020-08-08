@@ -29,6 +29,7 @@ import           Data.Functor.Sum
 import           Data.GADT.Show
 import           Data.HBifunctor.Tensor
 import           Data.HFunctor.Chain
+import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.Semigroup                 (Any(..))
 import           Data.Semigroup.Traversable
@@ -250,9 +251,6 @@ instance TestHFunctor t => TestHFunctor (HLift t) where
 
 instance (Enum e, Bounded e) => TestHFunctor (EnvT e) where
     genHF gx = EnvT <$> Gen.enumBounded <*> gx
-
-class (c f, d f) => AndC c d f
-instance (c f, d f) => AndC c d f
 
 instance (TestHFunctor s, HTraversable s, TestHFunctor t) => TestHFunctor (ComposeT s t) where
     type TestHFunctorBy (ComposeT s t) = AndC (TestHFunctorBy s) (TestHFunctorBy t)

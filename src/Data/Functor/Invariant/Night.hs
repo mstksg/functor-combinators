@@ -13,7 +13,7 @@
 -- @since 0.3.0.0
 module Data.Functor.Invariant.Night (
     Night(..)
-  , Not(..)
+  , Not(..), refuted
   , night
   , runNightAlt
   , runNightDecide
@@ -46,7 +46,7 @@ import           Data.Bifunctor
 import           Data.Functor.Alt
 import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Decide
-import           Data.Functor.Contravariant.Night    (Not(..))
+import           Data.Functor.Contravariant.Night    (Not(..), refuted)
 import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.HBifunctor
@@ -149,12 +149,12 @@ unassoc (Night (Night x y f g h) z j k l) =
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 intro1 :: g ~> Night Not g
-intro1 y = Night (Not id) y Right absurd id
+intro1 y = Night refuted y Right absurd id
 
 -- | The right identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 intro2 :: f ~> Night f Not
-intro2 x = Night x (Not id) Left id absurd
+intro2 x = Night x refuted Left id absurd
 
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
@@ -282,7 +282,7 @@ instance Associative Night where
     matchNE = matchChain1
 
     consNE = More1
-    toNonEmptyBy = chain1Pair
+    toNonEmptyBy = toChain1
 
 instance Tensor Night Not where
     type ListBy Night = NightChain
@@ -296,7 +296,7 @@ instance Tensor Night Not where
     splitNE = splitChain1
     splittingLB = splittingChain
 
-    toListBy = chainPair
+    toListBy = toChain
 
 instance Matchable Night Not where
     unsplitNE (Night x xs f g h) = case xs of
@@ -330,9 +330,13 @@ instance Matchable Night Not where
 --                     :* Nil
 -- @
 --
--- This is much more convenient than doing it using manual applications of
--- 'decide' or 'Data.Functor.Contravariant.Divisible.choose' or 'Night',
--- which would require manually peeling off eithers one-by-one.
+-- Some notes on usefulness depending on how many components you have:
+--
+-- *    If you have 0 components, use 'Reject' directly.
+-- *    If you have 1 component, use 'inject' or 'injectChain' directly.
+-- *    If you have 2 components, use 'toListBy' or 'toChain'.
+-- *    If you have 3 or more components, these combinators may be useful;
+--      otherwise you'd need to manually peel off eithers one-by-one.
 assembleNightChain
     :: NP f as
     -> NightChain f (NS I as)

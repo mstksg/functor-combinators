@@ -97,20 +97,21 @@ library:
   - assoc
   - comonad
   - constraints
-  - invariant
   - containers
   - contravariant
   - deriving-compat
+  - dlist >= 1.0
+  - invariant
   - kan-extensions
   - mmorph
   - mtl
   - natural-transformation
   - pointed
   - profunctors
+  - sop-core
   - tagged
   - these
   - vinyl
-  - sop-core
 
 tests:
   functor-combinators-test:

@@ -45,6 +45,7 @@ module Data.HBifunctor.Associative (
   -- ** Utility
   , biget
   , bicollect
+  , bicollect1
   , (!*!)
   , (!$!)
   , (!+!)
@@ -52,7 +53,6 @@ module Data.HBifunctor.Associative (
   , WrapNE(..)
   ) where
 
-import           Control.Applicative
 import           Control.Applicative.ListF
 import           Control.Applicative.Step
 import           Control.Monad.Freer.Church
@@ -88,6 +88,8 @@ import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           Data.Void
 import           GHC.Generics
+import qualified Data.DList                                as DL
+import qualified Data.DList.DNonEmpty                      as NEDL
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
@@ -307,8 +309,8 @@ matchingNE = isoF matchNE (inject !*! consNE)
 -- you may have extra constraints on @b@.
 --
 -- *    If @f@ is unconstrained, there are no constraints on @b@
--- *    If @f@ must be 'Apply', @b@ needs to be an instance of 'Semigroup'
--- *    If @f@ must be 'Applicative', @b@ needs to be an instance of 'Monoid'
+-- *    If @f@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'
+-- *    If @f@ is 'Applicative', 'Plus', 'Divisible', or 'Conlude', @b@ needs to be an instance of 'Monoid'
 --
 -- For some constraints (like 'Monad'), this will not be usable.
 --
@@ -325,12 +327,12 @@ matchingNE = isoF matchNE (inject !*! consNE)
 --     -> Sum Int
 -- @
 biget
-    :: SemigroupIn t (Const b)
+    :: SemigroupIn t (AltConst b)
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> b
-biget f g = getConst . binterpret (Const . f) (Const . g)
+biget f g = getAltConst . binterpret (AltConst . f) (AltConst . g)
 
 -- | Infix alias for 'biget'
 --
@@ -347,7 +349,7 @@ biget f g = getConst . binterpret (Const . f) (Const . g)
 --     -> Sum Int
 -- @
 (!$!)
-    :: SemigroupIn t (Const b)
+    :: SemigroupIn t (AltConst b)
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
@@ -386,14 +388,32 @@ infixr 5 !+!
 -- instances of @f@ and @g@ inside a @t f g a@.
 --
 -- This will work if the constraint on @f@ for @'SemigroupIn' t f@ is
--- 'Apply' or 'Applicative', or if it is unconstrained.
+-- 'Apply', 'Applicative', 'Alt', 'Plus', 'Divise', 'Divisible', 'Decide',
+-- 'Conclude', or if it is unconstrained.
 bicollect
-    :: SemigroupIn t (Const [b])
+    :: SemigroupIn t (AltConst (DL.DList b))
     => (forall x. f x -> b)
     -> (forall x. g x -> b)
     -> t f g a
     -> [b]
-bicollect f g = biget ((:[]) . f) ((:[]) . g)
+bicollect f g = toList . biget (DL.singleton . f) (DL.singleton . g)
+
+-- | Useful wrapper over 'biget' to allow you to collect a @b@ from all
+-- instances of @f@ and @g@ inside a @t f g a@ into a non-empty collection
+-- of @b@s.
+--
+-- This will work if the constraint on @f@ for @'SemigroupIn' t f@ is
+-- 'Apply', 'Alt', 'Divise', 'Decide', or if it is unconstrained.
+--
+-- @since 0.3.1.0
+bicollect1
+    :: SemigroupIn t (AltConst (NEDL.DNonEmpty b))
+    => (forall x. f x -> b)
+    -> (forall x. g x -> b)
+    -> t f g a
+    -> NonEmpty b
+bicollect1 f g = NEDL.toNonEmpty . biget (NEDL.singleton . f) (NEDL.singleton . g)
+
 
 instance Associative (:*:) where
     type NonEmptyBy (:*:) = NonEmptyF

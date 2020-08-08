@@ -39,13 +39,14 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
+- assoc-1.0.1
+- constraints-extras-0.3.0.2
+- dependent-sum-0.6.2.0
+- dlist-1.0
 - hedgehog-1.0.3
 - tasty-hedgehog-1.0.0.2
 - trivial-constraint-0.6.0.0
-- dependent-sum-0.6.2.0
-- constraints-extras-0.3.0.2
 - vinyl-0.12.0
-- assoc-1.0.1
 # - bifunctors-5.5.5
 # - th-abstraction-0.2.11.0
 # - github: mstksg/semigroupoids

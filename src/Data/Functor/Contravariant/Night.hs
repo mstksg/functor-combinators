@@ -21,7 +21,7 @@ module Data.Functor.Contravariant.Night (
   , trans1, trans2
   , intro1, intro2
   , elim1, elim2
-  , Not(..)
+  , Not(..), refuted
   ) where
 
 import           Control.Natural
@@ -105,8 +105,17 @@ trans2 f (Night x y z) = Night x (f y) z
 -- | A value of type @'Not' a@ is "proof" that @a@ is uninhabited.
 newtype Not a = Not { refute :: a -> Void }
 
+-- | A useful shortcut for a common usage: 'Void' is always not so.
+--
+-- @since 0.3.1.0
+refuted :: Not Void
+refuted = Not id
+
 instance Contravariant Not where
     contramap f (Not g) = Not (g . f)
+-- | @since 0.3.1.0
+instance Invariant Not where
+    invmap _ = contramap
 
 instance Semigroup (Not a) where
     Not f <> Not g = Not (f <> g)
@@ -114,12 +123,12 @@ instance Semigroup (Not a) where
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 intro1 :: g ~> Night Not g
-intro1 x = Night (Not id) x Right
+intro1 x = Night refuted x Right
 
 -- | The right identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 intro2 :: f ~> Night f Not
-intro2 x = Night x (Not id) Left
+intro2 x = Night x refuted Left
 
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.

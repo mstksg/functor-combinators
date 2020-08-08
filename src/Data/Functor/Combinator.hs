@@ -43,8 +43,8 @@ module Data.Functor.Combinator (
   , Inject(..)
   , Interpret(..)
   , forI
-  , getI
-  , collectI
+  , iget, icollect, icollect1
+  , getI, collectI
   -- ** Multi-Functors
   -- | Classes that deal with two-functor combinators, that "mix" two
   -- functors together in some way.
@@ -52,7 +52,7 @@ module Data.Functor.Combinator (
   -- *** Associative
   , Associative(..)
   , SemigroupIn(..)
-  , biget, bicollect
+  , biget, bicollect, bicollect1
   , (!*!)
   , (!+!)
   , (!$!)
@@ -94,6 +94,7 @@ module Data.Functor.Combinator (
   , (:*:)(..), prodOutL, prodOutR
   , (:+:)(..), V1
   , These1(..)
+  , Night(..), Not(..), refuted
   , Comp(Comp, unComp)
   , LeftF(..)
   , RightF(..)
@@ -127,12 +128,13 @@ import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Functor.Apply.Free
 import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Coyoneda
 import           Data.Functor.Day
+import           Data.Functor.Invariant.Night
 import           Data.Functor.These
 import           Data.HBifunctor
 import           Data.HBifunctor.Associative
@@ -170,6 +172,14 @@ import qualified Data.Vinyl.Functor as V
 --          :* stringBuilder
 --          :* Nil
 -- @
+--
+-- Some notes on usefulness depending on how many components you have:
+--
+-- *    If you have 0 components, use 'conquer'.
+-- *    If you have 1 component, use 'inject' directly.
+-- *    If you have 2 components, use 'divide' directly.
+-- *    If you have 3 or more components, these combinators may be useful;
+--      otherwise you'd need to manually peel off tuples one-by-one.
 --
 -- @since 0.3.0.0
 divideN
@@ -263,6 +273,14 @@ diviseN = \case
 --            :* stringBuilder
 --            :* Nil
 -- @
+--
+-- Some notes on usefulness depending on how many components you have:
+--
+-- *    If you have 0 components, use 'conclude'.
+-- *    If you have 1 component, use 'inject' directly.
+-- *    If you have 2 components, use 'decide' directly.
+-- *    If you have 3 or more components, these combinators may be useful;
+--      otherwise you'd need to manually peel off eithers one-by-one.
 --
 -- @since 0.3.0.0
 concludeN

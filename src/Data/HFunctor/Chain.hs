@@ -32,7 +32,7 @@ module Data.HFunctor.Chain (
   , unrolling
   , appendChain
   , splittingChain
-  , chainPair
+  , toChain
   , injectChain
   , unconsChain
   -- * 'Chain1'
@@ -45,7 +45,7 @@ module Data.HFunctor.Chain (
   , appendChain1
   , fromChain1
   , matchChain1
-  , chain1Pair
+  , toChain1
   , injectChain1
   -- ** Matchable
   -- | The following conversions between 'Chain' and 'Chain1' are only
@@ -240,11 +240,12 @@ instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
           Done1 x  -> f x
           More1 xs -> binterpret f go xs
 
--- | Convert a tensor value pairing two @f@s into a two-item chain.
+-- | Convert a tensor value pairing two @f@s into a two-item 'Chain1'.  An
+-- analogue of 'toNonEmptyBy'.
 --
--- @since 0.3.0.0
-chain1Pair :: HBifunctor t => t f f ~> Chain1 t f
-chain1Pair = More1 . hright Done1
+-- @since 0.3.1.0
+toChain1 :: HBifunctor t => t f f ~> Chain1 t f
+toChain1 = More1 . hright Done1
 
 -- | Create a singleton 'Chain1'.
 --
@@ -486,13 +487,14 @@ instance MonoidIn t i f => Interpret (Chain t i) f where
           Done x  -> pureT @t x
           More xs -> binterpret f go xs
 
--- | Convert a tensor value pairing two @f@s into a two-item chain.
+-- | Convert a tensor value pairing two @f@s into a two-item 'Chain'.  An
+-- analogue of 'toListBy'.
 --
--- @since 0.3.0.0
-chainPair :: Tensor t i => t f f ~> Chain t i f
-chainPair = More . hright inject
+-- @since 0.3.1.0
+toChain :: Tensor t i => t f f ~> Chain t i f
+toChain = More . hright inject
 
--- | Create a singleton chain
+-- | Create a singleton chain.
 --
 -- @since 0.3.0.0
 injectChain :: Tensor t i => f ~> Chain t i f
