@@ -67,9 +67,10 @@ import Data.StateVar
 import GHC.Generics
 #endif
 
--- | The contravariant analogue of 'Plus'.  Adds on to 'Decide' the ability
--- to express a combinator that rejects all input, to act as the dead-end.
--- Essentially 'Decidable' without a superclass constraint on 'Divisible'.
+-- | The contravariant analogue of 'Data.Functor.Plus.Plus'.  Adds on to
+-- 'Decide' the ability to express a combinator that rejects all input, to
+-- act as the dead-end. Essentially 'Decidable' without a superclass
+-- constraint on 'Divisible'.
 --
 -- If one thinks of @f a@ as a consumer of @a@s, then 'conclude' defines
 -- a consumer that cannot ever receive /any/ input.

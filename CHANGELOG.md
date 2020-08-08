@@ -1,6 +1,26 @@
 Changelog
 =========
 
+Version 0.3.1.0
+---------------
+
+*August 7, 2020*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.3.1.0>
+
+*   *Data.HFunctor.Interpret*: `getI` and `collectI` made more efficient, and
+    renamed to `iget` and `icollect`, respectively, to mirror `biget` and
+    `bicollect`.  `getI` and `collectI` are left in with a deprecation warning.
+    `icollect1` added to ensure a non-empty collection.  `AltConst` added to
+    aid in implementation.
+*   *Data.HBifunctor.Associative*: `bicollect1` added to ensure a non-empty
+    collection.  *biget* and *bicollect* made more efficient.
+*   *Data.Functor.Contravariant.Night*, *Data.Functor.Invariant.Night*:
+    `refuted` added for a convenient `Not`.  Missing `Invariant` instance for
+    `Not` also added.
+*   *Data.HFunctor.Chain*: `chainPair` and `chain1Pair` renamed to `toChain`
+    and `toChain1`, respectively, to mirror `toListBy` and `toNonEmptyBy`.
+
 Version 0.3.0.0
 ---------------
 

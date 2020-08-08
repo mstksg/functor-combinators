@@ -389,7 +389,8 @@ assembleNightChain1 = \case
 
 -- | A version of 'concatNightChain' but for 'NightChain1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
--- a 'Decide' or 'Alt' instance, but no 'Decidable' or 'Plus' or
+-- a 'Decide' or 'Alt' instance, but no
+-- 'Data.Functor.Contravariant.Divisible.Decidable' or 'Plus' or
 -- 'Control.Applicative.Alternative'.
 concatNightChain1
     :: Invariant f

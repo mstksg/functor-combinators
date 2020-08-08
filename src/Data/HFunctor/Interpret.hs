@@ -170,7 +170,7 @@ forI x f = interpret f x
 --
 -- *    If @f@ is unconstrained, there are no constraints on @b@
 -- *    If @f@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'
--- *    If @f@ is 'Applicative', 'Plus', 'Divisible', or 'Conlude', @b@ needs to be an instance of 'Monoid'
+-- *    If @f@ is 'Applicative', 'Plus', 'Divisible', or 'Conclude', @b@ needs to be an instance of 'Monoid'
 --
 -- For some constraints (like 'Monad'), this will not be usable.
 --
@@ -198,10 +198,11 @@ getI = iget
 -- | Useful wrapper over 'iget' to allow you to collect a @b@ from all
 -- instances of @f@ inside a @t f a@.
 --
--- Will work if there is an instance of @'Interpret' t ('AltConst' ('DL.DList' b))@,
--- which will be the case if the constraint on the target functor is
--- 'Functor', 'Apply', 'Applicative', 'Alt', 'Plus', 'Divide', 'Divisible',
--- 'Decide', 'Conclude', or unconstrianed.
+-- Will work if there is an instance of @'Interpret' t ('AltConst'
+-- ('DL.DList' b))@, which will be the case if the constraint on the target
+-- functor is 'Functor', 'Apply', 'Applicative', 'Alt', 'Plus',
+-- 'Data.Functor.Contravariant.Decide.Decide', 'Divisible', 'Decide',
+-- 'Conclude', or unconstrained.
 --
 -- @
 -- -- get the lengths of all @Map String@s in the 'Ap.Ap'.
@@ -229,8 +230,8 @@ collectI = icollect
 --
 -- Will work if there is an instance of @'Interpret' t ('AltConst'
 -- ('NEDL.DNonEmpty' b))@, which will be the case if the constraint on the
--- target functor is 'Functor', 'Apply', 'Alt', 'Divide', 'Decide', or
--- unconstrianed.
+-- target functor is 'Functor', 'Apply', 'Alt', 'Divise', 'Decide', or
+-- unconstrained.
 --
 -- @
 -- -- get the lengths of all @Map String@s in the 'Ap.Ap'.
@@ -247,12 +248,12 @@ icollect1
     -> NonEmpty b
 icollect1 f = NEDL.toNonEmpty . iget (NEDL.singleton . f)
 
--- | A "difference list" version of 'Const' that supports efficient 'Alt',
--- 'Plus', 'Decide', and 'Conclude' instances.  It does this by avoiding
--- having an 'Alternative' or 'Decidable' instance, which causes all sorts
--- of problems with the interactions between 'Alternative'/'Applicative'
--- and 'Decidable'/'Divisible'.  This is used to implement 'icollect' in
--- a much more general way than would be possible with 'Const'.
+-- | A version of 'Const' that supports 'Alt', 'Plus', 'Decide', and
+-- 'Conclude' instances.  It does this
+-- by avoiding having an 'Alternative' or 'Decidable' instance, which
+-- causes all sorts of problems with the interactions between
+-- 'Alternative'/'Applicative' and
+-- 'Decidable'/'Data.Functor.Contravariant.Divisible.Divisible'.
 --
 -- @since 0.3.1.0
 newtype AltConst w a = AltConst { getAltConst :: w }
@@ -275,8 +276,12 @@ instance Semigroup w => Apply (AltConst w) where
 instance Monoid w => Applicative (AltConst w) where
     (<*>) = (<.>)
     pure _ = AltConst mempty
+-- | Unlike for 'Const', this is possible because there is no 'Alternative'
+-- instance to complicate things.
 instance Semigroup w => Alt (AltConst w) where
     AltConst x <!> AltConst y = AltConst (x <> y)
+-- | Unlike for 'Const', this is possible because there is no 'Alternative'
+-- instance to complicate things.
 instance Monoid w => Plus (AltConst w) where
     zero = AltConst mempty
 
@@ -285,8 +290,12 @@ instance Semigroup w => Divise (AltConst w) where
 instance Monoid w => Divisible (AltConst w) where
     divide  = divise
     conquer = AltConst mempty
+-- | Unlike for 'Const', this is possible because there is no 'Decidable'
+-- instance to complicate things.
 instance Semigroup w => Decide (AltConst w) where
     decide _ (AltConst x) (AltConst y) = AltConst (x <> y)
+-- | Unlike for 'Const', this is possible because there is no 'Decidable'
+-- instance to complicate things.
 instance Monoid w => Conclude (AltConst w) where
     conclude _ = AltConst mempty
 

@@ -256,13 +256,11 @@ prodLeftIdentity = isoF (Proxy :*:) (\case _ :*: y -> y)
 prodRightIdentity :: g <~> g :*: Proxy
 prodRightIdentity = isoF (:*: Proxy) (\case x :*: _ -> x)
 
--- | 'outL' for ':*:' actually does not require 'Functor'.  This is the
--- more general version.
+-- | A poly-kinded version of 'outL' for ':*:'.
 prodOutL :: f :*: g ~> f
 prodOutL (x :*: _) = x
 
--- | 'outR' for ':*:' actually does not require 'Functor'.  This is the
--- more general version.
+-- | A poly-kinded version of 'outR' for ':*:'.
 prodOutR :: f :*: g ~> g
 prodOutR (_ :*: y) = y
 

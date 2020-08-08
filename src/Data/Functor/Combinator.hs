@@ -45,6 +45,7 @@ module Data.Functor.Combinator (
   , forI
   , iget, icollect, icollect1
   , getI, collectI
+  , AltConst(..)
   -- ** Multi-Functors
   -- | Classes that deal with two-functor combinators, that "mix" two
   -- functors together in some way.

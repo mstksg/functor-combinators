@@ -310,7 +310,10 @@ matchingNE = isoF matchNE (inject !*! consNE)
 --
 -- *    If @f@ is unconstrained, there are no constraints on @b@
 -- *    If @f@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'
--- *    If @f@ is 'Applicative', 'Plus', 'Divisible', or 'Conlude', @b@ needs to be an instance of 'Monoid'
+-- *    If @f@ is 'Applicative', 'Plus',
+--      'Data.Functor.Contravariant.Divisible.Divisible', or
+--      'Data.Functor.Contravariant.Conclude.Conclude', @b@ needs to be an
+--      instance of 'Monoid'
 --
 -- For some constraints (like 'Monad'), this will not be usable.
 --
@@ -388,8 +391,9 @@ infixr 5 !+!
 -- instances of @f@ and @g@ inside a @t f g a@.
 --
 -- This will work if the constraint on @f@ for @'SemigroupIn' t f@ is
--- 'Apply', 'Applicative', 'Alt', 'Plus', 'Divise', 'Divisible', 'Decide',
--- 'Conclude', or if it is unconstrained.
+-- 'Apply', 'Applicative', 'Alt', 'Plus', 'Divise',
+-- 'Data.Functor.Contravariant.Divisible.Divisible', 'Decide',
+-- 'Data.Functor.Contravariant.Conclude.Conclude', or if it is unconstrained.
 bicollect
     :: SemigroupIn t (AltConst (DL.DList b))
     => (forall x. f x -> b)
