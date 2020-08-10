@@ -29,6 +29,8 @@ module Data.Functor.Invariant.Day (
   , pattern Gather, pattern Knot
   , runCoDayChain
   , runContraDayChain
+  , chainAp
+  , chainDiv
   , assembleDayChain
   , assembleDayChainRec
   , concatDayChain
@@ -38,37 +40,41 @@ module Data.Functor.Invariant.Day (
   , pattern DayChain1
   , runCoDayChain1
   , runContraDayChain1
+  , chainAp1
+  , chainDiv1
   , assembleDayChain1
   , assembleDayChain1Rec
   , concatDayChain1
   , concatDayChain1Rec
   ) where
 
+import           Control.Applicative
+import           Control.Applicative.Free                  (Ap)
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Functor.Apply
-import           Data.Functor.Combinator.Unsafe
+import           Data.Functor.Apply.Free                   (Ap1)
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Contravariant.Divisible.Free (Div, Div1)
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.HBifunctor
-import           Data.HBifunctor.Associative hiding   (assoc)
-import           Data.HBifunctor.Tensor hiding        (elim1, elim2, intro1, intro2)
+import           Data.HBifunctor.Associative hiding        (assoc)
+import           Data.HBifunctor.Tensor hiding             (elim1, elim2, intro1, intro2)
 import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.Kind
-import           Data.Proxy
 import           Data.SOP
 import           GHC.Generics
-import qualified Data.Bifunctor.Assoc                 as B
-import qualified Data.Bifunctor.Swap                  as B
-import qualified Data.Functor.Contravariant.Day       as CD
-import qualified Data.Functor.Day                     as D
-import qualified Data.HBifunctor.Tensor               as T
-import qualified Data.Vinyl                           as V
-import qualified Data.Vinyl.Functor                   as V
+import qualified Data.Bifunctor.Assoc                      as B
+import qualified Data.Bifunctor.Swap                       as B
+import qualified Data.Functor.Contravariant.Day            as CD
+import qualified Data.Functor.Day                          as D
+import qualified Data.HBifunctor.Tensor                    as T
+import qualified Data.Vinyl                                as V
+import qualified Data.Vinyl.Functor                        as V
 
 -- | A pairing of invariant functors to create a new invariant functor that
 -- represents the "combination" between the two.
@@ -194,8 +200,8 @@ runCoDayChain
     :: forall f g. Applicative g
     => f ~> g
     -> DayChain f ~> g
-runCoDayChain f = unsafeApply (Proxy @g) $
-    foldChain (pure . runIdentity) (runDayApply f id)
+runCoDayChain f = foldChain (pure . runIdentity) $ \case
+    Day x y _ h -> liftA2 h (f x) y
 
 -- | In the contravariant direction, we can interpret out of a 'Chain' of
 -- 'Day' into any 'Divisible'.
@@ -203,8 +209,36 @@ runContraDayChain
     :: forall f g. Divisible g
     => f ~> g
     -> DayChain f ~> g
-runContraDayChain f = unsafeDivise (Proxy @g) $
-    foldChain (const conquer) (runDayDivise f id)
+runContraDayChain f = foldChain (const conquer) $ \case
+    Day x y g _ -> divide g (f x) y
+
+-- | Extract the 'Ap' part out of a 'DayChain', shedding the
+-- contravariant bits.
+--
+-- @since 0.3.2.0
+chainAp :: DayChain f ~> Ap f
+chainAp = runCoDayChain inject
+
+-- | Extract the 'Ap1' part out of a 'DayChain1', shedding the
+-- contravariant bits.
+--
+-- @since 0.3.2.0
+chainAp1 :: DayChain1 f ~> Ap1 f
+chainAp1 = runCoDayChain1 inject
+
+-- | Extract the 'Div' part out of a 'DayChain', shedding the
+-- covariant bits.
+--
+-- @since 0.3.2.0
+chainDiv :: DayChain f ~> Div f
+chainDiv = runContraDayChain inject
+
+-- | Extract the 'Div1' part out of a 'DayChain1', shedding the
+-- covariant bits.
+--
+-- @since 0.3.2.0
+chainDiv1 :: DayChain1 f ~> Div1 f
+chainDiv1 = runContraDayChain1 inject
 
 -- | Instead of defining yet another separate free monoid like
 -- 'Control.Applicative.Free.Ap',

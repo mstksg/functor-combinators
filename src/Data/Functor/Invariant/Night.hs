@@ -18,6 +18,7 @@ module Data.Functor.Invariant.Night (
   , runNightAlt
   , runNightDecide
   , toCoNight
+  , toCoNight_
   , toContraNight
   , assoc, unassoc
   , intro1, intro2
@@ -26,9 +27,12 @@ module Data.Functor.Invariant.Night (
   , trans1, trans2
   -- * Chain
   , NightChain
-  , pattern Share, pattern Reject
+  , pattern Swerve, pattern Reject
   , runCoNightChain
   , runContraNightChain
+  , chainListF
+  , chainListF_
+  , chainDec
   , assembleNightChain
   , concatNightChain
   -- * Nonempty Chain
@@ -36,32 +40,40 @@ module Data.Functor.Invariant.Night (
   , pattern NightChain1
   , runCoNightChain1
   , runContraNightChain1
+  , chainNonEmptyF
+  , chainNonEmptyF_
+  , chainDec1
   , assembleNightChain1
   , concatNightChain1
   ) where
 
+import           Control.Applicative.ListF
 import           Control.Natural
 import           Control.Natural.IsoF
 import           Data.Bifunctor
 import           Data.Functor.Alt
 import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Decide
-import           Data.Functor.Contravariant.Night    (Not(..), refuted)
+import           Data.Functor.Contravariant.Divisible.Free
+import           Data.Functor.Contravariant.Night          (Not(..), refuted)
 import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.HBifunctor
-import           Data.HBifunctor.Associative hiding  (assoc)
-import           Data.HBifunctor.Tensor hiding       (elim1, elim2, intro1, intro2)
+import           Data.HBifunctor.Associative hiding        (assoc)
+import           Data.HBifunctor.Tensor hiding             (elim1, elim2, intro1, intro2)
 import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.Kind
 import           Data.SOP
 import           Data.Void
 import           GHC.Generics
-import qualified Data.Bifunctor.Assoc                as B
-import qualified Data.Bifunctor.Swap                 as B
-import qualified Data.Functor.Contravariant.Night    as CN
-import qualified Data.HBifunctor.Tensor              as T
+import qualified Control.Monad.Trans.Compose               as CT
+import qualified Data.Bifunctor.Assoc                      as B
+import qualified Data.Bifunctor.Swap                       as B
+import qualified Data.Functor.Contravariant.Night          as CN
+import qualified Data.Functor.Coyoneda                     as CY
+import qualified Data.HBifunctor.Tensor                    as T
+import qualified Data.List.NonEmpty                        as NE
 
 -- | A pairing of invariant functors to create a new invariant functor that
 -- represents the "choice" between the two.
@@ -124,6 +136,18 @@ runNightDecide f g (Night x y h _ _) = decide h (f x) (g y)
 -- ':*:' g@.
 toCoNight :: (Functor f, Functor g) => Night f g ~> f :*: g
 toCoNight (Night x y _ f g) = fmap f x :*: fmap g y
+
+-- | Convert an invariant 'Night' into the covariant version, dropping the
+-- contravariant part.
+--
+-- This version does not require a 'Functor' constraint because it converts
+-- to the coyoneda-wrapped product, which is more accurately the covariant
+-- 'Night' convolution.
+--
+-- @since 0.3.2.0
+toCoNight_ :: Night f g ~> CY.Coyoneda f :*: CY.Coyoneda g
+toCoNight_ (Night x y _ f g) = CY.Coyoneda f x :*: CY.Coyoneda g y
+
 
 -- | Convert an invariant 'Night' into the contravariant version, dropping
 -- the covariant part.
@@ -194,6 +218,16 @@ runContraNightChain1
     -> NightChain1 f ~> g
 runContraNightChain1 f = foldChain1 f (runNightDecide f id)
 
+-- | Extract the 'Dec' part out of a 'NightChain', shedding the
+-- covariant bits.
+chainDec :: NightChain f ~> Dec f
+chainDec = runContraNightChain inject
+
+-- | Extract the 'Dec1' part out of a 'NightChain1', shedding the
+-- covariant bits.
+chainDec1 :: NightChain1 f ~> Dec1 f
+chainDec1 = runContraNightChain1 inject
+
 -- | In the covariant direction, we can interpret out of a 'Chain' of 'Night'
 -- into any 'Plus'.
 runCoNightChain
@@ -209,6 +243,47 @@ runContraNightChain
     => f ~> g
     -> NightChain f ~> g
 runContraNightChain f = foldChain (conclude . refute) (runNightDecide f id)
+
+-- | Extract the 'ListF' part out of a 'NightChain', shedding the
+-- contravariant bits.
+--
+-- @since 0.3.2.0
+chainListF :: Functor f => NightChain f ~> ListF f
+chainListF = runCoNightChain inject
+
+-- | Extract the 'ListF' part out of a 'NightChain', shedding the
+-- contravariant bits.
+--
+-- This version does not require a 'Functor' constraint because it converts
+-- to the coyoneda-wrapped product, which is more accurately the true
+-- conversion to a covariant chain.
+--
+-- @since 0.3.2.0
+chainListF_ :: NightChain f ~> CT.ComposeT ListF CY.Coyoneda f
+chainListF_ = foldChain (const (CT.ComposeT (ListF []))) $ \case
+    Night x (CT.ComposeT (ListF xs)) _ f g -> CT.ComposeT . ListF $
+      CY.Coyoneda f x : (map . fmap) g xs
+
+-- | Extract the 'NonEmptyF' part out of a 'NightChain1', shedding the
+-- contravariant bits.
+--
+-- @since 0.3.2.0
+chainNonEmptyF :: Functor f => NightChain1 f ~> NonEmptyF f
+chainNonEmptyF = runCoNightChain1 inject
+
+-- | Extract the 'NonEmptyF' part out of a 'NightChain1', shedding the
+-- contravariant bits.
+--
+-- This version does not require a 'Functor' constraint because it converts
+-- to the coyoneda-wrapped product, which is more accurately the true
+-- conversion to a covariant chain.
+--
+-- @since 0.3.2.0
+chainNonEmptyF_ :: NightChain1 f ~> CT.ComposeT NonEmptyF CY.Coyoneda f
+chainNonEmptyF_ = foldChain1 inject $ \case
+    Night x (CT.ComposeT (NonEmptyF xs)) _ f g -> CT.ComposeT . NonEmptyF $
+      CY.Coyoneda f x NE.<| (fmap . fmap) g xs
+
 
 -- | Instead of defining yet another separate free monoid like
 -- 'Control.Applicative.Free.Ap',
@@ -236,18 +311,19 @@ type NightChain  = Chain Night Not
 -- little the Haskell ecosystem uses invariant functors as an abstraction.
 type NightChain1 = Chain1 Night
 
--- | Match on a non-empty 'NightChain'; contains no @f@s, but only the
--- terminal value.  Analogous to the
--- 'Data.Functor.Contravariant.Divisible.Free.Choose' constructor.
-pattern Share :: (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> NightChain f c -> NightChain f a
-pattern Share f g h x xs = More (Night x xs f g h)
+-- | Match on a non-empty 'NightChain'; contains the splitting function,
+-- the two rejoining functions, the first @f@, and the rest of the chain.
+-- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Choose'
+-- constructor.
+pattern Swerve :: (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> NightChain f c -> NightChain f a
+pattern Swerve f g h x xs = More (Night x xs f g h)
 
 -- | Match on an "empty" 'NightChain'; contains no @f@s, but only the
 -- terminal value.  Analogous to the
 -- 'Data.Functor.Contravariant.Divisible.Free.Lose' constructor.
 pattern Reject :: (a -> Void) -> NightChain f a
 pattern Reject x = Done (Not x)
-{-# COMPLETE Share, Reject #-}
+{-# COMPLETE Swerve, Reject #-}
 
 -- | Match on a 'NightChain1' to get the head and the rest of the items.
 -- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Dec1'

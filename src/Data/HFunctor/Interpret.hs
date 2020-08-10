@@ -46,6 +46,9 @@ module Data.HFunctor.Interpret (
   , iget
   , icollect
   , icollect1
+  , iapply
+  , ifanout
+  , ifanout1
   , getI, collectI
   , AltConst(..)
   , AndC
@@ -168,7 +171,7 @@ forI x f = interpret f x
 -- may have extra constraints on @b@.
 --
 -- *    If @f@ is unconstrained, there are no constraints on @b@
--- *    If @f@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'
+-- *    If @f@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'.
 -- *    If @f@ is 'Applicative', 'Plus', 'Divisible', or 'Conclude', @b@ needs to be an instance of 'Monoid'
 --
 -- For some constraints (like 'Monad'), this will not be usable.
@@ -197,7 +200,7 @@ getI = iget
 -- | Useful wrapper over 'iget' to allow you to collect a @b@ from all
 -- instances of @f@ inside a @t f a@.
 --
--- Will work if there is an instance of @'Interpret' t m@ if @'Monoid'
+-- Will work if there is an instance of @'Interpret' t ('AltConst' m)@ if @'Monoid'
 -- m@, which will be the case if the constraint on the target
 -- functor is 'Functor', 'Apply', 'Applicative', 'Alt', 'Plus',
 -- 'Data.Functor.Contravariant.Decide.Decide', 'Divisible', 'Decide',
@@ -227,7 +230,7 @@ collectI = icollect
 -- | Useful wrapper over 'iget' to allow you to collect a @b@ from all
 -- instances of @f@ inside a @t f a@, into a non-empty collection of @b@s.
 --
--- Will work if there is an instance of @'Interpret' t m@ if
+-- Will work if there is an instance of @'Interpret' t ('AltConst' m)@ if
 -- @'Semigroup' m@, which will be the case if the constraint on the target
 -- functor is 'Functor', 'Apply', 'Alt', 'Divise', 'Decide', or
 -- unconstrained.
@@ -246,6 +249,89 @@ icollect1
     -> t f a
     -> NonEmpty b
 icollect1 f = fromNDL . iget (ndlSingleton . f)
+
+-- | Useful wrapper over 'interpret' to allow you to directly consume
+-- a value of type @a@ with a @t f a@ to create a @b@.  Do this by
+-- supplying the method by which each component @f x@ can consume an @x@.
+-- This works for contravariant functor combinators, where @t f a@ can be
+-- interpreted as a consumer of @a@s.
+--
+-- Note that depending on the constraints on @f@ in @'Interpret' t f@, you
+-- may have extra constraints on @b@.
+--
+-- *    If @f@ is unconstrained, 'Decide', or 'Conclude', there are no
+--      constraints on @b@.  This will be the case for combinators like
+--      contravariant 'CCY.Coyoneda', 'Dec', 'Dec1'.
+-- *    If @f@ must be 'Divise', @b@ needs to be an instance of
+--      'Semigroup'.  This will be the case for combinators like 'Div1'.
+-- *    If @f@ is 'Divisible', @b@ needs to be an instance of 'Monoid'.
+--      This will be the case for combinators like 'Div'.
+--
+-- For any 'Functor' or 'Invariant' constraint, this is not usable.
+--
+-- @since 0.3.2.0
+iapply
+    :: Interpret t (Op b)
+    => (forall x. f x -> x -> b)
+    -> t f a
+    -> a
+    -> b
+iapply f = getOp . interpret (Op . f)
+
+-- | Useful wrapper over 'interpret' to allow you to directly consume
+-- a value of type @a@ with a @t f a@ to create a @b@, and create a list of
+-- all the @b@s created by all the @f@s.  Do this by supplying the method
+-- by which each component @f x@ can consume an @x@. This works for
+-- contravariant functor combinators, where @t f a@ can be interpreted as
+-- a consumer of @a@s.
+--
+-- Will work if there is an instance of @'Interpret' t ('Op' m)@ if @'Monoid'
+-- m@, which will be the case if the constraint on the target
+-- functor is 'Contravariant', 'Decide', 'Conclude', 'Divise', 'Divisible',
+-- or unconstrained.
+--
+-- Note that this is really only useful outside of 'iapply' for 'Div' and
+-- 'Div1', where a @'Div' f@ which is a collection of many different @f@s
+-- consuming types of different values.  You can use this with 'Dec' and
+-- 'Dec1' and the contravarient 'CCY.Coyoneda' as well, but those would
+-- always just give you a singleton list, so you might as well use
+-- 'iapply'.  This is really only here for completion alongside 'icollect',
+-- or if you define your own custom functor combinators.
+ifanout
+    :: (forall m. Monoid m => Interpret t (Op m))
+    => (forall x. f x -> x -> b)
+    -> t f a
+    -> a
+    -> [b]
+ifanout f t = flip appEndo [] . iapply (\x y -> Endo (f x y :)) t
+
+-- | Useful wrapper over 'interpret' to allow you to directly consume
+-- a value of type @a@ with a @t f a@ to create a @b@, and create a list of
+-- all the @b@s created by all the @f@s.  Do this by supplying the method
+-- by which each component @f x@ can consume an @x@. This works for
+-- contravariant functor combinators, where @t f a@ can be interpreted as
+-- a consumer of @a@s.
+--
+-- Will work if there is an instance of @'Interpret' t ('Op' m)@ if @'Monoid'
+-- m@, which will be the case if the constraint on the target
+-- functor is 'Contravariant', 'Decide', 'Divise', or unconstrained.
+--
+-- Note that this is really only useful outside of 'iapply' and 'ifanout'
+-- for 'Div1', where a @'Div1' f@ which is a collection of many different
+-- @f@s consuming types of different values.  You can use this with 'Dec'
+-- and 'Dec1' and the contravarient 'CCY.Coyoneda' as well, but those would
+-- always just give you a singleton list, so you might as well use
+-- 'iapply'.  This is really only here for completion alongside
+-- 'icollect1', or if you define your own custom functor combinators.
+ifanout1
+    :: (forall m. Semigroup m => Interpret t (Op m))
+    => (forall x. f x -> x -> b)
+    -> t f a
+    -> a
+    -> NonEmpty b
+ifanout1 f t = fromNDL . iapply (\x -> ndlSingleton . f x) t
+
+
 
 -- | A version of 'Const' that supports 'Alt', 'Plus', 'Decide', and
 -- 'Conclude' instances.  It does this

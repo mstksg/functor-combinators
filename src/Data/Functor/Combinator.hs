@@ -44,6 +44,7 @@ module Data.Functor.Combinator (
   , Interpret(..)
   , forI
   , iget, icollect, icollect1
+  , iapply, ifanout, ifanout1
   , getI, collectI
   , AltConst(..)
   -- ** Multi-Functors
@@ -53,7 +54,8 @@ module Data.Functor.Combinator (
   -- *** Associative
   , Associative(..)
   , SemigroupIn(..)
-  , biget, bicollect, bicollect1
+  , biget, biapply
+  -- , biget, bicollect, bicollect1
   , (!*!)
   , (!+!)
   , (!$!)

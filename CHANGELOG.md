@@ -4,7 +4,7 @@ Changelog
 Version 0.3.2.0
 ---------------
 
-*Unreleased*
+*August 9, 2020*
 
 <https://github.com/mstksg/functor-combinators/releases/tag/v0.3.2.0>
 
@@ -15,8 +15,24 @@ Version 0.3.2.0
     signature a little more clean (hiding the usage of `DList`) and prevents
     one from making an odd `Interpret` instance that does something weird with
     the `DList`.  This also allows us to drop the direct *dlist >= 1.0* dependency.
-*   *Data.HBifunctor.Associative*: Same modifications as above to `bicollect`
-    and `bicollect1`.
+*   *Data.HFunctor.Interpret*: `biapply`, `bifanout`, `bifanout1` added as
+    contravariant consumer versions of `iget`, `icollect`, and `icollect1`.
+*   *Data.HBifunctor.Associative*: `bicollect` `bicollect1` removed because
+    they really don't make sense for associative tensors, which can only have
+    at most one of each tensor.
+*   *Data.HBifunctor.Associative*: `biapply` added as the contravariant
+    consumer version of `biget`.
+*   *Data.Functor.Invariant.Day*: Add conversion functions from chains to the
+    covariant/invariant versions, `chainAp`, `chainAp1`, `chainDiv`, and
+    `chainDiv1`.
+*   *Data.Functor.Invariant.Night*: Add conversion functions from chains to the
+    covariant/invariant versions, `chainDec`, `chainDec1`, `chainListF`,
+    `chainNonEmptyF`.  Also add "undescored" versions to the covariant
+    versions, `toCoNight_`, `chainListF_`, `chainNonEmptyF_`, to more
+    accurately represent the actual contravariant either-based day convolution.
+    Also changed `Share` to `Swerve`.
+*   *Data.Functor.Combinator*: `AltConst` re-exported.
+
 
 Version 0.3.1.0
 ---------------

@@ -44,8 +44,7 @@ module Data.HBifunctor.Associative (
   , interpretNE
   -- ** Utility
   , biget
-  , bicollect
-  , bicollect1
+  , biapply
   , (!*!)
   , (!$!)
   , (!+!)
@@ -86,7 +85,6 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
-import           Data.Semigroup                            (Endo(..))
 import           Data.Void
 import           GHC.Generics
 import qualified Data.Functor.Contravariant.Day            as CD
@@ -302,14 +300,15 @@ matchingNE :: (Associative t, FunctorBy t f) => NonEmptyBy t f <~> f :+: t f (No
 matchingNE = isoF matchNE (inject !*! consNE)
 
 -- | Useful wrapper over 'binterpret' to allow you to directly extract
--- a value @b@ out of the @t f a@, if you can convert @f x@ into @b@.
+-- a value @b@ out of the @t f g a@, if you can convert an @f x@ and @g x@
+-- into @b@.
 --
--- Note that depending on the constraints on @f@ in @'SemigroupIn' t f@,
+-- Note that depending on the constraints on @h@ in @'SemigroupIn' t h@,
 -- you may have extra constraints on @b@.
 --
--- *    If @f@ is unconstrained, there are no constraints on @b@
--- *    If @f@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'
--- *    If @f@ is 'Applicative', 'Plus',
+-- *    If @h@ is unconstrained, there are no constraints on @b@
+-- *    If @h@ must be 'Apply', 'Alt', 'Divise', or 'Decide', @b@ needs to be an instance of 'Semigroup'
+-- *    If @h@ is 'Applicative', 'Plus',
 --      'Data.Functor.Contravariant.Divisible.Divisible', or
 --      'Data.Functor.Contravariant.Conclude.Conclude', @b@ needs to be an
 --      instance of 'Monoid'
@@ -385,38 +384,28 @@ infixr 5 !*!
     R1 y -> g y
 infixr 5 !+!
 
-
--- | Useful wrapper over 'biget' to allow you to collect a @b@ from all
--- instances of @f@ and @g@ inside a @t f g a@.
+-- | Useful wrapper over 'binterpret' to allow you to directly extract
+-- a value @b@ out of the @t f g a@, if you can convert an @f x@ and @g x@
+-- into @b@, given an @x@ input.
 --
--- This will work if the constraint on @f@ for @'SemigroupIn' t f@ is
--- 'Apply', 'Applicative', 'Alt', 'Plus', 'Divise',
--- 'Data.Functor.Contravariant.Divisible.Divisible', 'Decide',
--- 'Data.Functor.Contravariant.Conclude.Conclude'.
-bicollect
-    :: (forall m. Monoid m => SemigroupIn t (AltConst m))
-    => (forall x. f x -> b)
-    -> (forall x. g x -> b)
+-- Note that depending on the constraints on @h@ in @'SemigroupIn' t h@,
+-- you may have extra constraints on @b@.
+--
+-- *    If @h@ is unconstrained, there are no constraints on @b@
+-- *    If @h@ must be 'Divise', or 'Divisible', @b@ needs to be an instance of 'Semigroup'
+-- *    If @h@ must be 'Divivisible', then @b@ needs to be an instance of 'Monoid'.
+--
+-- For some constraints (like 'Monad'), this will not be usable.
+--
+-- @since 0.3.2.0
+biapply
+    :: SemigroupIn t (Op b)
+    => (forall x. f x -> x -> b)
+    -> (forall x. g x -> x -> b)
     -> t f g a
-    -> [b]
-bicollect f g = flip appEndo [] . biget (Endo . (:) . f) (Endo . (:) . g)
-
--- | Useful wrapper over 'biget' to allow you to collect a @b@ from all
--- instances of @f@ and @g@ inside a @t f g a@ into a non-empty collection
--- of @b@s.
---
--- This will work if the constraint on @f@ for @'SemigroupIn' t f@ is
--- 'Apply', 'Alt', 'Divise', 'Decide', or if it is unconstrained.
---
--- @since 0.3.1.0
-bicollect1
-    :: (forall m. Semigroup m => SemigroupIn t (AltConst m))
-    => (forall x. f x -> b)
-    -> (forall x. g x -> b)
-    -> t f g a
-    -> NonEmpty b
-bicollect1 f g = fromNDL . biget (ndlSingleton . f) (ndlSingleton . g)
-
+    -> a
+    -> b
+biapply f g = getOp . binterpret (Op . f) (Op . g)
 
 instance Associative (:*:) where
     type NonEmptyBy (:*:) = NonEmptyF
