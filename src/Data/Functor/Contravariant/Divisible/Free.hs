@@ -14,10 +14,10 @@
 --
 -- @since 0.3.0.0
 module Data.Functor.Contravariant.Divisible.Free (
-    Div(..)
+    Div(.., Conquer, Divide)
   , hoistDiv, liftDiv, runDiv
   , divListF, listFDiv
-  , Div1(..)
+  , Div1(.., Div1_)
   , hoistDiv1, liftDiv1, toDiv, runDiv1
   , div1NonEmptyF, nonEmptyFDiv1
   , Dec(..)
@@ -44,6 +44,7 @@ import           Data.Kind
 import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Void
 import qualified Control.Monad.Trans.Compose          as CT
+import qualified Data.Functor.Contravariant.Day       as CD
 
 -- | The free 'Divisible'.  Used to sequence multiple contravariant
 -- consumers, splitting out the input across all consumers.
@@ -53,6 +54,30 @@ newtype Div f a = Div { unDiv :: [Coyoneda f a] }
 
 instance Invariant (Div f) where
     invmap _ = contramap
+
+-- | Pattern matching on an empty 'Div'.
+--
+-- Before v0.3.3.0, this used to be the concrete constructor of 'Div'.
+-- After, it is now an abstract pattern.
+pattern Conquer :: Div f a
+pattern Conquer = Div []
+
+-- | Pattern matching on a non-empty 'Div', exposing the raw @f@ instead of
+-- having it wrapped in a 'Coyoneda'.  This is the analogue of
+-- 'Control.Applicative.Free.Pure' and essentially treats the "cons" of the
+-- 'Div' as a contravariant day convolution.
+--
+-- Before v0.3.3.0, this used to be the concrete constructor of 'Div'.
+-- After, it is now an abstract pattern.
+pattern Divide :: (a -> (b, c)) -> f b -> Div f c -> Div f a
+pattern Divide f x xs <- (divDay_ -> Just (CD.Day x xs f))
+  where
+    Divide f x (Div xs) = Div $ Coyoneda (fst . f) x : (map . contramap) (snd . f) xs
+{-# COMPLETE Conquer, Divide #-}
+
+divDay_ :: Div f a -> Maybe (CD.Day f (Div f) a)
+divDay_ (Div []) = Nothing
+divDay_ (Div (Coyoneda f x : xs)) = Just $ CD.Day x (Div xs) (\y -> (f y, y))
 
 -- | 'Div' is isomorphic to 'ListF' for contravariant @f@.  This witnesses
 -- one way of that isomorphism.
@@ -91,6 +116,24 @@ instance Invariant (Div1 f) where
 
 instance Divise f => Interpret Div1 f where
     interpret = runDiv1
+
+-- | Pattern matching on a 'Div1', exposing the raw @f@ instead of
+-- having it wrapped in a 'Coyoneda'.  This is the analogue of
+-- 'Data.Functor.Apply.Ap1' and essentially treats the "cons" of the
+-- 'Div1' as a contravariant day convolution.
+--
+-- Before v0.3.3.0, this used to be the concrete constructor of 'Div1'.
+-- After, it is now an abstract pattern.
+--
+-- @since 0.3.3.0
+pattern Div1_ :: (a -> (b, c)) -> f b -> Div f c -> Div1 f a
+pattern Div1_ f x xs <- (div1_->CD.Day x xs f)
+  where
+    Div1_ f x (Div xs) = Div1 $ Coyoneda (fst . f) x :| (map . contramap) (snd . f) xs
+{-# COMPLETE Div1_ #-}
+
+div1_ :: Div1 f ~> CD.Day f (Div f)
+div1_ (Div1 (Coyoneda g x :| xs)) = CD.Day x (Div xs) (\y -> (g y, y))
 
 -- | A 'Div1' is a "non-empty" 'Div'; this function "forgets" the non-empty
 -- property and turns it back into a normal 'Div'.
