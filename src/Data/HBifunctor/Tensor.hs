@@ -103,6 +103,7 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           GHC.Generics
+import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
@@ -580,17 +581,16 @@ instance Tensor CD.Day Proxy where
     elim2 = CD.day2
 
     appendLB (CD.Day x y z) = divide z x y
-    splitNE (Div1 f x xs) = CD.Day x xs f
-    splittingLB = isoF to_ from_
+    splitNE = go . splitNE @(:*:) . unDiv1
       where
-        to_ = \case
-          Conquer       -> L1 Proxy
-          Divide f x xs -> R1 (CD.Day x xs f)
-        from_ = \case
-          L1 Proxy           -> Conquer
-          R1 (CD.Day x xs f) -> Divide f x xs
+        go (CCY.Coyoneda f x :*: xs) = CD.Day x (Div xs) (\y -> (f y, y))
+    splittingLB = isoF unDiv Div . splittingLB @(:*:) . isoF (hright to_) (hright from_)
+      where
+        to_   (CCY.Coyoneda f x :*: xs) = CD.Day x (Div xs) (\y -> (f y, y))
+        from_ (CD.Day x (Div xs) f) = CCY.Coyoneda (fst . f) x :*: contramap (snd . f) xs
 
-    toListBy (CD.Day x y z) = Divide z x (inject y)
+    toListBy (CD.Day x y f) = Div . toListBy $
+        CCY.Coyoneda (fst . f) x :*: CCY.Coyoneda (snd . f) y
 
 -- | Instances of 'Divisible' are monoids in the monoidal category on
 -- contravariant 'CD.Day'.
@@ -759,10 +759,9 @@ instance Matchable Day Identity where
 --
 -- @since 0.3.0.0
 instance Matchable CD.Day Proxy where
-    unsplitNE (CD.Day x xs f) = Div1 f x xs
-    matchLB = \case
-      Conquer       -> L1 Proxy
-      Divide f x xs -> R1 (Div1 f x xs)
+    unsplitNE (CD.Day x (Div xs) f) = Div1 . unsplitNE $
+      CCY.Coyoneda (fst . f) x :*: contramap (snd . f) xs
+    matchLB = hright Div1 . matchLB @(:*:) . unDiv
 
 -- | @since 0.3.0.0
 instance Matchable Night Not where

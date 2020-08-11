@@ -87,6 +87,7 @@ import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           Data.Void
 import           GHC.Generics
+import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
@@ -393,7 +394,7 @@ infixr 5 !+!
 --
 -- *    If @h@ is unconstrained, there are no constraints on @b@
 -- *    If @h@ must be 'Divise', or 'Divisible', @b@ needs to be an instance of 'Semigroup'
--- *    If @h@ must be 'Divivisible', then @b@ needs to be an instance of 'Monoid'.
+-- *    If @h@ must be 'Divisible', then @b@ needs to be an instance of 'Monoid'.
 --
 -- For some constraints (like 'Monad'), this will not be usable.
 --
@@ -482,12 +483,14 @@ instance Associative CD.Day where
     associating = isoF CD.assoc CD.disassoc
 
     appendNE (CD.Day x y f) = divise f x y
-    matchNE (Div1 f x xs) = case xs of
-      Conquer -> L1 $ contramap (fst . f) x
-      Divide g y ys -> R1 $ CD.Day x (Div1 g y ys) f
+    matchNE = hbimap CCY.lowerCoyoneda go . matchNE @(:*:) . unDiv1
+      where
+        go (CCY.Coyoneda f x :*: xs) = CD.Day x (Div1 xs) (\y -> (f y, y))
 
-    consNE (CD.Day x y f) = Div1 f x (toDiv y)
-    toNonEmptyBy (CD.Day x y f) = Div1 f x (inject y)
+    consNE (CD.Day x (Div1 xs) f) = Div1 $
+        consNE (CCY.Coyoneda (fst . f) x :*: contramap (snd . f) xs)
+    toNonEmptyBy (CD.Day x y f) = Div1 . toNonEmptyBy $
+        CCY.Coyoneda (fst . f) x :*: CCY.Coyoneda (snd . f) y
 
 -- | @since 0.3.0.0
 instance Divise f => SemigroupIn CD.Day f where

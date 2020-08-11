@@ -19,6 +19,8 @@
 module Data.Functor.Contravariant.Divise (
     Divise(..)
   , divised
+  , (<:>)
+  , dsum1
   , WrappedDivisible(..)
   ) where
 
@@ -37,6 +39,7 @@ import qualified Control.Monad.Trans.State.Lazy as Lazy
 import qualified Control.Monad.Trans.State.Strict as Strict
 import qualified Control.Monad.Trans.Writer.Lazy as Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Strict
+import qualified Data.Semigroup.Foldable as F1
 
 import Data.Functor.Apply
 import Data.Functor.Compose
@@ -104,6 +107,26 @@ class Contravariant f => Divise f where
 -- @
 divised :: Divise f => f a -> f b -> f (a, b)
 divised = divise id
+
+-- | The Contravariant version of '<|>': split the same input over two
+-- different consumers.
+(<:>) :: Divise f => f a -> f a -> f a
+x <:> y = divise (\r -> (r,r)) x y
+
+-- | Convenient helper function to build up a 'Divise' by splitting
+-- input across many different @f a@s.  Most useful when used alongside
+-- 'contramap':
+--
+-- @
+-- dsum1 $ contramap get1 x
+--    :| [ contramap get2 y
+--       , contramap get3 z
+--       ]
+-- @
+--
+-- @since 0.3.3.0
+dsum1 :: (F1.Foldable1 t, Divise f) => t (f a) -> f a
+dsum1 = foldr1 (<:>) . F1.toNonEmpty
 
 -- | Wrap a 'Divisible' to be used as a member of 'Divise'
 newtype WrappedDivisible f a = WrapDivisible { unwrapDivisible :: f a }

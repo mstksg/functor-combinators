@@ -46,6 +46,7 @@ module Data.Functor.Combinator (
   , iget, icollect, icollect1
   , iapply, ifanout, ifanout1
   , getI, collectI
+  , injectMap, injectContramap
   , AltConst(..)
   -- ** Multi-Functors
   -- | Classes that deal with two-functor combinators, that "mix" two
@@ -109,12 +110,10 @@ module Data.Functor.Combinator (
   , generalize
   , absorb
   -- ** Divisible
-  , divideN
-  , diviseN
+  , dsum
+  , dsum1
   , concludeN
   , decideN
-  , divideNRec
-  , diviseNRec
   ) where
 
 import           Control.Alternative.Free
@@ -147,112 +146,27 @@ import           Data.HFunctor.Final
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics
-
-import qualified Data.SOP           as SOP
-import qualified Data.Vinyl         as V
-import qualified Data.Vinyl.Functor as V
+import qualified Data.SOP                             as SOP
 
 
--- | Convenient helper function to build up a 'Divisible' by providing
--- each component of it.  This makes it much easier to build up longer
--- chains as opposed to nested calls to 'divide' and manually peeling off
--- tuples one-by-one.
---
--- For example, if you had a data type
+-- | Convenient helper function to build up a 'Divisible' by splitting
+-- input across many different @f a@s.  Most useful when used alongside
+-- 'contramap':
 --
 -- @
--- data MyType = MT Int Bool String
+-- dsum [
+--     contramap get1 x
+--   , contramap get2 y
+--   , contramap get3 z
+--   ]
 -- @
 --
--- and a contravariant consumer @Builder@ (representing, say, a way to
--- serialize an item, where @intBuilder :: Builder Int@ is a serializer of
--- 'Int's), then you could assemble a serializer a @MyType@ using:
---
--- @
--- contramap (\(MyType x y z) -> I x :* I y :* I z :* Nil) $
---   divideN $ intBuilderj
---          :* boolBuilder
---          :* stringBuilder
---          :* Nil
--- @
---
--- Some notes on usefulness depending on how many components you have:
---
--- *    If you have 0 components, use 'conquer'.
--- *    If you have 1 component, use 'inject' directly.
--- *    If you have 2 components, use 'divide' directly.
--- *    If you have 3 or more components, these combinators may be useful;
---      otherwise you'd need to manually peel off tuples one-by-one.
---
--- @since 0.3.0.0
-divideN
-    :: Divisible f
-    => SOP.NP f as
-    -> f (SOP.NP SOP.I as)
-divideN = \case
-    SOP.Nil     -> conquer
-    x SOP.:* xs -> divide
-      (\case SOP.I y SOP.:* ys -> (y, ys))
-      x
-      (divideN xs)
-
--- | A version of 'divideN' defined to work with 'V.XRec', which can
--- syntactically cleaner because you don't have to manually wrap/unwrap
--- 'SOP.I's.
---
--- Using the example for 'divideN':
---
--- @
--- data MyType = MT Int Bool String
---
--- contramap (\(MyType x y z) -> x ::& y ::& z ::& Nil) $
---   divideNRec $ intBuilderj
---             :& boolBuilder
---             :& stringBuilder
---             :& RNil
--- @
---
--- @since 0.3.0.0
-divideNRec
-    :: Divisible f
-    => V.Rec f as
-    -> f (V.XRec V.Identity as)
-divideNRec = \case
-    V.RNil    -> conquer
-    x V.:& xs -> divide
-      (\case z V.::& zs -> (z, zs))
-      x
-      (divideNRec xs)
-
--- | A version of 'divideNRec' that works for non-empty records, and so only
--- requires a 'Divise' constraint.
---
--- @since 0.3.0.0
-diviseNRec
-    :: Divise f
-    => V.Rec f (a ': as)
-    -> f (V.XRec V.Identity (a ': as))
-diviseNRec = \case
-    x V.:& xs -> case xs of
-      V.RNil   -> contramap (\case z V.::& _ -> z) x
-      _ V.:& _ -> divise
-        (\case z V.::& zs -> (z,zs))
-        x
-        (diviseNRec xs)
-
--- | A version of 'divideN' that works for non-empty 'SOP.NP', and so only
--- requires a 'Divise' constraint.
-diviseN
-    :: Divise f
-    => SOP.NP f (a ': as)
-    -> f (SOP.NP SOP.I (a ': as))
-diviseN = \case
-    x SOP.:* xs -> case xs of
-      SOP.Nil    -> contramap (SOP.unI . SOP.hd) x
-      _ SOP.:* _ -> divise
-        (\case SOP.I z SOP.:* zs -> (z, zs))
-        x
-        (diviseN xs)
+-- @since 0.3.3.0
+dsum
+    :: (Foldable t, Divisible f)
+    => t (f a)
+    -> f a
+dsum = foldr (divide (\x -> (x,x))) conquer
 
 -- | Convenient helper function to build up a 'Conclude' by providing
 -- each component of it.  This makes it much easier to build up longer

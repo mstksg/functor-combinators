@@ -30,6 +30,7 @@ import           Data.Bifunctor
 import           Data.Bifunctor.Assoc
 import           Data.Functor.Contravariant
 import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Coyoneda
 import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
@@ -37,80 +38,49 @@ import           Data.Functor.Invariant
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
 import           Data.Kind
-import           Data.List
 import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Void
 
 -- | The free 'Divisible'.  Used to sequence multiple contravariant
 -- consumers, splitting out the input across all consumers.
---
--- Note that @'Div' f@ is essentially @'ListF'
--- ('Data.Functor.Contravariant.Coyoneda' f)@, or just @'ListF' f@ in the
--- case that @f@ is already contravariant.  However, this is left in here
--- because it can be more convenient to use if you are working with an
--- intermediate @f@ that isn't 'Contravariant'.
-data Div :: (Type -> Type) -> Type -> Type where
-    Conquer :: Div f a
-    Divide  :: (a -> (b, c)) -> f b -> Div f c -> Div f a
+newtype Div f a = Div { unDiv :: ListF (Coyoneda f) a }
 
 instance Contravariant (Div f) where
-    contramap :: forall a b. (a -> b) -> Div f b -> Div f a
-    contramap f = \case
-      Conquer       -> Conquer
-      Divide g x xs -> Divide (g . f) x xs
+    contramap f (Div xs) = Div (contramap f xs)
 instance Invariant (Div f) where
     invmap _ = contramap
 
 instance Divise (Div f) where
-    divise f = \case
-      Conquer       -> contramap (snd . f)
-      Divide g x xs -> Divide (assoc . first g . f) x
-                     . divise id xs
+    divise f (Div xs) (Div ys) = Div (divise f xs ys)
 instance Divisible (Div f) where
-    conquer  = Conquer
-    divide   = divise
+    conquer = Div conquer
+    divide  = divise
 
 -- | 'Div' is isomorphic to 'ListF' for contravariant @f@.  This witnesses
 -- one way of that isomorphism.
---
--- Be aware that this is essentially O(n^2).
 divListF :: forall f. Contravariant f => Div f ~> ListF f
-divListF = ListF . unfoldr go
-  where
-    go = \case
-      Conquer       -> Nothing
-      Divide f x xs -> Just ( contramap (fst . f) x
-                            , contramap (snd . f) xs
-                            )
+divListF = mapListF (map lowerCoyoneda) . unDiv
 
 -- | 'Div' is isomorphic to 'ListF' for contravariant @f@.  This witnesses
 -- one way of that isomorphism.
---
--- This direction is O(n), unlike 'divListF'.
 listFDiv :: ListF f ~> Div f
-listFDiv = foldr (Divide (\y -> (y,y))) Conquer . runListF
+listFDiv = Div . mapListF (map liftCoyoneda)
 
 -- | Map over the undering context in a 'Div'.
 hoistDiv :: forall f g. (f ~> g) -> Div f ~> Div g
-hoistDiv f = go
+hoistDiv f (Div (ListF xs)) = Div (ListF (map hc xs))
   where
-    go :: Div f ~> Div g
-    go = \case
-      Conquer       -> Conquer
-      Divide g x xs -> Divide g (f x) (go xs)
+    hc (Coyoneda g x) = Coyoneda g (f x)
 
 -- | Inject a single action in @f@ into a @'Div' f@.
 liftDiv :: f ~> Div f
-liftDiv x = Divide (,()) x Conquer
+liftDiv x = Div (ListF [liftCoyoneda x])
 
 -- | Interpret a 'Div' into a context @g@, provided @g@ is 'Divisible'.
 runDiv :: forall f g. Divisible g => (f ~> g) -> Div f ~> g
-runDiv f = go
+runDiv f = foldr go conquer . runListF . unDiv
   where
-    go :: Div f ~> g
-    go = \case
-      Conquer       -> conquer
-      Divide g x xs -> divide g (f x) (go xs)
+    go (Coyoneda g x) = divide (\y -> (y,y)) (contramap g (f x))
 
 instance HFunctor Div where
     hmap = hoistDiv
@@ -126,17 +96,14 @@ instance Divisible f => Interpret Div f where
 -- case that @f@ is already contravariant.  However, it can be more
 -- convenient to use if you are working with an intermediate @f@ that isn't
 -- 'Contravariant'.
-data Div1 :: (Type -> Type) -> Type -> Type where
-    Div1 :: (a -> (b, c)) -> f b -> Div f c -> Div1 f a
+newtype Div1 f a = Div1 { unDiv1 :: NonEmptyF (Coyoneda f) a }
 
 instance Contravariant (Div1 f) where
-    contramap f (Div1 g x xs) = Div1 (g . f) x xs
+    contramap f (Div1 xs) = Div1 (contramap f xs)
 instance Invariant (Div1 f) where
     invmap _ = contramap
 instance Divise (Div1 f) where
-    divise f (Div1 g x xs) = Div1 (assoc . first g . f) x
-                           . divise id xs
-                           . toDiv
+    divise f (Div1 xs) (Div1 ys) = Div1 (divise f xs ys)
 
 instance HFunctor Div1 where
     hmap = hoistDiv1
@@ -147,51 +114,38 @@ instance Divise f => Interpret Div1 f where
 
 -- | A 'Div1' is a "non-empty" 'Div'; this function "forgets" the non-empty
 -- property and turns it back into a normal 'Div'.
-toDiv :: Div1 f a -> Div f a
-toDiv (Div1 f x xs) = Divide f x xs
+toDiv :: Div1 f ~> Div f
+toDiv = Div . toListF . unDiv1
 
--- | Map over the undering context in a 'Div1'.
+-- | Map over the underlying context in a 'Div1'.
 hoistDiv1 :: (f ~> g) -> Div1 f ~> Div1 g
-hoistDiv1 f (Div1 g x xs) = Div1 g (f x) (hoistDiv f xs)
+hoistDiv1 f (Div1 xs) = Div1 (mapNonEmptyF (fmap hc) xs)
+  where
+    hc (Coyoneda g x) = Coyoneda g (f x)
 
 -- | Inject a single action in @f@ into a @'Div' f@.
 liftDiv1 :: f ~> Div1 f
-liftDiv1 f = Div1 (,()) f Conquer
+liftDiv1 x = Div1 (NonEmptyF (liftCoyoneda x :| []))
 
 -- | Interpret a 'Div1' into a context @g@, provided @g@ is 'Divise'.
 runDiv1 :: Divise g => (f ~> g) -> Div1 f ~> g
-runDiv1 f (Div1 g x xs) = runDiv1_ f g x xs
-
-runDiv1_
-    :: forall f g a b c. Divise g
-    => (f ~> g)
-    -> (a -> (b, c))
-    -> f b
-    -> Div f c
-    -> g a
-runDiv1_ f = go
+runDiv1 f = foldr1 (divise (\y->(y,y))) . fmap go . runNonEmptyF . unDiv1
   where
-    go :: (x -> (y, z)) -> f y -> Div f z -> g x
-    go g x = \case
-      Conquer       -> contramap (fst . g) (f x)
-      Divide h y ys -> divise g (f x) (go h y ys)
+    go (Coyoneda g x) = contramap g (f x)
 
 -- | 'Div1' is isomorphic to 'NonEmptyF' for contravariant @f@.  This
 -- witnesses one way of that isomorphism.
 --
 -- Be aware that this is essentially O(n^2).
 div1NonEmptyF :: Contravariant f => Div1 f ~> NonEmptyF f
-div1NonEmptyF (Div1 f x xs) = NonEmptyF $
-       contramap (fst . f) x
-    :| runListF (divListF (contramap (snd . f) xs))
+div1NonEmptyF = mapNonEmptyF (fmap lowerCoyoneda) . unDiv1
 
 -- | 'Div1' is isomorphic to 'NonEmptyF' for contravariant @f@.  This
 -- witnesses one way of that isomorphism.
 --
 -- This direction is O(n), unlike 'div1NonEmptyF'.
 nonEmptyFDiv1 :: NonEmptyF f ~> Div1 f
-nonEmptyFDiv1 (NonEmptyF (x :| xs)) =
-    Div1 (\y -> (y,y)) x (listFDiv (ListF xs))
+nonEmptyFDiv1 = Div1 . mapNonEmptyF (fmap liftCoyoneda)
 
 -- | The free 'Decide'.  Used to aggregate multiple possible consumers,
 -- directing the input into an appropriate consumer.
@@ -219,7 +173,7 @@ instance Inject Dec where
 instance Conclude f => Interpret Dec f where
     interpret = runDec
 
--- | Map over the undering context in a 'Dec'.
+-- | Map over the underlying context in a 'Dec'.
 hoistDec :: forall f g. (f ~> g) -> Dec f ~> Dec g
 hoistDec f = go
   where

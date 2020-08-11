@@ -27,6 +27,9 @@ module Data.HFunctor (
   -- * 'HFunctor' Combinators
   , HLift(..), retractHLift
   , HFree(..), foldHFree, retractHFree
+  -- * Utility functions
+  , injectMap
+  , injectContramap
   ) where
 
 import           Control.Applicative.Backwards
@@ -363,6 +366,20 @@ class HFunctor t => Inject t where
     inject :: f ~> t f
 
     {-# MINIMAL inject #-}
+
+-- | A useful wrapper over the common pattern of
+-- fmap-before-inject/inject-and-fmap.
+--
+-- @since 0.3.3.0
+injectMap :: (Inject t, Functor f) => (a -> b) -> f a -> t f b
+injectMap f = inject . fmap f
+
+-- | A useful wrapper over the common pattern of
+-- contramap-before-inject/inject-and-contramap.
+--
+-- @since 0.3.3.0
+injectContramap :: (Inject t, Contravariant f) => (a -> b) -> f b -> t f a
+injectContramap f = inject . contramap f
 
 -- | 'HBind' is effectively a "higher-order 'Monad'", in the sense that
 -- 'HFunctor' is a "higher-order 'Functor'".

@@ -245,6 +245,40 @@ instance Applicative f => Alternative (MaybeF f) where
     empty = zero
     (<|>) = (<!>)
 
+-- | @since 0.3.3.0
+instance Contravariant f => Contravariant (MaybeF f) where
+    contramap f (MaybeF x) = MaybeF $ (fmap . contramap) f x
+
+-- | @since 0.3.3.0
+instance Invariant f => Invariant (MaybeF f) where
+    invmap f g (MaybeF x) = MaybeF $ fmap (invmap f g) x
+
+-- | @since 0.3.3.0
+instance Contravariant f => Divise (MaybeF f) where
+    divise f (MaybeF x) (MaybeF y) = MaybeF $
+          (fmap . contramap) (fst . f) x
+      <|> (fmap . contramap) (snd . f) y
+
+-- | @since 0.3.3.0
+instance Contravariant f => Divisible (MaybeF f) where
+    divide  = divise
+    conquer = MaybeF Nothing
+
+-- | @since 0.3.3.0
+instance Decide f => Decide (MaybeF f) where
+    decide f (MaybeF x) (MaybeF y) = MaybeF $
+        liftA2 (decide f) x y
+
+-- | @since 0.3.3.0
+instance Conclude f => Conclude (MaybeF f) where
+    conclude f = MaybeF (Just (conclude f))
+
+-- | @since 0.3.3.0
+instance Decidable f => Decidable (MaybeF f) where
+    choose f (MaybeF x) (MaybeF y) = MaybeF $
+        liftA2 (choose f) x y
+    lose f = MaybeF (Just (lose f))
+
 -- | Picks the first 'Just'.
 instance Semigroup (MaybeF f a) where
     MaybeF xs <> MaybeF ys = MaybeF (xs <!> ys)
