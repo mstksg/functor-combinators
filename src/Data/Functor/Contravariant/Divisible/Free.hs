@@ -48,6 +48,16 @@ import qualified Data.Functor.Contravariant.Day       as CD
 
 -- | The free 'Divisible'.  Used to sequence multiple contravariant
 -- consumers, splitting out the input across all consumers.
+--
+-- This type is essentially 'ListF'; the only reason why it has to exist
+-- separately outside of 'ListF' is because the current typeclass hierarchy
+-- isn't compatible with both the covariant 'Interpret' instance (requiring
+-- 'Plus') and the contravariant 'Interpret' instance (requiring
+-- 'Divisible').
+--
+-- The wrapping in 'Coyoneda' is also to provide a usable
+-- 'Data.HBifunctor.Associative.Associative' instance for the contravariant
+-- 'CD.Day'.
 newtype Div f a = Div { unDiv :: [Coyoneda f a] }
   deriving (Contravariant, Divise, Divisible) via (ListF (Coyoneda f))
   deriving (HFunctor, Inject) via (CT.ComposeT ListF Coyoneda)
@@ -107,6 +117,16 @@ instance Divisible f => Interpret Div f where
     interpret = runDiv
 
 -- | The free 'Divise': a non-empty version of 'Div'.
+--
+-- This type is essentially 'NonEmptyF'; the only reason why it has to exist
+-- separately outside of 'NonEmptyF' is because the current typeclass
+-- hierarchy isn't compatible with both the covariant 'Interpret' instance
+-- (requiring 'Plus') and the contravariant 'Interpret' instance (requiring
+-- 'Divisible').
+--
+-- The wrapping in 'Coyoneda' is also to provide a usable
+-- 'Data.HBifunctor.Associative.Associative' instance for the contravariant
+-- 'CD.Day'.
 newtype Div1 f a = Div1 { unDiv1 :: NonEmpty (Coyoneda f a) }
   deriving (Contravariant, Divise) via (NonEmptyF (Coyoneda f))
   deriving (HFunctor, Inject) via (CT.ComposeT NonEmptyF Coyoneda)

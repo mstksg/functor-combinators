@@ -1,6 +1,31 @@
 Changelog
 =========
 
+Version 0.3.3.0
+---------------
+
+*August 11, 2020*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.3.3.0>
+
+*   *Control.Applicative.ListF*: Missing contravariant instances added for
+    `MaybeF`.
+*   *Data.HFunctor*: Add `injectMap` and `injectContramap`, two small utility
+    functions that represent common patterns in injection and mapping.
+*   *Data.Functor.Combinator*: Replace `divideN` and related functions with
+    `dsum` and `dsum1`, which is an altogether cleaner interface that doesn't
+    require heterogenous lists.  A part of a larger project on cleaning up
+    `Divisible` tools.
+*   *Data.Functor.Contravariant.Divise*: Add useful utility functions `dsum`
+    and `<:>`, which makes the type of `divise` closer to that of `<|>` and
+    `asum`.
+*   *Data.Functor.Contravariant.Divisible.Free*: Implement `Div` in terms of a
+    list, instead of the mirrored `Ap`.  Should make it much easier to use,
+    although a less-than-ideal `Coyoneda` is required to keep it compatible
+    with the contravariant `Day` in *kan-extensions*.  Added patterns to
+    recover the original interface.
+
+
 Version 0.3.2.0
 ---------------
 
