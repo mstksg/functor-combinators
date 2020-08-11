@@ -43,11 +43,13 @@ import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Void
+import qualified Control.Monad.Trans.Compose          as CT
 
 -- | The free 'Divisible'.  Used to sequence multiple contravariant
 -- consumers, splitting out the input across all consumers.
 newtype Div f a = Div { unDiv :: [Coyoneda f a] }
   deriving (Contravariant, Divise, Divisible) via (ListF (Coyoneda f))
+  deriving (HFunctor, Inject) via (CT.ComposeT ListF Coyoneda)
 
 instance Invariant (Div f) where
     invmap _ = contramap
@@ -64,13 +66,11 @@ listFDiv = Div . map liftCoyoneda . runListF
 
 -- | Map over the undering context in a 'Div'.
 hoistDiv :: forall f g. (f ~> g) -> Div f ~> Div g
-hoistDiv f (Div xs) = Div (map hc xs)
-  where
-    hc (Coyoneda g x) = Coyoneda g (f x)
+hoistDiv = hmap
 
 -- | Inject a single action in @f@ into a @'Div' f@.
 liftDiv :: f ~> Div f
-liftDiv x = Div [liftCoyoneda x]
+liftDiv = inject
 
 -- | Interpret a 'Div' into a context @g@, provided @g@ is 'Divisible'.
 runDiv :: forall f g. Divisible g => (f ~> g) -> Div f ~> g
@@ -78,24 +78,17 @@ runDiv f = foldr go conquer . unDiv
   where
     go (Coyoneda g x) = divide (\y -> (y,y)) (contramap g (f x))
 
-instance HFunctor Div where
-    hmap = hoistDiv
-instance Inject Div where
-    inject = liftDiv
 instance Divisible f => Interpret Div f where
     interpret = runDiv
 
 -- | The free 'Divise': a non-empty version of 'Div'.
 newtype Div1 f a = Div1 { unDiv1 :: NonEmpty (Coyoneda f a) }
   deriving (Contravariant, Divise) via (NonEmptyF (Coyoneda f))
+  deriving (HFunctor, Inject) via (CT.ComposeT NonEmptyF Coyoneda)
 
 instance Invariant (Div1 f) where
     invmap _ = contramap
 
-instance HFunctor Div1 where
-    hmap = hoistDiv1
-instance Inject Div1 where
-    inject = liftDiv1
 instance Divise f => Interpret Div1 f where
     interpret = runDiv1
 
@@ -106,13 +99,11 @@ toDiv = Div . toList . unDiv1
 
 -- | Map over the underlying context in a 'Div1'.
 hoistDiv1 :: (f ~> g) -> Div1 f ~> Div1 g
-hoistDiv1 f (Div1 xs) = Div1 (fmap hc xs)
-  where
-    hc (Coyoneda g x) = Coyoneda g (f x)
+hoistDiv1 = hmap
 
 -- | Inject a single action in @f@ into a @'Div' f@.
 liftDiv1 :: f ~> Div1 f
-liftDiv1 x = Div1 (liftCoyoneda x :| [])
+liftDiv1 = inject
 
 -- | Interpret a 'Div1' into a context @g@, provided @g@ is 'Divise'.
 runDiv1 :: Divise g => (f ~> g) -> Div1 f ~> g
