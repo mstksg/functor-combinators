@@ -483,13 +483,13 @@ instance Associative CD.Day where
     associating = isoF CD.assoc CD.disassoc
 
     appendNE (CD.Day x y f) = divise f x y
-    matchNE = hbimap CCY.lowerCoyoneda go . matchNE @(:*:) . unDiv1
+    matchNE = hbimap CCY.lowerCoyoneda go . matchNE @(:*:) . NonEmptyF . unDiv1
       where
-        go (CCY.Coyoneda f x :*: xs) = CD.Day x (Div1 xs) (\y -> (f y, y))
+        go (CCY.Coyoneda f x :*: NonEmptyF xs) = CD.Day x (Div1 xs) (\y -> (f y, y))
 
-    consNE (CD.Day x (Div1 xs) f) = Div1 $
-        consNE (CCY.Coyoneda (fst . f) x :*: contramap (snd . f) xs)
-    toNonEmptyBy (CD.Day x y f) = Div1 . toNonEmptyBy $
+    consNE (CD.Day x (Div1 xs) f) = Div1 . runNonEmptyF . consNE $
+        CCY.Coyoneda (fst . f) x :*: contramap (snd . f) (NonEmptyF xs)
+    toNonEmptyBy (CD.Day x y f) = Div1 . runNonEmptyF . toNonEmptyBy $
         CCY.Coyoneda (fst . f) x :*: CCY.Coyoneda (snd . f) y
 
 -- | @since 0.3.0.0

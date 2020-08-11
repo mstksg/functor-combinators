@@ -581,15 +581,15 @@ instance Tensor CD.Day Proxy where
     elim2 = CD.day2
 
     appendLB (CD.Day x y z) = divide z x y
-    splitNE = go . splitNE @(:*:) . unDiv1
+    splitNE = go . splitNE @(:*:) . NonEmptyF . unDiv1
       where
-        go (CCY.Coyoneda f x :*: xs) = CD.Day x (Div xs) (\y -> (f y, y))
-    splittingLB = isoF unDiv Div . splittingLB @(:*:) . isoF (hright to_) (hright from_)
+        go (CCY.Coyoneda f x :*: ListF xs) = CD.Day x (Div xs) (\y -> (f y, y))
+    splittingLB = isoF (ListF . unDiv) (Div . runListF) . splittingLB @(:*:) . isoF (hright to_) (hright from_)
       where
-        to_   (CCY.Coyoneda f x :*: xs) = CD.Day x (Div xs) (\y -> (f y, y))
-        from_ (CD.Day x (Div xs) f) = CCY.Coyoneda (fst . f) x :*: contramap (snd . f) xs
+        to_   (CCY.Coyoneda f x :*: ListF xs) = CD.Day x (Div xs) (\y -> (f y, y))
+        from_ (CD.Day x (Div xs) f) = CCY.Coyoneda (fst . f) x :*: contramap (snd . f) (ListF xs)
 
-    toListBy (CD.Day x y f) = Div . toListBy $
+    toListBy (CD.Day x y f) = Div . runListF . toListBy $
         CCY.Coyoneda (fst . f) x :*: CCY.Coyoneda (snd . f) y
 
 -- | Instances of 'Divisible' are monoids in the monoidal category on
@@ -759,9 +759,9 @@ instance Matchable Day Identity where
 --
 -- @since 0.3.0.0
 instance Matchable CD.Day Proxy where
-    unsplitNE (CD.Day x (Div xs) f) = Div1 . unsplitNE $
-      CCY.Coyoneda (fst . f) x :*: contramap (snd . f) xs
-    matchLB = hright Div1 . matchLB @(:*:) . unDiv
+    unsplitNE (CD.Day x (Div xs) f) = Div1 . runNonEmptyF . unsplitNE $
+      CCY.Coyoneda (fst . f) x :*: contramap (snd . f) (ListF xs)
+    matchLB = hright (Div1 . runNonEmptyF) . matchLB @(:*:) . ListF . unDiv
 
 -- | @since 0.3.0.0
 instance Matchable Night Not where
