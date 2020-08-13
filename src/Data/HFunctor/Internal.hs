@@ -52,6 +52,7 @@ import qualified Data.Functor.Contravariant.Coyoneda as CCY
 import qualified Data.Functor.Contravariant.Day      as CD
 import qualified Data.Functor.Contravariant.Night    as N
 import qualified Data.Functor.Day                    as D
+import qualified Data.Functor.Invariant.Day          as ID
 import qualified Data.SOP                            as SOP
 import qualified Data.SOP.NP                         as SOP
 import qualified Data.SOP.NS                         as SOP
@@ -341,6 +342,10 @@ instance HBifunctor CD.Day where
     hright = CD.trans2
     hbimap f g (CD.Day x y z) = CD.Day (f x) (g y) z
 
+-- | @since 0.3.4.0
+instance HBifunctor ID.Day where
+    hbimap f g (ID.Day x y h j) = ID.Day (f x) (g y) h j
+
 -- | @since 0.3.0.0
 instance HBifunctor Night where
     hleft  = N.trans1
@@ -398,6 +403,7 @@ instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
     hmap f = WrapHBifunctor . hright f . unwrapHBifunctor
 
 deriving via (WrappedHBifunctor Day f)     instance HFunctor (Day f)
+deriving via (WrappedHBifunctor ID.Day f)     instance HFunctor (ID.Day f)
 deriving via (WrappedHBifunctor (:*:) f)   instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)   instance HFunctor ((:+:) f)
 deriving via (WrappedHBifunctor Product f) instance HFunctor (Product f)

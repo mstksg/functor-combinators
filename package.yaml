@@ -93,6 +93,8 @@ library:
   source-dirs: src
   other-modules:
   - Data.HFunctor.Internal
+  - Data.HFunctor.Chain.Internal
+  - Data.HBifunctor.Tensor.Internal
   dependencies:
   - assoc
   - comonad

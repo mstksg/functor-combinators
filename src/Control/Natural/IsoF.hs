@@ -13,11 +13,13 @@ module Control.Natural.IsoF (
     type (~>)
   , type (<~>)
   , isoF
+  , coercedF
   , viewF, reviewF, overF
   , fromF
   ) where
 
 import           Control.Natural
+import           Data.Coerce
 import           Data.Kind
 import           Data.Profunctor
 import           Data.Tagged
@@ -69,6 +71,9 @@ isoF
     -> g ~> f
     -> f <~> g
 isoF = dimap
+
+coercedF :: (forall x. Coercible (f x) (g x), forall x. Coercible (g x) (f x)) => f <~> g
+coercedF = isoF coerce coerce
 
 -- | Use a '<~>' by retrieving the "forward" function:
 --

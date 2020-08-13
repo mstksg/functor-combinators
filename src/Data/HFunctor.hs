@@ -27,6 +27,7 @@ module Data.HFunctor (
   -- * 'HFunctor' Combinators
   , HLift(..), retractHLift
   , HFree(..), foldHFree, retractHFree
+  , Pre(..), Post(..), getPre, getPost, applyPre, applyPost, rePre, rePost, injectPre, injectPost
   -- * Utility functions
   , injectMap
   , injectContramap
@@ -66,6 +67,7 @@ import           Data.Kind
 import           Data.List.NonEmpty                   (NonEmpty(..))
 import           Data.Pointed
 import           Data.Semigroup.Foldable
+import           Data.Void
 import           GHC.Generics
 import qualified Control.Alternative.Free             as Alt
 import qualified Control.Applicative.Free.Fast        as FAF
@@ -341,6 +343,145 @@ instance HFunctor t => HFunctor (HFree t) where
         go = \case
           HReturn x -> HReturn (f x)
           HJoin   x -> HJoin (hmap go x)
+
+-- | A useful helper type to use with a covariant functor combinator that
+-- allows you to tag along contravariant access to all @f@s inside the
+-- combinator.
+--
+-- Maybe most usefully, it can be used with 'Ap'.  Remember that @'Ap' f a@
+-- is a collection of @f x@s, with each x existentially wrapped.  Now, for
+-- a @'Ap' (Pre a f) a@, it will be a collection of @f x@ and @a -> x@s:
+-- not only each individual part, but a way to "select" that individual
+-- part from the overal @a@.
+--
+-- Then, for instance, you can extract each @f@ out of an @'Ap' f@:
+--
+-- @
+-- fromPreAp :: Ap (Pre f a) b -> [f a]
+-- fromPreAp = icollect applyPre
+-- @
+--
+-- When @a@ and @b@ are the same, @'Ap' ('Pre' f a) a@ is like the free
+-- invariant sequencer.  That is, in a sense, @'Ap' ('Pre' f a) a@ contains
+-- both contravariant and covariant sequences side-by-side:
+--
+-- @
+-- -- | Build an Ap (Pre f a) once and it encodes an Ap, the free covariant
+-- -- sequencer
+-- preApAp :: Ap (Pre f a) a -> Ap f a
+-- preApAp = hmap getPre
+--
+-- -- | .. and also Div, the free contravariant sequencer
+-- preApDiv :: Ap (Pre f a) a -> Div f a
+-- preApDiv = listFDiv . ListF . fromPreAp
+-- @
+--
+-- This is used by the /unjson/ library's record type constructor to
+-- implement bidrectional serializers.
+data Pre  a f b = (a -> b) :>$<: f b
+
+-- | A useful helper type to use with a contravariant functor combinator that
+-- allows you to tag along covariant extraction from all @f@s inside the
+-- combinator.
+--
+-- Maybe most usefully, it can be used with 'Dec'.  Remember that @'Dec' f a@
+-- is a collection of @f x@s, with each x existentially wrapped.  Now, for
+-- a @'Dec' (Post a f) a@, it will be a collection of @f x@ and @x -> a@s:
+-- not only each individual part, but a way to "extract" that individual
+-- part from the overal @a@.
+--
+-- Then, for instance, you can extract each @f@ out of an @'Ap' f@:
+--
+-- @
+-- fromPreAp :: Ap (Pre f a) b -> [f a]
+-- fromPreAp = icollect applyPost
+-- @
+--
+-- When @a@ and @b@ are the same, @'Ap' ('Pre' f a) a@ is like the free
+-- invariant sequencer.  That is, in a sense, @'Ap' ('Pre' f a) a@ contains
+-- both contravariant and covariant sequences side-by-side:
+--
+-- @
+-- -- | Build an Ap (Pre f a) once and it encodes an Ap, the free covariant
+-- -- sequencer
+-- preApAp :: Ap (Pre f a) a -> Ap f a
+-- preApAp = hmap getPre
+--
+-- -- | .. and also Div, the free contravariant sequencer
+-- preApDiv :: Ap (Pre f a) a -> Div f a
+-- preApDiv = listFDiv . ListF . fromPreAp
+-- @
+--
+-- This is used by the /unjson/ library's record type constructor to
+-- implement bidrectional serializers.
+data Post a f b = (b -> a) :<$>: f b
+
+infixl 4 :>$<:
+infixl 4 :<$>:
+
+applyPre :: Contravariant f => Pre a f b -> f a
+applyPre (f :>$<: x) = contramap f x
+
+runPre :: Contravariant g => (f ~> g) -> Pre a f b -> g a
+runPre f (g :>$<: x) = contramap g (f x)
+
+getPre :: Pre a f b -> f b
+getPre (_ :>$<: x) = x
+
+rePre :: (c -> a) -> Pre a f b -> Pre c f b
+rePre f (g :>$<: x) = g . f :>$<: x
+
+injectPre :: Inject t => (a -> b) -> f b -> t (Pre a f) b
+injectPre f x = inject (f :>$<: x)
+
+applyPost :: Functor f => Post a f b -> f a
+applyPost (f :<$>: x) = fmap f x
+
+runPost :: Functor g => (f ~> g) -> Post a f b -> g a
+runPost f (g :<$>: x) = fmap g (f x)
+
+getPost :: Post a f b -> f b
+getPost (_ :<$>: x) = x
+
+rePost :: (a -> c) -> Post a f b -> Post c f b
+rePost f (g :<$>: x) = f  . g :<$>: x
+
+injectPost :: Inject t => (b -> a) -> f b -> t (Post a f) b
+injectPost f x = inject (f :<$>: x)
+
+instance Functor f => Invariant (Post a f) where
+    invmap f g (h :<$>: x) = h . g :<$>: fmap f x
+
+instance Contravariant f => Invariant (Pre a f) where
+    invmap f g (h :>$<: x) = f . h :>$<: contramap g x
+
+instance HFunctor (Post a) where
+    hmap g (f :<$>: x) = f :<$>: g x
+
+instance HFunctor (Pre a) where
+    hmap g (f :>$<: x) = f :>$<: g x
+
+instance Monoid a => Inject (Post a) where
+    inject x = const mempty :<$>: x
+
+instance Monoid a => HBind (Post a) where
+    hjoin (f :<$>: (g :<$>: x)) = (f <> g) :<$>: x
+
+-- instance Monoid a => Interpret (Post a) f where
+--     retract (_ :<$>: x) = x
+
+-- | This instance is over-contrained (@a@ only needs to be uninhabited),
+-- but there is no commonly used "uninhabited" typeclass
+instance (a ~ Void) => Inject (Pre a) where
+    inject x = absurd :>$<: x
+
+-- | This instance is over-contrained (@a@ only needs to be uninhabited),
+-- but there is no commonly used "uninhabited" typeclass
+instance (a ~ Void) => HBind (Pre a) where
+    hjoin (_ :>$<: (_ :>$<: x)) = absurd :>$<: x
+
+-- instance (a ~ Void) => Interpret (Pre a) f where
+--     retract (_ :>$<: x) = x
 
 -- | A typeclass for 'HFunctor's where you can "inject" an @f a@ into a @t
 -- f a@:

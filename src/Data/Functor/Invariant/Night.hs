@@ -33,6 +33,7 @@ module Data.Functor.Invariant.Night (
   , chainListF
   , chainListF_
   , chainDec
+  , swerve, swerved
   , assembleNightChain
   , concatNightChain
   -- * Nonempty Chain
@@ -43,6 +44,7 @@ module Data.Functor.Invariant.Night (
   , chainNonEmptyF
   , chainNonEmptyF_
   , chainDec1
+  , swerve1, swerved1
   , assembleNightChain1
   , concatNightChain1
   ) where
@@ -333,6 +335,62 @@ pattern NightChain1 f g h x xs <- (splitChain1->Night x xs f g h)
   where
     NightChain1 f g h x xs = unsplitNE $ Night x xs f g h
 {-# COMPLETE NightChain1 #-}
+
+-- | Invariantly combine two 'NightChain's.
+--
+-- Analogous to '<|>' and 'decide'.  If there was some typeclass that
+-- represented semigroups on invariant 'Night', this would be the method of that
+-- typeclass.
+--
+-- The identity of this is 'Reject'.
+--
+-- @since 0.3.4.0
+swerve
+    :: (a -> Either b c)
+    -> (b -> a)
+    -> (c -> a)
+    -> NightChain f b
+    -> NightChain f c
+    -> NightChain f a
+swerve f g h x y = appendChain (Night x y f g h)
+
+-- | Convenient wrapper over 'swerve' that simply combines the two options
+-- in an 'Either'.  Analogous to '<|>' and 'decided'.
+--
+-- @since 0.3.4.0
+swerved
+    :: NightChain f a
+    -> NightChain f b
+    -> NightChain f (Either a b)
+swerved = swerve id Left Right
+
+-- | Invariantly combine two 'NightChain1's.
+--
+-- Analogous to '<|>' and 'decide'.  If there was some typeclass that
+-- represented semigroups on invariant 'Night', this would be the method of that
+-- typeclass.
+--
+-- @since 0.3.4.0
+swerve1
+    :: Invariant f
+    => (a -> Either b c)
+    -> (b -> a)
+    -> (c -> a)
+    -> NightChain1 f b
+    -> NightChain1 f c
+    -> NightChain1 f a
+swerve1 f g h x y = appendChain1 (Night x y f g h)
+
+-- | Convenient wrapper over 'swerve1' that simply combines the two options
+-- in an 'Either'.  Analogous to '<|>' and 'decided'.
+--
+-- @since 0.3.4.0
+swerved1
+    :: Invariant f
+    => NightChain1 f a
+    -> NightChain1 f b
+    -> NightChain1 f (Either a b)
+swerved1 = swerve1 id Left Right
 
 instance Invariant (Night f g) where
     invmap f g (Night x y h j k) = Night x y (h . g) (f . j) (f . k)

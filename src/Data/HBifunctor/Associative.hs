@@ -59,6 +59,7 @@ import           Control.Monad.Trans.Compose
 import           Control.Monad.Trans.Identity
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Bifunctor
 import           Data.Bifunctor.Joker
 import           Data.Coerce
 import           Data.Constraint.Trivial
@@ -81,16 +82,19 @@ import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HBifunctor
 import           Data.HFunctor
+import           Data.HFunctor.Chain.Internal
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           Data.Void
 import           GHC.Generics
+import qualified Data.Bifunctor.Assoc                      as B
 import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
+import qualified Data.Functor.Invariant.Day                as ID
 import qualified Data.Map.NonEmpty                         as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
@@ -496,6 +500,25 @@ instance Associative CD.Day where
 instance Divise f => SemigroupIn CD.Day f where
     biretract      (CD.Day x y f) = divise f x y
     binterpret f g (CD.Day x y h) = divise h (f x) (g y)
+
+instance Associative ID.Day where
+    type NonEmptyBy ID.Day = DayChain1
+    type FunctorBy ID.Day = Invariant
+    associating = isoF assoc disassoc
+
+    appendNE = coerce appendNEIDay_
+    matchNE = coerce matchChain1
+
+    consNE = coerce More1
+    toNonEmptyBy = coerce toChain1
+
+appendNEIDay_ :: ID.Day (Chain1 ID.Day f) (Chain1 ID.Day f) ~> Chain1 ID.Day f
+appendNEIDay_ (ID.Day xs ys g f) = case xs of
+  Done1 x              -> More1 (ID.Day x ys g f)
+  More1 (ID.Day z zs j h) -> More1 $
+    ID.Day z (appendNEIDay_ (ID.Day zs ys (,) id))
+      (\a (b, c) -> g (j a b) c)
+      (B.assoc . first h . f)
 
 -- | @since 0.3.0.0
 instance Associative Night where

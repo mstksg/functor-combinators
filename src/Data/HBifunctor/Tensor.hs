@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 -- |
 -- Module      : Data.HBifunctor.Tensor
 -- Copyright   : (c) Justin Le 2019
@@ -76,6 +78,7 @@ import           Control.Monad.Freer.Church
 import           Control.Monad.Trans.Compose
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Coerce
 import           Data.Data
 import           Data.Function
 import           Data.Functor.Apply.Free
@@ -97,135 +100,19 @@ import           Data.Functor.Sum
 import           Data.Functor.These
 import           Data.HBifunctor
 import           Data.HBifunctor.Associative
+import           Data.HBifunctor.Tensor.Internal
 import           Data.HFunctor
+import           Data.HFunctor.Chain.Internal
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
-import           Data.Kind
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           GHC.Generics
 import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
+import qualified Data.Functor.Invariant.Day                as ID
 import qualified Data.Map.NonEmpty                         as NEM
-
--- | An 'Associative' 'HBifunctor' can be a 'Tensor' if there is some
--- identity @i@ where @t i f@ and @t f i@ are equivalent to just @f@.
---
--- That is, "enhancing" @f@ with @t i@ does nothing.
---
--- The methods in this class provide us useful ways of navigating
--- a @'Tensor' t@ with respect to this property.
---
--- The 'Tensor' is essentially the 'HBifunctor' equivalent of 'Inject',
--- with 'intro1' and 'intro2' taking the place of 'inject'.
---
--- Formally, we can say that @t@ enriches a the category of
--- endofunctors with monoid strcture: it turns our endofunctor category
--- into a "monoidal category".
---
--- Different instances of @t@ each enrich the endofunctor category in
--- different ways, giving a different monoidal category.
-class (Associative t, Inject (ListBy t)) => Tensor t i | t -> i where
-    -- | The "monoidal functor combinator" induced by @t@.
-    --
-    -- A value of type @ListBy t f a@ is /equivalent/ to one of:
-    --
-    -- *  @I a@                         -- zero fs
-    -- *  @f a@                         -- one f
-    -- *  @t f f a@                     -- two fs
-    -- *  @t f (t f f) a@               -- three fs
-    -- *  @t f (t f (t f f)) a@
-    -- *  @t f (t f (t f (t f f))) a@
-    -- *  .. etc
-    --
-    -- For example, for ':*:', we have 'ListF'.  This is because:
-    --
-    -- @
-    -- 'Proxy'         ~ 'ListF' []         ~ 'nilLB' \@(':*:')
-    -- x             ~ ListF [x]        ~ 'inject' x
-    -- x :*: y       ~ ListF [x,y]      ~ 'toListBy' (x :*: y)
-    -- x :*: y :*: z ~ ListF [x,y,z]
-    -- -- etc.
-    -- @
-    --
-    -- You can create an "empty" one with 'nilLB', a "singleton" one with
-    -- 'inject', or else one from a single @t f f@ with 'toListBy'.
-    --
-    -- See 'Data.HBifunctor.Associative.NonEmptyBy' for a "non-empty"
-    -- version of this type.
-    type ListBy t :: (Type -> Type) -> Type -> Type
-
-    -- | Because @t f (I t)@ is equivalent to @f@, we can always "insert"
-    -- @f@ into @t f (I t)@.
-    --
-    -- This is analogous to 'inject' from 'Inject', but for 'HBifunctor's.
-    intro1 :: f ~> t f i
-
-    -- | Because @t (I t) g@ is equivalent to @f@, we can always "insert"
-    -- @g@ into @t (I t) g@.
-    --
-    -- This is analogous to 'inject' from 'Inject', but for 'HBifunctor's.
-    intro2 :: g ~> t i g
-
-    -- | Witnesses the property that @i@ is the identity of @t@: @t
-    -- f i@ always leaves @f@ unchanged, so we can always just drop the
-    -- @i@.
-    elim1 :: FunctorBy t f => t f i ~> f
-
-    -- | Witnesses the property that @i@ is the identity of @t@: @t i g@
-    -- always leaves @g@ unchanged, so we can always just drop the @i t@.
-    elim2 :: FunctorBy t g => t i g ~> g
-
-    -- | If a @'ListBy' t f@ represents multiple applications of @t f@ to
-    -- itself, then we can also "append" two @'ListBy' t f@s applied to
-    -- themselves into one giant @'ListBy' t f@ containing all of the @t f@s.
-    --
-    -- Note that this essentially gives an instance for @'SemigroupIn'
-    -- t (ListBy t f)@, for any functor @f@; this is witnessed by
-    -- 'WrapLB'.
-    appendLB    :: t (ListBy t f) (ListBy t f) ~> ListBy t f
-
-    -- | Lets you convert an @'NonEmptyBy' t f@ into a single application of @f@ to
-    -- @'ListBy' t f@.
-    --
-    -- Analogous to a function @'Data.List.NonEmpty.NonEmpty' a -> (a,
-    -- [a])@
-    --
-    -- Note that this is not reversible in general unless we have
-    -- @'Matchable' t@.
-    splitNE     :: NonEmptyBy t f ~> t f (ListBy t f)
-
-    -- | An @'ListBy' t f@ is either empty, or a single application of @t@ to @f@
-    -- and @ListBy t f@ (the "head" and "tail").  This witnesses that
-    -- isomorphism.
-    --
-    -- To /use/ this property, see 'nilLB', 'consLB', and 'unconsLB'.
-    splittingLB :: ListBy t f <~> i :+: t f (ListBy t f)
-
-    -- | Embed a direct application of @f@ to itself into a @'ListBy' t f@.
-    toListBy   :: t f f ~> ListBy t f
-    toListBy   = reviewF (splittingLB @t)
-           . R1
-           . hright (inject @(ListBy t))
-
-    -- | @'NonEmptyBy' t f@ is "one or more @f@s", and @'ListBy t f@ is "zero or more
-    -- @f@s".  This function lets us convert from one to the other.
-    --
-    -- This is analogous to a function @'Data.List.NonEmpty.NonEmpty' a ->
-    -- [a]@.
-    --
-    -- Note that because @t@ is not inferrable from the input or output
-    -- type, you should call this using /-XTypeApplications/:
-    --
-    -- @
-    -- 'fromNE' \@(':*:') :: 'NonEmptyF' f a -> 'ListF' f a
-    -- fromNE \@'Comp'  :: 'Free1' f a -> 'Free' f a
-    -- @
-    fromNE :: NonEmptyBy t f ~> ListBy t f
-    fromNE = reviewF (splittingLB @t) . R1 . splitNE @t
-
-    {-# MINIMAL intro1, intro2, elim1, elim2, appendLB, splitNE, splittingLB #-}
 
 -- | @f@ is isomorphic to @t f i@: that is, @i@ is the identity of @t@, and
 -- leaves @f@ unchanged.
@@ -374,39 +261,6 @@ retractLB = (pureT @t !*! biretract @t . hright (retractLB @t))
 -- implemented.
 interpretLB :: forall t i g f. MonoidIn t i f => (g ~> f) -> ListBy t g ~> f
 interpretLB f = retractLB @t . hmap f
-
--- | Create the "empty 'ListBy'".
---
--- If @'ListBy' t f@ represents multiple applications of @t f@ with
--- itself, then @nilLB@ gives us "zero applications of @f@".
---
--- Note that @t@ cannot be inferred from the input or output type of
--- 'nilLB', so this function must always be called with -XTypeApplications:
---
--- @
--- 'nilLB' \@'Day' :: 'Identity' '~>' 'Ap' f
--- nilLB \@'Comp' :: Identity ~> 'Free' f
--- nilLB \@(':*:') :: 'Proxy' ~> 'ListF' f
--- @
---
--- Note that this essentially gives an instance for @'MonoidIn' t i (ListBy
--- t f)@, for any functor @f@; this is witnessed by 'WrapLB'.
-nilLB    :: forall t i f. Tensor t i => i ~> ListBy t f
-nilLB    = reviewF (splittingLB @t) . L1
-
--- | Lets us "cons" an application of @f@ to the front of an @'ListBy' t f@.
-consLB   :: Tensor t i => t f (ListBy t f) ~> ListBy t f
-consLB   = reviewF splittingLB . R1
-
--- | "Pattern match" on an @'ListBy' t@
---
--- An @'ListBy' t f@ is either empty, or a single application of @t@ to @f@
--- and @ListBy t f@ (the "head" and "tail")
---
--- This is analogous to the function @'Data.List.uncons' :: [a] -> Maybe
--- (a, [a])@.
-unconsLB :: Tensor t i => ListBy t f ~> i :+: t f (ListBy t f)
-unconsLB = viewF splittingLB
 
 -- | Convenient wrapper over 'intro1' that lets us introduce an arbitrary
 -- functor @g@ to the right of an @f@.
@@ -603,6 +457,34 @@ instance Tensor CD.Day Proxy where
 -- @since 0.3.0.0
 instance (Divise f, Divisible f) => MonoidIn CD.Day Proxy f where
     pureT _ = conquer
+
+instance Tensor ID.Day Identity where
+    type ListBy ID.Day = DayChain
+
+    intro1 = ID.intro2
+    intro2 = ID.intro1
+    elim1 = ID.elim2
+    elim2 = ID.elim1
+
+    appendLB = coerce appendChain
+    splitNE = coerce splitChain1
+    splittingLB = coercedF . splittingChain . coercedF
+
+    toListBy = DayChain . More . hright (unDayChain . inject)
+
+instance Matchable ID.Day Identity where
+    unsplitNE = coerce unsplitNEIDay_
+    matchLB = coerce matchLBIDay_
+
+unsplitNEIDay_ :: Invariant f => ID.Day f (Chain ID.Day Identity f) ~> Chain1 ID.Day f
+unsplitNEIDay_ (ID.Day x xs g f) = case xs of
+  Done (Identity r) -> Done1 $ invmap (`g` r) (fst . f) x
+  More ys           -> More1 $ ID.Day x (unsplitNEIDay_ ys) g f
+
+matchLBIDay_ :: Invariant f => Chain ID.Day Identity f ~> (Identity :+: Chain1 ID.Day f)
+matchLBIDay_ = \case
+  Done x  -> L1 x
+  More xs -> R1 $ unsplitNEIDay_ xs
 
 -- | @since 0.3.0.0
 instance Tensor Night Not where
