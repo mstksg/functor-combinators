@@ -53,6 +53,7 @@ import qualified Data.Functor.Contravariant.Day      as CD
 import qualified Data.Functor.Contravariant.Night    as N
 import qualified Data.Functor.Day                    as D
 import qualified Data.Functor.Invariant.Day          as ID
+import qualified Data.Functor.Invariant.Night        as IN
 import qualified Data.SOP                            as SOP
 import qualified Data.SOP.NP                         as SOP
 import qualified Data.SOP.NS                         as SOP
@@ -346,6 +347,9 @@ instance HBifunctor CD.Day where
 instance HBifunctor ID.Day where
     hbimap f g (ID.Day x y h j) = ID.Day (f x) (g y) h j
 
+instance HBifunctor IN.Night where
+    hbimap f g (IN.Night x y h j k) = IN.Night (f x) (g y) h j k
+
 -- | @since 0.3.0.0
 instance HBifunctor Night where
     hleft  = N.trans1
@@ -402,13 +406,14 @@ instance HBifunctor Comp where
 instance HBifunctor t => HFunctor (WrappedHBifunctor t f) where
     hmap f = WrapHBifunctor . hright f . unwrapHBifunctor
 
-deriving via (WrappedHBifunctor Day f)     instance HFunctor (Day f)
-deriving via (WrappedHBifunctor ID.Day f)     instance HFunctor (ID.Day f)
-deriving via (WrappedHBifunctor (:*:) f)   instance HFunctor ((:*:) f)
-deriving via (WrappedHBifunctor (:+:) f)   instance HFunctor ((:+:) f)
-deriving via (WrappedHBifunctor Product f) instance HFunctor (Product f)
-deriving via (WrappedHBifunctor Sum f)     instance HFunctor (Sum f)
-deriving via (WrappedHBifunctor Joker f)   instance HFunctor (Joker f)
-deriving via (WrappedHBifunctor These1 f)  instance HFunctor (These1 f)
-deriving via (WrappedHBifunctor Void3 f)   instance HFunctor (Void3 f)
-deriving via (WrappedHBifunctor Comp f)    instance HFunctor (Comp f)
+deriving via (WrappedHBifunctor Day f)      instance HFunctor (Day f)
+deriving via (WrappedHBifunctor ID.Day f)   instance HFunctor (ID.Day f)
+deriving via (WrappedHBifunctor IN.Night f) instance HFunctor (IN.Night f)
+deriving via (WrappedHBifunctor (:*:) f)    instance HFunctor ((:*:) f)
+deriving via (WrappedHBifunctor (:+:) f)    instance HFunctor ((:+:) f)
+deriving via (WrappedHBifunctor Product f)  instance HFunctor (Product f)
+deriving via (WrappedHBifunctor Sum f)      instance HFunctor (Sum f)
+deriving via (WrappedHBifunctor Joker f)    instance HFunctor (Joker f)
+deriving via (WrappedHBifunctor These1 f)   instance HFunctor (These1 f)
+deriving via (WrappedHBifunctor Void3 f)    instance HFunctor (Void3 f)
+deriving via (WrappedHBifunctor Comp f)     instance HFunctor (Comp f)

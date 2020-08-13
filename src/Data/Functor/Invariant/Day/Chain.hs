@@ -148,6 +148,8 @@ chainDiv1 = runContraDayChain1 inject
 -- constructor.
 pattern Gather :: (a -> (b, c)) -> (b -> c -> a) -> f b -> DayChain f c -> DayChain f a
 pattern Gather f g x xs <- (unGather_->MaybeF (Just (Day x xs g f)))
+  where
+    Gather f g x xs = DayChain $ More $ Day x (unDayChain xs) g f
 
 unGather_ :: DayChain f ~> MaybeF (Day f (DayChain f))
 unGather_ = \case

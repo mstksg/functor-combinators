@@ -106,12 +106,14 @@ import           Data.HFunctor.Chain.Internal
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.List.NonEmpty                        (NonEmpty(..))
+import           Data.Void
 import           GHC.Generics
 import qualified Data.Functor.Contravariant.Coyoneda       as CCY
 import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
 import qualified Data.Functor.Invariant.Day                as ID
+import qualified Data.Functor.Invariant.Night              as IN
 import qualified Data.Map.NonEmpty                         as NEM
 
 -- | @f@ is isomorphic to @t f i@: that is, @i@ is the identity of @t@, and
@@ -485,6 +487,34 @@ matchLBIDay_ :: Invariant f => Chain ID.Day Identity f ~> (Identity :+: Chain1 I
 matchLBIDay_ = \case
   Done x  -> L1 x
   More xs -> R1 $ unsplitNEIDay_ xs
+
+instance Tensor IN.Night IN.Not where
+    type ListBy IN.Night = NightChain
+
+    intro1 = IN.intro2
+    intro2 = IN.intro1
+    elim1 = IN.elim2
+    elim2 = IN.elim1
+
+    appendLB = coerce appendChain
+    splitNE = coerce splitChain1
+    splittingLB = coercedF . splittingChain . coercedF
+
+    toListBy = NightChain . More . hright (unNightChain . inject)
+
+instance Matchable IN.Night Not where
+    unsplitNE = coerce unsplitNEINight_
+    matchLB = coerce matchLBINight_
+
+unsplitNEINight_ :: Invariant f => IN.Night f (Chain IN.Night Not f) ~> Chain1 IN.Night f
+unsplitNEINight_ (IN.Night x xs f g h) = case xs of
+  Done r  -> Done1 $ invmap g (either id (absurd . refute r) . f) x
+  More ys -> More1 $ IN.Night x (unsplitNEINight_ ys) f g h
+
+matchLBINight_ :: Invariant f => Chain IN.Night Not f ~> (Not :+: Chain1 IN.Night f)
+matchLBINight_ = \case
+  Done x  -> L1 x
+  More xs -> R1 $ unsplitNEINight_ xs
 
 -- | @since 0.3.0.0
 instance Tensor Night Not where

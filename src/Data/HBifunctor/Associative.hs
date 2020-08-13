@@ -95,6 +95,7 @@ import qualified Data.Functor.Contravariant.Day            as CD
 import qualified Data.Functor.Contravariant.Night          as N
 import qualified Data.Functor.Day                          as D
 import qualified Data.Functor.Invariant.Day                as ID
+import qualified Data.Functor.Invariant.Night              as IN
 import qualified Data.Map.NonEmpty                         as NEM
 
 -- | An 'HBifunctor' where it doesn't matter which binds first is
@@ -519,6 +520,26 @@ appendNEIDay_ (ID.Day xs ys g f) = case xs of
     ID.Day z (appendNEIDay_ (ID.Day zs ys (,) id))
       (\a (b, c) -> g (j a b) c)
       (B.assoc . first h . f)
+
+instance Associative IN.Night where
+    type NonEmptyBy IN.Night = NightChain1
+    type FunctorBy IN.Night = Invariant
+    associating = isoF IN.assoc IN.unassoc
+
+    appendNE = coerce appendNEINight_
+    matchNE = coerce matchChain1
+
+    consNE = coerce More1
+    toNonEmptyBy = coerce toChain1
+
+appendNEINight_ :: IN.Night (Chain1 IN.Night f) (Chain1 IN.Night f) ~> Chain1 IN.Night f
+appendNEINight_ (IN.Night xs ys f g h) = case xs of
+  Done1 x                  -> More1 (IN.Night x ys f g h)
+  More1 (IN.Night z zs j k l) -> More1 $
+    IN.Night z (appendNEINight_ (IN.Night zs ys id Left Right))
+      (B.assoc . first j . f)
+      (g . k)
+      (either (g . l) h)
 
 -- | @since 0.3.0.0
 instance Associative Night where

@@ -9,6 +9,8 @@ module Data.HFunctor.Chain.Internal (
   , splittingChain, unconsChain
   , DayChain1(..)
   , DayChain(..)
+  , NightChain(..)
+  , NightChain1(..)
   ) where
 
 import           Control.Natural
@@ -21,8 +23,10 @@ import           Data.HBifunctor
 import           Data.HFunctor
 import           Data.Kind
 import           Data.Typeable
+import           Data.Void
 import           GHC.Generics
-import qualified Data.Functor.Invariant.Day as ID
+import qualified Data.Functor.Invariant.Day   as ID
+import qualified Data.Functor.Invariant.Night as IN
 
 
 -- | A useful construction that works like a "non-empty linked list" of @t
@@ -368,3 +372,35 @@ newtype DayChain f a = DayChain { unDayChain :: Chain ID.Day Identity f a }
 
 instance Inject DayChain where
     inject x = DayChain $ More (ID.Day x (Done (Identity ())) const (,()))
+
+-- | Instead of defining yet another separate free semigroup like
+-- 'Data.Functor.Apply.Free.Ap1',
+-- 'Data.Functor.Contravariant.Divisible.Free.Div1', or
+-- 'Data.Functor.Contravariant.Divisible.Free.Dec1', we re-use 'Chain1'.
+--
+-- You can assemble values using the combinators in "Data.HFunctor.Chain",
+-- and then tear them down/interpret them using 'runCoNightChain1' and
+-- 'runContraNightChain1'.  There is no general invariant interpreter (and so no
+-- 'SemigroupIn' instance for 'Night') because the typeclasses used to
+-- express the target contexts are probably not worth defining given how
+-- little the Haskell ecosystem uses invariant functors as an abstraction.
+newtype NightChain1 f a = NightChain1_ { unNightChain1 :: Chain1 IN.Night f a }
+  deriving (Invariant, HFunctor, Inject)
+
+-- | Instead of defining yet another separate free monoid like
+-- 'Control.Applicative.Free.Ap',
+-- 'Data.Functor.Contravariant.Divisible.Free.Div', or
+-- 'Data.Functor.Contravariant.Divisible.Free.Dec', we re-use 'Chain'.
+--
+-- You can assemble values using the combinators in "Data.HFunctor.Chain",
+-- and then tear them down/interpret them using 'runCoNightChain' and
+-- 'runContraNightChain'.  There is no general invariant interpreter (and so no
+-- 'MonoidIn' instance for 'Night') because the typeclasses used to express
+-- the target contexts are probably not worth defining given how little the
+-- Haskell ecosystem uses invariant functors as an abstraction.
+newtype NightChain f a = NightChain { unNightChain :: Chain IN.Night IN.Not f a }
+  deriving (Invariant, HFunctor)
+
+instance Inject NightChain where
+    inject x = NightChain $ More (IN.Night x (Done IN.refuted) Left id absurd)
+
