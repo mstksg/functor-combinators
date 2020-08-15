@@ -1,6 +1,23 @@
 Changelog
 =========
 
+Version 0.3.4.0
+---------------
+
+*August 14, 2020*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.3.4.0>
+
+*   *Data.HFunctor.Route*: A new twist on getting invariant functor
+    combinators.  Instead of creating new ones, utilize existing functor
+    combinators with `Pre`/`Post`.
+*   *Data.Functor.Invariant.Day.Chain* and *Data.Functor.Invariant.Night.Chain*
+    created, factoring out the `Chain` part of the invariant `Day`/`Night`.
+    This was done to fix the fact that *Data.Functor.Invariant.Day* is a module
+    that already existed in *kan-extensions*.  Oops!
+    *   As a consequence, `DayChain` and `NightChain` are now newtype wrappers
+        instead of plain type synonyms.
+
 Version 0.3.3.0
 ---------------
 
