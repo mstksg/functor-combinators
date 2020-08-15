@@ -20,6 +20,8 @@ Version 0.3.4.0
 
 *   **v0.3.4.1**: Add in missing `Functor` and `Invariant` instances for
     `ProPre` and `ProPost`, as well as a bunch of instances for `ProPre`.
+*   **v0.3.4.2**: Add in missing `HFunctor`, `Inject`, `Interpret` instances
+    for `PostT`.
 
 Version 0.3.3.0
 ---------------

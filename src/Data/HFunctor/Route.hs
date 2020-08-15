@@ -185,6 +185,18 @@ instance (HFunctor t, forall x. Contravariant (t (Post x f))) => Invariant (Post
                . contramap g
                . unPostT
 
+-- | @since 0.3.4.2
+instance HFunctor t => HFunctor (PostT t) where
+    hmap f = PostT . hmap (hmap f) . unPostT
+
+-- | @since 0.3.4.2
+instance Inject t => Inject (PostT t) where
+    inject = PostT . inject . (id :<$>:)
+
+-- | @since 0.3.4.2
+instance Interpret t f => Interpret (PostT t) f where
+    interpret f = interpret f . hmap getPost . unPostT
+
 -- | Run a @'PreT' t@ into a contravariant 'Divisible' context.  To run it
 -- in @t@s normal covariant context, use 'interpret'.
 --
