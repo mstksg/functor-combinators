@@ -18,6 +18,9 @@ Version 0.3.4.0
     *   As a consequence, `DayChain` and `NightChain` are now newtype wrappers
         instead of plain type synonyms.
 
+*   **v0.3.4.1**: Add in missing `Functor` and `Invariant` instances for
+    `ProPre` and `ProPost`, as well as a bunch of instances for `ProPre`.
+
 Version 0.3.3.0
 ---------------
 

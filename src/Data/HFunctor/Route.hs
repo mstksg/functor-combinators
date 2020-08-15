@@ -38,7 +38,10 @@ module Data.HFunctor.Route (
   ) where
 
 import           Control.Natural
+import           Data.Functor.Bind
 import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Conclude
+import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Invariant
@@ -469,6 +472,50 @@ instance (HFunctor t, forall x. Functor (t (Pre x f))) => Profunctor (ProPre t f
               . fmap g
               . unProPre
 
+
+-- | @since 0.3.4.1
+deriving instance Functor (t (Pre a f)) => Functor (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Apply (t (Pre a f)) => Apply (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Applicative (t (Pre a f)) => Applicative (ProPre t f a)
+-- | @since 0.3.4.1
+instance Bind (t (Pre a f)) => Bind (ProPre t f a) where
+    ProPre x >>- f = ProPre $ x >>- (unProPre . f)
+-- | @since 0.3.4.1
+deriving instance Monad (t (Pre a f)) => Monad (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Contravariant (t (Pre a f)) => Contravariant (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Divisible (t (Pre a f)) => Divisible (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Divise (t (Pre a f)) => Divise (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Decide (t (Pre a f)) => Decide (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Conclude (t (Pre a f)) => Conclude (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Decidable (t (Pre a f)) => Decidable (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Plus (t (Pre a f)) => Plus (ProPre t f a)
+-- | @since 0.3.4.1
+instance Alt (t (Pre a f)) => Alt (ProPre t f a) where
+    ProPre x <!> ProPre y = ProPre (x <!> y)
+-- | @since 0.3.4.1
+deriving instance Invariant (t (Pre a f)) => Invariant (ProPre t f a)
+-- | @since 0.3.4.1
+deriving instance Semigroup (t (Pre a f) b) => Semigroup (ProPre t f a b)
+-- | @since 0.3.4.1
+deriving instance Monoid (t (Pre a f) b) => Monoid (ProPre t f a b)
+-- | @since 0.3.4.1
+deriving instance Show (t (Pre a f) b) => Show (ProPre t f a b)
+-- | @since 0.3.4.1
+deriving instance Eq (t (Pre a f) b) => Eq (ProPre t f a b)
+-- | @since 0.3.4.1
+deriving instance Ord (t (Pre a f) b) => Ord (ProPre t f a b)
+
+
+
 -- | If @t@ is a contravariant functor combinator, then you applying it to
 -- @'Post' a f@ gives you a profunctor.
 newtype ProPost t f a b = ProPost { unProPost :: t (Post b f) a }
@@ -479,3 +526,11 @@ instance (HFunctor t, forall x. Contravariant (t (Post x f))) => Profunctor (Pro
               . contramap f
               . unProPost
 
+-- | @since 0.3.4.1
+instance (HFunctor t, Contravariant (t (Post a f))) => Functor (ProPost t f a) where
+    fmap f = ProPost
+           . hmap (mapPost f)
+           . unProPost
+-- | @since 0.3.4.1
+instance (HFunctor t, Contravariant (t (Post a f))) => Invariant (ProPost t f a) where
+    invmap f _ = fmap f
