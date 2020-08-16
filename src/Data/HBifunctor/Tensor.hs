@@ -108,7 +108,6 @@ import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           Data.List.NonEmpty                        (NonEmpty(..))
 import           Data.Void
-import           Debug.Trace
 import           GHC.Generics
 import qualified Data.Bifunctor.Assoc                      as B
 import qualified Data.Functor.Contravariant.Coyoneda       as CCY
@@ -463,9 +462,6 @@ instance Tensor CD.Day Proxy where
 instance (Divise f, Divisible f) => MonoidIn CD.Day Proxy f where
     pureT _ = conquer
 
-introDivAp_ :: f ~> Chain ID.Day Identity f
-introDivAp_ = More . hright Done . ID.intro2
-
 instance Tensor ID.Day Identity where
     type ListBy ID.Day = DivAp
 
@@ -482,26 +478,10 @@ instance Tensor ID.Day Identity where
         (\q (r, s) -> f (h q r) s)
         (B.assoc . first j . g)
 
-    splitNE = \case
-      DivAp1_ (Done1 x ) -> ID.Day x (DivAp $ Done (Identity ())) const (,())
-      DivAp1_ (More1 (ID.Day x xs f g)) -> ID.Day
-        x
-        (DivAp $ foldChain1 introDivAp_ More xs)
-        f
-        g
+    splitNE = coerce splitChain1
+    splittingLB = coercedF . splittingChain . coercedF
 
-    splittingLB = isoF to_ from_
-      where
-        to_ :: DivAp f ~> Identity :+: ID.Day f (DivAp f)
-        to_ = \case
-          DivAp (Done x) -> L1 x
-          DivAp (More y) -> R1 (hmap DivAp y)
-        from_ :: Identity :+: ID.Day f (DivAp f) ~> DivAp f
-        from_ = \case
-          L1 x -> DivAp $ Done x
-          R1 y -> DivAp $ More (hmap unDivAp y)
-
-    toListBy = DivAp . More . hright introDivAp_
+    toListBy = DivAp . More . hright (unDivAp . inject)
 
 instance Matchable ID.Day Identity where
     unsplitNE = coerce unsplitNEIDay_
@@ -525,7 +505,14 @@ instance Tensor IN.Night IN.Not where
     elim1 = IN.elim2
     elim2 = IN.elim1
 
-    appendLB = coerce appendChain
+    appendLB (IN.Night (DecAlt xs) (DecAlt ys) f g h) = DecAlt $ case xs of
+      Done r      -> invmap h (either (absurd . refute r) id . f) ys
+      More (IN.Night z zs j k l) -> More $ IN.Night
+        z
+        (unDecAlt $ appendLB (IN.Night (DecAlt zs) (DecAlt ys) id Left Right))
+        (B.assoc . first j . f)
+        (g . k)
+        (either (g . l) h)
     splitNE = coerce splitChain1
     splittingLB = coercedF . splittingChain . coercedF
 

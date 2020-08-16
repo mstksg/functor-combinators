@@ -13,6 +13,9 @@ Version 0.3.5.0
     renamed to *Data.Functor.Invariant.DivAp* and
     *Data.Functor.Invariant.DecAlt*.
 
+*   **v0.3.5.1**: Fixed infinite recursion bug for Tensor instances of
+    invariant `Day`/`Night`.
+
 Version 0.3.4.0
 ---------------
 

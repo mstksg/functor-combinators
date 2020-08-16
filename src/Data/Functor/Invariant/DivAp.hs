@@ -210,7 +210,7 @@ gather
     -> DivAp f b
     -> DivAp f c
     -> DivAp f a
-gather f g (DivAp x) (DivAp y) = DivAp $ appendChain (Day x y g f)
+gather f g x y = coerce appendChain (Day x y g f)
 
 -- | Convenient wrapper over 'gather' that simply combines the two options
 -- in a tuple.  Analogous to 'divised'.
@@ -236,7 +236,7 @@ gather1
     -> DivAp1 f b
     -> DivAp1 f c
     -> DivAp1 f a
-gather1 f g (DivAp1_ x) (DivAp1_ y) = DivAp1_ $ appendChain1 (Day x y g f)
+gather1 f g x y = coerce appendChain1 (Day x y g f)
 
 -- | Convenient wrapper over 'gather1' that simply combines the two options
 -- in a tuple.  Analogous to 'divised'.
@@ -303,9 +303,9 @@ concatDivAp
     -> DivAp f (NP I as)
 concatDivAp = \case
     Nil     -> DivAp $ Done $ Identity Nil
-    x :* xs -> DivAp $ appendChain $ Day
-      (unDivAp x)
-      (unDivAp $ concatDivAp xs)
+    x :* xs -> coerce appendChain $ Day
+      x
+      (concatDivAp xs)
       consNPI
       unconsNPI
 
@@ -335,9 +335,9 @@ concatDivAp1
 concatDivAp1 = \case
     x :* xs -> case xs of
       Nil    -> invmap ((:* Nil) . I) (unI . hd) x
-      _ :* _ -> DivAp1_ $ appendChain1 $ Day
-        (unDivAp1 x)
-        (unDivAp1 $ concatDivAp1 xs)
+      _ :* _ -> coerce appendChain1 $ Day
+        x
+        (concatDivAp1 xs)
         consNPI
         unconsNPI
 
@@ -380,9 +380,9 @@ concatDivApRec
     -> DivAp f (V.XRec V.Identity as)
 concatDivApRec = \case
     V.RNil    -> DivAp $ Done $ Identity V.RNil
-    x V.:& xs -> DivAp $ appendChain $ Day
-      (unDivAp x)
-      (unDivAp $ concatDivApRec xs)
+    x V.:& xs -> coerce appendChain $ Day
+      x
+      (concatDivApRec xs)
       (V.::&)
       unconsRec
 
@@ -412,9 +412,9 @@ concatDivAp1Rec
 concatDivAp1Rec = \case
     x V.:& xs -> case xs of
       V.RNil   -> invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
-      _ V.:& _ -> DivAp1_ $ appendChain1 $ Day
-        (unDivAp1 x)
-        (unDivAp1 $ concatDivAp1Rec xs)
+      _ V.:& _ -> coerce appendChain1 $ Day
+        x
+        (concatDivAp1Rec xs)
         (V.::&)
         unconsRec
 
