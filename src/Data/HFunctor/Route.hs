@@ -150,6 +150,24 @@ infixl 4 :<$>:
 -- however, you can also interpret into covariant contexts with
 -- 'preDivisibleT', 'preDiviseT', and 'preContravariantT'.
 --
+-- A useful way to use this type is to use normal methods of the underlying
+-- @t@ to assemble a final @t@, then using the 'PreT' constructor to wrap
+-- it all up.
+--
+-- @
+-- data MyType = MyType
+--      { mtInt    :: Int
+--      , mtBool   :: Bool
+--      , mtString :: String
+--      }
+--
+-- myThing :: PreT Ap MyFunctor MyType
+-- myThing = PreT $ MyType
+--     <$> injectPre mtInt    (mfInt    :: MyFunctor Int   )
+--     <*> injectPre mtBool   (mfBool   :: MyFunctor Bool  )
+--     <*> injectPre mtString (mfString :: MyFunctor STring)
+-- @
+--
 -- See 'Pre' for more information.
 newtype PreT t f a = PreT { unPreT :: t (Pre a f) a }
 
@@ -175,6 +193,17 @@ instance Interpret t f => Interpret (PreT t) f where
 -- You can run this normally as if it were a @t f a@ by using 'interpret';
 -- however, you can also interpret into covariant contexts with
 -- 'postPlusT', 'postAltT', and 'postFunctorT'.
+--
+-- A useful way to use this type is to use normal methods of the underlying
+-- @t@ to assemble a final @t@, then using the 'PreT' constructor to wrap
+-- it all up.
+--
+-- @
+-- myThing :: PostT Dec MyFunctor (Either Int Bool)
+-- myThing = PostT $ decided $
+--     (injectPost Left  (mfInt  :: MyFunctor Int ))
+--     (injectPost Right (mfBool :: MyFunctor Bool))
+-- @
 --
 -- See 'Post' for more information.
 newtype PostT t f a = PostT { unPostT :: t (Post a f) a }

@@ -372,6 +372,10 @@ unconsChain = \case
 -- You can also extract the 'Ap1' part out using 'divApAp1', and extract the
 -- 'Div1' part out using 'divApDiv1'.
 --
+-- Note that this type's utility is similar to that of @'PreT' 'Ap1'@,
+-- except @'PreT' 'Ap1'@ lets you use 'Apply' typeclass methods to assemble
+-- it.
+--
 -- @since 0.3.5.0
 newtype DivAp1 f a = DivAp1_ { unDivAp1 :: Chain1 ID.Day f a }
   deriving (Invariant, HFunctor, Inject)
@@ -406,6 +410,10 @@ newtype DivAp1 f a = DivAp1_ { unDivAp1 :: Chain1 ID.Day f a }
 --
 -- You can also extract the 'Ap' part out using 'divApAp', and extract the
 -- 'Div' part out using 'divApDiv'.
+--
+-- Note that this type's utility is similar to that of @'PreT' 'Ap'@,
+-- except @'PreT' 'Ap'@ lets you use 'Applicative' typeclass methods to
+-- assemble it.
 --
 -- @since 0.3.5.0
 newtype DivAp f a = DivAp { unDivAp :: Chain ID.Day Identity f a }
@@ -444,6 +452,10 @@ instance Inject DivAp where
 -- You can also extract the 'NonEmptyF' part out using 'decAltNonEmptyF', and
 -- extract the 'Dec1' part out using 'decAltDec1'.
 --
+-- Note that this type's utility is similar to that of @'PostT' 'Dec1'@,
+-- except @'PostT' 'Dec1'@ lets you use 'Decide' typeclass methods to
+-- assemble it.
+--
 -- @since 0.3.5.0
 newtype DecAlt1 f a = DecAlt1_ { unDecAlt1 :: Chain1 IN.Night f a }
   deriving (Invariant, HFunctor, Inject)
@@ -479,6 +491,10 @@ newtype DecAlt1 f a = DecAlt1_ { unDecAlt1 :: Chain1 IN.Night f a }
 --
 -- You can also extract the 'ListF' part out using 'decAltListF', and
 -- extract the 'Dec' part out using 'decAltDec'.
+--
+-- Note that this type's utility is similar to that of @'PostT' 'Dec'@,
+-- except @'PostT' 'Dec'@ lets you use 'Conclude' typeclass methods to
+-- assemble it.
 --
 -- @since 0.3.5.0
 newtype DecAlt f a = DecAlt { unDecAlt :: Chain IN.Night IN.Not f a }
