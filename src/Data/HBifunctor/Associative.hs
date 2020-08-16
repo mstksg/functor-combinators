@@ -503,7 +503,7 @@ instance Divise f => SemigroupIn CD.Day f where
     binterpret f g (CD.Day x y h) = divise h (f x) (g y)
 
 instance Associative ID.Day where
-    type NonEmptyBy ID.Day = DayChain1
+    type NonEmptyBy ID.Day = DivAp1
     type FunctorBy ID.Day = Invariant
     associating = isoF assoc disassoc
 
@@ -522,7 +522,7 @@ appendNEIDay_ (ID.Day xs ys g f) = case xs of
       (B.assoc . first h . f)
 
 instance Associative IN.Night where
-    type NonEmptyBy IN.Night = NightChain1
+    type NonEmptyBy IN.Night = DecAlt1
     type FunctorBy IN.Night = Invariant
     associating = isoF IN.assoc IN.unassoc
 

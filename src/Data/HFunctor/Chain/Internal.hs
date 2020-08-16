@@ -7,10 +7,10 @@ module Data.HFunctor.Chain.Internal (
   , Chain(..)
   , foldChain, unfoldChain
   , splittingChain, unconsChain
-  , DayChain1(..)
-  , DayChain(..)
-  , NightChain(..)
-  , NightChain1(..)
+  , DivAp1(..)
+  , DivAp(..)
+  , DecAlt(..)
+  , DecAlt1(..)
   ) where
 
 import           Control.Natural
@@ -342,65 +342,148 @@ unconsChain = \case
     Done x  -> L1 x
     More xs -> R1 xs
 
--- | Instead of defining yet another separate free semigroup like
--- 'Data.Functor.Apply.Free.Ap1',
--- 'Data.Functor.Contravariant.Divisible.Free.Div1', or
--- 'Data.Functor.Contravariant.Divisible.Free.Dec1', we re-use 'Chain1'.
+-- | The invariant version of 'Ap1' and 'Div1': combines the capabilities
+-- of both 'Ap1' and 'Div1' together.
 --
--- You can assemble values using the combinators in "Data.HFunctor.Chain",
--- and then tear them down/interpret them using 'runCoDayChain1' and
--- 'runContraDayChain1'.  There is no general invariant interpreter (and so no
--- 'SemigroupIn' instance for 'Day') because the typeclasses used to
--- express the target contexts are probably not worth defining given how
--- little the Haskell ecosystem uses invariant functors as an abstraction.
-newtype DayChain1 f a = DayChain1_ { unDayChain1 :: Chain1 ID.Day f a }
+-- Conceptually you can think of @'DivAp1' f a@ as a way of consuming and
+-- producing @a@s that contains a (non-empty) collection of @f x@s of
+-- different @x@s. When interpreting this, each @a@ is distributed across
+-- all @f x@s to each interpret, and then re-combined again to produce the
+-- resulting @a@.
+--
+-- You run this in any 'Apply' context if you want to interpret it
+-- covariantly, treating @'DivAp1' f a@ as a /producer/ of @a@, using
+-- 'runCoDivAp1'.  You can run this in any 'Divise' context if you you
+-- want to interpret it contravariantly, treating @'DivAp1' f a@ as
+-- a /consumer/ of @a@s, using 'runContraDivAp1'.
+--
+-- Because there is no typeclass that combines both 'Apply' and
+-- 'Divise', this type is a little bit tricker to construct/use than
+-- 'Ap1' or 'Div1'.
+--
+-- *  Instead of '<.>' and 'divide' (typeclass methods), use
+--    'Data.Functor.Invariant.DivAp.gather1' and other variants, which work
+--    specifically on this type only.
+-- *  Instead of using 'interpret' (to run in a typeclass), either use
+--    'runCoDivAp1' (to run in 'Apply'), 'runContraDivAp1' (to run in
+--    'Divise'), or 'foldDivAp1' (to interpret by manually providing
+--    handlers)
+--
+-- You can also extract the 'Ap1' part out using 'divApAp1', and extract the
+-- 'Div1' part out using 'divApDiv1'.
+--
+-- @since 0.3.5.0
+newtype DivAp1 f a = DivAp1_ { unDivAp1 :: Chain1 ID.Day f a }
   deriving (Invariant, HFunctor, Inject)
 
--- | Instead of defining yet another separate free monoid like
--- 'Control.Applicative.Free.Ap',
--- 'Data.Functor.Contravariant.Divisible.Free.Div', or
--- 'Data.Functor.Contravariant.Divisible.Free.Dec', we re-use 'Chain'.
+-- | The invariant version of 'Ap' and 'Div': combines the capabilities of
+-- both 'Ap' and 'Div' together.
 --
--- You can assemble values using the combinators in "Data.HFunctor.Chain",
--- and then tear them down/interpret them using 'runCoDayChain' and
--- 'runContraDayChain'.  There is no general invariant interpreter (and so no
--- 'MonoidIn' instance for 'Day') because the typeclasses used to express
--- the target contexts are probably not worth defining given how little the
--- Haskell ecosystem uses invariant functors as an abstraction.
-newtype DayChain f a = DayChain { unDayChain :: Chain ID.Day Identity f a }
+-- Conceptually you can think of @'DivAp' f a@ as a way of consuming and
+-- producing @a@s that contains a collection of @f x@s of different @x@s.
+-- When interpreting this, each @a@ is distributed across all @f x@s to
+-- each interpret, and then re-combined again to produce the resulting @a@.
+--
+-- You run this in any 'Applicative' context if you want to interpret it
+-- covariantly, treating @'DivAp' f a@ as a /producer/ of @a@, using
+-- 'runCoDivAp'.  You can run this in any 'Divisible' context if you you
+-- want to interpret it contravariantly, treating @'DivAp' f a@ as
+-- a /consumer/ of @a@s, using 'runContraDivAp'.
+--
+-- Because there is no typeclass that combines both 'Applicative' and
+-- 'Divisible', this type is a little bit tricker to construct/use than
+-- 'Ap' or 'Div'.
+--
+-- *  Instead of '<*>' and 'divide' (typeclass methods), use
+--    'Data.Functor.Invariant.DivAp.gather' and other variants, which work
+--    specifically on this type only.
+-- *  Instead of 'pure' and 'conquer' (typeclass methods), use
+--    'Data.Functor.Invariant.DivAp.Knot'.
+-- *  Instead of using 'interpret' (to run in a typeclass), either use
+--    'runCoDivAp' (to run in 'Applicative'), 'runContraDivAp' (to run in
+--    'Divisible'), or 'foldDivAp' (to interpret by manually providing
+--    handlers)
+--
+-- You can also extract the 'Ap' part out using 'divApAp', and extract the
+-- 'Div' part out using 'divApDiv'.
+--
+-- @since 0.3.5.0
+newtype DivAp f a = DivAp { unDivAp :: Chain ID.Day Identity f a }
   deriving (Invariant, HFunctor)
 
-instance Inject DayChain where
-    inject x = DayChain $ More (ID.Day x (Done (Identity ())) const (,()))
+instance Inject DivAp where
+    inject x = DivAp $ More (ID.Day x (Done (Identity ())) const (,()))
 
--- | Instead of defining yet another separate free semigroup like
--- 'Data.Functor.Apply.Free.Ap1',
--- 'Data.Functor.Contravariant.Divisible.Free.Div1', or
--- 'Data.Functor.Contravariant.Divisible.Free.Dec1', we re-use 'Chain1'.
+-- | The invariant version of 'NonEmptyF' and 'Dec1': combines the
+-- capabilities of both 'NonEmptyF' and 'Dec1' together.
 --
--- You can assemble values using the combinators in "Data.HFunctor.Chain",
--- and then tear them down/interpret them using 'runCoNightChain1' and
--- 'runContraNightChain1'.  There is no general invariant interpreter (and so no
--- 'SemigroupIn' instance for 'Night') because the typeclasses used to
--- express the target contexts are probably not worth defining given how
--- little the Haskell ecosystem uses invariant functors as an abstraction.
-newtype NightChain1 f a = NightChain1_ { unNightChain1 :: Chain1 IN.Night f a }
+-- Conceptually you can think of @'DecAlt1' f a@ as a way of consuming and
+-- producing @a@s that contains a (non-empty) collection of @f x@s of
+-- different @x@s. When interpreting this, a /specific/ @f@ is chosen to
+-- handle the interpreting; the @a@ is sent to that @f@, and the single
+-- result is returned back out.
+--
+-- You run this in any 'Alt' context if you want to interpret it
+-- covariantly, treating @'DecAlt1' f a@ as a /producer/ of @a@, using
+-- 'runCoDecAlt1'.  You can run this in any 'Decide' context if you you
+-- want to interpret it contravariantly, treating @'DecAlt1' f a@ as
+-- a /consumer/ of @a@s, using 'runContraDecAlt1'.
+--
+-- Because there is no typeclass that combines both 'Alt' and
+-- 'Decide', this type is a little bit tricker to construct/use than
+-- 'NonEmptyF' or 'Dec1'.
+--
+-- *  Instead of '<!>' and 'decide' (typeclass methods), use
+--    'Data.Functor.Invariant.DecAlt.swerve1' and other variants, which
+--    work specifically on this type only.
+-- *  Instead of using 'interpret' (to run in a typeclass), either use
+--    'runCoDecAlt1' (to run in 'Alt'), 'runContraDecAlt1' (to run in
+--    'Decide'), or 'foldDecAlt1' (to interpret by manually providing
+--    handlers)
+--
+-- You can also extract the 'NonEmptyF' part out using 'decAltNonEmptyF', and
+-- extract the 'Dec1' part out using 'decAltDec1'.
+--
+-- @since 0.3.5.0
+newtype DecAlt1 f a = DecAlt1_ { unDecAlt1 :: Chain1 IN.Night f a }
   deriving (Invariant, HFunctor, Inject)
 
--- | Instead of defining yet another separate free monoid like
--- 'Control.Applicative.Free.Ap',
--- 'Data.Functor.Contravariant.Divisible.Free.Div', or
--- 'Data.Functor.Contravariant.Divisible.Free.Dec', we re-use 'Chain'.
+-- | The invariant version of 'ListF' and 'Dec': combines the capabilities of
+-- both 'ListF' and 'Dec' together.
 --
--- You can assemble values using the combinators in "Data.HFunctor.Chain",
--- and then tear them down/interpret them using 'runCoNightChain' and
--- 'runContraNightChain'.  There is no general invariant interpreter (and so no
--- 'MonoidIn' instance for 'Night') because the typeclasses used to express
--- the target contexts are probably not worth defining given how little the
--- Haskell ecosystem uses invariant functors as an abstraction.
-newtype NightChain f a = NightChain { unNightChain :: Chain IN.Night IN.Not f a }
+-- Conceptually you can think of @'DecAlt' f a@ as a way of consuming and
+-- producing @a@s that contains a collection of @f x@s of different @x@s.
+-- When interpreting this, a /specific/ @f@ is chosen to handle the
+-- interpreting; the @a@ is sent to that @f@, and the single result is
+-- returned back out.
+--
+-- You run this in any 'Plus' context if you want to interpret it
+-- covariantly, treating @'DecAlt' f a@ as a /producer/ of @a@, using
+-- 'runCoDecAlt'.  You can run this in any 'Conclude' context if you you
+-- want to interpret it contravariantly, treating @'DecAlt' f a@ as
+-- a /consumer/ of @a@s, using 'runContraDecAlt'.
+--
+-- Because there is no typeclass that combines both 'Plus' and
+-- 'Conclude', this type is a little bit tricker to construct/use than
+-- 'ListF' or 'Dec'.
+--
+-- *  Instead of '<!>' and 'decide' (typeclass methods), use
+--    'Data.Functor.Invariant.DecAlt.swerve' and other variants, which work
+--    specifically on this type only.
+-- *  Instead of 'empty' and 'conclude' (typeclass methods), use
+--    'Data.Functor.Invariant.DecAlt.Reject'.
+-- *  Instead of using 'interpret' (to run in a typeclass), either use
+--    'runCoDecAlt' (to run in 'Plus'), 'runContraDecAlt' (to run in
+--    'Conclude'), or 'foldDecAlt' (to interpret by manually providing
+--    handlers)
+--
+-- You can also extract the 'ListF' part out using 'decAltListF', and
+-- extract the 'Dec' part out using 'decAltDec'.
+--
+-- @since 0.3.5.0
+newtype DecAlt f a = DecAlt { unDecAlt :: Chain IN.Night IN.Not f a }
   deriving (Invariant, HFunctor)
 
-instance Inject NightChain where
-    inject x = NightChain $ More (IN.Night x (Done IN.refuted) Left id absurd)
+instance Inject DecAlt where
+    inject x = DecAlt $ More (IN.Night x (Done IN.refuted) Left id absurd)
 

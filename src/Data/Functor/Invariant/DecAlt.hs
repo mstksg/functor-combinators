@@ -1,27 +1,40 @@
 
-module Data.Functor.Invariant.Night.Chain (
+-- |
+-- Module      : Data.Functor.Invariant.DecAlt
+-- Copyright   : (c) Justin Le 2019
+-- License     : BSD3
+--
+-- Maintainer  : justin@jle.im
+-- Stability   : experimental
+-- Portability : non-portable
+--
+-- Provide an invariant functor combinator choice-collector, like a combination of
+-- 'ListF' and 'Dec'.
+--
+-- @since 0.3.5.0
+module Data.Functor.Invariant.DecAlt (
   -- * Chain
-    NightChain
-  , pattern Swerve, pattern Reject
-  , runCoNightChain
-  , runContraNightChain
-  , chainListF
-  , chainListF_
-  , chainDec
+    DecAlt(.., Swerve, Reject)
+  , runCoDecAlt
+  , runContraDecAlt
+  , decAltListF
+  , decAltListF_
+  , decAltDec
+  , foldDecAlt
   , swerve, swerved
-  , assembleNightChain
-  , concatNightChain
+  , assembleDecAlt
+  , concatDecAlt
   -- * Nonempty Chain
-  , NightChain1
-  , pattern NightChain1
-  , runCoNightChain1
-  , runContraNightChain1
-  , chainNonEmptyF
-  , chainNonEmptyF_
-  , chainDec1
+  , DecAlt1(.., DecAlt1)
+  , runCoDecAlt1
+  , runContraDecAlt1
+  , decAltNonEmptyF
+  , decAltNonEmptyF_
+  , decAltDec1
+  , foldDecAlt1
   , swerve1, swerved1
-  , assembleNightChain1
-  , concatNightChain1
+  , assembleDecAlt1
+  , concatDecAlt1
   ) where
 
 import           Control.Applicative.ListF
@@ -47,58 +60,54 @@ import qualified Data.List.NonEmpty                        as NE
 
 -- | In the covariant direction, we can interpret out of a 'Chain1' of 'Night'
 -- into any 'Alt'.
-runCoNightChain1
+runCoDecAlt1
     :: forall f g. Alt g
     => f ~> g
-    -> NightChain1 f ~> g
-runCoNightChain1 f = foldChain1 f (runNightAlt f id)
-                   . unNightChain1
+    -> DecAlt1 f ~> g
+runCoDecAlt1 f = foldDecAlt1 f (runNightAlt f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain1' of
 -- 'Night' into any 'Decide'.
-runContraNightChain1
+runContraDecAlt1
     :: forall f g. Decide g
     => f ~> g
-    -> NightChain1 f ~> g
-runContraNightChain1 f = foldChain1 f (runNightDecide f id)
-                       . unNightChain1
+    -> DecAlt1 f ~> g
+runContraDecAlt1 f = foldDecAlt1 f (runNightDecide f id)
 
--- | Extract the 'Dec' part out of a 'NightChain', shedding the
+-- | Extract the 'Dec' part out of a 'DecAlt', shedding the
 -- covariant bits.
-chainDec :: NightChain f ~> Dec f
-chainDec = runContraNightChain inject
+decAltDec :: DecAlt f ~> Dec f
+decAltDec = runContraDecAlt inject
 
--- | Extract the 'Dec1' part out of a 'NightChain1', shedding the
+-- | Extract the 'Dec1' part out of a 'DecAlt1', shedding the
 -- covariant bits.
-chainDec1 :: NightChain1 f ~> Dec1 f
-chainDec1 = runContraNightChain1 inject
+decAltDec1 :: DecAlt1 f ~> Dec1 f
+decAltDec1 = runContraDecAlt1 inject
 
 -- | In the covariant direction, we can interpret out of a 'Chain' of 'Night'
 -- into any 'Plus'.
-runCoNightChain
+runCoDecAlt
     :: forall f g. Plus g
     => f ~> g
-    -> NightChain f ~> g
-runCoNightChain f = foldChain (const zero) (runNightAlt f id)
-                  . unNightChain
+    -> DecAlt f ~> g
+runCoDecAlt f = foldDecAlt (const zero) (runNightAlt f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain' of
 -- 'Night' into any 'Conclude'.
-runContraNightChain
+runContraDecAlt
     :: forall f g. Conclude g
     => f ~> g
-    -> NightChain f ~> g
-runContraNightChain f = foldChain (conclude . refute) (runNightDecide f id)
-                      . unNightChain
+    -> DecAlt f ~> g
+runContraDecAlt f = foldDecAlt conclude (runNightDecide f id)
 
--- | Extract the 'ListF' part out of a 'NightChain', shedding the
+-- | Extract the 'ListF' part out of a 'DecAlt', shedding the
 -- contravariant bits.
 --
 -- @since 0.3.2.0
-chainListF :: Functor f => NightChain f ~> ListF f
-chainListF = runCoNightChain inject
+decAltListF :: Functor f => DecAlt f ~> ListF f
+decAltListF = runCoDecAlt inject
 
--- | Extract the 'ListF' part out of a 'NightChain', shedding the
+-- | Extract the 'ListF' part out of a 'DecAlt', shedding the
 -- contravariant bits.
 --
 -- This version does not require a 'Functor' constraint because it converts
@@ -106,20 +115,19 @@ chainListF = runCoNightChain inject
 -- conversion to a covariant chain.
 --
 -- @since 0.3.2.0
-chainListF_ :: NightChain f ~> CT.ComposeT ListF CY.Coyoneda f
-chainListF_ = foldChain (const (CT.ComposeT (ListF []))) (\case
+decAltListF_ :: DecAlt f ~> CT.ComposeT ListF CY.Coyoneda f
+decAltListF_ = foldDecAlt (const (CT.ComposeT (ListF []))) $ \case
     Night x (CT.ComposeT (ListF xs)) _ f g -> CT.ComposeT . ListF $
       CY.Coyoneda f x : (map . fmap) g xs
-    ) . unNightChain
 
--- | Extract the 'NonEmptyF' part out of a 'NightChain1', shedding the
+-- | Extract the 'NonEmptyF' part out of a 'DecAlt1', shedding the
 -- contravariant bits.
 --
 -- @since 0.3.2.0
-chainNonEmptyF :: Functor f => NightChain1 f ~> NonEmptyF f
-chainNonEmptyF = runCoNightChain1 inject
+decAltNonEmptyF :: Functor f => DecAlt1 f ~> NonEmptyF f
+decAltNonEmptyF = runCoDecAlt1 inject
 
--- | Extract the 'NonEmptyF' part out of a 'NightChain1', shedding the
+-- | Extract the 'NonEmptyF' part out of a 'DecAlt1', shedding the
 -- contravariant bits.
 --
 -- This version does not require a 'Functor' constraint because it converts
@@ -127,45 +135,64 @@ chainNonEmptyF = runCoNightChain1 inject
 -- conversion to a covariant chain.
 --
 -- @since 0.3.2.0
-chainNonEmptyF_ :: NightChain1 f ~> CT.ComposeT NonEmptyF CY.Coyoneda f
-chainNonEmptyF_ = foldChain1 inject (\case
+decAltNonEmptyF_ :: DecAlt1 f ~> CT.ComposeT NonEmptyF CY.Coyoneda f
+decAltNonEmptyF_ = foldDecAlt1 inject $ \case
     Night x (CT.ComposeT (NonEmptyF xs)) _ f g -> CT.ComposeT . NonEmptyF $
       CY.Coyoneda f x NE.<| (fmap . fmap) g xs
-    ) . unNightChain1
 
+-- | General-purpose folder of 'DecAlt'.  Provide a way to handle the
+-- identity ('empty'/'conclude'/'Reject') and a way to handle a cons
+-- ('<!>'/'decide'/'swerve').
+--
+-- @since 0.3.5.0
+foldDecAlt
+    :: (forall x. (x -> Void) -> g x)
+    -> (Night f g ~> g)
+    -> DecAlt f ~> g
+foldDecAlt f g = foldChain (f . refute) g . unDecAlt
 
--- | Match on a non-empty 'NightChain'; contains the splitting function,
+-- | General-purpose folder of 'DecAlt1'.  Provide a way to handle the
+-- individual leaves and a way to handle a cons ('<!>'/'decide'/'swerve1').
+--
+-- @since 0.3.5.0
+foldDecAlt1
+    :: (f ~> g)
+    -> (Night f g ~> g)
+    -> DecAlt1 f ~> g
+foldDecAlt1 f g = foldChain1 f g . unDecAlt1
+
+-- | Match on a non-empty 'DecAlt'; contains the splitting function,
 -- the two rejoining functions, the first @f@, and the rest of the chain.
 -- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Choose'
 -- constructor.
-pattern Swerve :: (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> NightChain f c -> NightChain f a
+pattern Swerve :: (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> DecAlt f c -> DecAlt f a
 pattern Swerve f g h x xs <- (unSwerve_->MaybeF (Just (Night x xs f g h)))
   where
-    Swerve f g h x xs = NightChain $ More $ Night x (unNightChain xs) f g h
+    Swerve f g h x xs = DecAlt $ More $ Night x (unDecAlt xs) f g h
 
-unSwerve_ :: NightChain f ~> MaybeF (Night f (NightChain f))
+unSwerve_ :: DecAlt f ~> MaybeF (Night f (DecAlt f))
 unSwerve_ = \case
-  NightChain (More (Night x xs g f h)) -> MaybeF . Just $ Night x (NightChain xs) g f h
-  NightChain (Done _                 ) -> MaybeF Nothing
+  DecAlt (More (Night x xs g f h)) -> MaybeF . Just $ Night x (DecAlt xs) g f h
+  DecAlt (Done _                 ) -> MaybeF Nothing
 
 
--- | Match on an "empty" 'NightChain'; contains no @f@s, but only the
+-- | Match on an "empty" 'DecAlt'; contains no @f@s, but only the
 -- terminal value.  Analogous to the
 -- 'Data.Functor.Contravariant.Divisible.Free.Lose' constructor.
-pattern Reject :: (a -> Void) -> NightChain f a
-pattern Reject x = NightChain (Done (Not x))
+pattern Reject :: (a -> Void) -> DecAlt f a
+pattern Reject x = DecAlt (Done (Not x))
 {-# COMPLETE Swerve, Reject #-}
 
--- | Match on a 'NightChain1' to get the head and the rest of the items.
+-- | Match on a 'DecAlt1' to get the head and the rest of the items.
 -- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Dec1'
 -- constructor.
-pattern NightChain1 :: Invariant f => (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> NightChain f c -> NightChain1 f a
-pattern NightChain1 f g h x xs <- (coerce splitChain1->Night x xs f g h)
+pattern DecAlt1 :: Invariant f => (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> DecAlt f c -> DecAlt1 f a
+pattern DecAlt1 f g h x xs <- (coerce splitChain1->Night x xs f g h)
   where
-    NightChain1 f g h x xs = unsplitNE $ Night x xs f g h
-{-# COMPLETE NightChain1 #-}
+    DecAlt1 f g h x xs = unsplitNE $ Night x xs f g h
+{-# COMPLETE DecAlt1 #-}
 
--- | Invariantly combine two 'NightChain's.
+-- | Invariantly combine two 'DecAlt's.
 --
 -- Analogous to '<|>' and 'decide'.  If there was some typeclass that
 -- represented semigroups on invariant 'Night', this would be the method of that
@@ -178,9 +205,9 @@ swerve
     :: (a -> Either b c)
     -> (b -> a)
     -> (c -> a)
-    -> NightChain f b
-    -> NightChain f c
-    -> NightChain f a
+    -> DecAlt f b
+    -> DecAlt f c
+    -> DecAlt f a
 swerve f g h x y = coerce appendChain (Night x y f g h)
 
 -- | Convenient wrapper over 'swerve' that simply combines the two options
@@ -188,12 +215,12 @@ swerve f g h x y = coerce appendChain (Night x y f g h)
 --
 -- @since 0.3.4.0
 swerved
-    :: NightChain f a
-    -> NightChain f b
-    -> NightChain f (Either a b)
+    :: DecAlt f a
+    -> DecAlt f b
+    -> DecAlt f (Either a b)
 swerved = swerve id Left Right
 
--- | Invariantly combine two 'NightChain1's.
+-- | Invariantly combine two 'DecAlt1's.
 --
 -- Analogous to '<|>' and 'decide'.  If there was some typeclass that
 -- represented semigroups on invariant 'Night', this would be the method of that
@@ -205,9 +232,9 @@ swerve1
     => (a -> Either b c)
     -> (b -> a)
     -> (c -> a)
-    -> NightChain1 f b
-    -> NightChain1 f c
-    -> NightChain1 f a
+    -> DecAlt1 f b
+    -> DecAlt1 f c
+    -> DecAlt1 f a
 swerve1 f g h x y = coerce appendChain1 (Night x y f g h)
 
 -- | Convenient wrapper over 'swerve1' that simply combines the two options
@@ -216,12 +243,12 @@ swerve1 f g h x y = coerce appendChain1 (Night x y f g h)
 -- @since 0.3.4.0
 swerved1
     :: Invariant f
-    => NightChain1 f a
-    -> NightChain1 f b
-    -> NightChain1 f (Either a b)
+    => DecAlt1 f a
+    -> DecAlt1 f b
+    -> DecAlt1 f (Either a b)
 swerved1 = swerve1 id Left Right
 
--- | Convenient wrapper to build up a 'NightChain' on by providing each
+-- | Convenient wrapper to build up a 'DecAlt' on by providing each
 -- component of it.  This makes it much easier to build up longer chains
 -- because you would only need to write the splitting/joining functions in
 -- one place.
@@ -239,7 +266,7 @@ swerved1 = swerve1 id Left Right
 -- @
 -- invmap (\case MTI x -> Z (I x); MTB y -> S (Z (I y)); MTS z -> S (S (Z (I z))))
 --        (\case Z (I x) -> MTI x; S (Z (I y)) -> MTB y; S (S (Z (I z))) -> MTS z) $
---   assembleNightChain $ intPrim
+--   assembleDecAlt $ intPrim
 --                     :* boolPrim
 --                     :* stringPrim
 --                     :* Nil
@@ -252,71 +279,71 @@ swerved1 = swerve1 id Left Right
 -- *    If you have 2 components, use 'toListBy' or 'toChain'.
 -- *    If you have 3 or more components, these combinators may be useful;
 --      otherwise you'd need to manually peel off eithers one-by-one.
-assembleNightChain
+assembleDecAlt
     :: NP f as
-    -> NightChain f (NS I as)
-assembleNightChain = \case
-    Nil     -> NightChain $ Done $ Not (\case {})
-    x :* xs -> NightChain $ More $ Night
+    -> DecAlt f (NS I as)
+assembleDecAlt = \case
+    Nil     -> DecAlt $ Done $ Not (\case {})
+    x :* xs -> DecAlt $ More $ Night
       x
-      (unNightChain $ assembleNightChain xs)
+      (unDecAlt $ assembleDecAlt xs)
       unconsNSI
       (Z . I)
       S
 
--- | A version of 'assembleNightChain' where each component is itself
--- a 'NightChain'.
+-- | A version of 'assembleDecAlt' where each component is itself
+-- a 'DecAlt'.
 --
 -- @
--- assembleNightChain (x :* y :* z :* Nil)
---   = concatNightChain (injectChain x :* injectChain y :* injectChain z :* Nil)
+-- assembleDecAlt (x :* y :* z :* Nil)
+--   = concatDecAlt (injectChain x :* injectChain y :* injectChain z :* Nil)
 -- @
-concatNightChain
-    :: NP (NightChain f) as
-    -> NightChain f (NS I as)
-concatNightChain = \case
-    Nil     -> NightChain $ Done $ Not (\case {})
+concatDecAlt
+    :: NP (DecAlt f) as
+    -> DecAlt f (NS I as)
+concatDecAlt = \case
+    Nil     -> DecAlt $ Done $ Not (\case {})
     x :* xs -> coerce appendChain $ Night
       x
-      (unNightChain $ concatNightChain xs)
+      (unDecAlt $ concatDecAlt xs)
       unconsNSI
       (Z . I)
       S
 
--- | A version of 'assembleNightChain' but for 'NightChain1' instead.  Can
+-- | A version of 'assembleDecAlt' but for 'DecAlt1' instead.  Can
 -- be useful if you intend on interpreting it into something with only
 -- a 'Decide' or 'Alt' instance, but no
 -- 'Data.Functor.Contravariant.Divisible.Decidable' or 'Plus' or
 -- 'Control.Applicative.Alternative'.
-assembleNightChain1
+assembleDecAlt1
     :: Invariant f
     => NP f (a ': as)
-    -> NightChain1 f (NS I (a ': as))
-assembleNightChain1 = \case
-    x :* xs -> NightChain1_ $ case xs of
+    -> DecAlt1 f (NS I (a ': as))
+assembleDecAlt1 = \case
+    x :* xs -> DecAlt1_ $ case xs of
       Nil    -> Done1 $ invmap (Z . I) (unI . unZ) x
       _ :* _ -> More1 $ Night
         x
-        (unNightChain1 $ assembleNightChain1 xs)
+        (unDecAlt1 $ assembleDecAlt1 xs)
         unconsNSI
         (Z . I)
         S
 
--- | A version of 'concatNightChain' but for 'NightChain1' instead.  Can be
+-- | A version of 'concatDecAlt' but for 'DecAlt1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
 -- a 'Decide' or 'Alt' instance, but no
 -- 'Data.Functor.Contravariant.Divisible.Decidable' or 'Plus' or
 -- 'Control.Applicative.Alternative'.
-concatNightChain1
+concatDecAlt1
     :: Invariant f
-    => NP (NightChain1 f) (a ': as)
-    -> NightChain1 f (NS I (a ': as))
-concatNightChain1 = \case
+    => NP (DecAlt1 f) (a ': as)
+    -> DecAlt1 f (NS I (a ': as))
+concatDecAlt1 = \case
     x :* xs -> case xs of
       Nil    -> invmap (Z . I) (unI . unZ) x
       _ :* _ -> coerce appendChain1 $ Night
         x
-        (unNightChain1 $ concatNightChain1 xs)
+        (unDecAlt1 $ concatDecAlt1 xs)
         unconsNSI
         (Z . I)
         S

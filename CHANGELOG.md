@@ -1,6 +1,18 @@
 Changelog
 =========
 
+Version 0.3.5.0
+---------------
+
+*August 15, 2020*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.3.5.0>
+
+*   `DayChain` and `NightChain` renamed to `DivAp` and `DecAlt`, to better
+    reflect their abstracted nature ever since *0.3.4.0*.  The modules are
+    renamed to *Data.Functor.Invariant.DivAp* and
+    *Data.Functor.Invariant.DecAlt*.
+
 Version 0.3.4.0
 ---------------
 

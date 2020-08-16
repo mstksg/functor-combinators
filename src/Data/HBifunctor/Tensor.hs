@@ -461,7 +461,7 @@ instance (Divise f, Divisible f) => MonoidIn CD.Day Proxy f where
     pureT _ = conquer
 
 instance Tensor ID.Day Identity where
-    type ListBy ID.Day = DayChain
+    type ListBy ID.Day = DivAp
 
     intro1 = ID.intro2
     intro2 = ID.intro1
@@ -472,7 +472,7 @@ instance Tensor ID.Day Identity where
     splitNE = coerce splitChain1
     splittingLB = coercedF . splittingChain . coercedF
 
-    toListBy = DayChain . More . hright (unDayChain . inject)
+    toListBy = DivAp . More . hright (unDivAp . inject)
 
 instance Matchable ID.Day Identity where
     unsplitNE = coerce unsplitNEIDay_
@@ -489,7 +489,7 @@ matchLBIDay_ = \case
   More xs -> R1 $ unsplitNEIDay_ xs
 
 instance Tensor IN.Night IN.Not where
-    type ListBy IN.Night = NightChain
+    type ListBy IN.Night = DecAlt
 
     intro1 = IN.intro2
     intro2 = IN.intro1
@@ -500,7 +500,7 @@ instance Tensor IN.Night IN.Not where
     splitNE = coerce splitChain1
     splittingLB = coercedF . splittingChain . coercedF
 
-    toListBy = NightChain . More . hright (unNightChain . inject)
+    toListBy = DecAlt . More . hright (unDecAlt . inject)
 
 instance Matchable IN.Night Not where
     unsplitNE = coerce unsplitNEINight_

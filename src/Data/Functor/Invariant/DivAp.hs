@@ -8,33 +8,35 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Provides an 'Invariant' version of the typical Haskell Day convolution
--- over tuples.
+-- Provide an invariant functor combinator sequencer, like a combination of
+-- 'Ap' and 'Div'.
 --
--- @since 0.3.0.0
-module Data.Functor.Invariant.Day.Chain (
+-- @since 0.3.5.0
+module Data.Functor.Invariant.DivAp (
   -- * Chain
-    DayChain(.., Gather, Knot)
-  , runCoDayChain
-  , runContraDayChain
-  , chainAp
-  , chainDiv
+    DivAp(.., Gather, Knot)
+  , runCoDivAp
+  , runContraDivAp
+  , divApAp
+  , divApDiv
+  , foldDivAp
   , gather, gathered
-  , assembleDayChain
-  , assembleDayChainRec
-  , concatDayChain
-  , concatDayChainRec
+  , assembleDivAp
+  , assembleDivApRec
+  , concatDivAp
+  , concatDivApRec
   -- * Nonempty Chain
-  , DayChain1(.., DayChain1)
-  , runCoDayChain1
-  , runContraDayChain1
-  , chainAp1
-  , chainDiv1
+  , DivAp1(.., DivAp1)
+  , runCoDivAp1
+  , runContraDivAp1
+  , divApAp1
+  , divApDiv1
+  , foldDivAp1
   , gather1, gathered1
-  , assembleDayChain1
-  , assembleDayChain1Rec
-  , concatDayChain1
-  , concatDayChain1Rec
+  , assembleDivAp1
+  , assembleDivAp1Rec
+  , concatDivAp1
+  , concatDivAp1Rec
   -- * Day Utility
   , runDayApply
   , runDayDivise
@@ -83,94 +85,117 @@ runDayDivise f g (Day x y _ h) = divise h (f x) (g y)
 
 -- | In the covariant direction, we can interpret out of a 'Chain1' of 'Day'
 -- into any 'Apply'.
-runCoDayChain1
+runCoDivAp1
     :: forall f g. Apply g
     => f ~> g
-    -> DayChain1 f ~> g
-runCoDayChain1 f = foldChain1 f (runDayApply f id) . unDayChain1
+    -> DivAp1 f ~> g
+runCoDivAp1 f = foldDivAp1 f (runDayApply f id)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain1' of
 -- 'Day' into any 'Divise'.
-runContraDayChain1
+runContraDivAp1
     :: forall f g. Divise g
     => f ~> g
-    -> DayChain1 f ~> g
-runContraDayChain1 f = foldChain1 f (runDayDivise f id) . unDayChain1
+    -> DivAp1 f ~> g
+runContraDivAp1 f = foldDivAp1 f (runDayDivise f id)
 
 -- | In the covariant direction, we can interpret out of a 'Chain' of 'Day'
 -- into any 'Applicative'.
-runCoDayChain
+runCoDivAp
     :: forall f g. Applicative g
     => f ~> g
-    -> DayChain f ~> g
-runCoDayChain f = foldChain (pure . runIdentity) (\case Day x y h _ -> liftA2 h (f x) y)
-                . unDayChain
+    -> DivAp f ~> g
+runCoDivAp f = foldDivAp pure (\case Day x y h _ -> liftA2 h (f x) y)
 
 -- | In the contravariant direction, we can interpret out of a 'Chain' of
 -- 'Day' into any 'Divisible'.
-runContraDayChain
+runContraDivAp
     :: forall f g. Divisible g
     => f ~> g
-    -> DayChain f ~> g
-runContraDayChain f = foldChain (const conquer) (\case Day x y _ g -> divide g (f x) y)
-                    . unDayChain
+    -> DivAp f ~> g
+runContraDivAp f = foldDivAp (const conquer) (\case Day x y _ g -> divide g (f x) y)
 
--- | Extract the 'Ap' part out of a 'DayChain', shedding the
+-- | General-purpose folder of 'DivAp'.  Provide a way to handle the
+-- identity ('pure'/'conquer'/'Knot') and a way to handle a cons
+-- ('liftA2'/'divide'/'Gather').
+--
+-- @since 0.3.5.0
+foldDivAp
+    :: (forall x. x -> g x)
+    -> (Day f g ~> g)
+    -> DivAp f ~> g
+foldDivAp f g = foldChain (f . runIdentity) g . unDivAp
+
+-- | General-purpose folder of 'DivAp1'.  Provide a way to handle the
+-- individual leaves and a way to handle a cons ('liftF2/'divise'/'Gather').
+--
+-- @since 0.3.5.0
+foldDivAp1
+    :: (f ~> g)
+    -> (Day f g ~> g)
+    -> DivAp1 f ~> g
+foldDivAp1 f g = foldChain1 f g . unDivAp1
+
+
+
+
+
+-- | Extract the 'Ap' part out of a 'DivAp', shedding the
 -- contravariant bits.
 --
 -- @since 0.3.2.0
-chainAp :: DayChain f ~> Ap f
-chainAp = runCoDayChain inject
+divApAp :: DivAp f ~> Ap f
+divApAp = runCoDivAp inject
 
--- | Extract the 'Ap1' part out of a 'DayChain1', shedding the
+-- | Extract the 'Ap1' part out of a 'DivAp1', shedding the
 -- contravariant bits.
 --
 -- @since 0.3.2.0
-chainAp1 :: DayChain1 f ~> Ap1 f
-chainAp1 = runCoDayChain1 inject
+divApAp1 :: DivAp1 f ~> Ap1 f
+divApAp1 = runCoDivAp1 inject
 
--- | Extract the 'Div' part out of a 'DayChain', shedding the
+-- | Extract the 'Div' part out of a 'DivAp', shedding the
 -- covariant bits.
 --
 -- @since 0.3.2.0
-chainDiv :: DayChain f ~> Div f
-chainDiv = runContraDayChain inject
+divApDiv :: DivAp f ~> Div f
+divApDiv = runContraDivAp inject
 
--- | Extract the 'Div1' part out of a 'DayChain1', shedding the
+-- | Extract the 'Div1' part out of a 'DivAp1', shedding the
 -- covariant bits.
 --
 -- @since 0.3.2.0
-chainDiv1 :: DayChain1 f ~> Div1 f
-chainDiv1 = runContraDayChain1 inject
+divApDiv1 :: DivAp1 f ~> Div1 f
+divApDiv1 = runContraDivAp1 inject
 
--- | Match on a non-empty 'DayChain'; contains no @f@s, but only the
+-- | Match on a non-empty 'DivAp'; contains no @f@s, but only the
 -- terminal value.  Analogous to the 'Control.Applicative.Free.Ap'
 -- constructor.
-pattern Gather :: (a -> (b, c)) -> (b -> c -> a) -> f b -> DayChain f c -> DayChain f a
+pattern Gather :: (a -> (b, c)) -> (b -> c -> a) -> f b -> DivAp f c -> DivAp f a
 pattern Gather f g x xs <- (unGather_->MaybeF (Just (Day x xs g f)))
   where
-    Gather f g x xs = DayChain $ More $ Day x (unDayChain xs) g f
+    Gather f g x xs = DivAp $ More $ Day x (unDivAp xs) g f
 
-unGather_ :: DayChain f ~> MaybeF (Day f (DayChain f))
+unGather_ :: DivAp f ~> MaybeF (Day f (DivAp f))
 unGather_ = \case
-  DayChain (More (Day x xs g f)) -> MaybeF . Just $ Day x (DayChain xs) g f
-  DayChain (Done _             ) -> MaybeF Nothing
+  DivAp (More (Day x xs g f)) -> MaybeF . Just $ Day x (DivAp xs) g f
+  DivAp (Done _             ) -> MaybeF Nothing
 
--- | Match on an "empty" 'DayChain'; contains no @f@s, but only the
+-- | Match on an "empty" 'DivAp'; contains no @f@s, but only the
 -- terminal value.  Analogous to 'Control.Applicative.Free.Pure'.
-pattern Knot :: a -> DayChain f a
-pattern Knot x = DayChain (Done (Identity x))
+pattern Knot :: a -> DivAp f a
+pattern Knot x = DivAp (Done (Identity x))
 {-# COMPLETE Gather, Knot #-}
 
--- | Match on a 'DayChain1' to get the head and the rest of the items.
+-- | Match on a 'DivAp1' to get the head and the rest of the items.
 -- Analogous to the 'Data.Functor.Apply.Free.Ap1' constructor.
-pattern DayChain1 :: Invariant f => (a -> (b, c)) -> (b -> c -> a) -> f b -> DayChain f c -> DayChain1 f a
-pattern DayChain1 f g x xs <- (coerce splitChain1->Day x xs g f)
+pattern DivAp1 :: Invariant f => (a -> (b, c)) -> (b -> c -> a) -> f b -> DivAp f c -> DivAp1 f a
+pattern DivAp1 f g x xs <- (coerce splitChain1->Day x xs g f)
   where
-    DayChain1 f g x xs = unsplitNE $ Day x xs g f
-{-# COMPLETE DayChain1 #-}
+    DivAp1 f g x xs = unsplitNE $ Day x xs g f
+{-# COMPLETE DivAp1 #-}
 
--- | Invariantly combine two 'DayChain's.
+-- | Invariantly combine two 'DivAp's.
 --
 -- Analogous to 'liftA2' and 'divise'.  If there was some typeclass that
 -- represented semigroups on invariant 'Day', this would be the method of
@@ -182,9 +207,9 @@ pattern DayChain1 f g x xs <- (coerce splitChain1->Day x xs g f)
 gather
     :: (a -> (b, c))
     -> (b -> c -> a)
-    -> DayChain f b
-    -> DayChain f c
-    -> DayChain f a
+    -> DivAp f b
+    -> DivAp f c
+    -> DivAp f a
 gather f g x y = coerce appendChain (Day x y g f)
 
 -- | Convenient wrapper over 'gather' that simply combines the two options
@@ -192,12 +217,12 @@ gather f g x y = coerce appendChain (Day x y g f)
 --
 -- @since 0.3.4.0
 gathered
-    :: DayChain f a
-    -> DayChain f b
-    -> DayChain f (a, b)
+    :: DivAp f a
+    -> DivAp f b
+    -> DivAp f (a, b)
 gathered = gather id (,)
 
--- | Invariantly combine two 'DayChain1's.
+-- | Invariantly combine two 'DivAp1's.
 --
 -- Analogous to 'liftA2' and 'divise'.  If there was some typeclass that
 -- represented semigroups on invariant 'Day', this would be the method of
@@ -208,9 +233,9 @@ gather1
     :: Invariant f
     => (a -> (b, c))
     -> (b -> c -> a)
-    -> DayChain1 f b
-    -> DayChain1 f c
-    -> DayChain1 f a
+    -> DivAp1 f b
+    -> DivAp1 f c
+    -> DivAp1 f a
 gather1 f g x y = coerce appendChain1 (Day x y g f)
 
 -- | Convenient wrapper over 'gather1' that simply combines the two options
@@ -219,12 +244,12 @@ gather1 f g x y = coerce appendChain1 (Day x y g f)
 -- @since 0.3.4.0
 gathered1
     :: Invariant f
-    => DayChain1 f a
-    -> DayChain1 f b
-    -> DayChain1 f (a, b)
+    => DivAp1 f a
+    -> DivAp1 f b
+    -> DivAp1 f (a, b)
 gathered1 = gather1 id (,)
 
--- | Convenient wrapper to build up a 'DayChain' by providing each
+-- | Convenient wrapper to build up a 'DivAp' by providing each
 -- component of it.  This makes it much easier to build up longer chains
 -- because you would only need to write the splitting/joining functions in
 -- one place.
@@ -242,7 +267,7 @@ gathered1 = gather1 id (,)
 -- @
 -- invmap (\(MyType x y z) -> I x :* I y :* I z :* Nil)
 --        (\(I x :* I y :* I z :* Nil) -> MyType x y z) $
---   assembleDayChain $ intPrim
+--   assembleDivAp $ intPrim
 --                   :* boolPrim
 --                   :* stringPrim
 --                   :* Nil
@@ -255,64 +280,64 @@ gathered1 = gather1 id (,)
 -- *    If you have 2 components, use 'toListBy' or 'toChain'.
 -- *    If you have 3 or more components, these combinators may be useful;
 --      otherwise you'd need to manually peel off tuples one-by-one.
-assembleDayChain
+assembleDivAp
     :: NP f as
-    -> DayChain f (NP I as)
-assembleDayChain = \case
-    Nil     -> DayChain $ Done $ Identity Nil
-    x :* xs -> DayChain $ More $ Day
+    -> DivAp f (NP I as)
+assembleDivAp = \case
+    Nil     -> DivAp $ Done $ Identity Nil
+    x :* xs -> DivAp $ More $ Day
       x
-      (unDayChain (assembleDayChain xs))
+      (unDivAp (assembleDivAp xs))
       consNPI
       unconsNPI
 
--- | A version of 'assembleDayChain' where each component is itself
--- a 'DayChain'.
+-- | A version of 'assembleDivAp' where each component is itself
+-- a 'DivAp'.
 --
 -- @
--- assembleDayChain (x :* y :* z :* Nil)
---   = concatDayChain (injectChain x :* injectChain y :* injectChain z :* Nil)
+-- assembleDivAp (x :* y :* z :* Nil)
+--   = concatDivAp (injectChain x :* injectChain y :* injectChain z :* Nil)
 -- @
-concatDayChain
-    :: NP (DayChain f) as
-    -> DayChain f (NP I as)
-concatDayChain = \case
-    Nil     -> DayChain $ Done $ Identity Nil
+concatDivAp
+    :: NP (DivAp f) as
+    -> DivAp f (NP I as)
+concatDivAp = \case
+    Nil     -> DivAp $ Done $ Identity Nil
     x :* xs -> coerce appendChain $ Day
       x
-      (concatDayChain xs)
+      (concatDivAp xs)
       consNPI
       unconsNPI
 
--- | A version of 'assembleDayChain' but for 'DayChain1' instead.  Can be
+-- | A version of 'assembleDivAp' but for 'DivAp1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
 -- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.
-assembleDayChain1
+assembleDivAp1
     :: Invariant f
     => NP f (a ': as)
-    -> DayChain1 f (NP I (a ': as))
-assembleDayChain1 = \case
-    x :* xs -> DayChain1_ $ case xs of
+    -> DivAp1 f (NP I (a ': as))
+assembleDivAp1 = \case
+    x :* xs -> DivAp1_ $ case xs of
       Nil    -> Done1 $ invmap ((:* Nil) . I) (unI . hd) x
       _ :* _ -> More1 $ Day
         x
-        (unDayChain1 (assembleDayChain1 xs))
+        (unDivAp1 (assembleDivAp1 xs))
         consNPI
         unconsNPI
 
--- | A version of 'concatDayChain' but for 'DayChain1' instead.  Can be
+-- | A version of 'concatDivAp' but for 'DivAp1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
 -- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.
-concatDayChain1
+concatDivAp1
     :: Invariant f
-    => NP (DayChain1 f) (a ': as)
-    -> DayChain1 f (NP I (a ': as))
-concatDayChain1 = \case
+    => NP (DivAp1 f) (a ': as)
+    -> DivAp1 f (NP I (a ': as))
+concatDivAp1 = \case
     x :* xs -> case xs of
       Nil    -> invmap ((:* Nil) . I) (unI . hd) x
       _ :* _ -> coerce appendChain1 $ Day
         x
-        (concatDayChain1 xs)
+        (concatDivAp1 xs)
         consNPI
         unconsNPI
 
@@ -322,7 +347,7 @@ unconsNPI (I y :* ys) = (y, ys)
 consNPI :: a -> NP I as -> NP I (a ': as)
 consNPI y ys = I y :* ys
 
--- | A version of 'assembleDayChain' using 'V.XRec' from /vinyl/ instead of
+-- | A version of 'assembleDivAp' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
 -- require manual unwrapping/wrapping of components.
 --
@@ -331,65 +356,65 @@ consNPI y ys = I y :* ys
 --
 -- invmap (\(MyType x y z) -> x ::& y ::& z ::& RNil)
 --        (\(x ::& y ::& z ::& RNil) -> MyType x y z) $
---   assembleDayChainRec $ intPrim
+--   assembleDivApRec $ intPrim
 --                      :& boolPrim
 --                      :& stringPrim
 --                      :& Nil
 -- @
-assembleDayChainRec
+assembleDivApRec
     :: V.Rec f as
-    -> DayChain f (V.XRec V.Identity as)
-assembleDayChainRec = \case
-    V.RNil    -> DayChain $ Done $ Identity V.RNil
-    x V.:& xs -> DayChain $ More $ Day
+    -> DivAp f (V.XRec V.Identity as)
+assembleDivApRec = \case
+    V.RNil    -> DivAp $ Done $ Identity V.RNil
+    x V.:& xs -> DivAp $ More $ Day
       x
-      (unDayChain (assembleDayChainRec xs))
+      (unDivAp (assembleDivApRec xs))
       (V.::&)
       unconsRec
 
--- | A version of 'concatDayChain' using 'V.XRec' from /vinyl/ instead of
+-- | A version of 'concatDivAp' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
 -- require manual unwrapping/wrapping of components.
-concatDayChainRec
-    :: V.Rec (DayChain f) as
-    -> DayChain f (V.XRec V.Identity as)
-concatDayChainRec = \case
-    V.RNil    -> DayChain $ Done $ Identity V.RNil
+concatDivApRec
+    :: V.Rec (DivAp f) as
+    -> DivAp f (V.XRec V.Identity as)
+concatDivApRec = \case
+    V.RNil    -> DivAp $ Done $ Identity V.RNil
     x V.:& xs -> coerce appendChain $ Day
       x
-      (concatDayChainRec xs)
+      (concatDivApRec xs)
       (V.::&)
       unconsRec
 
--- | A version of 'assembleDayChain1' using 'V.XRec' from /vinyl/ instead of
+-- | A version of 'assembleDivAp1' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
 -- require manual unwrapping/wrapping of components.
-assembleDayChain1Rec
+assembleDivAp1Rec
     :: Invariant f
     => V.Rec f (a ': as)
-    -> DayChain1 f (V.XRec V.Identity (a ': as))
-assembleDayChain1Rec = \case
+    -> DivAp1 f (V.XRec V.Identity (a ': as))
+assembleDivAp1Rec = \case
     x V.:& xs -> case xs of
-      V.RNil   -> DayChain1_ $ Done1 $ invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
-      _ V.:& _ -> DayChain1_ $ More1 $ Day
+      V.RNil   -> DivAp1_ $ Done1 $ invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
+      _ V.:& _ -> DivAp1_ $ More1 $ Day
         x
-        (unDayChain1 (assembleDayChain1Rec xs))
+        (unDivAp1 (assembleDivAp1Rec xs))
         (V.::&)
         unconsRec
 
--- | A version of 'concatDayChain1' using 'V.XRec' from /vinyl/ instead of
+-- | A version of 'concatDivAp1' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
 -- require manual unwrapping/wrapping of components.
-concatDayChain1Rec
+concatDivAp1Rec
     :: Invariant f
-    => V.Rec (DayChain1 f) (a ': as)
-    -> DayChain1 f (V.XRec V.Identity (a ': as))
-concatDayChain1Rec = \case
+    => V.Rec (DivAp1 f) (a ': as)
+    -> DivAp1 f (V.XRec V.Identity (a ': as))
+concatDivAp1Rec = \case
     x V.:& xs -> case xs of
       V.RNil   -> invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
       _ V.:& _ -> coerce appendChain1 $ Day
         x
-        (concatDayChain1Rec xs)
+        (concatDivAp1Rec xs)
         (V.::&)
         unconsRec
 
