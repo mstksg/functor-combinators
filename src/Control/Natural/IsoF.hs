@@ -74,7 +74,7 @@ isoF = dimap
 
 -- | An isomorphism between two functors that are coercible/have the same
 -- internal representation.  Useful for newtype wrappers.
-coercedF :: (forall x. Coercible (f x) (g x), forall x. Coercible (g x) (f x)) => f <~> g
+coercedF :: forall f g. (forall x. Coercible (f x) (g x), forall x. Coercible (g x) (f x)) => f <~> g
 coercedF = isoF coerce coerce
 
 -- | Use a '<~>' by retrieving the "forward" function:

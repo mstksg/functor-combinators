@@ -534,7 +534,7 @@ instance Associative IN.Night where
 
 appendNEINight_ :: IN.Night (Chain1 IN.Night f) (Chain1 IN.Night f) ~> Chain1 IN.Night f
 appendNEINight_ (IN.Night xs ys f g h) = case xs of
-  Done1 x                  -> More1 (IN.Night x ys f g h)
+  Done1 x                     -> More1 (IN.Night x ys f g h)
   More1 (IN.Night z zs j k l) -> More1 $
     IN.Night z (appendNEINight_ (IN.Night zs ys id Left Right))
       (B.assoc . first j . f)
