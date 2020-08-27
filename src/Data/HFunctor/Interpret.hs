@@ -46,6 +46,7 @@ module Data.HFunctor.Interpret (
   , iget
   , icollect
   , icollect1
+  , itraverse
   , iapply
   , ifanout
   , ifanout1
@@ -183,6 +184,10 @@ forI x f = interpret f x
 --      -> Int
 -- @
 --
+-- Note that in many cases, you can also use
+-- 'Data.HFunctor.HTraversable.hfoldMap' and
+-- 'Data.HFunctor.HTraversable.hfoldMap1'.
+--
 -- @since 0.3.1.0
 iget
     :: Interpret t (AltConst b)
@@ -213,6 +218,9 @@ getI = iget
 --      -> [Int]
 -- @
 --
+-- Note that in many cases, you can also use
+-- 'Data.HFunctor.HTraversable.htoList'.
+--
 -- @since 0.3.1.0
 icollect
     :: (forall m. Monoid m => Interpret t (AltConst m))
@@ -242,6 +250,9 @@ collectI = icollect
 --      -> 'NonEmpty' Int
 -- @
 --
+-- Note that in many cases, you can also use
+-- 'Data.HFunctor.HTraversable.htoNonEmpty'.
+--
 -- @since 0.3.1.0
 icollect1
     :: (forall m. Semigroup m => Interpret t (AltConst m))
@@ -249,6 +260,21 @@ icollect1
     -> t f a
     -> NonEmpty b
 icollect1 f = fromNDL . iget (ndlSingleton . f)
+
+-- | Useful wrapper over 'interpret' to allow you to do an "effectful"
+-- 'hmap'.
+--
+-- This can be useful in some situations, but if you want to do this, it's
+-- probably better to just use 'Data.HFunctor.HTraversable.htraverse',
+-- which is a more principled system for effectful hmapping.
+--
+-- @since 0.3.6.0
+itraverse
+    :: (Functor h, Interpret t (Comp h (t g)))
+    => (forall x. f x -> h (g x))
+    -> t f a
+    -> h (t g a)
+itraverse f = unComp . interpret (\x -> f x :>>= inject)
 
 -- | Useful wrapper over 'interpret' to allow you to directly consume
 -- a value of type @a@ with a @t f a@ to create a @b@.  Do this by

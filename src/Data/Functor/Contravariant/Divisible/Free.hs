@@ -36,12 +36,15 @@ import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Coyoneda
 import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
+import           Data.Functor.Apply
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Invariant
 import           Data.HFunctor
+import           Data.HFunctor.HTraversable
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           Data.List.NonEmpty                   (NonEmpty(..))
+import           Data.Semigroup.Traversable
 import           Data.Void
 import qualified Control.Monad.Trans.Compose          as CT
 import qualified Data.Functor.Contravariant.Day       as CD
@@ -61,6 +64,9 @@ import qualified Data.Functor.Contravariant.Day       as CD
 newtype Div f a = Div { unDiv :: [Coyoneda f a] }
   deriving (Contravariant, Divise, Divisible) via (ListF (Coyoneda f))
   deriving (HFunctor, Inject) via (CT.ComposeT ListF Coyoneda)
+
+instance HTraversable Div where
+    htraverse f (Div xs) = Div <$> traverse (htraverse f) xs
 
 instance Invariant (Div f) where
     invmap _ = contramap
@@ -130,6 +136,12 @@ instance Divisible f => Interpret Div f where
 newtype Div1 f a = Div1 { unDiv1 :: NonEmpty (Coyoneda f a) }
   deriving (Contravariant, Divise) via (NonEmptyF (Coyoneda f))
   deriving (HFunctor, Inject) via (CT.ComposeT NonEmptyF Coyoneda)
+
+instance HTraversable Div1 where
+    htraverse f (Div1 xs) = Div1 <$> traverse (htraverse f) xs
+
+instance HTraversable1 Div1 where
+    htraverse1 f (Div1 xs) = Div1 <$> traverse1 (htraverse1 f) xs
 
 instance Invariant (Div1 f) where
     invmap _ = contramap
@@ -210,6 +222,15 @@ instance Inject Dec where
 instance Conclude f => Interpret Dec f where
     interpret = runDec
 
+instance HTraversable Dec where
+    htraverse :: forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> Dec f a -> h (Dec g a)
+    htraverse f = go
+      where
+        go :: Dec f b -> h (Dec g b)
+        go = \case
+          Lose   v      -> pure (Lose v)
+          Choose g x xs -> Choose g <$> f x <*> go xs
+
 -- | Map over the underlying context in a 'Dec'.
 hoistDec :: forall f g. (f ~> g) -> Dec f ~> Dec g
 hoistDec f = go
@@ -257,6 +278,12 @@ instance Inject Dec1 where
 instance Decide f => Interpret Dec1 f where
     interpret = runDec1
 
+instance HTraversable Dec1 where
+    htraverse f (Dec1 g x xs) = Dec1 g <$> f x <*> htraverse f xs
+
+instance HTraversable1 Dec1 where
+    htraverse1 f (Dec1 g x xs) = traverseDec1_ f g x xs
+
 -- | Map over the undering context in a 'Dec1'.
 hoistDec1 :: forall f g. (f ~> g) -> Dec1 f ~> Dec1 g
 hoistDec1 f (Dec1 g x xs) = Dec1 g (f x) (hoistDec f xs)
@@ -282,3 +309,17 @@ runDec1_ f = go
     go g x = \case
       Lose h        -> contramap (either id (absurd . h) . g) (f x)
       Choose h y ys -> decide g (f x) (go h y ys)
+
+traverseDec1_
+    :: forall f g h a b c. Apply h
+    => (forall x. f x -> h (g x))
+    -> (a -> Either b c)
+    -> f b
+    -> Dec f c
+    -> h (Dec1 g a)
+traverseDec1_ f = go
+  where
+    go :: (x -> Either y z) -> f y -> Dec f z -> h (Dec1 g x)
+    go g x = \case
+      Lose h        -> (\x' -> Dec1 g x' (Lose h)) <$> f x
+      Choose h y ys -> Dec1 g <$> f x <.> (toDec <$> go h y ys)

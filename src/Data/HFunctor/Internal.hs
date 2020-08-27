@@ -233,6 +233,12 @@ instance HFunctor (NEMapF k) where
 instance HFunctor Alt.Alt where
     hmap = Alt.hoistAlt
 
+-- | @since 0.3.6.0
+instance HFunctor Alt.AltF where
+    hmap f = \case
+      Alt.Ap x xs -> Alt.Ap (f x) (hmap f xs)
+      Alt.Pure x  -> Alt.Pure x
+
 instance HFunctor Step where
     hmap f (Step n x) = Step n (f x)
 
@@ -321,6 +327,15 @@ instance HFunctor SOP.NP where
 -- | @since 0.3.0.0
 instance HFunctor SOP.NS where
     hmap f = SOP.cata_NS (SOP.Z . f) SOP.S
+
+instance HFunctor (Joker f) where
+    hmap _ = coerce
+
+instance HFunctor (Void3 f) where
+    hmap _ = \case {}
+
+instance HFunctor (Comp f) where
+    hmap f (x :>>= h) = x :>>= (f . h)
 
 instance HBifunctor (:*:) where
     hleft  f (x :*: y) = f x :*:   y
@@ -413,7 +428,4 @@ deriving via (WrappedHBifunctor (:*:) f)    instance HFunctor ((:*:) f)
 deriving via (WrappedHBifunctor (:+:) f)    instance HFunctor ((:+:) f)
 deriving via (WrappedHBifunctor Product f)  instance HFunctor (Product f)
 deriving via (WrappedHBifunctor Sum f)      instance HFunctor (Sum f)
-deriving via (WrappedHBifunctor Joker f)    instance HFunctor (Joker f)
 deriving via (WrappedHBifunctor These1 f)   instance HFunctor (These1 f)
-deriving via (WrappedHBifunctor Void3 f)    instance HFunctor (Void3 f)
-deriving via (WrappedHBifunctor Comp f)     instance HFunctor (Comp f)

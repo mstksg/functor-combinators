@@ -23,9 +23,11 @@ module Data.HBifunctor (
 import           Control.Natural.IsoF
 import           Data.Biapplicative
 import           Data.Bifunctor.TH
+import           Data.Coerce
 import           Data.Data
 import           Data.Deriving
 import           Data.HFunctor
+import           Data.HFunctor.HTraversable
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics
@@ -67,8 +69,11 @@ instance Applicative f => Biapplicative (LeftF f) where
 instance HBifunctor LeftF where
     hbimap f _ (LeftF x) = LeftF (f x)
 
-deriving via (WrappedHBifunctor LeftF f)
-    instance HFunctor (LeftF f)
+instance HFunctor (LeftF f) where
+    hmap _ = coerce
+
+instance HTraversable (LeftF f) where
+    htraverse _ = pure . coerce
 
 -- | An 'HBifunctor' that ignores its first input.  Like
 -- a 'GHC.Generics.:+:' with no 'GHC.Generics.L1'/left branch.
@@ -86,14 +91,14 @@ deriveOrd1 ''RightF
 instance HBifunctor RightF where
     hbimap _ g (RightF x) = RightF (g x)
 
-deriving via (WrappedHBifunctor RightF g)
-    instance HFunctor (RightF g)
-
 instance HFunctor (RightF g) where
     hmap f (RightF x) = RightF (f x)
 
 instance Inject (RightF g) where
     inject = RightF
+
+instance HTraversable (RightF g) where
+    htraverse f (RightF x) = RightF <$> f x
 
 instance HBind (RightF g) where
     hbind f (RightF x) = f x

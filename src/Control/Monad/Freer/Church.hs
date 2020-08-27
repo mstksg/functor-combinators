@@ -36,6 +36,7 @@ module Control.Monad.Freer.Church (
   ) where
 
 import           Control.Applicative
+import           Data.Functor.Plus
 import           Control.Monad
 import           Control.Natural
 import           Data.Foldable
@@ -429,6 +430,14 @@ data Comp f g a =
 instance Functor g => Functor (Comp f g) where
     fmap f (x :>>= h) = x :>>= (fmap f . h)
 
+-- | @since 0.3.6.0
+instance (Apply f, Apply g) => Apply (Comp f g) where
+    (x :>>= f) <.> (y :>>= g) = ((,) <$> x <.> y)
+                           :>>= (\(x', y') -> f x' <.> g y')
+    liftF2 h (x :>>= f) (y :>>= g)
+            = ((,) <$> x <.> y)
+         :>>= (\(x', y') -> liftF2 h (f x') (g y'))
+
 instance (Applicative f, Applicative g) => Applicative (Comp f g) where
     pure x = pure () :>>= (pure . const x)
     (x :>>= f) <*> (y :>>= g) = ((,) <$> x <*> y)
@@ -447,6 +456,14 @@ instance (Traversable f, Traversable g) => Traversable (Comp f g) where
 instance (Alternative f, Alternative g) => Alternative (Comp f g) where
     empty = empty :>>= id
     (x :>>= f) <|> (y :>>= g) = ((f <$> x) <|> (g <$> y)) :>>= id
+
+-- | @since 0.3.6.0
+instance (Alt f, Alt g) => Alt (Comp f g) where
+    (x :>>= f) <!> (y :>>= g) = ((f <$> x) <!> (g <$> y)) :>>= id
+
+-- | @since 0.3.6.0
+instance (Plus f, Plus g) => Plus (Comp f g) where
+    zero = zero :>>= id
 
 instance (Functor f, Show1 f, Show1 g) => Show1 (Comp f g) where
     liftShowsPrec sp sl d (Comp x) =

@@ -171,9 +171,6 @@ class HFunctor t => TestHFunctor t where
     default genHF :: (Inject t, MonadGen m) => m (f a) -> m (t f a)
     genHF = fmap inject
 
-class HFunctor t => HTraversable t where
-    htraverse :: Applicative h => (forall x. f x -> h (g x)) -> t f a -> h (t g a)
-
 instance TestHFunctor Step where
     genHF gx = Step <$> Gen.integral (Range.linear 0 25) <*> gx
 
@@ -260,9 +257,6 @@ instance (TestHFunctor s, HTraversable s, TestHFunctor t) => TestHFunctor (Compo
 
 instance TestHFunctor Flagged where
     genHF gx = Flagged <$> Gen.bool <*> gx
-
-instance HTraversable Flagged where
-    htraverse f (Flagged b x) = Flagged b <$> f x
 
 class HBifunctor t => TestHBifunctor t where
     genHB

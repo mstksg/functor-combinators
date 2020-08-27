@@ -1,5 +1,5 @@
 name:                functor-combinators
-version:             0.3.5.1
+version:             0.3.6.0
 github:              "mstksg/functor-combinators"
 license:             BSD3
 author:              "Justin Le"

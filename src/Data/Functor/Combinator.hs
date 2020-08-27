@@ -48,6 +48,9 @@ module Data.Functor.Combinator (
   , getI, collectI
   , injectMap, injectContramap
   , AltConst(..)
+  -- ** 'HTraversable'
+  , HTraversable(..), hsequence, hfoldMap, htoList
+  , HTraversable1(..), hsequence1, hfoldMap1, htoNonEmpty
   -- ** Multi-Functors
   -- | Classes that deal with two-functor combinators, that "mix" two
   -- functors together in some way.
@@ -143,6 +146,7 @@ import           Data.HBifunctor.Associative
 import           Data.HBifunctor.Tensor
 import           Data.HFunctor
 import           Data.HFunctor.Final
+import           Data.HFunctor.HTraversable
 import           Data.HFunctor.Internal
 import           Data.HFunctor.Interpret
 import           GHC.Generics

@@ -28,6 +28,7 @@ import           Data.Functor.Day
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.HFunctor
+import           Data.HFunctor.HTraversable
 import           Data.HFunctor.Interpret
 import           Data.Kind
 import           GHC.Generics
@@ -114,6 +115,26 @@ instance Inject Ap1 where
 
 instance HBind Ap1 where
     hbind = runAp1
+
+instance HTraversable Ap1 where
+    htraverse f (Ap1 x xs) = Ap1 <$> f x <*> htraverse f xs
+
+instance HTraversable1 Ap1 where
+    htraverse1 f (Ap1 x xs) = traverseAp1_ f x xs
+
+traverseAp1_
+    :: forall f g h a b. Apply h
+    => (forall x. f x -> h (g x))
+    -> f a
+    -> Ap f (a -> b)
+    -> h (Ap1 g b)
+traverseAp1_ f = go
+  where
+    go :: f x -> Ap f (x -> y) -> h (Ap1 g y)
+    go x = \case
+      Pure y  -> (`Ap1` Pure y) <$> f x
+      Ap y ys -> Ap1 <$> f x <.> (toAp <$> go y ys)
+
 
 instance Apply f => Interpret Ap1 f where
     retract = retractAp1

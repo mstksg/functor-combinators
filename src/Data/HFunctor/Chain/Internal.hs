@@ -2,10 +2,12 @@
 module Data.HFunctor.Chain.Internal (
     Chain1(..)
   , foldChain1, unfoldChain1
+  , foldChain1A
   , toChain1, injectChain1
   , matchChain1
   , Chain(..)
   , foldChain, unfoldChain
+  , foldChainA
   , splittingChain, unconsChain
   , DivAp1(..)
   , DivAp(..)
@@ -13,14 +15,17 @@ module Data.HFunctor.Chain.Internal (
   , DecAlt1(..)
   ) where
 
+import           Control.Monad.Freer.Church
 import           Control.Natural
 import           Control.Natural.IsoF
+import           Data.Functor.Apply
 import           Data.Functor.Classes
 import           Data.Functor.Contravariant
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.HBifunctor
 import           Data.HFunctor
+import           Data.HFunctor.HTraversable
 import           Data.Kind
 import           Data.Typeable
 import           Data.Void
@@ -159,6 +164,17 @@ foldChain1 f g = go
     go = \case
       Done1 x  -> f x
       More1 xs -> g (hright go xs)
+
+-- | An "effectful" version of 'foldChain1', weaving Applicative effects.
+--
+-- @since 0.3.6.0
+foldChain1A
+    :: (HBifunctor t, Functor h)
+    => (forall x. f x -> h (g x))                -- ^ handle 'Done1'
+    -> (forall x. t f (Comp h g) x -> h (g x))   -- ^ handle 'More1'
+    -> Chain1 t f a
+    -> h (g a)
+foldChain1A f g = unComp . foldChain1 (Comp . f) (Comp . g)
 
 -- | Recursively build up a 'Chain1'.  Provide a function that takes some
 -- starting seed @g@ and returns either "done" (@f@) or "continue further"
@@ -310,6 +326,17 @@ foldChain f g = go
       Done x  -> f x
       More xs -> g (hright go xs)
 
+-- | An "effectful" version of 'foldChain', weaving Applicative effects.
+--
+-- @since 0.3.6.0
+foldChainA
+    :: (HBifunctor t, Functor h)
+    => (forall x. i x -> h (g x))         -- ^ Handle 'Done'
+    -> (forall x. t f (Comp h g) x -> h (g x))     -- ^ Handle 'More'
+    -> Chain t i f a
+    -> h (g a)
+foldChainA f g = unComp . foldChain (Comp . f) (Comp . g)
+
 -- | Recursively build up a 'Chain'.  Provide a function that takes some
 -- starting seed @g@ and returns either "done" (@i@) or "continue further"
 -- (@t f g@), and it will create a @'Chain' t i f@ from a @g@.
@@ -380,6 +407,26 @@ unconsChain = \case
 newtype DivAp1 f a = DivAp1_ { unDivAp1 :: Chain1 ID.Day f a }
   deriving (Invariant, HFunctor, Inject)
 
+instance HTraversable DivAp1 where
+    htraverse f =
+        foldChain1A
+          (fmap (DivAp1_ . Done1) . f)
+          (\case ID.Day x (Comp y) g h ->
+                     (\x' y' -> DivAp1_ (More1 (ID.Day x' y' g h)))
+                   <$> f x <*> (unDivAp1 <$> y)
+          )
+      . unDivAp1
+
+instance HTraversable1 DivAp1 where
+    htraverse1 f =
+        foldChain1A
+          (fmap (DivAp1_ . Done1) . f)
+          (\case ID.Day x (Comp y) g h ->
+                     (\x' y' -> DivAp1_ (More1 (ID.Day x' y' g h)))
+                   <$> f x <.> (unDivAp1 <$> y)
+          )
+      . unDivAp1
+
 -- | The invariant version of 'Ap' and 'Div': combines the capabilities of
 -- both 'Ap' and 'Div' together.
 --
@@ -422,6 +469,17 @@ newtype DivAp f a = DivAp { unDivAp :: Chain ID.Day Identity f a }
 instance Inject DivAp where
     inject x = DivAp $ More (ID.Day x (Done (Identity ())) const (,()))
 
+instance HTraversable DivAp where
+    htraverse f =
+        foldChainA
+          (pure . DivAp . Done)
+          (\case ID.Day x (Comp y) g h ->
+                      (\x' y' -> DivAp (More (ID.Day x'  y' g h)))
+                  <$> f x <*> (unDivAp <$> y)
+          )
+      . unDivAp
+
+
 -- | The invariant version of 'NonEmptyF' and 'Dec1': combines the
 -- capabilities of both 'NonEmptyF' and 'Dec1' together.
 --
@@ -459,6 +517,26 @@ instance Inject DivAp where
 -- @since 0.3.5.0
 newtype DecAlt1 f a = DecAlt1_ { unDecAlt1 :: Chain1 IN.Night f a }
   deriving (Invariant, HFunctor, Inject)
+
+instance HTraversable DecAlt1 where
+    htraverse f =
+        foldChain1A
+          (fmap (DecAlt1_ . Done1) . f)
+          (\case IN.Night x (Comp y) g h k ->
+                     (\x' y' -> DecAlt1_ (More1 (IN.Night x' y' g h k)))
+                   <$> f x <*> (unDecAlt1 <$> y)
+          )
+      . unDecAlt1
+
+instance HTraversable1 DecAlt1 where
+    htraverse1 f =
+        foldChain1A
+          (fmap (DecAlt1_ . Done1) . f)
+          (\case IN.Night x (Comp y) g h k ->
+                     (\x' y' -> DecAlt1_ (More1 (IN.Night x' y' g h k)))
+                   <$> f x <.> (unDecAlt1 <$> y)
+          )
+      . unDecAlt1
 
 -- | The invariant version of 'ListF' and 'Dec': combines the capabilities of
 -- both 'ListF' and 'Dec' together.
@@ -502,4 +580,13 @@ newtype DecAlt f a = DecAlt { unDecAlt :: Chain IN.Night IN.Not f a }
 
 instance Inject DecAlt where
     inject x = DecAlt $ More (IN.Night x (Done IN.refuted) Left id absurd)
+
+instance HTraversable DecAlt where
+    htraverse f =
+        foldChainA (pure . DecAlt . Done)
+          (\case IN.Night x (Comp y) g h k ->
+                     (\x' y' -> DecAlt (More (IN.Night x' y' g h k)))
+                  <$> f x <*> (unDecAlt <$> y)
+          )
+      . unDecAlt
 

@@ -27,7 +27,7 @@
 module Data.HFunctor.Chain (
   -- * 'Chain'
     Chain(..)
-  , foldChain
+  , foldChain, foldChainA
   , unfoldChain
   , unroll
   , reroll
@@ -39,7 +39,7 @@ module Data.HFunctor.Chain (
   , unconsChain
   -- * 'Chain1'
   , Chain1(..)
-  , foldChain1
+  , foldChain1, foldChain1A
   , unfoldChain1
   , unrollingNE
   , unrollNE

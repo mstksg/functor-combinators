@@ -47,6 +47,7 @@ import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Invariant
 import           Data.Functor.Plus
 import           Data.HFunctor
+import           Data.HFunctor.HTraversable
 import           Data.HFunctor.Interpret
 import           Data.Profunctor
 import           Data.Void
@@ -183,6 +184,9 @@ instance HFunctor t => HFunctor (PreT t) where
 instance Inject t => Inject (PreT t) where
     inject = PreT . inject . (id :>$<:)
 
+instance HTraversable t => HTraversable (PreT t) where
+    htraverse f = fmap PreT . htraverse (htraverse f) . unPreT
+
 instance Interpret t f => Interpret (PreT t) f where
     interpret f = interpret f . hmap getPre . unPreT
 
@@ -221,6 +225,9 @@ instance HFunctor t => HFunctor (PostT t) where
 -- | @since 0.3.4.2
 instance Inject t => Inject (PostT t) where
     inject = PostT . inject . (id :<$>:)
+
+instance HTraversable t => HTraversable (PostT t) where
+    htraverse f = fmap PostT . htraverse (htraverse f) . unPostT
 
 -- | @since 0.3.4.2
 instance Interpret t f => Interpret (PostT t) f where
@@ -480,6 +487,12 @@ instance HFunctor (Post a) where
 
 instance HFunctor (Pre a) where
     hmap g (f :>$<: x) = f :>$<: g x
+
+instance HTraversable (Post a) where
+    htraverse g (f :<$>: x) = (f :<$>:) <$> g x
+
+instance HTraversable (Pre a) where
+    htraverse g (f :>$<: x) = (f :>$<:) <$> g x
 
 instance Monoid a => Inject (Post a) where
     inject x = const mempty :<$>: x

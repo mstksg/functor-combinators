@@ -1,6 +1,24 @@
 Changelog
 =========
 
+Version 0.3.6.0
+---------------
+
+*August 27, 2020*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.3.6.0>
+
+*   *Data.HFunctor.HTraversable* added, providing `HTraversable` and
+    `HTraversable1`.
+*   *Control.Monad.Freer.Church*: Missing `Apply`, `Alt`, and `Plus` instances
+    added for `Comp`.
+*   *Data.HBifunctor*: `HFunctor` instances for `LeftF`, `RightF`, `Joker`,
+    `Void3`, and `Comp` made more kind-polymorphic
+*   *Data.HFunctor.Interpret*: `itraverse` added, mimicking `htraverse` for
+    proper `Interpret` instances.
+*   *Data.HFunctor.Chain*: `foldChainA` and `foldChain1A` added, for effectful
+    folding of chains.
+
 Version 0.3.5.0
 ---------------
 
