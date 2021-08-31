@@ -136,11 +136,11 @@ class HFunctor t where
 class HBifunctor (t :: (k -> Type) -> (k -> Type) -> k -> Type) where
     -- | Swap out the first transformed functor.
     hleft  :: f ~> j -> t f g ~> t j g
-    hleft = (`hbimap` id)
+    hleft f x = hbimap f id x
 
     -- | Swap out the second transformed functor.
     hright :: g ~> l -> t f g ~> t f l
-    hright = hbimap id
+    hright f x = hbimap id f x
 
     -- | Swap out both transformed functors at the same time.
     hbimap :: f ~> j -> g ~> l -> t f g ~> t j l
@@ -206,14 +206,14 @@ instance Semigroup (NDL a) where
     NDL x <> NDL y = NDL (x . toList . y)
 
 instance HFunctor Coyoneda where
-    hmap = hoistCoyoneda
+    hmap f x = hoistCoyoneda f x
 
 -- | @since 0.3.0.0
 instance HFunctor CCY.Coyoneda where
     hmap f (CCY.Coyoneda g x) = CCY.Coyoneda g (f x)
 
 instance HFunctor Ap where
-    hmap = hoistAp
+    hmap f x = hoistAp f x
 
 instance HFunctor ListF where
     hmap f (ListF xs) = ListF (map f xs)
@@ -231,7 +231,7 @@ instance HFunctor (NEMapF k) where
     hmap f (NEMapF xs) = NEMapF (fmap f xs)
 
 instance HFunctor Alt.Alt where
-    hmap = Alt.hoistAlt
+    hmap f x = Alt.hoistAlt f x
 
 -- | @since 0.3.6.0
 instance HFunctor Alt.AltF where
@@ -249,37 +249,37 @@ instance HFunctor Flagged where
     hmap f (Flagged b x) = Flagged b (f x)
 
 instance HFunctor Free where
-    hmap = hoistFree
+    hmap f x = hoistFree f x
 
 instance HFunctor Free1 where
-    hmap = hoistFree1
+    hmap f x = hoistFree1 f x
 
 -- | Note that there is no 'Data.HFunctor.Interpret.Interpret' or
 -- 'Data.HFunctor.Bind' instance, because 'Data.HFunctor.inject' requires
 -- @'Functor' f@.
 instance HFunctor MC.F where
-    hmap = MC.hoistF
+    hmap f x = MC.hoistF f x
 
 -- | Note that there is no 'Data.HFunctor.Interpret.Interpret' or
 -- 'Data.HFunctor.Bind' instance, because 'Data.HFunctor.inject' requires
 -- @'Functor' f@.
 instance HFunctor MaybeT where
-    hmap f = mapMaybeT f
+    hmap f x = mapMaybeT f x
 
 instance HFunctor Yoneda where
     hmap f x = Yoneda $ f . runYoneda x
 
 instance HFunctor FA.Ap where
-    hmap = FA.hoistAp
+    hmap f x = FA.hoistAp f x
 
 instance HFunctor FAF.Ap where
-    hmap = FAF.hoistAp
+    hmap f x = FAF.hoistAp f x
 
 instance HFunctor IdentityT where
-    hmap = mapIdentityT
+    hmap f x = mapIdentityT f x
 
 instance HFunctor Lift where
-    hmap = mapLift
+    hmap f x = mapLift f x
 
 instance HFunctor MaybeApply where
     hmap f (MaybeApply x) = MaybeApply (first f x)
@@ -291,10 +291,10 @@ instance HFunctor WrappedApplicative where
     hmap f (WrapApplicative x) = WrapApplicative (f x)
 
 instance HFunctor (ReaderT r) where
-    hmap = mapReaderT
+    hmap f x = mapReaderT f x
 
 instance HFunctor Tagged where
-    hmap _ = coerce
+    hmap _ x = coerce x
 
 instance HFunctor Reverse where
     hmap f (Reverse x) = Reverse (f x)
@@ -309,13 +309,13 @@ instance HFunctor (M1 i c) where
     hmap f (M1 x) = M1 (f x)
 
 instance HFunctor Void2 where
-    hmap _ = coerce
+    hmap _ x = coerce x
 
 instance HFunctor (EnvT e) where
     hmap f (EnvT e x) = EnvT e (f x)
 
 instance HFunctor Rec where
-    hmap = rmap
+    hmap f x = rmap f x
 
 instance HFunctor CoRec where
     hmap f (CoRec x) = CoRec (f x)
@@ -329,7 +329,7 @@ instance HFunctor SOP.NS where
     hmap f = SOP.cata_NS (SOP.Z . f) SOP.S
 
 instance HFunctor (Joker f) where
-    hmap _ = coerce
+    hmap _ x = coerce x
 
 instance HFunctor (Void3 f) where
     hmap _ = \case {}
@@ -348,14 +348,14 @@ instance HBifunctor Product where
     hbimap f g (Pair x y) = Pair (f x) (g y)
 
 instance HBifunctor Day where
-    hleft  = D.trans1
-    hright = D.trans2
+    hleft f x = D.trans1 f x
+    hright f x = D.trans2 f x
     hbimap f g (Day x y z) = Day (f x) (g y) z
 
 -- | @since 0.3.0.0
 instance HBifunctor CD.Day where
-    hleft  = CD.trans1
-    hright = CD.trans2
+    hleft f x = CD.trans1 f x
+    hright f x = CD.trans2 f x
     hbimap f g (CD.Day x y z) = CD.Day (f x) (g y) z
 
 -- | @since 0.3.4.0
@@ -367,8 +367,8 @@ instance HBifunctor IN.Night where
 
 -- | @since 0.3.0.0
 instance HBifunctor Night where
-    hleft  = N.trans1
-    hright = N.trans2
+    hleft f x = N.trans1 f x
+    hright f x = N.trans2 f x
     hbimap f g (Night x y z) = Night (f x) (g y) z
 
 instance HBifunctor (:+:) where
