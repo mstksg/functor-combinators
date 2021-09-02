@@ -26,10 +26,10 @@
 module Data.HFunctor.HTraversable (
   -- * 'HTraversable'
     HTraversable(..)
-  , hsequence, hfoldMap, htoList, hmapDefault
+  , hsequence, hfoldMap, htoList, hmapDefault, hfor
   -- * 'HTraversable1'
   , HTraversable1(..)
-  , hsequence1, hfoldMap1, htoNonEmpty
+  , hsequence1, hfoldMap1, htoNonEmpty, hfor1
   ) where
 
 import           Control.Applicative
@@ -114,6 +114,12 @@ hfoldMap1 f = getConst . htraverse1 (Const . f)
 htoNonEmpty :: HTraversable1 t => (forall x. f x -> b) -> t f a -> NonEmpty b
 htoNonEmpty f = fromNDL . hfoldMap1 (ndlSingleton . f)
 
+-- | A flipped version of 'htraverse1'.
+--
+-- @since 0.4.0.0
+hfor1 :: (HTraversable1 t, Apply h) => t f a -> (forall x. f x -> h (g x)) -> h (t g a)
+hfor1 x f = htraverse1 f x
+
 -- | A higher-kinded version of 'Traversable', in the same way that
 -- 'HFunctor' is the higher-kinded version of 'Functor'.  Gives you an
 -- "effectful" 'hmap', in the same way that 'traverse' gives you an
@@ -151,6 +157,12 @@ hfoldMap f = getConst . htraverse (Const . f)
 -- @since 0.3.6.0
 htoList :: HTraversable t => (forall x. f x -> b) -> t f a -> [b]
 htoList f = flip appEndo [] . hfoldMap (Endo . (:) . f)
+
+-- | A flipped version of 'htraverse'.
+--
+-- @since 0.4.0.0
+hfor :: (HTraversable t, Applicative h) => t f a -> (forall x. f x -> h (g x)) -> h (t g a)
+hfor x f = htraverse f x
 
 -- | An implementation of 'hmap' defined using 'htraverse'.
 --

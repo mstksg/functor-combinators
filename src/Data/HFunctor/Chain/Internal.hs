@@ -579,7 +579,7 @@ newtype DecAlt f a = DecAlt { unDecAlt :: Chain IN.Night IN.Not f a }
   deriving (Invariant, HFunctor)
 
 instance Inject DecAlt where
-    inject x = DecAlt $ More (IN.Night x (Done IN.refuted) Left id absurd)
+    inject x = DecAlt $ More (IN.Night x (Done IN.refuted) id absurd Left)
 
 instance HTraversable DecAlt where
     htraverse f =

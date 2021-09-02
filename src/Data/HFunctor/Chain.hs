@@ -69,6 +69,9 @@ import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Day hiding              (intro1, intro2, elim1, elim2)
 import           Data.Functor.Identity
+import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Inplicative
+import           Data.Functor.Invariant.Internative
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.HBifunctor
@@ -82,6 +85,8 @@ import           Data.Typeable
 import           GHC.Generics
 import qualified Data.Functor.Contravariant.Day       as CD
 import qualified Data.Functor.Contravariant.Night     as N
+import qualified Data.Functor.Invariant.Day           as ID
+import qualified Data.Functor.Invariant.Night         as IN
 
 instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
     retract = \case
@@ -175,8 +180,14 @@ instance Contravariant f => Divise (Chain1 CD.Day f) where
 instance Contravariant f => Decide (Chain1 N.Night f) where
     decide f x y = appendChain1 $ N.Night x y f
 
+instance Invariant f => Inply (Chain1 ID.Day f) where
+    gather f g x y = appendChain1 (ID.Day x y f g)
+
 instance Tensor t i => Inject (Chain t i) where
     inject = injectChain
+
+instance Invariant f => Inalt (Chain1 IN.Night f) where
+    swerve f g h x y = appendChain1 (IN.Night x y f g h)
 
 -- | We can collapse and interpret an @'Chain' t i@ if we have @'Tensor' t@.
 instance MonoidIn t i f => Interpret (Chain t i) f where
@@ -287,6 +298,18 @@ instance Divisible (Chain CD.Day Proxy f) where
     divide f x y = appendChain $ CD.Day x y f
     conquer = Done Proxy
 
+instance Inply (Chain ID.Day Identity f) where
+    gather f g x y = appendChain (ID.Day x y f g)
+
+instance Inplicative (Chain ID.Day Identity f) where
+    knot = Done  . Identity
+
+instance Inalt (Chain IN.Night IN.Not f) where
+    swerve f g h x y = appendChain (IN.Night x y f g h)
+
+instance Inplus (Chain IN.Night IN.Not f) where
+    reject = Done . IN.Not
+
 -- | @since 0.3.0.0
 instance Decide (Chain N.Night N.Not f) where
     decide f x y = appendChain $ N.Night x y f
@@ -332,3 +355,4 @@ instance Functor f => Alt (Chain Product Proxy f) where
 -- 'Plus'.
 instance Functor f => Plus (Chain Product Proxy f) where
     zero = Done Proxy
+

@@ -506,13 +506,13 @@ instance Tensor IN.Night IN.Not where
     elim2 = IN.elim1
 
     appendLB (IN.Night (DecAlt xs) (DecAlt ys) f g h) = DecAlt $ case xs of
-      Done r      -> invmap h (either (absurd . refute r) id . f) ys
+      Done r      -> invmap g (either (absurd . refute r) id . h) ys
       More (IN.Night z zs j k l) -> More $ IN.Night
         z
-        (unDecAlt $ appendLB (IN.Night (DecAlt zs) (DecAlt ys) id Left Right))
-        (B.assoc . first j . f)
-        (g . k)
-        (either (g . l) h)
+        (unDecAlt $ appendLB (IN.Night (DecAlt zs) (DecAlt ys) Left Right id))
+        (f . j)
+        (either (f . k) g)
+        (B.assoc . first l . h)
     splitNE = coerce splitChain1
     splittingLB = coercedF . splittingChain . coercedF
 
@@ -524,7 +524,7 @@ instance Matchable IN.Night Not where
 
 unsplitNEINight_ :: Invariant f => IN.Night f (Chain IN.Night Not f) ~> Chain1 IN.Night f
 unsplitNEINight_ (IN.Night x xs f g h) = case xs of
-  Done r  -> Done1 $ invmap g (either id (absurd . refute r) . f) x
+  Done r  -> Done1 $ invmap f (either id (absurd . refute r) . h) x
   More ys -> More1 $ IN.Night x (unsplitNEINight_ ys) f g h
 
 matchLBINight_ :: Invariant f => Chain IN.Night Not f ~> (Not :+: Chain1 IN.Night f)

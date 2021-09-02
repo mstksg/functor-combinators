@@ -63,19 +63,19 @@ import qualified Data.Functor.Coyoneda             as CY
 data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
     Night :: f b
           -> g c
-          -> (a -> Either b c)
           -> (b -> a)
           -> (c -> a)
+          -> (a -> Either b c)
           -> Night f g a
 
 instance Invariant (Night f g) where
-    invmap f g (Night x y h j k) = Night x y (h . g) (f . j) (f . k)
+    invmap f g (Night x y h j k) = Night x y (f . h) (f . j) (k . g)
 
 -- | Pair two invariant actions together into a 'Night'; assigns the first
 -- one to 'Left' inputs and outputs and the second one to 'Right' inputs
 -- and outputs.
 night :: f a -> g b -> Night f g (Either a b)
-night x y = Night x y id Left Right
+night x y = Night x y Left Right id
 
 -- | Interpret the covariant part of a 'Night' into a target context @h@,
 -- as long as the context is an instance of 'Alt'.  The 'Alt' is used to
@@ -85,7 +85,7 @@ runNightAlt
     => f ~> h
     -> g ~> h
     -> Night f g ~> h
-runNightAlt f g (Night x y _ j k) = fmap j (f x) <!> fmap k (g y)
+runNightAlt f g (Night x y h j _) = fmap h (f x) <!> fmap j (g y)
 
 -- | Interpret the contravariant part of a 'Night' into a target context
 -- @h@, as long as the context is an instance of 'Decide'.  The 'Decide' is
@@ -95,7 +95,7 @@ runNightDecide
     => f ~> h
     -> g ~> h
     -> Night f g ~> h
-runNightDecide f g (Night x y h _ _) = decide h (f x) (g y)
+runNightDecide f g (Night x y _ _ k) = decide k (f x) (g y)
 
 -- | Convert an invariant 'Night' into the covariant version, dropping the
 -- contravariant part.
@@ -104,7 +104,7 @@ runNightDecide f g (Night x y h _ _) = decide h (f x) (g y)
 -- library, so we use an equivalent type (if @f@ and @g@ are 'Functor's) @f
 -- ':*:' g@.
 toCoNight :: (Functor f, Functor g) => Night f g ~> f :*: g
-toCoNight (Night x y _ f g) = fmap f x :*: fmap g y
+toCoNight (Night x y f g _) = fmap f x :*: fmap g y
 
 -- | Convert an invariant 'Night' into the covariant version, dropping the
 -- contravariant part.
@@ -115,53 +115,55 @@ toCoNight (Night x y _ f g) = fmap f x :*: fmap g y
 --
 -- @since 0.3.2.0
 toCoNight_ :: Night f g ~> CY.Coyoneda f :*: CY.Coyoneda g
-toCoNight_ (Night x y _ f g) = CY.Coyoneda f x :*: CY.Coyoneda g y
+toCoNight_ (Night x y f g _) = CY.Coyoneda f x :*: CY.Coyoneda g y
 
 
 -- | Convert an invariant 'Night' into the contravariant version, dropping
 -- the covariant part.
 toContraNight :: Night f g ~> CN.Night f g
-toContraNight (Night x y f _ _) = CN.Night x y f
+toContraNight (Night x y _ _ h) = CN.Night x y h
 
 -- | 'Night' is associative.
 assoc :: Night f (Night g h) ~> Night (Night f g) h
 assoc (Night x (Night y z f g h) j k l) =
-    Night (Night x y id Left Right) z
-      (B.unassoc . second f . j)
-      (either k (l . g))
-      (l . h)
+    Night (Night x y Left Right id) z
+      (either j (k . f))
+      (k . g)
+      (B.unassoc . second h . l)
 
 -- | 'Night' is associative.
 unassoc :: Night (Night f g) h ~> Night f (Night g h)
 unassoc (Night (Night x y f g h) z j k l) =
-    Night x (Night y z id Left Right)
-      (B.assoc . first f . j)
-      (k . g)
-      (either (k . h) l)
+    Night x (Night y z Left Right id)
+      (j . f)
+      (either (j . g) k)
+      (B.assoc . first h . l)
+      -- (k . g)
+      -- (either (k . h) l)
 
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 intro1 :: g ~> Night Not g
-intro1 y = Night refuted y Right absurd id
+intro1 y = Night refuted y absurd id Right
 
 -- | The right identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 intro2 :: f ~> Night f Not
-intro2 x = Night x refuted Left id absurd
+intro2 x = Night x refuted id absurd Left
 
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 elim1 :: Invariant g => Night Not g ~> g
-elim1 (Night x y f _ h) = invmap h (either (absurd . refute x) id . f) y
+elim1 (Night x y _ g h) = invmap g (either (absurd . refute x) id . h) y
 
 -- | The right identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
 elim2 :: Invariant f => Night f Not ~> f
-elim2 (Night x y f g _) = invmap g (either id (absurd . refute y) . f) x
+elim2 (Night x y f _ h) = invmap f (either id (absurd . refute y) . h) x
 
 -- | The two sides of a 'Night' can be swapped.
 swapped :: Night f g ~> Night g f
-swapped (Night x y f g h) = Night y x (B.swap . f) h g
+swapped (Night x y f g h) = Night y x g f (B.swap . h)
 
 -- | Hoist a function over the left side of a 'Night'.
 trans1 :: f ~> h -> Night f g ~> Night h g

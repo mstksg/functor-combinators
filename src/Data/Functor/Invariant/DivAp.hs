@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
 -- Module      : Data.Functor.Invariant.Day
@@ -20,7 +21,6 @@ module Data.Functor.Invariant.DivAp (
   , divApAp
   , divApDiv
   , foldDivAp
-  , gather, gathered
   , assembleDivAp
   , assembleDivApRec
   , concatDivAp
@@ -32,7 +32,6 @@ module Data.Functor.Invariant.DivAp (
   , divApAp1
   , divApDiv1
   , foldDivAp1
-  , gather1, gathered1
   , assembleDivAp1
   , assembleDivAp1Rec
   , concatDivAp1
@@ -52,6 +51,7 @@ import           Data.Functor.Apply.Free (Ap1(..))
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divisible.Free (Div(..), Div1)
+import           Data.Functor.Invariant.Inplicative
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.Functor.Invariant.Day
@@ -171,10 +171,10 @@ divApDiv1 = runContraDivAp1 inject
 -- | Match on a non-empty 'DivAp'; contains no @f@s, but only the
 -- terminal value.  Analogous to the 'Control.Applicative.Free.Ap'
 -- constructor.
-pattern Gather :: (a -> (b, c)) -> (b -> c -> a) -> f b -> DivAp f c -> DivAp f a
-pattern Gather f g x xs <- (unGather_->MaybeF (Just (Day x xs g f)))
+pattern Gather :: (b -> c -> a) -> (a -> (b, c)) -> f b -> DivAp f c -> DivAp f a
+pattern Gather f g x xs <- (unGather_->MaybeF (Just (Day x xs f g)))
   where
-    Gather f g x xs = DivAp $ More $ Day x (unDivAp xs) g f
+    Gather f g x xs = DivAp $ More $ Day x (unDivAp xs) f g
 
 unGather_ :: DivAp f ~> MaybeF (Day f (DivAp f))
 unGather_ = \case
@@ -187,67 +187,22 @@ pattern Knot :: a -> DivAp f a
 pattern Knot x = DivAp (Done (Identity x))
 {-# COMPLETE Gather, Knot #-}
 
+instance Inply (DivAp f) where
+    gather = coerce (gather @(Chain Day Identity _))
+
+instance Inplicative (DivAp f) where
+    knot = coerce (knot @(Chain Day Identity _))
+
 -- | Match on a 'DivAp1' to get the head and the rest of the items.
 -- Analogous to the 'Data.Functor.Apply.Free.Ap1' constructor.
-pattern DivAp1 :: Invariant f => (a -> (b, c)) -> (b -> c -> a) -> f b -> DivAp f c -> DivAp1 f a
-pattern DivAp1 f g x xs <- (coerce splitChain1->Day x xs g f)
+pattern DivAp1 :: Invariant f => (b -> c -> a) -> (a -> (b, c)) -> f b -> DivAp f c -> DivAp1 f a
+pattern DivAp1 f g x xs <- (coerce splitChain1->Day x xs f g)
   where
-    DivAp1 f g x xs = unsplitNE $ Day x xs g f
+    DivAp1 f g x xs = unsplitNE $ Day x xs f g
 {-# COMPLETE DivAp1 #-}
 
--- | Invariantly combine two 'DivAp's.
---
--- Analogous to 'liftA2' and 'divise'.  If there was some typeclass that
--- represented semigroups on invariant 'Day', this would be the method of
--- that typeclass.
---
--- The identity of this is 'Knot'.
---
--- @since 0.3.4.0
-gather
-    :: (a -> (b, c))
-    -> (b -> c -> a)
-    -> DivAp f b
-    -> DivAp f c
-    -> DivAp f a
-gather f g x y = coerce appendChain (Day x y g f)
-
--- | Convenient wrapper over 'gather' that simply combines the two options
--- in a tuple.  Analogous to 'divised'.
---
--- @since 0.3.4.0
-gathered
-    :: DivAp f a
-    -> DivAp f b
-    -> DivAp f (a, b)
-gathered = gather id (,)
-
--- | Invariantly combine two 'DivAp1's.
---
--- Analogous to 'liftA2' and 'divise'.  If there was some typeclass that
--- represented semigroups on invariant 'Day', this would be the method of
--- that typeclass.
---
--- @since 0.3.4.0
-gather1
-    :: Invariant f
-    => (a -> (b, c))
-    -> (b -> c -> a)
-    -> DivAp1 f b
-    -> DivAp1 f c
-    -> DivAp1 f a
-gather1 f g x y = coerce appendChain1 (Day x y g f)
-
--- | Convenient wrapper over 'gather1' that simply combines the two options
--- in a tuple.  Analogous to 'divised'.
---
--- @since 0.3.4.0
-gathered1
-    :: Invariant f
-    => DivAp1 f a
-    -> DivAp1 f b
-    -> DivAp1 f (a, b)
-gathered1 = gather1 id (,)
+instance Invariant f => Inply (DivAp1 f) where
+    gather = coerce (gather @(Chain1 Day _))
 
 -- | Convenient wrapper to build up a 'DivAp' by providing each
 -- component of it.  This makes it much easier to build up longer chains

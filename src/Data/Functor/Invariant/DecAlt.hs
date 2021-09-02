@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
 -- Module      : Data.Functor.Invariant.DecAlt
@@ -21,7 +22,6 @@ module Data.Functor.Invariant.DecAlt (
   , decAltListF_
   , decAltDec
   , foldDecAlt
-  , swerve, swerved
   , assembleDecAlt
   , concatDecAlt
   -- * Nonempty Chain
@@ -32,7 +32,6 @@ module Data.Functor.Invariant.DecAlt (
   , decAltNonEmptyF_
   , decAltDec1
   , foldDecAlt1
-  , swerve1, swerved1
   , assembleDecAlt1
   , concatDecAlt1
   ) where
@@ -45,6 +44,7 @@ import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divisible.Free
 import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Internative
 import           Data.Functor.Invariant.Night
 import           Data.Functor.Plus
 import           Data.HBifunctor.Tensor hiding             (elim1, elim2, intro1, intro2)
@@ -117,7 +117,7 @@ decAltListF = runCoDecAlt inject
 -- @since 0.3.2.0
 decAltListF_ :: DecAlt f ~> CT.ComposeT ListF CY.Coyoneda f
 decAltListF_ = foldDecAlt (const (CT.ComposeT (ListF []))) $ \case
-    Night x (CT.ComposeT (ListF xs)) _ f g -> CT.ComposeT . ListF $
+    Night x (CT.ComposeT (ListF xs)) f g _ -> CT.ComposeT . ListF $
       CY.Coyoneda f x : (map . fmap) g xs
 
 -- | Extract the 'NonEmptyF' part out of a 'DecAlt1', shedding the
@@ -137,7 +137,7 @@ decAltNonEmptyF = runCoDecAlt1 inject
 -- @since 0.3.2.0
 decAltNonEmptyF_ :: DecAlt1 f ~> CT.ComposeT NonEmptyF CY.Coyoneda f
 decAltNonEmptyF_ = foldDecAlt1 inject $ \case
-    Night x (CT.ComposeT (NonEmptyF xs)) _ f g -> CT.ComposeT . NonEmptyF $
+    Night x (CT.ComposeT (NonEmptyF xs)) f g _ -> CT.ComposeT . NonEmptyF $
       CY.Coyoneda f x NE.<| (fmap . fmap) g xs
 
 -- | General-purpose folder of 'DecAlt'.  Provide a way to handle the
@@ -165,7 +165,7 @@ foldDecAlt1 f g = foldChain1 f g . unDecAlt1
 -- the two rejoining functions, the first @f@, and the rest of the chain.
 -- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Choose'
 -- constructor.
-pattern Swerve :: (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> DecAlt f c -> DecAlt f a
+pattern Swerve :: (b -> a) -> (c -> a) -> (a -> Either b c) -> f b -> DecAlt f c -> DecAlt f a
 pattern Swerve f g h x xs <- (unSwerve_->MaybeF (Just (Night x xs f g h)))
   where
     Swerve f g h x xs = DecAlt $ More $ Night x (unDecAlt xs) f g h
@@ -183,70 +183,23 @@ pattern Reject :: (a -> Void) -> DecAlt f a
 pattern Reject x = DecAlt (Done (Not x))
 {-# COMPLETE Swerve, Reject #-}
 
+instance Inalt (DecAlt f) where
+    swerve = coerce (swerve @(Chain Night Not _))
+
+instance Inplus (DecAlt f) where
+    reject = coerce (reject @(Chain Night Not _))
+
 -- | Match on a 'DecAlt1' to get the head and the rest of the items.
 -- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Dec1'
 -- constructor.
-pattern DecAlt1 :: Invariant f => (a -> Either b c) -> (b -> a) -> (c -> a) -> f b -> DecAlt f c -> DecAlt1 f a
+pattern DecAlt1 :: Invariant f => (b -> a) -> (c -> a) -> (a -> Either b c) -> f b -> DecAlt f c -> DecAlt1 f a
 pattern DecAlt1 f g h x xs <- (coerce splitChain1->Night x xs f g h)
   where
     DecAlt1 f g h x xs = unsplitNE $ Night x xs f g h
 {-# COMPLETE DecAlt1 #-}
 
--- | Invariantly combine two 'DecAlt's.
---
--- Analogous to '<|>' and 'decide'.  If there was some typeclass that
--- represented semigroups on invariant 'Night', this would be the method of that
--- typeclass.
---
--- The identity of this is 'Reject'.
---
--- @since 0.3.4.0
-swerve
-    :: (a -> Either b c)
-    -> (b -> a)
-    -> (c -> a)
-    -> DecAlt f b
-    -> DecAlt f c
-    -> DecAlt f a
-swerve f g h x y = coerce appendChain (Night x y f g h)
-
--- | Convenient wrapper over 'swerve' that simply combines the two options
--- in an 'Either'.  Analogous to '<|>' and 'decided'.
---
--- @since 0.3.4.0
-swerved
-    :: DecAlt f a
-    -> DecAlt f b
-    -> DecAlt f (Either a b)
-swerved = swerve id Left Right
-
--- | Invariantly combine two 'DecAlt1's.
---
--- Analogous to '<|>' and 'decide'.  If there was some typeclass that
--- represented semigroups on invariant 'Night', this would be the method of that
--- typeclass.
---
--- @since 0.3.4.0
-swerve1
-    :: Invariant f
-    => (a -> Either b c)
-    -> (b -> a)
-    -> (c -> a)
-    -> DecAlt1 f b
-    -> DecAlt1 f c
-    -> DecAlt1 f a
-swerve1 f g h x y = coerce appendChain1 (Night x y f g h)
-
--- | Convenient wrapper over 'swerve1' that simply combines the two options
--- in an 'Either'.  Analogous to '<|>' and 'decided'.
---
--- @since 0.3.4.0
-swerved1
-    :: Invariant f
-    => DecAlt1 f a
-    -> DecAlt1 f b
-    -> DecAlt1 f (Either a b)
-swerved1 = swerve1 id Left Right
+instance Invariant f => Inalt (DecAlt1 f) where
+    swerve = coerce (swerve @(Chain1 Night _))
 
 -- | Convenient wrapper to build up a 'DecAlt' on by providing each
 -- component of it.  This makes it much easier to build up longer chains
@@ -287,9 +240,9 @@ assembleDecAlt = \case
     x :* xs -> DecAlt $ More $ Night
       x
       (unDecAlt $ assembleDecAlt xs)
-      unconsNSI
       (Z . I)
       S
+      unconsNSI
 
 -- | A version of 'assembleDecAlt' where each component is itself
 -- a 'DecAlt'.
@@ -306,9 +259,9 @@ concatDecAlt = \case
     x :* xs -> coerce appendChain $ Night
       x
       (unDecAlt $ concatDecAlt xs)
-      unconsNSI
       (Z . I)
       S
+      unconsNSI
 
 -- | A version of 'assembleDecAlt' but for 'DecAlt1' instead.  Can
 -- be useful if you intend on interpreting it into something with only
@@ -325,9 +278,9 @@ assembleDecAlt1 = \case
       _ :* _ -> More1 $ Night
         x
         (unDecAlt1 $ assembleDecAlt1 xs)
-        unconsNSI
         (Z . I)
         S
+        unconsNSI
 
 -- | A version of 'concatDecAlt' but for 'DecAlt1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
@@ -344,9 +297,9 @@ concatDecAlt1 = \case
       _ :* _ -> coerce appendChain1 $ Night
         x
         (unDecAlt1 $ concatDecAlt1 xs)
-        unconsNSI
         (Z . I)
         S
+        unconsNSI
 
 unconsNSI :: NS I (a ': as) -> Either a (NS I as)
 unconsNSI = \case

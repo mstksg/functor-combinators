@@ -1,4 +1,3 @@
-
 module Data.HBifunctor.Tensor.Internal (
     Tensor(..)
   , unconsLB
