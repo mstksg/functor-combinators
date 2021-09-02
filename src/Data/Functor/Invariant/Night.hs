@@ -15,6 +15,8 @@ module Data.Functor.Invariant.Night (
     Night(..)
   , Not(..), refuted
   , night
+  , runNight
+  , nerve
   , runNightAlt
   , runNightDecide
   , toCoNight
@@ -33,6 +35,7 @@ import           Data.Functor.Alt
 import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Night  (Not(..), refuted)
 import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Internative
 import           Data.Kind
 import           Data.Void
 import           GHC.Generics
@@ -122,6 +125,26 @@ toCoNight_ (Night x y f g _) = CY.Coyoneda f x :*: CY.Coyoneda g y
 -- the covariant part.
 toContraNight :: Night f g ~> CN.Night f g
 toContraNight (Night x y _ _ h) = CN.Night x y h
+
+-- | Interpret out of a 'Night' into any instance of 'Inalt' by providing
+-- two interpreting functions.
+--
+-- @since 0.4.0.0
+runNight
+    :: Inalt h
+    => (f ~> h)
+    -> (g ~> h)
+    -> Night f g ~> h
+runNight f g (Night x y a b c) = swerve a b c (f x) (g y)
+
+-- | Squash the two items in a 'Night' using their natural 'Inalt'
+-- instances.
+--
+-- @since 0.4.0.0
+nerve
+    :: Inalt f
+    => Night f f ~> f
+nerve (Night x y a b c) = swerve a b c x y
 
 -- | 'Night' is associative.
 assoc :: Night f (Night g h) ~> Night (Night f g) h

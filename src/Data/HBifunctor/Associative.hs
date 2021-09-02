@@ -76,6 +76,8 @@ import           Data.Functor.Contravariant.Night          (Night(..))
 import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Inplicative
+import           Data.Functor.Invariant.Internative
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Sum
@@ -521,6 +523,11 @@ appendNEIDay_ (ID.Day xs ys g f) = case xs of
       (\a (b, c) -> g (j a b) c)
       (B.assoc . first h . f)
 
+-- | @since 0.4.0.0
+instance Inply f => SemigroupIn ID.Day f where
+    biretract = dather
+    binterpret = runDay
+
 instance Associative IN.Night where
     type NonEmptyBy IN.Night = DecAlt1
     type FunctorBy IN.Night = Invariant
@@ -540,6 +547,11 @@ appendNEINight_ (IN.Night xs ys f g h) = case xs of
       (f . j)
       (either (f . k) g)
       (B.assoc . first l . h)
+
+-- | @since 0.4.0.0
+instance Inalt f => SemigroupIn IN.Night f where
+    biretract = IN.nerve
+    binterpret = IN.runNight
 
 -- | @since 0.3.0.0
 instance Associative Night where

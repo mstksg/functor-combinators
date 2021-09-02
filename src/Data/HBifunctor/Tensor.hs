@@ -95,6 +95,8 @@ import           Data.Functor.Contravariant.Night          (Night(..), Not(..))
 import           Data.Functor.Day                          (Day(..))
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Internative
+import           Data.Functor.Invariant.Inplicative
 import           Data.Functor.Plus
 import           Data.Functor.Product
 import           Data.Functor.Sum
@@ -497,6 +499,9 @@ matchLBIDay_ = \case
   Done x  -> L1 x
   More xs -> R1 $ unsplitNEIDay_ xs
 
+instance Inplicative f => MonoidIn ID.Day Identity f where
+    pureT (Identity x) = knot x
+
 instance Tensor IN.Night IN.Not where
     type ListBy IN.Night = DecAlt
 
@@ -531,6 +536,10 @@ matchLBINight_ :: Invariant f => Chain IN.Night Not f ~> (Not :+: Chain1 IN.Nigh
 matchLBINight_ = \case
   Done x  -> L1 x
   More xs -> R1 $ unsplitNEINight_ xs
+
+-- | @since 0.4.0.0
+instance Inplus f => MonoidIn IN.Night IN.Not f where
+    pureT (Not x) = reject x
 
 -- | @since 0.3.0.0
 instance Tensor Night Not where

@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
--- Module      : Data.Functor.Invariant.DecAlt
+-- Module      : Data.Functor.Invariant.Internative.Free
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --
@@ -9,11 +9,11 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Provide an invariant functor combinator choice-collector, like a combination of
--- 'ListF' and 'Dec'.
+-- Provide an invariant functor combinator choice-collector, like
+-- a combination of 'ListF' and 'Dec'.
 --
--- @since 0.3.5.0
-module Data.Functor.Invariant.DecAlt (
+-- @since 0.4.0.0
+module Data.Functor.Invariant.Internative.Free (
   -- * Chain
     DecAlt(.., Swerve, Reject)
   , runCoDecAlt
@@ -51,7 +51,8 @@ import           Data.HBifunctor.Tensor hiding             (elim1, elim2, intro1
 import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.HFunctor.Chain.Internal
-import           Data.SOP
+import           Data.HFunctor.Interpret
+import           Data.SOP hiding (hmap)
 import           Data.Void
 import qualified Control.Monad.Trans.Compose               as CT
 import qualified Data.Functor.Coyoneda                     as CY

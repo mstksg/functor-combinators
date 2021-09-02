@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
--- Module      : Data.Functor.Invariant.Day
+-- Module      : Data.Functor.Invariant.Inplicative.Free
 -- Copyright   : (c) Justin Le 2019
 -- License     : BSD3
 --
@@ -12,8 +12,8 @@
 -- Provide an invariant functor combinator sequencer, like a combination of
 -- 'Ap' and 'Div'.
 --
--- @since 0.3.5.0
-module Data.Functor.Invariant.DivAp (
+-- @since 0.4.0.0
+module Data.Functor.Invariant.Inplicative.Free (
   -- * Chain
     DivAp(.., Gather, Knot)
   , runCoDivAp
@@ -47,18 +47,19 @@ import           Control.Applicative.ListF                 (MaybeF(..))
 import           Control.Natural
 import           Data.Coerce
 import           Data.Functor.Apply
-import           Data.Functor.Apply.Free (Ap1(..))
+import           Data.Functor.Apply.Free                   (Ap1(..))
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divisible.Free (Div(..), Div1)
-import           Data.Functor.Invariant.Inplicative
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.Functor.Invariant.Day
+import           Data.Functor.Invariant.Inplicative
 import           Data.HBifunctor.Tensor hiding             (elim1, elim2, intro1, intro2)
 import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.HFunctor.Chain.Internal
+import           Data.HFunctor.Interpret
 import           Data.SOP hiding                           (hmap)
 import qualified Data.Vinyl                                as V
 import qualified Data.Vinyl.Functor                        as V
@@ -375,3 +376,11 @@ concatDivAp1Rec = \case
 
 unconsRec :: V.XRec V.Identity (a ': as) -> (a, V.XRec V.Identity as)
 unconsRec (y V.::& ys) = (y, ys)
+
+-- | A free 'Inply'
+instance Inply f => Interpret DivAp1 f where
+    interpret f (DivAp1_ x) = foldChain1 f (runDay f id) x
+
+-- | A free 'Inplicative'
+instance Inplicative f => Interpret DivAp f where
+    interpret f (DivAp x) = foldChain (knot . runIdentity) (runDay f id) x

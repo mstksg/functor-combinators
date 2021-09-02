@@ -15,7 +15,7 @@
 module Data.Functor.Contravariant.Night (
     Night(..)
   , night
-  , runNight
+  , runNight, necide
   , assoc, unassoc
   , swapped
   , trans1, trans2
@@ -81,6 +81,15 @@ runNight
     -> (g ~> h)
     -> Night f g ~> h
 runNight f g (Night x y z) = decide z (f x) (g y)
+
+-- | Squash the two items in a 'Night' using their natural 'Decide'
+-- instances.
+--
+-- @since 0.4.0.0
+necide
+    :: Decide f
+    => Night f f ~> f
+necide (Night x y z) = decide z x y
 
 -- | 'Night' is associative.
 assoc :: Night f (Night g h) ~> Night (Night f g) h

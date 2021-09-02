@@ -23,8 +23,10 @@ import           Data.Functor.Classes
 import           Data.Functor.Contravariant
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Internative
 import           Data.HBifunctor
 import           Data.HFunctor
+import           Data.HFunctor.Interpret
 import           Data.HFunctor.HTraversable
 import           Data.Kind
 import           Data.Typeable
@@ -538,6 +540,10 @@ instance HTraversable1 DecAlt1 where
           )
       . unDecAlt1
 
+-- | A free 'Inalt'
+instance Inalt f => Interpret DecAlt1 f where
+    interpret f (DecAlt1_ x) = foldChain1 f (IN.runNight f id) x
+
 -- | The invariant version of 'ListF' and 'Dec': combines the capabilities of
 -- both 'ListF' and 'Dec' together.
 --
@@ -590,3 +596,6 @@ instance HTraversable DecAlt where
           )
       . unDecAlt
 
+-- | A free 'Inplus'
+instance Inplus f => Interpret DecAlt f where
+    interpret f (DecAlt x) = foldChain (reject . IN.refute) (IN.runNight f id) x

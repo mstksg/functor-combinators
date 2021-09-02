@@ -27,14 +27,7 @@ import Control.Arrow
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Maybe
-import qualified Control.Monad.Trans.RWS.Lazy as Lazy
-import qualified Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
-import qualified Control.Monad.Trans.State.Lazy as Lazy
-import qualified Control.Monad.Trans.State.Strict as Strict
-import qualified Control.Monad.Trans.Writer.Lazy as Lazy
-import qualified Control.Monad.Trans.Writer.Strict as Strict
-
 import Data.Either
 import Data.Functor.Apply
 import Data.Functor.Compose
@@ -43,6 +36,12 @@ import Data.Functor.Contravariant.Divise
 import Data.Functor.Contravariant.Divisible
 import Data.Functor.Product
 import Data.Functor.Reverse
+import qualified Control.Monad.Trans.RWS.Lazy      as Lazy
+import qualified Control.Monad.Trans.RWS.Strict    as Strict
+import qualified Control.Monad.Trans.State.Lazy    as Lazy
+import qualified Control.Monad.Trans.State.Strict  as Strict
+import qualified Control.Monad.Trans.Writer.Lazy   as Lazy
+import qualified Control.Monad.Trans.Writer.Strict as Strict
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Monoid (Alt(..))

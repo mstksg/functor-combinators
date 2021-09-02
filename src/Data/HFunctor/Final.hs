@@ -41,6 +41,10 @@ import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Contravariant.Divisible.Free
 import           Data.Functor.Coyoneda
 import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Inplicative
+import           Data.Functor.Invariant.Inplicative.Free
+import           Data.Functor.Invariant.Internative
+import           Data.Functor.Invariant.Internative.Free
 import           Data.Functor.Plus
 import           Data.HFunctor
 import           Data.HFunctor.Interpret
@@ -287,6 +291,62 @@ instance Decidable (Final Decidable f) where
 instance Invariant (Final Invariant f) where
     invmap f g = liftFinal1 (invmap f g)
 
+-- | @since 0.4.0.0
+instance Invariant (Final Inply f) where
+    invmap f g = liftFinal1 (invmap f g)
+-- | @since 0.4.0.0
+instance Inply (Final Inply f) where
+    gather f g = liftFinal2 (gather f g)
+    gathered = liftFinal2 gathered
+
+-- | @since 0.4.0.0
+instance Invariant (Final Inplicative f) where
+    invmap f g = liftFinal1 (invmap f g)
+-- | @since 0.4.0.0
+instance Inply (Final Inplicative f) where
+    gather f g = liftFinal2 (gather f g)
+    gathered = liftFinal2 gathered
+-- | @since 0.4.0.0
+instance Inplicative (Final Inplicative f) where
+    knot x = liftFinal0 (knot x)
+
+-- | @since 0.4.0.0
+instance Invariant (Final Inalt f) where
+    invmap f g = liftFinal1 (invmap f g)
+-- | @since 0.4.0.0
+instance Inalt (Final Inalt f) where
+    swerve f g h = liftFinal2 (swerve f g h)
+    swerved = liftFinal2 swerved
+
+-- | @since 0.4.0.0
+instance Invariant (Final Inplus f) where
+    invmap f g = liftFinal1 (invmap f g)
+-- | @since 0.4.0.0
+instance Inalt (Final Inplus f) where
+    swerve f g h = liftFinal2 (swerve f g h)
+    swerved = liftFinal2 swerved
+-- | @since 0.4.0.0
+instance Inplus (Final Inplus f) where
+    reject f = liftFinal0 (reject f)
+
+-- | @since 0.4.0.0
+instance Invariant (Final Internative f) where
+    invmap f g = liftFinal1 (invmap f g)
+-- | @since 0.4.0.0
+instance Inply (Final Internative f) where
+    gather f g = liftFinal2 (gather f g)
+    gathered = liftFinal2 gathered
+-- | @since 0.4.0.0
+instance Inplicative (Final Internative f) where
+    knot x = liftFinal0 (knot x)
+-- | @since 0.4.0.0
+instance Inalt (Final Internative f) where
+    swerve f g h = liftFinal2 (swerve f g h)
+    swerved = liftFinal2 swerved
+-- | @since 0.4.0.0
+instance Inplus (Final Internative f) where
+    reject f = liftFinal0 (reject f)
+
 -- | Re-interpret the context under a 'Final'.
 hoistFinalC
     :: (forall g x. (c g => g x) -> (d g => g x))
@@ -413,4 +473,12 @@ instance FreeOf Divisible     Div
 instance FreeOf Decide        Dec1
 -- | @since 0.3.0.0
 instance FreeOf Conclude      Dec
+-- | @since 0.4.0.0
+instance FreeOf Inply         DivAp1    where type FreeFunctorBy DivAp1 = Invariant
+-- | @since 0.4.0.0
+instance FreeOf Inplicative   DivAp
+-- | @since 0.4.0.0
+instance FreeOf Inalt         DecAlt1   where type FreeFunctorBy DecAlt1 = Invariant
+-- | @since 0.4.0.0
+instance FreeOf Inplus        DecAlt
 instance FreeOf Unconstrained IdentityT

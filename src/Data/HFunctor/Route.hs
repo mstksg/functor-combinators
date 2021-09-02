@@ -38,6 +38,8 @@ module Data.HFunctor.Route (
   ) where
 
 import           Control.Natural
+import           Data.Functor.Invariant.Inplicative
+import           Data.Functor.Invariant.Internative
 import           Data.Functor.Bind
 import           Data.Functor.Contravariant
 import           Data.Functor.Contravariant.Conclude
@@ -557,6 +559,16 @@ instance Alt (t (Pre a f)) => Alt (ProPre t f a) where
     ProPre x <!> ProPre y = ProPre (x <!> y)
 -- | @since 0.3.4.1
 deriving instance Invariant (t (Pre a f)) => Invariant (ProPre t f a)
+-- | @since 0.4.0.0.0
+deriving instance Inply (t (Pre a f)) => Inply (ProPre t f a)
+-- | @since 0.4.0.0.0
+deriving instance Inplicative (t (Pre a f)) => Inplicative (ProPre t f a)
+-- | @since 0.4.0.0.0
+deriving instance Inalt (t (Pre a f)) => Inalt (ProPre t f a)
+-- | @since 0.4.0.0.0
+deriving instance Inplus (t (Pre a f)) => Inplus (ProPre t f a)
+-- | @since 0.4.0.0.0
+deriving instance Internative (t (Pre a f)) => Internative (ProPre t f a)
 -- | @since 0.3.4.1
 deriving instance Semigroup (t (Pre a f) b) => Semigroup (ProPre t f a b)
 -- | @since 0.3.4.1

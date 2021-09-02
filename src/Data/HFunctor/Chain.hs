@@ -180,12 +180,14 @@ instance Contravariant f => Divise (Chain1 CD.Day f) where
 instance Contravariant f => Decide (Chain1 N.Night f) where
     decide f x y = appendChain1 $ N.Night x y f
 
+-- | @since 0.4.0.0
 instance Invariant f => Inply (Chain1 ID.Day f) where
     gather f g x y = appendChain1 (ID.Day x y f g)
 
 instance Tensor t i => Inject (Chain t i) where
     inject = injectChain
 
+-- | @since 0.4.0.0
 instance Invariant f => Inalt (Chain1 IN.Night f) where
     swerve f g h x y = appendChain1 (IN.Night x y f g h)
 
@@ -298,15 +300,19 @@ instance Divisible (Chain CD.Day Proxy f) where
     divide f x y = appendChain $ CD.Day x y f
     conquer = Done Proxy
 
+-- | @since 0.4.0.0
 instance Inply (Chain ID.Day Identity f) where
     gather f g x y = appendChain (ID.Day x y f g)
 
+-- | @since 0.4.0.0
 instance Inplicative (Chain ID.Day Identity f) where
     knot = Done  . Identity
 
+-- | @since 0.4.0.0
 instance Inalt (Chain IN.Night IN.Not f) where
     swerve f g h x y = appendChain (IN.Night x y f g h)
 
+-- | @since 0.4.0.0
 instance Inplus (Chain IN.Night IN.Not f) where
     reject = Done . IN.Not
 
