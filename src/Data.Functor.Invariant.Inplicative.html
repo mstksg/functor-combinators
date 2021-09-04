@@ -1,0 +1,436 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- |</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- Module      : Data.Functor.Invariant.Inplicative</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- Copyright   : (c) Justin Le 2021</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- License     : BSD3</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Maintainer  : justin@jle.im</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Stability   : experimental</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Portability : non-portable</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Contains the classes 'Inply' and 'Inplicative', the invariant</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- counterparts to 'Apply'/'Divise' and 'Applicative'/'Divisible'.</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Functor.Invariant.Inplicative</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-15"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Typeclass</span></span><span>
+</span><span id="line-16"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier">Inply</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inplicative"><span class="hs-identifier">Inplicative</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Invariant 'Day'</span></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#runDay"><span class="hs-identifier">runDay</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#dather"><span class="hs-identifier">dather</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Assembling Helpers</span></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInplicative"><span class="hs-identifier">concatInplicative</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInply"><span class="hs-identifier">concatInply</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInplicativeRec"><span class="hs-identifier">concatInplicativeRec</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInplyRec"><span class="hs-identifier">concatInplyRec</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Invariant</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Invariant.Day</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.SOP</span></span><span> </span><span class="hs-keyword">hiding</span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">hmap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vinyl</span></span><span>                 </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">V</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vinyl.Functor</span></span><span>         </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">V</span></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- | The invariant counterpart of 'Apply' and 'Divise'.</span><span>
+</span><span id="line-36"></span><span class="hs-comment">--</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- Conceptually you can think of 'Apply' as, given a way to &quot;combine&quot; @a@ and</span><span>
+</span><span id="line-38"></span><span class="hs-comment">-- @b@ to @c@, lets you merge @f a@ (producer of @a@) and @f b@ (producer</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- of @b@) into a @f c@ (producer of @c@).  'Divise' can be thought of as,</span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- given a way to &quot;split&quot; a @c@ into an @a@ and a @b@, lets you merge @f</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- a@ (consumer of @a@) and @f b@ (consumder of @b@) into a @f c@ (consumer</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- of @c@).</span><span>
+</span><span id="line-43"></span><span class="hs-comment">--</span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- 'Inply', for 'gather', requires both a combining function and</span><span>
+</span><span id="line-45"></span><span class="hs-comment">-- a splitting function in order to merge @f b@ (producer and consumer of</span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- @b@) and @f c@ (producer and consumer of @c@) into a @f a@.  You can</span><span>
+</span><span id="line-47"></span><span class="hs-comment">-- think of it as, for the @f a@, it &quot;splits&quot; the a into @b@ and @c@ with</span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- the @a -&gt; (b, c)@, feeds it to the original @f b@ and @f c@, and then</span><span>
+</span><span id="line-49"></span><span class="hs-comment">-- re-combines the output back into a @a@ with the @b -&gt; c -&gt; a@.</span><span>
+</span><span id="line-50"></span><span class="hs-comment">--</span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">class</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="Inply"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-var">Inply</span></a></span></span><span> </span><span id="local-6989586621679619719"><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-comment">-- | Like '&lt;.&gt;', '&lt;*&gt;', 'divise', or 'divide', but requires both</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-comment">-- a splitting and a recombining function.  '&lt;.&gt;' and '&lt;*&gt;' require</span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-comment">-- only a combining function, and 'divise' and 'divide' require only</span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-comment">-- a splitting function.</span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-comment">-- It is used to merge @f b@ (producer and consumer of @b@) and @f c@</span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-comment">-- (producer and consumer of @c@) into a @f a@.  You can think of it</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-comment">-- as, for the @f a@, it &quot;splits&quot; the a into @b@ and @c@ with the @a -&gt;</span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-comment">-- (b, c)@, feeds it to the original @f b@ and @f c@, and then</span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-comment">-- re-combines the output back into a @a@ with the @b -&gt; c -&gt; a@.</span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-comment">-- An important property is that it will always use @both@ of the</span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-comment">-- ccomponents given in order to fulfil its job.  If you gather an @f</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-comment">-- a@ and an @f b@ into an @f c@, in order to consume/produdce the @c@,</span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-comment">-- it will always use both the @f a@ or the @f b@ -- exactly one of</span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-comment">-- them.</span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-71"></span><span>    </span><span id="local-6989586621679619704"><span id="local-6989586621679619705"><span id="local-6989586621679619706"><span id="gather"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-type">gather</span></a></span></span><span>
+</span><span id="line-72"></span><span>        </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619706"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619705"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619704"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619704"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619706"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679619705"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619706"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-75"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619705"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-76"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619704"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-77"></span><span>    </span><span id="local-6989586621679619619"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var hs-var">gather</span></a></span><span> </span><span id="local-6989586621679619618"><span class="annot"><span class="annottext">f :: b -&gt; c -&gt; a
+</span><a href="#local-6989586621679619618"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619617"><span class="annot"><span class="annottext">g :: a -&gt; (b, c)
+</span><a href="#local-6989586621679619617"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619616"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619616"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619615"><span class="annot"><span class="annottext">y :: f c
+</span><a href="#local-6989586621679619615"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((b, c) -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f (b, c) -&gt; f a
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(b -&gt; c -&gt; a) -&gt; (b, c) -&gt; a
+forall a b c. (a -&gt; b -&gt; c) -&gt; (a, b) -&gt; c
+</span><span class="hs-identifier hs-var">uncurry</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; a
+</span><a href="#local-6989586621679619618"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a -&gt; (b, c)
+</span><a href="#local-6989586621679619617"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; f c -&gt; f (b, c)
+forall (f :: * -&gt; *) a b. Inply f =&gt; f a -&gt; f b -&gt; f (a, b)
+</span><a href="Data.Functor.Invariant.Inplicative.html#gathered"><span class="hs-identifier hs-var">gathered</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619616"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">f c
+</span><a href="#local-6989586621679619615"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-comment">-- | A simplified version of 'gather' that combines into a tuple.  You</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-comment">-- can then use 'invmap' to reshape it into the proper shape.</span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-comment">-- @since 0.4.0.0</span></span><span>
+</span><span id="line-82"></span><span>    </span><span id="local-6989586621679619709"><span id="local-6989586621679619710"><span id="gathered"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#gathered"><span class="hs-identifier hs-type">gathered</span></a></span></span><span>
+</span><span id="line-83"></span><span>        </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619710"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-84"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619709"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-85"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619719"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619710"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679619709"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-86"></span><span>    </span><span id="local-6989586621679619611"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#gathered"><span class="hs-identifier hs-var hs-var">gathered</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; b -&gt; (a, b)) -&gt; ((a, b) -&gt; (a, b)) -&gt; f a -&gt; f b -&gt; f (a, b)
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a, b) -&gt; (a, b)
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-pragma">{-# MINIMAL</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-pragma hs-type">gather</span></a></span><span> </span><span class="hs-pragma">|</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#gathered"><span class="hs-pragma hs-type">gathered</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="hs-comment">-- | The invariant counterpart of 'Applicative' and 'Divisible'.</span><span>
+</span><span id="line-91"></span><span class="hs-comment">--</span><span>
+</span><span id="line-92"></span><span class="hs-comment">-- The main important action is described in 'Inply', but this adds 'knot',</span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- which is the counterpart to 'pure' and 'conquer'.  It's the identity to</span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- 'gather'; if combine two @f a@s with 'gather', and one of them is</span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- 'knot', it will leave the structure unchanged.</span><span>
+</span><span id="line-96"></span><span class="hs-comment">--</span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- Conceptually, if you think of 'gather' as &quot;splitting and re-combining&quot;</span><span>
+</span><span id="line-98"></span><span class="hs-comment">-- along multiple forks, then 'knot' introduces a fork that is never taken.</span><span>
+</span><span id="line-99"></span><span class="hs-comment">--</span><span>
+</span><span id="line-100"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-101"></span><span class="hs-keyword">class</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619684"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="Inplicative"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inplicative"><span class="hs-identifier hs-var">Inplicative</span></a></span></span><span> </span><span id="local-6989586621679619684"><span class="annot"><a href="#local-6989586621679619684"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-102"></span><span>    </span><span id="local-6989586621679619682"><span id="knot"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#knot"><span class="hs-identifier hs-type">knot</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619682"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619684"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619682"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- | Interpret out of a contravariant 'Day' into any instance of 'Inply' by</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- providing two interpreting functions.</span><span>
+</span><span id="line-106"></span><span class="hs-comment">--</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- This should go in &quot;Data.Functor.Invariant.Day&quot;, but that module is in</span><span>
+</span><span id="line-108"></span><span class="hs-comment">-- a different package.</span><span>
+</span><span id="line-109"></span><span class="hs-comment">--</span><span>
+</span><span id="line-110"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-111"></span><span id="local-6989586621679619606"><span id="local-6989586621679619607"><span id="local-6989586621679619608"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#runDay"><span class="hs-identifier hs-type">runDay</span></a></span><span>
+</span><span id="line-112"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619608"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619607"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619608"><span class="hs-identifier hs-type">h</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619606"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619608"><span class="hs-identifier hs-type">h</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-115"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><a href="#local-6989586621679619607"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619606"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619608"><span class="hs-identifier hs-type">h</span></a></span></span></span></span><span>
+</span><span id="line-116"></span><span id="runDay"><span class="annot"><span class="annottext">runDay :: (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Day f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Inplicative.html#runDay"><span class="hs-identifier hs-var hs-var">runDay</span></a></span></span><span> </span><span id="local-6989586621679619605"><span class="annot"><span class="annottext">f :: f ~&gt; h
+</span><a href="#local-6989586621679619605"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619604"><span class="annot"><span class="annottext">g :: g ~&gt; h
+</span><a href="#local-6989586621679619604"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679619602"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619602"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619601"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619601"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619600"><span class="annot"><span class="annottext">a :: b -&gt; c -&gt; x
+</span><a href="#local-6989586621679619600"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679619599"><span class="annot"><span class="annottext">b :: x -&gt; (b, c)
+</span><a href="#local-6989586621679619599"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; c -&gt; x) -&gt; (x -&gt; (b, c)) -&gt; h b -&gt; h c -&gt; h x
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; x
+</span><a href="#local-6989586621679619600"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; (b, c)
+</span><a href="#local-6989586621679619599"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; h b
+f ~&gt; h
+</span><a href="#local-6989586621679619605"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619602"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c -&gt; h c
+g ~&gt; h
+</span><a href="#local-6989586621679619604"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619601"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- | Squash the two items in a 'Day' using their natural 'Inply'</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- instances.</span><span>
+</span><span id="line-120"></span><span class="hs-comment">--</span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- This should go in &quot;Data.Functor.Invariant.Day&quot;, but that module is in</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- a different package.</span><span>
+</span><span id="line-123"></span><span class="hs-comment">--</span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-125"></span><span id="local-6989586621679619598"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#dather"><span class="hs-identifier hs-type">dather</span></a></span><span>
+</span><span id="line-126"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619598"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-127"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><a href="#local-6989586621679619598"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619598"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619598"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-128"></span><span id="dather"><span class="annot"><span class="annottext">dather :: Day f f ~&gt; f
+</span><a href="Data.Functor.Invariant.Inplicative.html#dather"><span class="hs-identifier hs-var hs-var">dather</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679619597"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619597"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619596"><span class="annot"><span class="annottext">y :: f c
+</span><a href="#local-6989586621679619596"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619595"><span class="annot"><span class="annottext">a :: b -&gt; c -&gt; x
+</span><a href="#local-6989586621679619595"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679619594"><span class="annot"><span class="annottext">b :: x -&gt; (b, c)
+</span><a href="#local-6989586621679619594"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; c -&gt; x) -&gt; (x -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f x
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; x
+</span><a href="#local-6989586621679619595"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; (b, c)
+</span><a href="#local-6989586621679619594"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619597"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">f c
+</span><a href="#local-6989586621679619596"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- | Convenient wrapper to build up an 'Inplicative' instance by providing</span><span>
+</span><span id="line-131"></span><span class="hs-comment">-- each component of it.  This makes it much easier to build up longer</span><span>
+</span><span id="line-132"></span><span class="hs-comment">-- chains because you would only need to write the splitting/joining</span><span>
+</span><span id="line-133"></span><span class="hs-comment">-- functions in one place.</span><span>
+</span><span id="line-134"></span><span class="hs-comment">--</span><span>
+</span><span id="line-135"></span><span class="hs-comment">-- For example, if you had a data type</span><span>
+</span><span id="line-136"></span><span class="hs-comment">--</span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-138"></span><span class="hs-comment">-- data MyType = MT Int Bool String</span><span>
+</span><span id="line-139"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-140"></span><span class="hs-comment">--</span><span>
+</span><span id="line-141"></span><span class="hs-comment">-- and an invariant functor and 'Inplicative' instance @Prim@</span><span>
+</span><span id="line-142"></span><span class="hs-comment">-- (representing, say, a bidirectional parser, where @Prim Int@ is</span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- a bidirectional parser for an 'Int'@), then you could assemble</span><span>
+</span><span id="line-144"></span><span class="hs-comment">-- a bidirectional parser for a @MyType@ using:</span><span>
+</span><span id="line-145"></span><span class="hs-comment">--</span><span>
+</span><span id="line-146"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-147"></span><span class="hs-comment">-- invmap (\(MyType x y z) -&gt; I x :* I y :* I z :* Nil)</span><span>
+</span><span id="line-148"></span><span class="hs-comment">--        (\(I x :* I y :* I z :* Nil) -&gt; MyType x y z) $</span><span>
+</span><span id="line-149"></span><span class="hs-comment">--   concatInplicative $ intPrim</span><span>
+</span><span id="line-150"></span><span class="hs-comment">--                    :* boolPrim</span><span>
+</span><span id="line-151"></span><span class="hs-comment">--                    :* stringPrim</span><span>
+</span><span id="line-152"></span><span class="hs-comment">--                    :* Nil</span><span>
+</span><span id="line-153"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-154"></span><span class="hs-comment">--</span><span>
+</span><span id="line-155"></span><span class="hs-comment">-- Some notes on usefulness depending on how many components you have:</span><span>
+</span><span id="line-156"></span><span class="hs-comment">--</span><span>
+</span><span id="line-157"></span><span class="hs-comment">-- *    If you have 0 components, use 'knot' directly.</span><span>
+</span><span id="line-158"></span><span class="hs-comment">-- *    If you have 1 component, use 'inject' directly.</span><span>
+</span><span id="line-159"></span><span class="hs-comment">-- *    If you have 2 components, use 'gather' directly.</span><span>
+</span><span id="line-160"></span><span class="hs-comment">-- *    If you have 3 or more components, these combinators may be useful;</span><span>
+</span><span id="line-161"></span><span class="hs-comment">--      otherwise you'd need to manually peel off tuples one-by-one.</span><span>
+</span><span id="line-162"></span><span class="hs-comment">--</span><span>
+</span><span id="line-163"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-164"></span><span id="local-6989586621679619671"><span id="local-6989586621679619672"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInplicative"><span class="hs-identifier hs-type">concatInplicative</span></a></span><span>
+</span><span id="line-165"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inplicative"><span class="hs-identifier hs-type">Inplicative</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619672"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-166"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679619672"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619671"><span class="hs-keyword hs-type">as</span></a></span><span>
+</span><span id="line-167"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619672"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="annot"><a href="#local-6989586621679619671"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-168"></span><span id="concatInplicative"><span class="annot"><span class="annottext">concatInplicative :: NP f as -&gt; f (NP I as)
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInplicative"><span class="hs-identifier hs-var hs-var">concatInplicative</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-169"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">NP I '[] -&gt; f (NP I '[])
+forall (f :: * -&gt; *) a. Inplicative f =&gt; a -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#knot"><span class="hs-identifier hs-var">knot</span></a></span><span> </span><span class="annot"><span class="annottext">NP I '[]
+forall k (a :: k -&gt; *). NP a '[]
+</span><span class="hs-identifier hs-var">Nil</span></span><span>
+</span><span id="line-170"></span><span>    </span><span id="local-6989586621679619592"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679619592"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679619590"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679619590"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(x -&gt; NP I xs -&gt; NP I (x : xs))
+-&gt; (NP I (x : xs) -&gt; (x, NP I xs))
+-&gt; f x
+-&gt; f (NP I xs)
+-&gt; f (NP I (x : xs))
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span>
+</span><span id="line-171"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679619589"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619589"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619588"><span class="annot"><span class="annottext">ys :: NP I xs
+</span><a href="#local-6989586621679619588"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679619589"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">I x -&gt; NP I xs -&gt; NP I (x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]).
+a x -&gt; NP a xs -&gt; NP a (x : xs)
+</span><span class="hs-operator hs-var">:*</span></span><span> </span><span class="annot"><span class="annottext">NP I xs
+</span><a href="#local-6989586621679619588"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-172"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679619586"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619586"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679619585"><span class="annot"><span class="annottext">ys :: NP I xs
+</span><a href="#local-6989586621679619585"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x
+x
+</span><a href="#local-6989586621679619586"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">NP I xs
+NP I xs
+</span><a href="#local-6989586621679619585"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-173"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679619592"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-174"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NP f xs -&gt; f (NP I xs)
+forall (f :: * -&gt; *) (as :: [*]).
+Inplicative f =&gt;
+NP f as -&gt; f (NP I as)
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInplicative"><span class="hs-identifier hs-var">concatInplicative</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679619590"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-175"></span><span>
+</span><span id="line-176"></span><span class="hs-comment">-- | A version of 'concatInplicative' for non-empty 'NP', but only</span><span>
+</span><span id="line-177"></span><span class="hs-comment">-- requiring an 'Inply' instance.</span><span>
+</span><span id="line-178"></span><span class="hs-comment">--</span><span>
+</span><span id="line-179"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-180"></span><span id="local-6989586621679619655"><span id="local-6989586621679619656"><span id="local-6989586621679619657"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInply"><span class="hs-identifier hs-type">concatInply</span></a></span><span>
+</span><span id="line-181"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619657"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-182"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679619657"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619656"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679619655"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-183"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619657"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619656"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679619655"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-184"></span><span id="concatInply"><span class="annot"><span class="annottext">concatInply :: NP f (a : as) -&gt; f (NP I (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInply"><span class="hs-identifier hs-var hs-var">concatInply</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679619584"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679619584"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679619583"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679619583"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679619583"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-185"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(x -&gt; NP I '[x]) -&gt; (NP I '[x] -&gt; x) -&gt; f x -&gt; f (NP I '[x])
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NP I '[] -&gt; NP I '[x]
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]).
+a x -&gt; NP a xs -&gt; NP a (x : xs)
+</span><span class="hs-operator hs-var">:*</span></span><span> </span><span class="annot"><span class="annottext">NP I '[]
+forall k (a :: k -&gt; *). NP a '[]
+</span><span class="hs-identifier hs-var">Nil</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NP I '[x]) -&gt; (x -&gt; I x) -&gt; x -&gt; NP I '[x]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679619581"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619581"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x
+x
+</span><a href="#local-6989586621679619581"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679619584"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-186"></span><span>    </span><span class="hs-identifier">_</span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(x -&gt; NP I (x : xs) -&gt; NP I (x : x : xs))
+-&gt; (NP I (x : x : xs) -&gt; (x, NP I (x : xs)))
+-&gt; f x
+-&gt; f (NP I (x : xs))
+-&gt; f (NP I (x : x : xs))
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span>
+</span><span id="line-187"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679619580"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619580"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619579"><span class="annot"><span class="annottext">ys :: NP I (x : xs)
+</span><a href="#local-6989586621679619579"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679619580"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">I x -&gt; NP I (x : xs) -&gt; NP I (x : x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]).
+a x -&gt; NP a xs -&gt; NP a (x : xs)
+</span><span class="hs-operator hs-var">:*</span></span><span> </span><span class="annot"><span class="annottext">NP I (x : xs)
+</span><a href="#local-6989586621679619579"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-188"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679619578"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619578"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679619577"><span class="annot"><span class="annottext">ys :: NP I xs
+</span><a href="#local-6989586621679619577"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x
+x
+</span><a href="#local-6989586621679619578"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">NP I xs
+NP I (x : xs)
+</span><a href="#local-6989586621679619577"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-189"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679619584"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-190"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NP f (x : xs) -&gt; f (NP I (x : xs))
+forall (f :: * -&gt; *) a (as :: [*]).
+Inply f =&gt;
+NP f (a : as) -&gt; f (NP I (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInply"><span class="hs-identifier hs-var">concatInply</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+NP f (x : xs)
+</span><a href="#local-6989586621679619583"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="hs-comment">-- | A version of 'concatInplicative' using 'V.XRec' from /vinyl/ instead of</span><span>
+</span><span id="line-193"></span><span class="hs-comment">-- 'NP' from /sop-core/.  This can be more convenient because it doesn't</span><span>
+</span><span id="line-194"></span><span class="hs-comment">-- require manual unwrapping/wrapping of components.</span><span>
+</span><span id="line-195"></span><span class="hs-comment">--</span><span>
+</span><span id="line-196"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-197"></span><span id="local-6989586621679619638"><span id="local-6989586621679619639"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInplicativeRec"><span class="hs-identifier hs-type">concatInplicativeRec</span></a></span><span>
+</span><span id="line-198"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inplicative"><span class="hs-identifier hs-type">Inplicative</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619639"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-199"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Rec</span></span><span> </span><span class="annot"><a href="#local-6989586621679619639"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619638"><span class="hs-keyword hs-type">as</span></a></span><span>
+</span><span id="line-200"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619639"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">V.XRec</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Identity</span></span><span> </span><span class="annot"><a href="#local-6989586621679619638"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-201"></span><span id="concatInplicativeRec"><span class="annot"><span class="annottext">concatInplicativeRec :: Rec f as -&gt; f (XRec Identity as)
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInplicativeRec"><span class="hs-identifier hs-var hs-var">concatInplicativeRec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-202"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">V.RNil</span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Rec (XData Identity) '[] -&gt; f (Rec (XData Identity) '[])
+forall (f :: * -&gt; *) a. Inplicative f =&gt; a -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#knot"><span class="hs-identifier hs-var">knot</span></a></span><span> </span><span class="annot"><span class="annottext">Rec (XData Identity) '[]
+forall u (a :: u -&gt; *). Rec a '[]
+</span><span class="hs-identifier hs-var">V.RNil</span></span><span>
+</span><span id="line-203"></span><span>    </span><span id="local-6989586621679619575"><span class="annot"><span class="annottext">x :: f r
+</span><a href="#local-6989586621679619575"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.:&amp;</span></span><span> </span><span id="local-6989586621679619573"><span class="annot"><span class="annottext">xs :: Rec f rs
+</span><a href="#local-6989586621679619573"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(r -&gt; XRec Identity rs -&gt; XRec Identity (r : rs))
+-&gt; (XRec Identity (r : rs) -&gt; (r, XRec Identity rs))
+-&gt; f r
+-&gt; f (XRec Identity rs)
+-&gt; f (XRec Identity (r : rs))
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span>
+</span><span id="line-204"></span><span>      </span><span class="annot"><span class="annottext">r -&gt; XRec Identity rs -&gt; XRec Identity (r : rs)
+forall a (f :: a -&gt; *) (r :: a) (rs :: [a]).
+HKD f r -&gt; XRec f rs -&gt; XRec f (r : rs)
+</span><span class="hs-operator hs-var">(V.::&amp;)</span></span><span>
+</span><span id="line-205"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span id="local-6989586621679619571"><span class="annot"><span class="annottext">y :: HKD Identity r
+</span><a href="#local-6989586621679619571"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.::&amp;</span></span><span> </span><span id="local-6989586621679619570"><span class="annot"><span class="annottext">ys :: XRec Identity rs
+</span><a href="#local-6989586621679619570"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">r
+HKD Identity r
+</span><a href="#local-6989586621679619571"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">XRec Identity rs
+</span><a href="#local-6989586621679619570"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-206"></span><span>      </span><span class="annot"><span class="annottext">f r
+</span><a href="#local-6989586621679619575"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-207"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rec f rs -&gt; f (XRec Identity rs)
+forall (f :: * -&gt; *) (as :: [*]).
+Inplicative f =&gt;
+Rec f as -&gt; f (XRec Identity as)
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInplicativeRec"><span class="hs-identifier hs-var">concatInplicativeRec</span></a></span><span> </span><span class="annot"><span class="annottext">Rec f rs
+</span><a href="#local-6989586621679619573"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-208"></span><span>
+</span><span id="line-209"></span><span class="hs-comment">-- | A version of 'concatInply' using 'V.XRec' from /vinyl/ instead of</span><span>
+</span><span id="line-210"></span><span class="hs-comment">-- 'NP' from /sop-core/.  This can be more convenient because it doesn't</span><span>
+</span><span id="line-211"></span><span class="hs-comment">-- require manual unwrapping/wrapping of components.</span><span>
+</span><span id="line-212"></span><span class="hs-comment">--</span><span>
+</span><span id="line-213"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-214"></span><span id="local-6989586621679619628"><span id="local-6989586621679619629"><span id="local-6989586621679619630"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#concatInplyRec"><span class="hs-identifier hs-type">concatInplyRec</span></a></span><span>
+</span><span id="line-215"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619630"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-216"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Rec</span></span><span> </span><span class="annot"><a href="#local-6989586621679619630"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619629"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679619628"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-217"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619630"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">V.XRec</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619629"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679619628"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-218"></span><span id="concatInplyRec"><span class="annot"><span class="annottext">concatInplyRec :: Rec f (a : as) -&gt; f (XRec Identity (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInplyRec"><span class="hs-identifier hs-var hs-var">concatInplyRec</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679619569"><span class="annot"><span class="annottext">x :: f r
+</span><a href="#local-6989586621679619569"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.:&amp;</span></span><span> </span><span id="local-6989586621679619568"><span class="annot"><span class="annottext">xs :: Rec f rs
+</span><a href="#local-6989586621679619568"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Rec f rs
+</span><a href="#local-6989586621679619568"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-219"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">V.RNil</span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(r -&gt; XRec Identity '[a])
+-&gt; (XRec Identity '[a] -&gt; r) -&gt; f r -&gt; f (XRec Identity '[a])
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HKD Identity a -&gt; Rec (XData Identity) '[] -&gt; XRec Identity '[a]
+forall a (f :: a -&gt; *) (r :: a) (rs :: [a]).
+HKD f r -&gt; XRec f rs -&gt; XRec f (r : rs)
+</span><span class="hs-operator hs-var">V.::&amp;</span></span><span> </span><span class="annot"><span class="annottext">Rec (XData Identity) '[]
+forall u (a :: u -&gt; *). Rec a '[]
+</span><span class="hs-identifier hs-var">V.RNil</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span id="local-6989586621679619567"><span class="annot"><span class="annottext">z :: HKD Identity a
+</span><a href="#local-6989586621679619567"><span class="hs-identifier hs-var">z</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.::&amp;</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">r
+HKD Identity a
+</span><a href="#local-6989586621679619567"><span class="hs-identifier hs-var">z</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f r
+</span><a href="#local-6989586621679619569"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-220"></span><span>    </span><span class="hs-identifier">_</span><span> </span><span class="annot"><span class="hs-operator hs-type">V.:&amp;</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(r -&gt; XRec Identity (r : rs) -&gt; XRec Identity (a : r : rs))
+-&gt; (XRec Identity (a : r : rs) -&gt; (r, XRec Identity (r : rs)))
+-&gt; f r
+-&gt; f (XRec Identity (r : rs))
+-&gt; f (XRec Identity (a : r : rs))
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span>
+</span><span id="line-221"></span><span>      </span><span class="annot"><span class="annottext">r -&gt; XRec Identity (r : rs) -&gt; XRec Identity (a : r : rs)
+forall a (f :: a -&gt; *) (r :: a) (rs :: [a]).
+HKD f r -&gt; XRec f rs -&gt; XRec f (r : rs)
+</span><span class="hs-operator hs-var">(V.::&amp;)</span></span><span>
+</span><span id="line-222"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span id="local-6989586621679619566"><span class="annot"><span class="annottext">y :: HKD Identity a
+</span><a href="#local-6989586621679619566"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.::&amp;</span></span><span> </span><span id="local-6989586621679619565"><span class="annot"><span class="annottext">ys :: XRec Identity (r : rs)
+</span><a href="#local-6989586621679619565"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">r
+HKD Identity a
+</span><a href="#local-6989586621679619566"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">XRec Identity (r : rs)
+</span><a href="#local-6989586621679619565"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-223"></span><span>      </span><span class="annot"><span class="annottext">f r
+</span><a href="#local-6989586621679619569"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-224"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rec f (r : rs) -&gt; f (XRec Identity (r : rs))
+forall (f :: * -&gt; *) a (as :: [*]).
+Inply f =&gt;
+Rec f (a : as) -&gt; f (XRec Identity (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.html#concatInplyRec"><span class="hs-identifier hs-var">concatInplyRec</span></a></span><span> </span><span class="annot"><span class="annottext">Rec f rs
+Rec f (r : rs)
+</span><a href="#local-6989586621679619568"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-225"></span></pre></body></html>

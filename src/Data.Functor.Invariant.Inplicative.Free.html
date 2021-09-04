@@ -1,0 +1,977 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# OPTIONS_GHC -fno-warn-orphans #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- Module      : Data.Functor.Invariant.Inplicative.Free</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Copyright   : (c) Justin Le 2019</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- License     : BSD3</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Maintainer  : justin@jle.im</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Stability   : experimental</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Portability : non-portable</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Provide an invariant functor combinator sequencer, like a combination of</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- 'Ap' and 'Div'.</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- This module was named 'Data.Functor.Invariant.DecAlt' before v0.4.0.0</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Functor.Invariant.Inplicative.Free</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-19"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Chain</span></span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier">DivAp</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#Gather"><span class="hs-identifier">Gather</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#Knot"><span class="hs-identifier">Knot</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp"><span class="hs-identifier">runCoDivAp</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp"><span class="hs-identifier">runContraDivAp</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApAp"><span class="hs-identifier">divApAp</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApDiv"><span class="hs-identifier">divApDiv</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp"><span class="hs-identifier">foldDivAp</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp"><span class="hs-identifier">assembleDivAp</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivApRec"><span class="hs-identifier">assembleDivApRec</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Nonempty Chain</span></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier">DivAp1</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#DivAp1"><span class="hs-identifier">DivAp1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp1"><span class="hs-identifier">runCoDivAp1</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp1"><span class="hs-identifier">runContraDivAp1</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApAp1"><span class="hs-identifier">divApAp1</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApDiv1"><span class="hs-identifier">divApDiv1</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp1"><span class="hs-identifier">foldDivAp1</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1"><span class="hs-identifier">assembleDivAp1</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1Rec"><span class="hs-identifier">assembleDivAp1Rec</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Day Utility</span></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayApply"><span class="hs-identifier">runDayApply</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayDivise"><span class="hs-identifier">runDayDivise</span></a></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Applicative</span></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Applicative.Free</span></span><span>                  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Ap</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Control.Applicative.ListF.html"><span class="hs-identifier">Control.Applicative.ListF</span></a></span><span>                 </span><span class="hs-special">(</span><span class="annot"><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier">MaybeF</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Coerce</span></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Apply</span></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Apply.Free.html"><span class="hs-identifier">Data.Functor.Apply.Free</span></a></span><span>                   </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Apply.Free.html#Ap1"><span class="hs-identifier">Ap1</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Contravariant.Divise.html"><span class="hs-identifier">Data.Functor.Contravariant.Divise</span></a></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Contravariant.Divisible</span></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html"><span class="hs-identifier">Data.Functor.Contravariant.Divisible.Free</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html#Div"><span class="hs-identifier">Div</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html#Div1"><span class="hs-identifier">Div1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Identity</span></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Invariant</span></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Invariant.Day</span></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html"><span class="hs-identifier">Data.Functor.Invariant.Inplicative</span></a></span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HBifunctor.Tensor.html"><span class="hs-identifier">Data.HBifunctor.Tensor</span></a></span><span> </span><span class="hs-keyword">hiding</span><span>             </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim1"><span class="hs-identifier">elim1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim2"><span class="hs-identifier">elim2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro1"><span class="hs-identifier">intro1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro2"><span class="hs-identifier">intro2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.html"><span class="hs-identifier">Data.HFunctor</span></a></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Chain.html"><span class="hs-identifier">Data.HFunctor.Chain</span></a></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html"><span class="hs-identifier">Data.HFunctor.Chain.Internal</span></a></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Interpret.html"><span class="hs-identifier">Data.HFunctor.Interpret</span></a></span><span>
+</span><span id="line-61"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.SOP</span></span><span> </span><span class="hs-keyword">hiding</span><span>                           </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">hmap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vinyl</span></span><span>                                </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">V</span></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vinyl.Functor</span></span><span>                        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">V</span></span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- | Interpret the covariant part of a 'Day' into a target context @h@,</span><span>
+</span><span id="line-66"></span><span class="hs-comment">-- as long as the context is an instance of 'Apply'.  The 'Apply' is used to</span><span>
+</span><span id="line-67"></span><span class="hs-comment">-- combine results back together using '&lt;*&gt;'.</span><span>
+</span><span id="line-68"></span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayApply"><span class="hs-identifier hs-type">runDayApply</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635707"><span class="annot"><a href="#local-6989586621679635707"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635706"><span class="annot"><a href="#local-6989586621679635706"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679635708"><span class="annot"><a href="#local-6989586621679635708"><span class="hs-identifier hs-type">h</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Apply</span></span><span> </span><span class="annot"><a href="#local-6989586621679635708"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635707"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635708"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635706"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635708"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><a href="#local-6989586621679635707"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635706"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635708"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-73"></span><span id="runDayApply"><span class="annot"><span class="annottext">runDayApply :: (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Day f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayApply"><span class="hs-identifier hs-var hs-var">runDayApply</span></a></span></span><span> </span><span id="local-6989586621679635419"><span class="annot"><span class="annottext">f :: f ~&gt; h
+</span><a href="#local-6989586621679635419"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635418"><span class="annot"><span class="annottext">g :: g ~&gt; h
+</span><a href="#local-6989586621679635418"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679635416"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679635416"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635415"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679635415"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679635414"><span class="annot"><span class="annottext">j :: b -&gt; c -&gt; x
+</span><a href="#local-6989586621679635414"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; c -&gt; x) -&gt; h b -&gt; h c -&gt; h x
+forall (f :: * -&gt; *) a b c.
+Apply f =&gt;
+(a -&gt; b -&gt; c) -&gt; f a -&gt; f b -&gt; f c
+</span><span class="hs-identifier hs-var">liftF2</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; x
+</span><a href="#local-6989586621679635414"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; h b
+f ~&gt; h
+</span><a href="#local-6989586621679635419"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679635416"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c -&gt; h c
+g ~&gt; h
+</span><a href="#local-6989586621679635418"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679635415"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="hs-comment">-- | Interpret the contravariant part of a 'Day' into a target context</span><span>
+</span><span id="line-76"></span><span class="hs-comment">-- @h@, as long as the context is an instance of 'Divise'.  The 'Divise' is</span><span>
+</span><span id="line-77"></span><span class="hs-comment">-- used to split up the input to pass to each of the actions.</span><span>
+</span><span id="line-78"></span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayDivise"><span class="hs-identifier hs-type">runDayDivise</span></a></span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635699"><span class="annot"><a href="#local-6989586621679635699"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635698"><span class="annot"><a href="#local-6989586621679635698"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679635700"><span class="annot"><a href="#local-6989586621679635700"><span class="hs-identifier hs-type">h</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Divise.html#Divise"><span class="hs-identifier hs-type">Divise</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635700"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635699"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635700"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635698"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635700"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><a href="#local-6989586621679635699"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635698"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635700"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-83"></span><span id="runDayDivise"><span class="annot"><span class="annottext">runDayDivise :: (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Day f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayDivise"><span class="hs-identifier hs-var hs-var">runDayDivise</span></a></span></span><span> </span><span id="local-6989586621679635412"><span class="annot"><span class="annottext">f :: f ~&gt; h
+</span><a href="#local-6989586621679635412"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635411"><span class="annot"><span class="annottext">g :: g ~&gt; h
+</span><a href="#local-6989586621679635411"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679635410"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679635410"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635409"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679635409"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679635408"><span class="annot"><span class="annottext">h :: x -&gt; (b, c)
+</span><a href="#local-6989586621679635408"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(x -&gt; (b, c)) -&gt; h b -&gt; h c -&gt; h x
+forall (f :: * -&gt; *) a b c.
+Divise f =&gt;
+(a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Contravariant.Divise.html#divise"><span class="hs-identifier hs-var">divise</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; (b, c)
+</span><a href="#local-6989586621679635408"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; h b
+f ~&gt; h
+</span><a href="#local-6989586621679635412"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679635410"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c -&gt; h c
+g ~&gt; h
+</span><a href="#local-6989586621679635411"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679635409"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- | In the covariant direction, we can interpret out of a 'Chain1' of 'Day'</span><span>
+</span><span id="line-86"></span><span class="hs-comment">-- into any 'Apply'.</span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp1"><span class="hs-identifier hs-type">runCoDivAp1</span></a></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635626"><span class="annot"><a href="#local-6989586621679635626"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635627"><span class="annot"><a href="#local-6989586621679635627"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Apply</span></span><span> </span><span class="annot"><a href="#local-6989586621679635627"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-89"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635626"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635627"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635626"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635627"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-91"></span><span id="runCoDivAp1"><span class="annot"><span class="annottext">runCoDivAp1 :: (f ~&gt; g) -&gt; DivAp1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp1"><span class="hs-identifier hs-var hs-var">runCoDivAp1</span></a></span></span><span> </span><span id="local-6989586621679635406"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679635406"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (Day f g ~&gt; g) -&gt; DivAp1 f ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+(f ~&gt; g) -&gt; (Day f g ~&gt; g) -&gt; DivAp1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp1"><span class="hs-identifier hs-var">foldDivAp1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679635406"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (g ~&gt; g) -&gt; Day f g ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *) (h :: * -&gt; *).
+Apply h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Day f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayApply"><span class="hs-identifier hs-var">runDayApply</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679635406"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+g ~&gt; g
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- | In the contravariant direction, we can interpret out of a 'Chain1' of</span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- 'Day' into any 'Divise'.</span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp1"><span class="hs-identifier hs-type">runContraDivAp1</span></a></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635616"><span class="annot"><a href="#local-6989586621679635616"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635617"><span class="annot"><a href="#local-6989586621679635617"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Divise.html#Divise"><span class="hs-identifier hs-type">Divise</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635617"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635616"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635617"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635616"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635617"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-99"></span><span id="runContraDivAp1"><span class="annot"><span class="annottext">runContraDivAp1 :: (f ~&gt; g) -&gt; DivAp1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp1"><span class="hs-identifier hs-var hs-var">runContraDivAp1</span></a></span></span><span> </span><span id="local-6989586621679635404"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679635404"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (Day f g ~&gt; g) -&gt; DivAp1 f ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+(f ~&gt; g) -&gt; (Day f g ~&gt; g) -&gt; DivAp1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp1"><span class="hs-identifier hs-var">foldDivAp1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679635404"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (g ~&gt; g) -&gt; Day f g ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *) (h :: * -&gt; *).
+Divise h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Day f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runDayDivise"><span class="hs-identifier hs-var">runDayDivise</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679635404"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+g ~&gt; g
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- | In the covariant direction, we can interpret out of a 'Chain' of 'Day'</span><span>
+</span><span id="line-102"></span><span class="hs-comment">-- into any 'Applicative'.</span><span>
+</span><span id="line-103"></span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp"><span class="hs-identifier hs-type">runCoDivAp</span></a></span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635635"><span class="annot"><a href="#local-6989586621679635635"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635636"><span class="annot"><a href="#local-6989586621679635636"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Applicative</span></span><span> </span><span class="annot"><a href="#local-6989586621679635636"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635635"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635636"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-106"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635635"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635636"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-107"></span><span id="runCoDivAp"><span class="annot"><span class="annottext">runCoDivAp :: (f ~&gt; g) -&gt; DivAp f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp"><span class="hs-identifier hs-var hs-var">runCoDivAp</span></a></span></span><span> </span><span id="local-6989586621679635403"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679635403"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(forall x. x -&gt; g x) -&gt; (Day f g ~&gt; g) -&gt; DivAp f ~&gt; g
+forall (g :: * -&gt; *) (f :: * -&gt; *).
+(forall x. x -&gt; g x) -&gt; (Day f g ~&gt; g) -&gt; DivAp f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp"><span class="hs-identifier hs-var">foldDivAp</span></a></span><span> </span><span class="annot"><span class="annottext">forall x. x -&gt; g x
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679635402"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679635402"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635401"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679635401"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679635400"><span class="annot"><span class="annottext">h :: b -&gt; c -&gt; x
+</span><a href="#local-6989586621679635400"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(b -&gt; c -&gt; x) -&gt; g b -&gt; g c -&gt; g x
+forall (f :: * -&gt; *) a b c.
+Applicative f =&gt;
+(a -&gt; b -&gt; c) -&gt; f a -&gt; f b -&gt; f c
+</span><span class="hs-identifier hs-var">liftA2</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; x
+</span><a href="#local-6989586621679635400"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; g b
+f ~&gt; g
+</span><a href="#local-6989586621679635403"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679635402"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679635401"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span class="hs-comment">-- | In the contravariant direction, we can interpret out of a 'Chain' of</span><span>
+</span><span id="line-110"></span><span class="hs-comment">-- 'Day' into any 'Divisible'.</span><span>
+</span><span id="line-111"></span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp"><span class="hs-identifier hs-type">runContraDivAp</span></a></span><span>
+</span><span id="line-112"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635621"><span class="annot"><a href="#local-6989586621679635621"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635622"><span class="annot"><a href="#local-6989586621679635622"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Divisible</span></span><span> </span><span class="annot"><a href="#local-6989586621679635622"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635621"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635622"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635621"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635622"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-115"></span><span id="runContraDivAp"><span class="annot"><span class="annottext">runContraDivAp :: (f ~&gt; g) -&gt; DivAp f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp"><span class="hs-identifier hs-var hs-var">runContraDivAp</span></a></span></span><span> </span><span id="local-6989586621679635398"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679635398"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(forall x. x -&gt; g x) -&gt; (Day f g ~&gt; g) -&gt; DivAp f ~&gt; g
+forall (g :: * -&gt; *) (f :: * -&gt; *).
+(forall x. x -&gt; g x) -&gt; (Day f g ~&gt; g) -&gt; DivAp f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp"><span class="hs-identifier hs-var">foldDivAp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g x -&gt; x -&gt; g x
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">g x
+forall (f :: * -&gt; *) a. Divisible f =&gt; f a
+</span><span class="hs-identifier hs-var">conquer</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679635395"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679635395"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635394"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679635394"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679635393"><span class="annot"><span class="annottext">g :: x -&gt; (b, c)
+</span><a href="#local-6989586621679635393"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(x -&gt; (b, c)) -&gt; g b -&gt; g c -&gt; g x
+forall (f :: * -&gt; *) a b c.
+Divisible f =&gt;
+(a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><span class="hs-identifier hs-var">divide</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; (b, c)
+</span><a href="#local-6989586621679635393"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; g b
+f ~&gt; g
+</span><a href="#local-6989586621679635398"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679635395"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679635394"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- | General-purpose folder of 'DivAp'.  Provide a way to handle the</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- identity ('pure'/'conquer'/'Knot') and a way to handle a cons</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- ('liftA2'/'divide'/'Gather').</span><span>
+</span><span id="line-120"></span><span class="hs-comment">--</span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- @since 0.3.5.0</span><span>
+</span><span id="line-122"></span><span id="local-6989586621679635691"><span id="local-6989586621679635692"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp"><span class="hs-identifier hs-type">foldDivAp</span></a></span><span>
+</span><span id="line-123"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635693"><span class="annot"><a href="#local-6989586621679635693"><span class="hs-identifier hs-type">x</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="#local-6989586621679635693"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635692"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635693"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-124"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><a href="#local-6989586621679635691"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635692"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635692"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-125"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635691"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635692"><span class="hs-identifier hs-type">g</span></a></span></span></span><span>
+</span><span id="line-126"></span><span id="foldDivAp"><span class="annot"><span class="annottext">foldDivAp :: (forall x. x -&gt; g x) -&gt; (Day f g ~&gt; g) -&gt; DivAp f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp"><span class="hs-identifier hs-var hs-var">foldDivAp</span></a></span></span><span> </span><span id="local-6989586621679635391"><span class="annot"><span class="annottext">f :: forall x. x -&gt; g x
+</span><a href="#local-6989586621679635391"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635390"><span class="annot"><span class="annottext">g :: Day f g ~&gt; g
+</span><a href="#local-6989586621679635390"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Identity ~&gt; g) -&gt; (Day f g ~&gt; g) -&gt; Chain Day Identity f ~&gt; g
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *)
+       (f :: k -&gt; *) (g :: k -&gt; *).
+HBifunctor t =&gt;
+(i ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain t i f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain"><span class="hs-identifier hs-var">foldChain</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x -&gt; g x
+forall x. x -&gt; g x
+</span><a href="#local-6989586621679635391"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(x -&gt; g x) -&gt; (Identity x -&gt; x) -&gt; Identity x -&gt; g x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Identity x -&gt; x
+forall a. Identity a -&gt; a
+</span><span class="hs-identifier hs-var hs-var">runIdentity</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Day f g ~&gt; g
+</span><a href="#local-6989586621679635390"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Day Identity f x -&gt; g x)
+-&gt; (DivAp f x -&gt; Chain Day Identity f x) -&gt; DivAp f x -&gt; g x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">DivAp f x -&gt; Chain Day Identity f x
+forall (f :: * -&gt; *) a. DivAp f a -&gt; Chain Day Identity f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDivAp"><span class="hs-identifier hs-var hs-var">unDivAp</span></a></span><span>
+</span><span id="line-127"></span><span>
+</span><span id="line-128"></span><span class="hs-comment">-- | General-purpose folder of 'DivAp1'.  Provide a way to handle the</span><span>
+</span><span id="line-129"></span><span class="hs-comment">-- individual leaves and a way to handle a cons ('liftF2/'divise'/'Gather').</span><span>
+</span><span id="line-130"></span><span class="hs-comment">--</span><span>
+</span><span id="line-131"></span><span class="hs-comment">-- @since 0.3.5.0</span><span>
+</span><span id="line-132"></span><span id="local-6989586621679635710"><span id="local-6989586621679635711"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp1"><span class="hs-identifier hs-type">foldDivAp1</span></a></span><span>
+</span><span id="line-133"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635711"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635710"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><a href="#local-6989586621679635711"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635710"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635710"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-135"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635711"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635710"><span class="hs-identifier hs-type">g</span></a></span></span></span><span>
+</span><span id="line-136"></span><span id="foldDivAp1"><span class="annot"><span class="annottext">foldDivAp1 :: (f ~&gt; g) -&gt; (Day f g ~&gt; g) -&gt; DivAp1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#foldDivAp1"><span class="hs-identifier hs-var hs-var">foldDivAp1</span></a></span></span><span> </span><span id="local-6989586621679635385"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679635385"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635384"><span class="annot"><span class="annottext">g :: Day f g ~&gt; g
+</span><a href="#local-6989586621679635384"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (Day f g ~&gt; g) -&gt; Chain1 Day f ~&gt; g
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (g :: k -&gt; *).
+HBifunctor t =&gt;
+(f ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain1 t f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain1"><span class="hs-identifier hs-var">foldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679635385"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Day f g ~&gt; g
+</span><a href="#local-6989586621679635384"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain1 Day f x -&gt; g x)
+-&gt; (DivAp1 f x -&gt; Chain1 Day f x) -&gt; DivAp1 f x -&gt; g x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">DivAp1 f x -&gt; Chain1 Day f x
+forall (f :: * -&gt; *) a. DivAp1 f a -&gt; Chain1 Day f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDivAp1"><span class="hs-identifier hs-var hs-var">unDivAp1</span></a></span><span>
+</span><span id="line-137"></span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span>
+</span><span id="line-141"></span><span>
+</span><span id="line-142"></span><span class="hs-comment">-- | Extract the 'Ap' part out of a 'DivAp', shedding the</span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- contravariant bits.</span><span>
+</span><span id="line-144"></span><span class="hs-comment">--</span><span>
+</span><span id="line-145"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-146"></span><span id="local-6989586621679635381"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApAp"><span class="hs-identifier hs-type">divApAp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635381"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ap</span></span><span> </span><span class="annot"><a href="#local-6989586621679635381"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-147"></span><span id="divApAp"><span class="annot"><span class="annottext">divApAp :: DivAp f x -&gt; Ap f x
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#divApAp"><span class="hs-identifier hs-var hs-var">divApAp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; Ap f) -&gt; DivAp f ~&gt; Ap f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Applicative g =&gt;
+(f ~&gt; g) -&gt; DivAp f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp"><span class="hs-identifier hs-var">runCoDivAp</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; Ap f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-148"></span><span>
+</span><span id="line-149"></span><span class="hs-comment">-- | Extract the 'Ap1' part out of a 'DivAp1', shedding the</span><span>
+</span><span id="line-150"></span><span class="hs-comment">-- contravariant bits.</span><span>
+</span><span id="line-151"></span><span class="hs-comment">--</span><span>
+</span><span id="line-152"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-153"></span><span id="local-6989586621679635379"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApAp1"><span class="hs-identifier hs-type">divApAp1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635379"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Apply.Free.html#Ap1"><span class="hs-identifier hs-type">Ap1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635379"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-154"></span><span id="divApAp1"><span class="annot"><span class="annottext">divApAp1 :: DivAp1 f x -&gt; Ap1 f x
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#divApAp1"><span class="hs-identifier hs-var hs-var">divApAp1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; Ap1 f) -&gt; DivAp1 f ~&gt; Ap1 f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Apply g =&gt;
+(f ~&gt; g) -&gt; DivAp1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runCoDivAp1"><span class="hs-identifier hs-var">runCoDivAp1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; Ap1 f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-155"></span><span>
+</span><span id="line-156"></span><span class="hs-comment">-- | Extract the 'Div' part out of a 'DivAp', shedding the</span><span>
+</span><span id="line-157"></span><span class="hs-comment">-- covariant bits.</span><span>
+</span><span id="line-158"></span><span class="hs-comment">--</span><span>
+</span><span id="line-159"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-160"></span><span id="local-6989586621679635378"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApDiv"><span class="hs-identifier hs-type">divApDiv</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635378"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html#Div"><span class="hs-identifier hs-type">Div</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635378"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-161"></span><span id="divApDiv"><span class="annot"><span class="annottext">divApDiv :: DivAp f x -&gt; Div f x
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#divApDiv"><span class="hs-identifier hs-var hs-var">divApDiv</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; Div f) -&gt; DivAp f ~&gt; Div f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Divisible g =&gt;
+(f ~&gt; g) -&gt; DivAp f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp"><span class="hs-identifier hs-var">runContraDivAp</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; Div f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-162"></span><span>
+</span><span id="line-163"></span><span class="hs-comment">-- | Extract the 'Div1' part out of a 'DivAp1', shedding the</span><span>
+</span><span id="line-164"></span><span class="hs-comment">-- covariant bits.</span><span>
+</span><span id="line-165"></span><span class="hs-comment">--</span><span>
+</span><span id="line-166"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-167"></span><span id="local-6989586621679635377"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#divApDiv1"><span class="hs-identifier hs-type">divApDiv1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635377"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html#Div1"><span class="hs-identifier hs-type">Div1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635377"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-168"></span><span id="divApDiv1"><span class="annot"><span class="annottext">divApDiv1 :: DivAp1 f x -&gt; Div1 f x
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#divApDiv1"><span class="hs-identifier hs-var hs-var">divApDiv1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; Div1 f) -&gt; DivAp1 f ~&gt; Div1 f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Divise g =&gt;
+(f ~&gt; g) -&gt; DivAp1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#runContraDivAp1"><span class="hs-identifier hs-var">runContraDivAp1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; Div1 f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-169"></span><span>
+</span><span id="line-170"></span><span class="hs-comment">-- | Match on a non-empty 'DivAp'; contains no @f@s, but only the</span><span>
+</span><span id="line-171"></span><span class="hs-comment">-- terminal value.  Analogous to the 'Control.Applicative.Free.Ap'</span><span>
+</span><span id="line-172"></span><span class="hs-comment">-- constructor.</span><span>
+</span><span id="line-173"></span><span class="hs-comment">--</span><span>
+</span><span id="line-174"></span><span class="hs-comment">-- Note that the order of the first two arguments has swapped as of</span><span>
+</span><span id="line-175"></span><span class="hs-comment">-- v0.4.0.0</span><span>
+</span><span id="line-176"></span><span id="local-6989586621679635611"><span id="local-6989586621679635612"><span id="local-6989586621679635613"><span id="local-6989586621679635614"><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#Gather"><span class="hs-identifier hs-type">Gather</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635612"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635611"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635613"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635613"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635612"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679635611"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635614"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635612"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635614"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635611"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635614"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635613"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span><span>
+</span><span id="line-177"></span><span class="hs-keyword">pattern</span><span> </span><span id="%24bGather"><span id="%24mGather"><span id="Gather"><span class="annot"><span class="annottext">$bGather :: (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; DivAp f c -&gt; DivAp f a
+$mGather :: forall r a (f :: * -&gt; *).
+DivAp f a
+-&gt; (forall b c.
+    (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; DivAp f c -&gt; r)
+-&gt; (Void# -&gt; r)
+-&gt; r
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#%24bGather"><span class="hs-identifier hs-var hs-var hs-var hs-var">Gather</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621679635374"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635373"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635372"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635371"><span class="hs-identifier hs-type">xs</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#unGather_"><span class="hs-identifier hs-type">unGather_</span></a></span><span class="hs-glyph">-&gt;</span><span class="annot"><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-type">MaybeF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679635372"><span class="annot"><a href="#local-6989586621679635372"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635371"><span class="annot"><a href="#local-6989586621679635371"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679635374"><span class="annot"><a href="#local-6989586621679635374"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635373"><span class="annot"><a href="#local-6989586621679635373"><span class="hs-identifier hs-var">g</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-178"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#Gather"><span class="hs-identifier hs-var">Gather</span></a></span><span> </span><span id="local-6989586621679635368"><span class="annot"><span class="annottext">f :: b -&gt; c -&gt; a
+</span><a href="#local-6989586621679635368"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635367"><span class="annot"><span class="annottext">g :: a -&gt; (b, c)
+</span><a href="#local-6989586621679635367"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679635366"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679635366"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635365"><span class="annot"><span class="annottext">xs :: DivAp f c
+</span><a href="#local-6989586621679635365"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Chain Day Identity f a -&gt; DivAp f a
+forall (f :: * -&gt; *) a. Chain Day Identity f a -&gt; DivAp f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-var">DivAp</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Day Identity f a -&gt; DivAp f a)
+-&gt; Chain Day Identity f a -&gt; DivAp f a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Day f (Chain Day Identity f) a -&gt; Chain Day Identity f a
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+t f (Chain t i f) a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More"><span class="hs-identifier hs-var">More</span></a></span><span> </span><span class="annot"><span class="annottext">(Day f (Chain Day Identity f) a -&gt; Chain Day Identity f a)
+-&gt; Day f (Chain Day Identity f) a -&gt; Chain Day Identity f a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; Chain Day Identity f c
+-&gt; (b -&gt; c -&gt; a)
+-&gt; (a -&gt; (b, c))
+-&gt; Day f (Chain Day Identity f) a
+forall (f :: * -&gt; *) (g :: * -&gt; *) a b c.
+f b -&gt; g c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f g a
+</span><span class="hs-identifier hs-var">Day</span></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679635366"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DivAp f c -&gt; Chain Day Identity f c
+forall (f :: * -&gt; *) a. DivAp f a -&gt; Chain Day Identity f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDivAp"><span class="hs-identifier hs-var hs-var">unDivAp</span></a></span><span> </span><span class="annot"><span class="annottext">DivAp f c
+</span><a href="#local-6989586621679635365"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; a
+</span><a href="#local-6989586621679635368"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; (b, c)
+</span><a href="#local-6989586621679635367"><span class="hs-identifier hs-var">g</span></a></span><span>
+</span><span id="line-180"></span><span>
+</span><span id="line-181"></span><span id="local-6989586621679635362"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#unGather_"><span class="hs-identifier hs-type">unGather_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635362"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-type">MaybeF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><a href="#local-6989586621679635362"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635362"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-182"></span><span id="unGather_"><span class="annot"><span class="annottext">unGather_ :: DivAp f x -&gt; MaybeF (Day f (DivAp f)) x
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#unGather_"><span class="hs-identifier hs-var hs-var">unGather_</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-183"></span><span>  </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#More"><span class="hs-identifier hs-type">More</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679635361"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679635361"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635360"><span class="annot"><span class="annottext">xs :: Chain Day Identity f c
+</span><a href="#local-6989586621679635360"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679635359"><span class="annot"><span class="annottext">g :: b -&gt; c -&gt; x
+</span><a href="#local-6989586621679635359"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679635358"><span class="annot"><span class="annottext">f :: x -&gt; (b, c)
+</span><a href="#local-6989586621679635358"><span class="hs-identifier hs-var">f</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Day f (DivAp f) x) -&gt; MaybeF (Day f (DivAp f)) x
+forall k (f :: k -&gt; *) (a :: k). Maybe (f a) -&gt; MaybeF f a
+</span><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-var">MaybeF</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe (Day f (DivAp f) x) -&gt; MaybeF (Day f (DivAp f)) x)
+-&gt; (Day f (DivAp f) x -&gt; Maybe (Day f (DivAp f) x))
+-&gt; Day f (DivAp f) x
+-&gt; MaybeF (Day f (DivAp f)) x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Day f (DivAp f) x -&gt; Maybe (Day f (DivAp f) x)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Day f (DivAp f) x -&gt; MaybeF (Day f (DivAp f)) x)
+-&gt; Day f (DivAp f) x -&gt; MaybeF (Day f (DivAp f)) x
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; DivAp f c -&gt; (b -&gt; c -&gt; x) -&gt; (x -&gt; (b, c)) -&gt; Day f (DivAp f) x
+forall (f :: * -&gt; *) (g :: * -&gt; *) a b c.
+f b -&gt; g c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f g a
+</span><span class="hs-identifier hs-var">Day</span></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679635361"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Chain Day Identity f c -&gt; DivAp f c
+forall (f :: * -&gt; *) a. Chain Day Identity f a -&gt; DivAp f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-var">DivAp</span></a></span><span> </span><span class="annot"><span class="annottext">Chain Day Identity f c
+</span><a href="#local-6989586621679635360"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; x
+</span><a href="#local-6989586621679635359"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; (b, c)
+</span><a href="#local-6989586621679635358"><span class="hs-identifier hs-var">f</span></a></span><span>
+</span><span id="line-184"></span><span>  </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Done"><span class="hs-identifier hs-type">Done</span></a></span><span> </span><span class="hs-identifier">_</span><span>             </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Day f (DivAp f) x) -&gt; MaybeF (Day f (DivAp f)) x
+forall k (f :: k -&gt; *) (a :: k). Maybe (f a) -&gt; MaybeF f a
+</span><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-var">MaybeF</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (Day f (DivAp f) x)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-185"></span><span>
+</span><span id="line-186"></span><span class="hs-comment">-- | Match on an &quot;empty&quot; 'DivAp'; contains no @f@s, but only the</span><span>
+</span><span id="line-187"></span><span class="hs-comment">-- terminal value.  Analogous to 'Control.Applicative.Free.Pure'.</span><span>
+</span><span id="line-188"></span><span id="local-6989586621679635580"><span id="local-6989586621679635581"><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#Knot"><span class="hs-identifier hs-type">Knot</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679635580"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635581"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635580"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-189"></span><span class="hs-keyword">pattern</span><span> </span><span id="%24bKnot"><span id="%24mKnot"><span id="Knot"><span class="annot"><span class="annottext">$bKnot :: a -&gt; DivAp f a
+$mKnot :: forall r a (f :: * -&gt; *).
+DivAp f a -&gt; (a -&gt; r) -&gt; (Void# -&gt; r) -&gt; r
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#%24bKnot"><span class="hs-identifier hs-var hs-var hs-var">Knot</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621679635354"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Done"><span class="hs-identifier hs-type">Done</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span> </span><span id="local-6989586621679635354"><span class="annot"><a href="#local-6989586621679635354"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-190"></span><span class="hs-pragma">{-# COMPLETE</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#Gather"><span class="hs-pragma hs-type">Gather</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#Knot"><span class="hs-pragma hs-type">Knot</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span id="local-6989586621679635352"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679635348"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635352"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-193"></span><span>    </span><span id="local-6989586621679635346"><span class="annot"><span class="annottext">gather :: (b -&gt; c -&gt; a)
+-&gt; (a -&gt; (b, c)) -&gt; DivAp f b -&gt; DivAp f c -&gt; DivAp f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var hs-var hs-var hs-var">gather</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((b -&gt; c -&gt; a)
+ -&gt; (a -&gt; (b, c))
+ -&gt; Chain Day Identity f b
+ -&gt; Chain Day Identity f c
+ -&gt; Chain Day Identity f a)
+-&gt; (b -&gt; c -&gt; a)
+-&gt; (a -&gt; (b, c))
+-&gt; DivAp f b
+-&gt; DivAp f c
+-&gt; DivAp f a
+forall a b. Coercible a b =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">coerce</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall b c a.
+Inply (Chain Day Identity f) =&gt;
+(b -&gt; c -&gt; a)
+-&gt; (a -&gt; (b, c))
+-&gt; Chain Day Identity f b
+-&gt; Chain Day Identity f c
+-&gt; Chain Day Identity f a
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-194"></span><span>
+</span><span id="line-195"></span><span class="hs-comment">-- | The free 'Inplicative'</span><span>
+</span><span id="line-196"></span><span id="local-6989586621679635344"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inplicative"><span class="hs-identifier hs-type">Inplicative</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635344"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-197"></span><span>    </span><span id="local-6989586621679635340"><span class="annot"><span class="annottext">knot :: a -&gt; DivAp f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#knot"><span class="hs-identifier hs-var hs-var hs-var hs-var">knot</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; Chain Day Identity f a) -&gt; a -&gt; DivAp f a
+forall a b. Coercible a b =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">coerce</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a.
+Inplicative (Chain Day Identity f) =&gt;
+a -&gt; Chain Day Identity f a
+forall (f :: * -&gt; *) a. Inplicative f =&gt; a -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#knot"><span class="hs-identifier hs-var">knot</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-198"></span><span>
+</span><span id="line-199"></span><span class="hs-comment">-- | Match on a 'DivAp1' to get the head and the rest of the items.</span><span>
+</span><span id="line-200"></span><span class="hs-comment">-- Analogous to the 'Data.Functor.Apply.Free.Ap1' constructor.</span><span>
+</span><span id="line-201"></span><span class="hs-comment">--</span><span>
+</span><span id="line-202"></span><span class="hs-comment">-- Note that the order of the first two arguments has swapped as of</span><span>
+</span><span id="line-203"></span><span class="hs-comment">-- v0.4.0.0</span><span>
+</span><span id="line-204"></span><span id="local-6989586621679635552"><span id="local-6989586621679635553"><span id="local-6989586621679635554"><span id="local-6989586621679635555"><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679635555"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635553"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635552"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635554"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635554"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635553"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679635552"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635555"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635553"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635555"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635552"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635555"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635554"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span><span>
+</span><span id="line-205"></span><span class="hs-keyword">pattern</span><span> </span><span id="%24bDivAp1"><span id="%24mDivAp1"><span id="DivAp1"><span class="annot"><span class="annottext">$bDivAp1 :: (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; DivAp f c -&gt; DivAp1 f a
+$mDivAp1 :: forall r (f :: * -&gt; *) a.
+Invariant f =&gt;
+DivAp1 f a
+-&gt; (forall b c.
+    (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; DivAp f c -&gt; r)
+-&gt; (Void# -&gt; r)
+-&gt; r
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#%24bDivAp1"><span class="hs-identifier hs-var hs-var hs-var hs-var">DivAp1</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621679635336"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635335"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635334"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635333"><span class="hs-identifier hs-type">xs</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">coerce</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splitChain1"><span class="hs-identifier hs-type">splitChain1</span></a></span><span class="hs-glyph">-&gt;</span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span id="local-6989586621679635334"><span class="annot"><a href="#local-6989586621679635334"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635333"><span class="annot"><a href="#local-6989586621679635333"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679635336"><span class="annot"><a href="#local-6989586621679635336"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635335"><span class="annot"><a href="#local-6989586621679635335"><span class="hs-identifier hs-var">g</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-206"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-207"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#DivAp1"><span class="hs-identifier hs-var">DivAp1</span></a></span><span> </span><span id="local-6989586621679635331"><span class="annot"><span class="annottext">f :: b -&gt; c -&gt; a
+</span><a href="#local-6989586621679635331"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679635330"><span class="annot"><span class="annottext">g :: a -&gt; (b, c)
+</span><a href="#local-6989586621679635330"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679635329"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679635329"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679635328"><span class="annot"><span class="annottext">xs :: DivAp f c
+</span><a href="#local-6989586621679635328"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Day f (ListBy Day f) a -&gt; DivAp1 f a
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+(Matchable t i, FunctorBy t f) =&gt;
+t f (ListBy t f) ~&gt; NonEmptyBy t f
+</span><a href="Data.HBifunctor.Tensor.html#unsplitNE"><span class="hs-identifier hs-var">unsplitNE</span></a></span><span> </span><span class="annot"><span class="annottext">(Day f (ListBy Day f) a -&gt; DivAp1 f a)
+-&gt; Day f (ListBy Day f) a -&gt; DivAp1 f a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; DivAp f c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f (DivAp f) a
+forall (f :: * -&gt; *) (g :: * -&gt; *) a b c.
+f b -&gt; g c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f g a
+</span><span class="hs-identifier hs-var">Day</span></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679635329"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">DivAp f c
+</span><a href="#local-6989586621679635328"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; c -&gt; a
+</span><a href="#local-6989586621679635331"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; (b, c)
+</span><a href="#local-6989586621679635330"><span class="hs-identifier hs-var">g</span></a></span><span>
+</span><span id="line-208"></span><span class="hs-pragma">{-# COMPLETE</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#DivAp1"><span class="hs-pragma hs-type">DivAp1</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-209"></span><span>
+</span><span id="line-210"></span><span class="hs-comment">-- | The free 'Inplicative'</span><span>
+</span><span id="line-211"></span><span id="local-6989586621679635326"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679635322"><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679635326"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635326"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-212"></span><span>    </span><span id="local-6989586621679635321"><span class="annot"><span class="annottext">gather :: (b -&gt; c -&gt; a)
+-&gt; (a -&gt; (b, c)) -&gt; DivAp1 f b -&gt; DivAp1 f c -&gt; DivAp1 f a
+</span><a href="#local-6989586621679635321"><span class="hs-identifier hs-var hs-var hs-var hs-var">gather</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((b -&gt; c -&gt; a)
+ -&gt; (a -&gt; (b, c))
+ -&gt; Chain1 Day f b
+ -&gt; Chain1 Day f c
+ -&gt; Chain1 Day f a)
+-&gt; (b -&gt; c -&gt; a)
+-&gt; (a -&gt; (b, c))
+-&gt; DivAp1 f b
+-&gt; DivAp1 f c
+-&gt; DivAp1 f a
+forall a b. Coercible a b =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">coerce</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall b c a.
+Inply (Chain1 Day f) =&gt;
+(b -&gt; c -&gt; a)
+-&gt; (a -&gt; (b, c))
+-&gt; Chain1 Day f b
+-&gt; Chain1 Day f c
+-&gt; Chain1 Day f a
+forall (f :: * -&gt; *) b c a.
+Inply f =&gt;
+(b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#gather"><span class="hs-identifier hs-var">gather</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Day</span></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-213"></span><span>
+</span><span id="line-214"></span><span class="hs-comment">-- | Convenient wrapper to build up a 'DivAp' by providing each</span><span>
+</span><span id="line-215"></span><span class="hs-comment">-- component of it.  This makes it much easier to build up longer chains</span><span>
+</span><span id="line-216"></span><span class="hs-comment">-- because you would only need to write the splitting/joining functions in</span><span>
+</span><span id="line-217"></span><span class="hs-comment">-- one place.</span><span>
+</span><span id="line-218"></span><span class="hs-comment">--</span><span>
+</span><span id="line-219"></span><span class="hs-comment">-- For example, if you had a data type</span><span>
+</span><span id="line-220"></span><span class="hs-comment">--</span><span>
+</span><span id="line-221"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-222"></span><span class="hs-comment">-- data MyType = MT Int Bool String</span><span>
+</span><span id="line-223"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-224"></span><span class="hs-comment">--</span><span>
+</span><span id="line-225"></span><span class="hs-comment">-- and an invariant functor @Prim@ (representing, say, a bidirectional</span><span>
+</span><span id="line-226"></span><span class="hs-comment">-- parser, where @Prim Int@ is a bidirectional parser for an 'Int'@),</span><span>
+</span><span id="line-227"></span><span class="hs-comment">-- then you could assemble a bidirectional parser for a @MyType@ using:</span><span>
+</span><span id="line-228"></span><span class="hs-comment">--</span><span>
+</span><span id="line-229"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-230"></span><span class="hs-comment">-- invmap (\(MyType x y z) -&gt; I x :* I y :* I z :* Nil)</span><span>
+</span><span id="line-231"></span><span class="hs-comment">--        (\(I x :* I y :* I z :* Nil) -&gt; MyType x y z) $</span><span>
+</span><span id="line-232"></span><span class="hs-comment">--   assembleDivAp $ intPrim</span><span>
+</span><span id="line-233"></span><span class="hs-comment">--                   :* boolPrim</span><span>
+</span><span id="line-234"></span><span class="hs-comment">--                   :* stringPrim</span><span>
+</span><span id="line-235"></span><span class="hs-comment">--                   :* Nil</span><span>
+</span><span id="line-236"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-237"></span><span class="hs-comment">--</span><span>
+</span><span id="line-238"></span><span class="hs-comment">-- Some notes on usefulness depending on how many components you have:</span><span>
+</span><span id="line-239"></span><span class="hs-comment">--</span><span>
+</span><span id="line-240"></span><span class="hs-comment">-- *    If you have 0 components, use 'Knot' directly.</span><span>
+</span><span id="line-241"></span><span class="hs-comment">-- *    If you have 1 component, use 'inject' or 'injectChain' directly.</span><span>
+</span><span id="line-242"></span><span class="hs-comment">-- *    If you have 2 components, use 'toListBy' or 'toChain'.</span><span>
+</span><span id="line-243"></span><span class="hs-comment">-- *    If you have 3 or more components, these combinators may be useful;</span><span>
+</span><span id="line-244"></span><span class="hs-comment">--      otherwise you'd need to manually peel off tuples one-by-one.</span><span>
+</span><span id="line-245"></span><span class="hs-comment">--</span><span>
+</span><span id="line-246"></span><span class="hs-comment">-- If each component is itself a @'DivAp' f@ (instead of @f@), you can use</span><span>
+</span><span id="line-247"></span><span class="hs-comment">-- 'concatInplicative'.</span><span>
+</span><span id="line-248"></span><span id="local-6989586621679635523"><span id="local-6989586621679635524"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp"><span class="hs-identifier hs-type">assembleDivAp</span></a></span><span>
+</span><span id="line-249"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679635524"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635523"><span class="hs-keyword hs-type">as</span></a></span><span>
+</span><span id="line-250"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635524"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="annot"><a href="#local-6989586621679635523"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-251"></span><span id="assembleDivAp"><span class="annot"><span class="annottext">assembleDivAp :: NP f as -&gt; DivAp f (NP I as)
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp"><span class="hs-identifier hs-var hs-var">assembleDivAp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-252"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain Day Identity f (NP I '[]) -&gt; DivAp f (NP I as)
+forall (f :: * -&gt; *) a. Chain Day Identity f a -&gt; DivAp f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-var">DivAp</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Day Identity f (NP I '[]) -&gt; DivAp f (NP I as))
+-&gt; Chain Day Identity f (NP I '[]) -&gt; DivAp f (NP I as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Identity (NP I '[]) -&gt; Chain Day Identity f (NP I '[])
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+i a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#Done"><span class="hs-identifier hs-var">Done</span></a></span><span> </span><span class="annot"><span class="annottext">(Identity (NP I '[]) -&gt; Chain Day Identity f (NP I '[]))
+-&gt; Identity (NP I '[]) -&gt; Chain Day Identity f (NP I '[])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NP I '[] -&gt; Identity (NP I '[])
+forall a. a -&gt; Identity a
+</span><span class="hs-identifier hs-var">Identity</span></span><span> </span><span class="annot"><span class="annottext">NP I '[]
+forall k (a :: k -&gt; *). NP a '[]
+</span><span class="hs-identifier hs-var">Nil</span></span><span>
+</span><span id="line-253"></span><span>    </span><span id="local-6989586621679635319"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679635319"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679635317"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679635317"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain Day Identity f (NP I (x : xs)) -&gt; DivAp f (NP I as)
+forall (f :: * -&gt; *) a. Chain Day Identity f a -&gt; DivAp f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-var">DivAp</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Day Identity f (NP I (x : xs)) -&gt; DivAp f (NP I as))
+-&gt; Chain Day Identity f (NP I (x : xs)) -&gt; DivAp f (NP I as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Day f (Chain Day Identity f) (NP I (x : xs))
+-&gt; Chain Day Identity f (NP I (x : xs))
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+t f (Chain t i f) a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More"><span class="hs-identifier hs-var">More</span></a></span><span> </span><span class="annot"><span class="annottext">(Day f (Chain Day Identity f) (NP I (x : xs))
+ -&gt; Chain Day Identity f (NP I (x : xs)))
+-&gt; Day f (Chain Day Identity f) (NP I (x : xs))
+-&gt; Chain Day Identity f (NP I (x : xs))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f x
+-&gt; Chain Day Identity f (NP I xs)
+-&gt; (x -&gt; NP I xs -&gt; NP I (x : xs))
+-&gt; (NP I (x : xs) -&gt; (x, NP I xs))
+-&gt; Day f (Chain Day Identity f) (NP I (x : xs))
+forall (f :: * -&gt; *) (g :: * -&gt; *) a b c.
+f b -&gt; g c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f g a
+</span><span class="hs-identifier hs-var">Day</span></span><span>
+</span><span id="line-254"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679635319"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-255"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DivAp f (NP I xs) -&gt; Chain Day Identity f (NP I xs)
+forall (f :: * -&gt; *) a. DivAp f a -&gt; Chain Day Identity f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDivAp"><span class="hs-identifier hs-var hs-var">unDivAp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NP f xs -&gt; DivAp f (NP I xs)
+forall (f :: * -&gt; *) (as :: [*]). NP f as -&gt; DivAp f (NP I as)
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp"><span class="hs-identifier hs-var">assembleDivAp</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679635317"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-256"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679635316"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679635316"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679635315"><span class="annot"><span class="annottext">ys :: NP I xs
+</span><a href="#local-6989586621679635315"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679635316"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">I x -&gt; NP I xs -&gt; NP I (x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]).
+a x -&gt; NP a xs -&gt; NP a (x : xs)
+</span><span class="hs-operator hs-var">:*</span></span><span> </span><span class="annot"><span class="annottext">NP I xs
+</span><a href="#local-6989586621679635315"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-257"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679635313"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679635313"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679635312"><span class="annot"><span class="annottext">ys :: NP I xs
+</span><a href="#local-6989586621679635312"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x
+x
+</span><a href="#local-6989586621679635313"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">NP I xs
+NP I xs
+</span><a href="#local-6989586621679635312"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-258"></span><span>
+</span><span id="line-259"></span><span class="hs-comment">-- | A version of 'assembleDivAp' but for 'DivAp1' instead.  Can be</span><span>
+</span><span id="line-260"></span><span class="hs-comment">-- useful if you intend on interpreting it into something with only</span><span>
+</span><span id="line-261"></span><span class="hs-comment">-- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.</span><span>
+</span><span id="line-262"></span><span class="hs-comment">--</span><span>
+</span><span id="line-263"></span><span class="hs-comment">-- If each component is itself a @'DivAp1' f@ (instead of @f@), you can use</span><span>
+</span><span id="line-264"></span><span class="hs-comment">-- 'concatInply'.</span><span>
+</span><span id="line-265"></span><span id="local-6989586621679635496"><span id="local-6989586621679635497"><span id="local-6989586621679635498"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1"><span class="hs-identifier hs-type">assembleDivAp1</span></a></span><span>
+</span><span id="line-266"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679635498"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-267"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679635498"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635497"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679635496"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-268"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635498"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635497"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679635496"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-269"></span><span id="assembleDivAp1"><span class="annot"><span class="annottext">assembleDivAp1 :: NP f (a : as) -&gt; DivAp1 f (NP I (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1"><span class="hs-identifier hs-var hs-var">assembleDivAp1</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679635311"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679635311"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679635310"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679635310"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Chain1 Day f (NP I (a : as)) -&gt; DivAp1 f (NP I (a : as))
+forall (f :: * -&gt; *) a. Chain1 Day f a -&gt; DivAp1 f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp1_"><span class="hs-identifier hs-var">DivAp1_</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain1 Day f (NP I (a : as)) -&gt; DivAp1 f (NP I (a : as)))
+-&gt; Chain1 Day f (NP I (a : as)) -&gt; DivAp1 f (NP I (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679635310"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-270"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">f (NP I '[x]) -&gt; Chain1 Day f (NP I (a : as))
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (a :: k).
+f a -&gt; Chain1 t f a
+</span><a href="Data.HFunctor.Chain.Internal.html#Done1"><span class="hs-identifier hs-var">Done1</span></a></span><span> </span><span class="annot"><span class="annottext">(f (NP I '[x]) -&gt; Chain1 Day f (NP I (a : as)))
+-&gt; f (NP I '[x]) -&gt; Chain1 Day f (NP I (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(x -&gt; NP I '[x]) -&gt; (NP I '[x] -&gt; x) -&gt; f x -&gt; f (NP I '[x])
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NP I '[] -&gt; NP I '[x]
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]).
+a x -&gt; NP a xs -&gt; NP a (x : xs)
+</span><span class="hs-operator hs-var">:*</span></span><span> </span><span class="annot"><span class="annottext">NP I '[]
+forall k (a :: k -&gt; *). NP a '[]
+</span><span class="hs-identifier hs-var">Nil</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NP I '[x]) -&gt; (x -&gt; I x) -&gt; x -&gt; NP I '[x]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; x
+forall a. I a -&gt; a
+</span><span class="hs-identifier hs-var">unI</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; x) -&gt; (NP I '[x] -&gt; I x) -&gt; NP I '[x] -&gt; x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">NP I '[x] -&gt; I x
+forall k (f :: k -&gt; *) (x :: k) (xs :: [k]). NP f (x : xs) -&gt; f x
+</span><span class="hs-identifier hs-var">hd</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679635311"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-271"></span><span>    </span><span class="hs-identifier">_</span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Day f (Chain1 Day f) (NP I (x : x : xs))
+-&gt; Chain1 Day f (NP I (a : as))
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (a :: k).
+t f (Chain1 t f) a -&gt; Chain1 t f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More1"><span class="hs-identifier hs-var">More1</span></a></span><span> </span><span class="annot"><span class="annottext">(Day f (Chain1 Day f) (NP I (x : x : xs))
+ -&gt; Chain1 Day f (NP I (a : as)))
+-&gt; Day f (Chain1 Day f) (NP I (x : x : xs))
+-&gt; Chain1 Day f (NP I (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f x
+-&gt; Chain1 Day f (NP I (x : xs))
+-&gt; (x -&gt; NP I (x : xs) -&gt; NP I (x : x : xs))
+-&gt; (NP I (x : x : xs) -&gt; (x, NP I (x : xs)))
+-&gt; Day f (Chain1 Day f) (NP I (x : x : xs))
+forall (f :: * -&gt; *) (g :: * -&gt; *) a b c.
+f b -&gt; g c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f g a
+</span><span class="hs-identifier hs-var">Day</span></span><span>
+</span><span id="line-272"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679635311"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-273"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DivAp1 f (NP I (x : xs)) -&gt; Chain1 Day f (NP I (x : xs))
+forall (f :: * -&gt; *) a. DivAp1 f a -&gt; Chain1 Day f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDivAp1"><span class="hs-identifier hs-var hs-var">unDivAp1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NP f (x : xs) -&gt; DivAp1 f (NP I (x : xs))
+forall (f :: * -&gt; *) a (as :: [*]).
+Invariant f =&gt;
+NP f (a : as) -&gt; DivAp1 f (NP I (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1"><span class="hs-identifier hs-var">assembleDivAp1</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+NP f (x : xs)
+</span><a href="#local-6989586621679635310"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-274"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679635303"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679635303"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679635302"><span class="annot"><span class="annottext">ys :: NP I (x : xs)
+</span><a href="#local-6989586621679635302"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679635303"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">I x -&gt; NP I (x : xs) -&gt; NP I (x : x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]).
+a x -&gt; NP a xs -&gt; NP a (x : xs)
+</span><span class="hs-operator hs-var">:*</span></span><span> </span><span class="annot"><span class="annottext">NP I (x : xs)
+</span><a href="#local-6989586621679635302"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-275"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679635301"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679635301"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679635300"><span class="annot"><span class="annottext">ys :: NP I xs
+</span><a href="#local-6989586621679635300"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x
+x
+</span><a href="#local-6989586621679635301"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">NP I xs
+NP I (x : xs)
+</span><a href="#local-6989586621679635300"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-276"></span><span>
+</span><span id="line-277"></span><span class="hs-comment">-- | A version of 'assembleDivAp' using 'V.XRec' from /vinyl/ instead of</span><span>
+</span><span id="line-278"></span><span class="hs-comment">-- 'NP' from /sop-core/.  This can be more convenient because it doesn't</span><span>
+</span><span id="line-279"></span><span class="hs-comment">-- require manual unwrapping/wrapping of components.</span><span>
+</span><span id="line-280"></span><span class="hs-comment">--</span><span>
+</span><span id="line-281"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-282"></span><span class="hs-comment">-- data MyType = MT Int Bool String</span><span>
+</span><span id="line-283"></span><span class="hs-comment">--</span><span>
+</span><span id="line-284"></span><span class="hs-comment">-- invmap (\(MyType x y z) -&gt; x ::&amp; y ::&amp; z ::&amp; RNil)</span><span>
+</span><span id="line-285"></span><span class="hs-comment">--        (\(x ::&amp; y ::&amp; z ::&amp; RNil) -&gt; MyType x y z) $</span><span>
+</span><span id="line-286"></span><span class="hs-comment">--   assembleDivApRec $ intPrim</span><span>
+</span><span id="line-287"></span><span class="hs-comment">--                      :&amp; boolPrim</span><span>
+</span><span id="line-288"></span><span class="hs-comment">--                      :&amp; stringPrim</span><span>
+</span><span id="line-289"></span><span class="hs-comment">--                      :&amp; Nil</span><span>
+</span><span id="line-290"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-291"></span><span class="hs-comment">--</span><span>
+</span><span id="line-292"></span><span class="hs-comment">-- If each component is itself a @'DivAp' f@ (instead of @f@), you can use</span><span>
+</span><span id="line-293"></span><span class="hs-comment">-- 'concatDivApRec'.</span><span>
+</span><span id="line-294"></span><span id="local-6989586621679635482"><span id="local-6989586621679635483"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivApRec"><span class="hs-identifier hs-type">assembleDivApRec</span></a></span><span>
+</span><span id="line-295"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Rec</span></span><span> </span><span class="annot"><a href="#local-6989586621679635483"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635482"><span class="hs-keyword hs-type">as</span></a></span><span>
+</span><span id="line-296"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635483"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">V.XRec</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Identity</span></span><span> </span><span class="annot"><a href="#local-6989586621679635482"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-297"></span><span id="assembleDivApRec"><span class="annot"><span class="annottext">assembleDivApRec :: Rec f as -&gt; DivAp f (XRec Identity as)
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivApRec"><span class="hs-identifier hs-var hs-var">assembleDivApRec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-298"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">V.RNil</span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain Day Identity f (Rec (XData Identity) '[])
+-&gt; DivAp f (XRec Identity as)
+forall (f :: * -&gt; *) a. Chain Day Identity f a -&gt; DivAp f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-var">DivAp</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Day Identity f (Rec (XData Identity) '[])
+ -&gt; DivAp f (XRec Identity as))
+-&gt; Chain Day Identity f (Rec (XData Identity) '[])
+-&gt; DivAp f (XRec Identity as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Identity (Rec (XData Identity) '[])
+-&gt; Chain Day Identity f (Rec (XData Identity) '[])
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+i a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#Done"><span class="hs-identifier hs-var">Done</span></a></span><span> </span><span class="annot"><span class="annottext">(Identity (Rec (XData Identity) '[])
+ -&gt; Chain Day Identity f (Rec (XData Identity) '[]))
+-&gt; Identity (Rec (XData Identity) '[])
+-&gt; Chain Day Identity f (Rec (XData Identity) '[])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Rec (XData Identity) '[] -&gt; Identity (Rec (XData Identity) '[])
+forall a. a -&gt; Identity a
+</span><span class="hs-identifier hs-var">Identity</span></span><span> </span><span class="annot"><span class="annottext">Rec (XData Identity) '[]
+forall u (a :: u -&gt; *). Rec a '[]
+</span><span class="hs-identifier hs-var">V.RNil</span></span><span>
+</span><span id="line-299"></span><span>    </span><span id="local-6989586621679635298"><span class="annot"><span class="annottext">x :: f r
+</span><a href="#local-6989586621679635298"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.:&amp;</span></span><span> </span><span id="local-6989586621679635296"><span class="annot"><span class="annottext">xs :: Rec f rs
+</span><a href="#local-6989586621679635296"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain Day Identity f (XRec Identity (r : rs))
+-&gt; DivAp f (XRec Identity as)
+forall (f :: * -&gt; *) a. Chain Day Identity f a -&gt; DivAp f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-var">DivAp</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Day Identity f (XRec Identity (r : rs))
+ -&gt; DivAp f (XRec Identity as))
+-&gt; Chain Day Identity f (XRec Identity (r : rs))
+-&gt; DivAp f (XRec Identity as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Day f (Chain Day Identity f) (XRec Identity (r : rs))
+-&gt; Chain Day Identity f (XRec Identity (r : rs))
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+t f (Chain t i f) a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More"><span class="hs-identifier hs-var">More</span></a></span><span> </span><span class="annot"><span class="annottext">(Day f (Chain Day Identity f) (XRec Identity (r : rs))
+ -&gt; Chain Day Identity f (XRec Identity (r : rs)))
+-&gt; Day f (Chain Day Identity f) (XRec Identity (r : rs))
+-&gt; Chain Day Identity f (XRec Identity (r : rs))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f r
+-&gt; Chain Day Identity f (XRec Identity rs)
+-&gt; (r -&gt; XRec Identity rs -&gt; XRec Identity (r : rs))
+-&gt; (XRec Identity (r : rs) -&gt; (r, XRec Identity rs))
+-&gt; Day f (Chain Day Identity f) (XRec Identity (r : rs))
+forall (f :: * -&gt; *) (g :: * -&gt; *) a b c.
+f b -&gt; g c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f g a
+</span><span class="hs-identifier hs-var">Day</span></span><span>
+</span><span id="line-300"></span><span>      </span><span class="annot"><span class="annottext">f r
+</span><a href="#local-6989586621679635298"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-301"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DivAp f (XRec Identity rs)
+-&gt; Chain Day Identity f (XRec Identity rs)
+forall (f :: * -&gt; *) a. DivAp f a -&gt; Chain Day Identity f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDivAp"><span class="hs-identifier hs-var hs-var">unDivAp</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rec f rs -&gt; DivAp f (XRec Identity rs)
+forall (f :: * -&gt; *) (as :: [*]).
+Rec f as -&gt; DivAp f (XRec Identity as)
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivApRec"><span class="hs-identifier hs-var">assembleDivApRec</span></a></span><span> </span><span class="annot"><span class="annottext">Rec f rs
+</span><a href="#local-6989586621679635296"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-302"></span><span>      </span><span class="annot"><span class="annottext">r -&gt; XRec Identity rs -&gt; XRec Identity (r : rs)
+forall a (f :: a -&gt; *) (r :: a) (rs :: [a]).
+HKD f r -&gt; XRec f rs -&gt; XRec f (r : rs)
+</span><span class="hs-operator hs-var">(V.::&amp;)</span></span><span>
+</span><span id="line-303"></span><span>      </span><span class="annot"><span class="annottext">XRec Identity (r : rs) -&gt; (r, XRec Identity rs)
+forall a (as :: [*]).
+XRec Identity (a : as) -&gt; (a, XRec Identity as)
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#unconsRec"><span class="hs-identifier hs-var">unconsRec</span></a></span><span>
+</span><span id="line-304"></span><span>
+</span><span id="line-305"></span><span class="hs-comment">-- | A version of 'assembleDivAp1' using 'V.XRec' from /vinyl/ instead of</span><span>
+</span><span id="line-306"></span><span class="hs-comment">-- 'NP' from /sop-core/.  This can be more convenient because it doesn't</span><span>
+</span><span id="line-307"></span><span class="hs-comment">-- require manual unwrapping/wrapping of components.</span><span>
+</span><span id="line-308"></span><span class="hs-comment">--</span><span>
+</span><span id="line-309"></span><span class="hs-comment">-- If each component is itself a @'DivAp1' f@ (instead of @f@), you can use</span><span>
+</span><span id="line-310"></span><span class="hs-comment">-- 'concatDivAp1Rec'.</span><span>
+</span><span id="line-311"></span><span id="local-6989586621679635465"><span id="local-6989586621679635466"><span id="local-6989586621679635467"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1Rec"><span class="hs-identifier hs-type">assembleDivAp1Rec</span></a></span><span>
+</span><span id="line-312"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679635467"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-313"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Rec</span></span><span> </span><span class="annot"><a href="#local-6989586621679635467"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635466"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679635465"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-314"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635467"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">V.XRec</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635466"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679635465"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-315"></span><span id="assembleDivAp1Rec"><span class="annot"><span class="annottext">assembleDivAp1Rec :: Rec f (a : as) -&gt; DivAp1 f (XRec Identity (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1Rec"><span class="hs-identifier hs-var hs-var">assembleDivAp1Rec</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679635293"><span class="annot"><span class="annottext">x :: f r
+</span><a href="#local-6989586621679635293"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.:&amp;</span></span><span> </span><span id="local-6989586621679635292"><span class="annot"><span class="annottext">xs :: Rec f rs
+</span><a href="#local-6989586621679635292"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Rec f rs
+</span><a href="#local-6989586621679635292"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-316"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">V.RNil</span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain1 Day f (XRec Identity '[a])
+-&gt; DivAp1 f (XRec Identity (a : as))
+forall (f :: * -&gt; *) a. Chain1 Day f a -&gt; DivAp1 f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp1_"><span class="hs-identifier hs-var">DivAp1_</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain1 Day f (XRec Identity '[a])
+ -&gt; DivAp1 f (XRec Identity (a : as)))
+-&gt; Chain1 Day f (XRec Identity '[a])
+-&gt; DivAp1 f (XRec Identity (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f (XRec Identity '[a]) -&gt; Chain1 Day f (XRec Identity '[a])
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (a :: k).
+f a -&gt; Chain1 t f a
+</span><a href="Data.HFunctor.Chain.Internal.html#Done1"><span class="hs-identifier hs-var">Done1</span></a></span><span> </span><span class="annot"><span class="annottext">(f (XRec Identity '[a]) -&gt; Chain1 Day f (XRec Identity '[a]))
+-&gt; f (XRec Identity '[a]) -&gt; Chain1 Day f (XRec Identity '[a])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(r -&gt; XRec Identity '[a])
+-&gt; (XRec Identity '[a] -&gt; r) -&gt; f r -&gt; f (XRec Identity '[a])
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HKD Identity a -&gt; Rec (XData Identity) '[] -&gt; XRec Identity '[a]
+forall a (f :: a -&gt; *) (r :: a) (rs :: [a]).
+HKD f r -&gt; XRec f rs -&gt; XRec f (r : rs)
+</span><span class="hs-operator hs-var">V.::&amp;</span></span><span> </span><span class="annot"><span class="annottext">Rec (XData Identity) '[]
+forall u (a :: u -&gt; *). Rec a '[]
+</span><span class="hs-identifier hs-var">V.RNil</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span id="local-6989586621679635291"><span class="annot"><span class="annottext">z :: HKD Identity a
+</span><a href="#local-6989586621679635291"><span class="hs-identifier hs-var">z</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.::&amp;</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">r
+HKD Identity a
+</span><a href="#local-6989586621679635291"><span class="hs-identifier hs-var">z</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f r
+</span><a href="#local-6989586621679635293"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-317"></span><span>    </span><span class="hs-identifier">_</span><span> </span><span class="annot"><span class="hs-operator hs-type">V.:&amp;</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain1 Day f (XRec Identity (r : r : rs))
+-&gt; DivAp1 f (XRec Identity (a : as))
+forall (f :: * -&gt; *) a. Chain1 Day f a -&gt; DivAp1 f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DivAp1_"><span class="hs-identifier hs-var">DivAp1_</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain1 Day f (XRec Identity (r : r : rs))
+ -&gt; DivAp1 f (XRec Identity (a : as)))
+-&gt; Chain1 Day f (XRec Identity (r : r : rs))
+-&gt; DivAp1 f (XRec Identity (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Day f (Chain1 Day f) (XRec Identity (r : r : rs))
+-&gt; Chain1 Day f (XRec Identity (r : r : rs))
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (a :: k).
+t f (Chain1 t f) a -&gt; Chain1 t f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More1"><span class="hs-identifier hs-var">More1</span></a></span><span> </span><span class="annot"><span class="annottext">(Day f (Chain1 Day f) (XRec Identity (r : r : rs))
+ -&gt; Chain1 Day f (XRec Identity (r : r : rs)))
+-&gt; Day f (Chain1 Day f) (XRec Identity (r : r : rs))
+-&gt; Chain1 Day f (XRec Identity (r : r : rs))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f r
+-&gt; Chain1 Day f (XRec Identity (r : rs))
+-&gt; (r -&gt; XRec Identity (r : rs) -&gt; XRec Identity (r : r : rs))
+-&gt; (XRec Identity (r : r : rs) -&gt; (r, XRec Identity (r : rs)))
+-&gt; Day f (Chain1 Day f) (XRec Identity (r : r : rs))
+forall (f :: * -&gt; *) (g :: * -&gt; *) a b c.
+f b -&gt; g c -&gt; (b -&gt; c -&gt; a) -&gt; (a -&gt; (b, c)) -&gt; Day f g a
+</span><span class="hs-identifier hs-var">Day</span></span><span>
+</span><span id="line-318"></span><span>      </span><span class="annot"><span class="annottext">f r
+</span><a href="#local-6989586621679635293"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-319"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DivAp1 f (XRec Identity (r : rs))
+-&gt; Chain1 Day f (XRec Identity (r : rs))
+forall (f :: * -&gt; *) a. DivAp1 f a -&gt; Chain1 Day f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDivAp1"><span class="hs-identifier hs-var hs-var">unDivAp1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rec f (r : rs) -&gt; DivAp1 f (XRec Identity (r : rs))
+forall (f :: * -&gt; *) a (as :: [*]).
+Invariant f =&gt;
+Rec f (a : as) -&gt; DivAp1 f (XRec Identity (a : as))
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#assembleDivAp1Rec"><span class="hs-identifier hs-var">assembleDivAp1Rec</span></a></span><span> </span><span class="annot"><span class="annottext">Rec f rs
+Rec f (r : rs)
+</span><a href="#local-6989586621679635292"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-320"></span><span>      </span><span class="annot"><span class="annottext">r -&gt; XRec Identity (r : rs) -&gt; XRec Identity (r : r : rs)
+forall a (f :: a -&gt; *) (r :: a) (rs :: [a]).
+HKD f r -&gt; XRec f rs -&gt; XRec f (r : rs)
+</span><span class="hs-operator hs-var">(V.::&amp;)</span></span><span>
+</span><span id="line-321"></span><span>      </span><span class="annot"><span class="annottext">XRec Identity (r : r : rs) -&gt; (r, XRec Identity (r : rs))
+forall a (as :: [*]).
+XRec Identity (a : as) -&gt; (a, XRec Identity as)
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#unconsRec"><span class="hs-identifier hs-var">unconsRec</span></a></span><span>
+</span><span id="line-322"></span><span>
+</span><span id="line-323"></span><span id="local-6989586621679635475"><span id="local-6989586621679635476"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.Free.html#unconsRec"><span class="hs-identifier hs-type">unconsRec</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.XRec</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635476"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679635475"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635476"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.XRec</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">V.Identity</span></span><span> </span><span class="annot"><a href="#local-6989586621679635475"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-324"></span><span id="unconsRec"><span class="annot"><span class="annottext">unconsRec :: XRec Identity (a : as) -&gt; (a, XRec Identity as)
+</span><a href="Data.Functor.Invariant.Inplicative.Free.html#unconsRec"><span class="hs-identifier hs-var hs-var">unconsRec</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679635290"><span class="annot"><span class="annottext">y :: HKD Identity a
+</span><a href="#local-6989586621679635290"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">V.::&amp;</span></span><span> </span><span id="local-6989586621679635289"><span class="annot"><span class="annottext">ys :: XRec Identity as
+</span><a href="#local-6989586621679635289"><span class="hs-identifier hs-var">ys</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+HKD Identity a
+</span><a href="#local-6989586621679635290"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">XRec Identity as
+</span><a href="#local-6989586621679635289"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-325"></span><span>
+</span><span id="line-326"></span><span class="hs-comment">-- | A free 'Inply'</span><span>
+</span><span id="line-327"></span><span id="local-6989586621679635288"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679635285"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inply"><span class="hs-identifier hs-type">Inply</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635288"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Interpret.html#Interpret"><span class="hs-identifier hs-type">Interpret</span></a></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1"><span class="hs-identifier hs-type">DivAp1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635288"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-328"></span><span>    </span><span id="local-6989586621679635282"><span class="annot"><span class="annottext">interpret :: (g ~&gt; f) -&gt; DivAp1 g ~&gt; f
+</span><a href="Data.HFunctor.Interpret.html#interpret"><span class="hs-identifier hs-var hs-var hs-var hs-var">interpret</span></a></span></span><span> </span><span id="local-6989586621679635280"><span class="annot"><span class="annottext">f :: g ~&gt; f
+</span><a href="#local-6989586621679635280"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp1_"><span class="hs-identifier hs-type">DivAp1_</span></a></span><span> </span><span id="local-6989586621679635279"><span class="annot"><span class="annottext">x :: Chain1 Day g x
+</span><a href="#local-6989586621679635279"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(g ~&gt; f) -&gt; (Day g f ~&gt; f) -&gt; Chain1 Day g x -&gt; f x
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (g :: k -&gt; *).
+HBifunctor t =&gt;
+(f ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain1 t f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain1"><span class="hs-identifier hs-var">foldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">g ~&gt; f
+</span><a href="#local-6989586621679635280"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(g ~&gt; f) -&gt; (f ~&gt; f) -&gt; Day g f ~&gt; f
+forall (h :: * -&gt; *) (f :: * -&gt; *) (g :: * -&gt; *).
+Inply h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Day f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Inplicative.html#runDay"><span class="hs-identifier hs-var">runDay</span></a></span><span> </span><span class="annot"><span class="annottext">g ~&gt; f
+</span><a href="#local-6989586621679635280"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+f ~&gt; f
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Chain1 Day g x
+</span><a href="#local-6989586621679635279"><span class="hs-identifier hs-var">x</span></a></span></span><span>
+</span><span id="line-329"></span><span>
+</span><span id="line-330"></span><span class="hs-comment">-- | A free 'Inplicative'</span><span>
+</span><span id="line-331"></span><span id="local-6989586621679635277"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679635274"><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inplicative"><span class="hs-identifier hs-type">Inplicative</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635277"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Interpret.html#Interpret"><span class="hs-identifier hs-type">Interpret</span></a></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635277"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-332"></span><span>    </span><span id="local-6989586621679635272"><span class="annot"><span class="annottext">interpret :: (g ~&gt; f) -&gt; DivAp g ~&gt; f
+</span><a href="#local-6989586621679635272"><span class="hs-identifier hs-var hs-var hs-var hs-var">interpret</span></a></span></span><span> </span><span id="local-6989586621679635271"><span class="annot"><span class="annottext">f :: g ~&gt; f
+</span><a href="#local-6989586621679635271"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DivAp"><span class="hs-identifier hs-type">DivAp</span></a></span><span> </span><span id="local-6989586621679635270"><span class="annot"><span class="annottext">x :: Chain Day Identity g x
+</span><a href="#local-6989586621679635270"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Identity ~&gt; f) -&gt; (Day g f ~&gt; f) -&gt; Chain Day Identity g x -&gt; f x
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *)
+       (f :: k -&gt; *) (g :: k -&gt; *).
+HBifunctor t =&gt;
+(i ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain t i f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain"><span class="hs-identifier hs-var">foldChain</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">x -&gt; f x
+forall (f :: * -&gt; *) a. Inplicative f =&gt; a -&gt; f a
+</span><a href="Data.Functor.Invariant.Inplicative.html#knot"><span class="hs-identifier hs-var">knot</span></a></span><span> </span><span class="annot"><span class="annottext">(x -&gt; f x) -&gt; (Identity x -&gt; x) -&gt; Identity x -&gt; f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Identity x -&gt; x
+forall a. Identity a -&gt; a
+</span><span class="hs-identifier hs-var hs-var">runIdentity</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(g ~&gt; f) -&gt; (f ~&gt; f) -&gt; Day g f ~&gt; f
+forall (h :: * -&gt; *) (f :: * -&gt; *) (g :: * -&gt; *).
+Inply h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Day f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Inplicative.html#runDay"><span class="hs-identifier hs-var">runDay</span></a></span><span> </span><span class="annot"><span class="annottext">g ~&gt; f
+</span><a href="#local-6989586621679635271"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+f ~&gt; f
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Chain Day Identity g x
+</span><a href="#local-6989586621679635270"><span class="hs-identifier hs-var">x</span></a></span></span><span>
+</span><span id="line-333"></span></pre></body></html>

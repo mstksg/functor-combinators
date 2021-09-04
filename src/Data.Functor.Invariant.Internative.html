@@ -1,0 +1,298 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">-- |</span><span>
+</span><span id="line-2"></span><span class="hs-comment">-- Module      : Data.Functor.Invariant.Internative</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- Copyright   : (c) Justin Le 2021</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- License     : BSD3</span><span>
+</span><span id="line-5"></span><span class="hs-comment">--</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- Maintainer  : justin@jle.im</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Stability   : experimental</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Portability : non-portable</span><span>
+</span><span id="line-9"></span><span class="hs-comment">--</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Contains the classes 'Inalt' and 'Inplus', the invariant</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- counterparts to 'Alt'/'Plus' and 'Decide'/'Conclude' and</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- 'Alternative'/'Decidable'.</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Functor.Invariant.Internative</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-16"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Typeclass</span></span><span>
+</span><span id="line-17"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier">Inalt</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inplus"><span class="hs-identifier">Inplus</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Internative"><span class="hs-identifier">Internative</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Assembling Helpers</span></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#concatInplus"><span class="hs-identifier">concatInplus</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#concatInalt"><span class="hs-identifier">concatInalt</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Invariant</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html"><span class="hs-identifier">Data.Functor.Invariant.Inplicative</span></a></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.SOP</span></span><span> </span><span class="hs-keyword">hiding</span><span>                    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">hmap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Void</span></span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- | The invariant counterpart of 'Alt' and 'Decide'.</span><span>
+</span><span id="line-31"></span><span class="hs-comment">--</span><span>
+</span><span id="line-32"></span><span class="hs-comment">-- Conceptually you can think of 'Alt' as, given a way to &quot;inject&quot; @a@ and</span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- @b@ as @c@, lets you merge @f a@ (producer of @a@) and @f b@ (producer</span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- of @b@) into a @f c@ (producer of @c@), in an &quot;either-or&quot; fashion.</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- 'Decide' can be thought of as, given a way to &quot;discriminate&quot; a @c@ as</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- either a @a@ or a @b@, lets you merge @f a@ (consumer of @a@) and @f b@</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- (consumder of @b@) into a @f c@ (consumer of @c@) in an &quot;either-or&quot;</span><span>
+</span><span id="line-38"></span><span class="hs-comment">-- forking fashion (split the @c@ into @a@ or @b@, and use the appropriate</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- handler).</span><span>
+</span><span id="line-40"></span><span class="hs-comment">--</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- 'Inalt', for 'swerve', requires both an injecting function and</span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- a choosing function in order to merge @f b@ (producer and consumer of</span><span>
+</span><span id="line-43"></span><span class="hs-comment">-- @b@) and @f c@ (producer and consumer of @c@) into a @f a@ in an</span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- either-or manner.  You can think of it as, for the @f a@, it &quot;chooses&quot;</span><span>
+</span><span id="line-45"></span><span class="hs-comment">-- if the @a@ is actually a @b@ or a @c@ with the @a -&gt; 'Either' b c@,</span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- feeds it to either the original @f b@ or the original @f c@, and then</span><span>
+</span><span id="line-47"></span><span class="hs-comment">-- re-injects the output back into a @a@ with the @b -&gt; a@ or the @c -&gt; a@.</span><span>
+</span><span id="line-48"></span><span class="hs-comment">--</span><span>
+</span><span id="line-49"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">class</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="Inalt"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier hs-var">Inalt</span></a></span></span><span> </span><span id="local-6989586621679619818"><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-comment">-- | Like '&lt;!&gt;', 'decide', or 'choose', but requires both</span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-comment">-- an injecting and a choosing function.</span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-comment">-- It is used to merge @f b@ (producer and consumer of @b@) and @f c@</span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-comment">-- (producer and consumer of @c@) into a @f a@ in an either-or manner.</span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-comment">-- You can think of it as, for the @f a@, it &quot;chooses&quot; if the @a@ is</span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-comment">-- actually a @b@ or a @c@ with the @a -&gt; 'Either' b c@, feeds it to</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-comment">-- either the original @f b@ or the original @f c@, and then re-injects</span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-comment">-- the output back into a @a@ with the @b -&gt; a@ or the @c -&gt; a@.</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-comment">-- An important property is that it will only ever use exactly @one@ of</span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-comment">-- the options given in order to fulfil its job.  If you swerve an @f</span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-comment">-- a@ and an @f b@ into an @f c@, in order to consume/produdce the @c@,</span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-comment">-- it will only use either the @f a@ or the @f b@ -- exactly one of</span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-comment">-- them.</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-68"></span><span>    </span><span id="local-6989586621679619803"><span id="local-6989586621679619804"><span id="local-6989586621679619805"><span id="swerve"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-type">swerve</span></a></span></span><span>
+</span><span id="line-69"></span><span>        </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619805"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619804"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619803"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619804"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619804"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679619805"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619803"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619805"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-73"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619803"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-74"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619804"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-75"></span><span>    </span><span id="local-6989586621679619752"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var hs-var">swerve</span></a></span><span> </span><span id="local-6989586621679619751"><span class="annot"><span class="annottext">f :: b -&gt; a
+</span><a href="#local-6989586621679619751"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619750"><span class="annot"><span class="annottext">g :: c -&gt; a
+</span><a href="#local-6989586621679619750"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619749"><span class="annot"><span class="annottext">h :: a -&gt; Either b c
+</span><a href="#local-6989586621679619749"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679619748"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619748"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619747"><span class="annot"><span class="annottext">y :: f c
+</span><a href="#local-6989586621679619747"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Either b c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f (Either b c) -&gt; f a
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(b -&gt; a) -&gt; (c -&gt; a) -&gt; Either b c -&gt; a
+forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679619751"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; a
+</span><a href="#local-6989586621679619750"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a -&gt; Either b c
+</span><a href="#local-6989586621679619749"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; f c -&gt; f (Either b c)
+forall (f :: * -&gt; *) a b. Inalt f =&gt; f a -&gt; f b -&gt; f (Either a b)
+</span><a href="Data.Functor.Invariant.Internative.html#swerved"><span class="hs-identifier hs-var">swerved</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619748"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">f c
+</span><a href="#local-6989586621679619747"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-comment">-- | A simplified version of 'swerive' that splits to and from an</span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-comment">-- 'Either'. You can then use 'invmap' to reshape it into the proper</span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-comment">-- shape.</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-comment">-- @since 0.4.0.0</span></span><span>
+</span><span id="line-81"></span><span>    </span><span id="local-6989586621679619808"><span id="local-6989586621679619809"><span id="swerved"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#swerved"><span class="hs-identifier hs-type">swerved</span></a></span></span><span>
+</span><span id="line-82"></span><span>        </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619809"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-83"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619808"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-84"></span><span>        </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679619809"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619808"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-85"></span><span>    </span><span id="local-6989586621679619743"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#swerved"><span class="hs-identifier hs-var hs-var">swerved</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; Either a b)
+-&gt; (b -&gt; Either a b)
+-&gt; (Either a b -&gt; Either a b)
+-&gt; f a
+-&gt; f b
+-&gt; f (Either a b)
+forall (f :: * -&gt; *) b a c.
+Inalt f =&gt;
+(b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var">swerve</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Either a b
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Either a b
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">Either a b -&gt; Either a b
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span></span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-pragma">{-# MINIMAL</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-pragma hs-type">swerve</span></a></span><span> </span><span class="hs-pragma">|</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#swerved"><span class="hs-pragma hs-type">swerved</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- | The invariant counterpart of 'Alt' and 'Conclude'.</span><span>
+</span><span id="line-89"></span><span class="hs-comment">--</span><span>
+</span><span id="line-90"></span><span class="hs-comment">-- The main important action is described in 'Inalt', but this adds 'reject',</span><span>
+</span><span id="line-91"></span><span class="hs-comment">-- which is the counterpart to 'empty' and 'conclude' and 'conquer'.  It's the identity to</span><span>
+</span><span id="line-92"></span><span class="hs-comment">-- 'swerve'; if combine two @f a@s with 'swerve', and one of them is</span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- 'reject', then that banch will never be taken.</span><span>
+</span><span id="line-94"></span><span class="hs-comment">--</span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- Conceptually, if you think of 'swerve' as &quot;choosing one path and</span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- re-injecting back&quot;, then 'reject' introduces a branch that is impossible</span><span>
+</span><span id="line-97"></span><span class="hs-comment">-- to take.</span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-100"></span><span class="hs-keyword">class</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier hs-type">Inalt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619793"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="Inplus"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inplus"><span class="hs-identifier hs-var">Inplus</span></a></span></span><span> </span><span id="local-6989586621679619793"><span class="annot"><a href="#local-6989586621679619793"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-101"></span><span>    </span><span id="local-6989586621679619791"><span id="reject"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#reject"><span class="hs-identifier hs-type">reject</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619791"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Void</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619793"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619791"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- | The invariant counterpart to 'Alternative' and 'Decidable': represents</span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- a combination of both 'Applicative' and 'Alt', or 'Divisible' and</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- 'Conclude'.  There are laws?</span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-108"></span><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inplus"><span class="hs-identifier hs-type">Inplus</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619740"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Inplicative.html#Inplicative"><span class="hs-identifier hs-type">Inplicative</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619740"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="Internative"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Internative"><span class="hs-identifier hs-var">Internative</span></a></span></span><span> </span><span id="local-6989586621679619740"><span class="annot"><a href="#local-6989586621679619740"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-comment">-- | Convenient wrapper to build up an 'Inplus' instance on by providing</span><span>
+</span><span id="line-111"></span><span class="hs-comment">-- each branch of it.  This makes it much easier to build up longer chains</span><span>
+</span><span id="line-112"></span><span class="hs-comment">-- because you would only need to write the splitting/joining functions in</span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- one place.</span><span>
+</span><span id="line-114"></span><span class="hs-comment">--</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- For example, if you had a data type</span><span>
+</span><span id="line-116"></span><span class="hs-comment">--</span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-118"></span><span class="hs-comment">-- data MyType = MTI Int | MTB Bool | MTS String</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-120"></span><span class="hs-comment">--</span><span>
+</span><span id="line-121"></span><span class="hs-comment">-- and an invariant functor and 'Inplus' instance @Prim@ (representing, say,</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- a bidirectional parser, where @Prim Int@ is a bidirectional parser for</span><span>
+</span><span id="line-123"></span><span class="hs-comment">-- an 'Int'@), then you could assemble a bidirectional parser for</span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- a @MyType@ using:</span><span>
+</span><span id="line-125"></span><span class="hs-comment">--</span><span>
+</span><span id="line-126"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-127"></span><span class="hs-comment">-- invmap (\case MTI x -&gt; Z (I x); MTB y -&gt; S (Z (I y)); MTS z -&gt; S (S (Z (I z))))</span><span>
+</span><span id="line-128"></span><span class="hs-comment">--        (\case Z (I x) -&gt; MTI x; S (Z (I y)) -&gt; MTB y; S (S (Z (I z))) -&gt; MTS z) $</span><span>
+</span><span id="line-129"></span><span class="hs-comment">--   concatInplus $ intPrim</span><span>
+</span><span id="line-130"></span><span class="hs-comment">--               :* boolPrim</span><span>
+</span><span id="line-131"></span><span class="hs-comment">--               :* stringPrim</span><span>
+</span><span id="line-132"></span><span class="hs-comment">--               :* Nil</span><span>
+</span><span id="line-133"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-134"></span><span class="hs-comment">--</span><span>
+</span><span id="line-135"></span><span class="hs-comment">-- Some notes on usefulness depending on how many components you have:</span><span>
+</span><span id="line-136"></span><span class="hs-comment">--</span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- *    If you have 0 components, use 'reject' directly.</span><span>
+</span><span id="line-138"></span><span class="hs-comment">-- *    If you have 1 component, use 'inject' directly.</span><span>
+</span><span id="line-139"></span><span class="hs-comment">-- *    If you have 2 components, use 'swerve' directly.</span><span>
+</span><span id="line-140"></span><span class="hs-comment">-- *    If you have 3 or more components, these combinators may be useful;</span><span>
+</span><span id="line-141"></span><span class="hs-comment">--      otherwise you'd need to manually peel off eithers one-by-one.</span><span>
+</span><span id="line-142"></span><span id="local-6989586621679619772"><span id="local-6989586621679619773"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#concatInplus"><span class="hs-identifier hs-type">concatInplus</span></a></span><span>
+</span><span id="line-143"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inplus"><span class="hs-identifier hs-type">Inplus</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619773"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-144"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679619773"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619772"><span class="hs-keyword hs-type">as</span></a></span><span>
+</span><span id="line-145"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619773"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NS</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="annot"><a href="#local-6989586621679619772"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-146"></span><span id="concatInplus"><span class="annot"><span class="annottext">concatInplus :: NP f as -&gt; f (NS I as)
+</span><a href="Data.Functor.Invariant.Internative.html#concatInplus"><span class="hs-identifier hs-var hs-var">concatInplus</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(NS I as -&gt; Void) -&gt; f (NS I as)
+forall (f :: * -&gt; *) a. Inplus f =&gt; (a -&gt; Void) -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#reject"><span class="hs-identifier hs-var">reject</span></a></span><span> </span><span class="annot"><span class="annottext">((NS I as -&gt; Void) -&gt; f (NS I as))
+-&gt; (NS I as -&gt; Void) -&gt; f (NS I as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span>
+</span><span id="line-148"></span><span>    </span><span id="local-6989586621679619737"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679619737"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679619735"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679619735"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(x -&gt; NS I (x : xs))
+-&gt; (NS I xs -&gt; NS I (x : xs))
+-&gt; (NS I (x : xs) -&gt; Either x (NS I xs))
+-&gt; f x
+-&gt; f (NS I xs)
+-&gt; f (NS I (x : xs))
+forall (f :: * -&gt; *) b a c.
+Inalt f =&gt;
+(b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var">swerve</span></a></span><span>
+</span><span id="line-149"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NS I (x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]). a x -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">Z</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NS I (x : xs)) -&gt; (x -&gt; I x) -&gt; x -&gt; NS I (x : xs)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span>
+</span><span id="line-150"></span><span>      </span><span class="annot"><span class="annottext">NS I xs -&gt; NS I (x : xs)
+forall k (a :: k -&gt; *) (xs :: [k]) (x :: k).
+NS a xs -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">S</span></span><span>
+</span><span id="line-151"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Z</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679619730"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619730"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; Either x (NS I xs)
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679619730"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S</span></span><span> </span><span id="local-6989586621679619729"><span class="annot"><span class="annottext">ys :: NS I xs
+</span><a href="#local-6989586621679619729"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">NS I xs -&gt; Either x (NS I xs)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">NS I xs
+</span><a href="#local-6989586621679619729"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-152"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679619737"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-153"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NP f xs -&gt; f (NS I xs)
+forall (f :: * -&gt; *) (as :: [*]).
+Inplus f =&gt;
+NP f as -&gt; f (NS I as)
+</span><a href="Data.Functor.Invariant.Internative.html#concatInplus"><span class="hs-identifier hs-var">concatInplus</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679619735"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-154"></span><span>
+</span><span id="line-155"></span><span class="hs-comment">-- | A version of 'concatInplus' for non-empty 'NP', but only</span><span>
+</span><span id="line-156"></span><span class="hs-comment">-- requiring an 'Inalt' instance.</span><span>
+</span><span id="line-157"></span><span class="hs-comment">--</span><span>
+</span><span id="line-158"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-159"></span><span id="local-6989586621679619758"><span id="local-6989586621679619759"><span id="local-6989586621679619760"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#concatInalt"><span class="hs-identifier hs-type">concatInalt</span></a></span><span>
+</span><span id="line-160"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier hs-type">Inalt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619760"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-161"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679619760"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619759"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679619758"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-162"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619760"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NS</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619759"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679619758"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-163"></span><span id="concatInalt"><span class="annot"><span class="annottext">concatInalt :: NP f (a : as) -&gt; f (NS I (a : as))
+</span><a href="Data.Functor.Invariant.Internative.html#concatInalt"><span class="hs-identifier hs-var hs-var">concatInalt</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679619728"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679619728"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679619727"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679619727"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679619727"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-164"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(x -&gt; NS I (x : as))
+-&gt; (NS I (x : as) -&gt; x) -&gt; f x -&gt; f (NS I (x : as))
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NS I (x : as)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]). a x -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">Z</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NS I (x : as)) -&gt; (x -&gt; I x) -&gt; x -&gt; NS I (x : as)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Z</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679619726"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619726"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x
+x
+</span><a href="#local-6989586621679619726"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S</span></span><span> </span><span id="local-6989586621679619725"><span class="annot"><span class="annottext">ys :: NS I xs
+</span><a href="#local-6989586621679619725"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">NS I xs
+</span><a href="#local-6989586621679619725"><span class="hs-identifier hs-var">ys</span></a></span><span> </span><span class="hs-keyword">of</span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679619728"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-165"></span><span>    </span><span class="hs-identifier">_</span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(x -&gt; NS I (x : x : xs))
+-&gt; (NS I (x : xs) -&gt; NS I (x : x : xs))
+-&gt; (NS I (x : x : xs) -&gt; Either x (NS I (x : xs)))
+-&gt; f x
+-&gt; f (NS I (x : xs))
+-&gt; f (NS I (x : x : xs))
+forall (f :: * -&gt; *) b a c.
+Inalt f =&gt;
+(b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var">swerve</span></a></span><span>
+</span><span id="line-166"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NS I (x : x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]). a x -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">Z</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NS I (x : x : xs)) -&gt; (x -&gt; I x) -&gt; x -&gt; NS I (x : x : xs)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span>
+</span><span id="line-167"></span><span>      </span><span class="annot"><span class="annottext">NS I (x : xs) -&gt; NS I (x : x : xs)
+forall k (a :: k -&gt; *) (xs :: [k]) (x :: k).
+NS a xs -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">S</span></span><span>
+</span><span id="line-168"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Z</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679619724"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679619724"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; Either x (NS I (x : xs))
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679619724"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S</span></span><span> </span><span id="local-6989586621679619723"><span class="annot"><span class="annottext">ys :: NS I xs
+</span><a href="#local-6989586621679619723"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">NS I xs -&gt; Either x (NS I xs)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">NS I xs
+</span><a href="#local-6989586621679619723"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-169"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679619728"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-170"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NP f (x : xs) -&gt; f (NS I (x : xs))
+forall (f :: * -&gt; *) a (as :: [*]).
+Inalt f =&gt;
+NP f (a : as) -&gt; f (NS I (a : as))
+</span><a href="Data.Functor.Invariant.Internative.html#concatInalt"><span class="hs-identifier hs-var">concatInalt</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+NP f (x : xs)
+</span><a href="#local-6989586621679619727"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-171"></span></pre></body></html>

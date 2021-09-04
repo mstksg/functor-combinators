@@ -1,0 +1,636 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span>
+</span><span id="line-2"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- Module      : Data.Functor.Invariant.Night</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- Copyright   : (c) Justin Le 2019</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- License     : BSD3</span><span>
+</span><span id="line-6"></span><span class="hs-comment">--</span><span>
+</span><span id="line-7"></span><span class="hs-comment">-- Maintainer  : justin@jle.im</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Stability   : experimental</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Portability : non-portable</span><span>
+</span><span id="line-10"></span><span class="hs-comment">--</span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- Provides an 'Invariant' version of a Day convolution over 'Either'.</span><span>
+</span><span id="line-12"></span><span class="hs-comment">--</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- @since 0.3.0.0</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Functor.Invariant.Night</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-15"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier">Night</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier">Not</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#refuted"><span class="hs-identifier">refuted</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#night"><span class="hs-identifier">night</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#runNight"><span class="hs-identifier">runNight</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#nerve"><span class="hs-identifier">nerve</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#runNightAlt"><span class="hs-identifier">runNightAlt</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#runNightDecide"><span class="hs-identifier">runNightDecide</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#toCoNight"><span class="hs-identifier">toCoNight</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#toCoNight_"><span class="hs-identifier">toCoNight_</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#toContraNight"><span class="hs-identifier">toContraNight</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#assoc"><span class="hs-identifier">assoc</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#unassoc"><span class="hs-identifier">unassoc</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#intro1"><span class="hs-identifier">intro1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#intro2"><span class="hs-identifier">intro2</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#elim1"><span class="hs-identifier">elim1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#elim2"><span class="hs-identifier">elim2</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#swapped"><span class="hs-identifier">swapped</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#trans1"><span class="hs-identifier">trans1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#trans2"><span class="hs-identifier">trans2</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Bifunctor</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Alt</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Contravariant.Decide.html"><span class="hs-identifier">Data.Functor.Contravariant.Decide</span></a></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html"><span class="hs-identifier">Data.Functor.Contravariant.Night</span></a></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier">Not</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#refuted"><span class="hs-identifier">refuted</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Invariant</span></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html"><span class="hs-identifier">Data.Functor.Invariant.Internative</span></a></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Kind</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Void</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bifunctor.Assoc</span></span><span>              </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B</span></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bifunctor.Swap</span></span><span>               </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B</span></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html"><span class="hs-identifier">Data.Functor.Contravariant.Night</span></a></span><span>  </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">CN</span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Functor.Coyoneda</span></span><span>             </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">CY</span></span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span class="hs-comment">-- | A pairing of invariant functors to create a new invariant functor that</span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- represents the &quot;choice&quot; between the two.</span><span>
+</span><span id="line-49"></span><span class="hs-comment">--</span><span>
+</span><span id="line-50"></span><span class="hs-comment">-- A @'Night' f g a@ is a invariant &quot;consumer&quot; and &quot;producer&quot; of @a@, and</span><span>
+</span><span id="line-51"></span><span class="hs-comment">-- it does this by either feeding the @a@ to @f@, or feeding the @a@ to</span><span>
+</span><span id="line-52"></span><span class="hs-comment">-- @g@, and then collecting the result from whichever one it was fed to.</span><span>
+</span><span id="line-53"></span><span class="hs-comment">-- Which decision of which path to takes happens at runtime depending</span><span>
+</span><span id="line-54"></span><span class="hs-comment">-- /what/ @a@ is actually given.</span><span>
+</span><span id="line-55"></span><span class="hs-comment">--</span><span>
+</span><span id="line-56"></span><span class="hs-comment">-- For example, if we have @x :: f a@ and @y :: g b@, then @'night' x y ::</span><span>
+</span><span id="line-57"></span><span class="hs-comment">-- 'Night' f g ('Either' a b)@.  This is a consumer/producer of @'Either' a b@s, and</span><span>
+</span><span id="line-58"></span><span class="hs-comment">-- it consumes 'Left' branches by feeding it to @x@, and 'Right' branches</span><span>
+</span><span id="line-59"></span><span class="hs-comment">-- by feeding it to @y@.  It then passes back the single result from the one of</span><span>
+</span><span id="line-60"></span><span class="hs-comment">-- the two that was chosen.</span><span>
+</span><span id="line-61"></span><span class="hs-comment">--</span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- Mathematically, this is a invariant day convolution, except with</span><span>
+</span><span id="line-63"></span><span class="hs-comment">-- a different choice of bifunctor ('Either') than the typical one we talk</span><span>
+</span><span id="line-64"></span><span class="hs-comment">-- about in Haskell (which uses @(,)@).  Therefore, it is an alternative to</span><span>
+</span><span id="line-65"></span><span class="hs-comment">-- the typical 'Data.Functor.Day' convolution --- hence, the name 'Night'.</span><span>
+</span><span id="line-66"></span><span class="hs-keyword">data</span><span> </span><span id="Night"><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-67"></span><span>    </span><span id="local-6989586621679619972"><span id="local-6989586621679619973"><span id="local-6989586621679620142"><span id="local-6989586621679620144"><span id="local-6989586621679620146"><span id="Night"><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679620146"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619973"><span class="hs-identifier hs-type">b</span></a></span><span>
+</span><span id="line-68"></span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679620144"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619972"><span class="hs-identifier hs-type">c</span></a></span><span>
+</span><span id="line-69"></span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619973"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679620142"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619972"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679620142"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679620142"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679619973"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619972"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>          </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679620146"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679620144"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679620142"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span id="local-6989586621679619969"><span id="local-6989586621679619970"><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619970"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619969"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-75"></span><span>    </span><span id="local-6989586621679619966"><span class="annot"><span class="annottext">invmap :: (a -&gt; b) -&gt; (b -&gt; a) -&gt; Night f g a -&gt; Night f g b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">invmap</span></span></span><span> </span><span id="local-6989586621679619964"><span class="annot"><span class="annottext">f :: a -&gt; b
+</span><a href="#local-6989586621679619964"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619963"><span class="annot"><span class="annottext">g :: b -&gt; a
+</span><a href="#local-6989586621679619963"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619962"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619962"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619961"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619961"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619960"><span class="annot"><span class="annottext">h :: b -&gt; a
+</span><a href="#local-6989586621679619960"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679619959"><span class="annot"><span class="annottext">j :: c -&gt; a
+</span><a href="#local-6989586621679619959"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span id="local-6989586621679619958"><span class="annot"><span class="annottext">k :: a -&gt; Either b c
+</span><a href="#local-6989586621679619958"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; g c -&gt; (b -&gt; b) -&gt; (c -&gt; b) -&gt; (b -&gt; Either b c) -&gt; Night f g b
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619962"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619961"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679619964"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; b) -&gt; (b -&gt; a) -&gt; b -&gt; b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679619960"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679619964"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; b) -&gt; (c -&gt; a) -&gt; c -&gt; b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; a
+</span><a href="#local-6989586621679619959"><span class="hs-identifier hs-var">j</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; Either b c
+</span><a href="#local-6989586621679619958"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Either b c) -&gt; (b -&gt; a) -&gt; b -&gt; Either b c
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679619963"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span class="hs-comment">-- | Pair two invariant actions together into a 'Night'; assigns the first</span><span>
+</span><span id="line-78"></span><span class="hs-comment">-- one to 'Left' inputs and outputs and the second one to 'Right' inputs</span><span>
+</span><span id="line-79"></span><span class="hs-comment">-- and outputs.</span><span>
+</span><span id="line-80"></span><span id="local-6989586621679619953"><span id="local-6989586621679619954"><span id="local-6989586621679619955"><span id="local-6989586621679619956"><span class="annot"><a href="Data.Functor.Invariant.Night.html#night"><span class="hs-identifier hs-type">night</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619956"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619955"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619954"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619953"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619956"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619954"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679619955"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619953"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span></span></span><span>
+</span><span id="line-81"></span><span id="night"><span class="annot"><span class="annottext">night :: f a -&gt; g b -&gt; Night f g (Either a b)
+</span><a href="Data.Functor.Invariant.Night.html#night"><span class="hs-identifier hs-var hs-var">night</span></a></span></span><span> </span><span id="local-6989586621679619952"><span class="annot"><span class="annottext">x :: f a
+</span><a href="#local-6989586621679619952"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619951"><span class="annot"><span class="annottext">y :: g b
+</span><a href="#local-6989586621679619951"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f a
+-&gt; g b
+-&gt; (a -&gt; Either a b)
+-&gt; (b -&gt; Either a b)
+-&gt; (Either a b -&gt; Either a b)
+-&gt; Night f g (Either a b)
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f a
+</span><a href="#local-6989586621679619952"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">g b
+</span><a href="#local-6989586621679619951"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Either a b
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Either a b
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">Either a b -&gt; Either a b
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- | Interpret the covariant part of a 'Night' into a target context @h@,</span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- as long as the context is an instance of 'Alt'.  The 'Alt' is used to</span><span>
+</span><span id="line-85"></span><span class="hs-comment">-- combine results back together, chosen by '&lt;!&gt;'.</span><span>
+</span><span id="line-86"></span><span class="annot"><a href="Data.Functor.Invariant.Night.html#runNightAlt"><span class="hs-identifier hs-type">runNightAlt</span></a></span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679619949"><span class="annot"><a href="#local-6989586621679619949"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679619948"><span class="annot"><a href="#local-6989586621679619948"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679619947"><span class="annot"><a href="#local-6989586621679619947"><span class="hs-identifier hs-type">h</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alt</span></span><span> </span><span class="annot"><a href="#local-6989586621679619947"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619949"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619947"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-89"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619948"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619947"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619949"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619948"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619947"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-91"></span><span id="runNightAlt"><span class="annot"><span class="annottext">runNightAlt :: (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Night f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Night.html#runNightAlt"><span class="hs-identifier hs-var hs-var">runNightAlt</span></a></span></span><span> </span><span id="local-6989586621679619946"><span class="annot"><span class="annottext">f :: f ~&gt; h
+</span><a href="#local-6989586621679619946"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619945"><span class="annot"><span class="annottext">g :: g ~&gt; h
+</span><a href="#local-6989586621679619945"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619944"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619944"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619943"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619943"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619942"><span class="annot"><span class="annottext">h :: b -&gt; x
+</span><a href="#local-6989586621679619942"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679619941"><span class="annot"><span class="annottext">j :: c -&gt; x
+</span><a href="#local-6989586621679619941"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; h b -&gt; h x
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619942"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; h b
+f ~&gt; h
+</span><a href="#local-6989586621679619946"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619944"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">h x -&gt; h x -&gt; h x
+forall (f :: * -&gt; *) a. Alt f =&gt; f a -&gt; f a -&gt; f a
+</span><span class="hs-operator hs-var">&lt;!&gt;</span></span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; h c -&gt; h x
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619941"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c -&gt; h c
+g ~&gt; h
+</span><a href="#local-6989586621679619945"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619943"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- | Interpret the contravariant part of a 'Night' into a target context</span><span>
+</span><span id="line-94"></span><span class="hs-comment">-- @h@, as long as the context is an instance of 'Decide'.  The 'Decide' is</span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- used to pick which part to feed the input to.</span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Data.Functor.Invariant.Night.html#runNightDecide"><span class="hs-identifier hs-type">runNightDecide</span></a></span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679619939"><span class="annot"><a href="#local-6989586621679619939"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679619938"><span class="annot"><a href="#local-6989586621679619938"><span class="hs-identifier hs-type">g</span></a></span></span><span> </span><span id="local-6989586621679619937"><span class="annot"><a href="#local-6989586621679619937"><span class="hs-identifier hs-type">h</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Decide.html#Decide"><span class="hs-identifier hs-type">Decide</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619937"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619939"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619937"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679619938"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619937"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619939"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619938"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619937"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-101"></span><span id="runNightDecide"><span class="annot"><span class="annottext">runNightDecide :: (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Night f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Night.html#runNightDecide"><span class="hs-identifier hs-var hs-var">runNightDecide</span></a></span></span><span> </span><span id="local-6989586621679619936"><span class="annot"><span class="annottext">f :: f ~&gt; h
+</span><a href="#local-6989586621679619936"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619935"><span class="annot"><span class="annottext">g :: g ~&gt; h
+</span><a href="#local-6989586621679619935"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619934"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619934"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619933"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619933"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679619932"><span class="annot"><span class="annottext">k :: x -&gt; Either b c
+</span><a href="#local-6989586621679619932"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(x -&gt; Either b c) -&gt; h b -&gt; h c -&gt; h x
+forall (f :: * -&gt; *) a b c.
+Decide f =&gt;
+(a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Contravariant.Decide.html#decide"><span class="hs-identifier hs-var">decide</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619932"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; h b
+f ~&gt; h
+</span><a href="#local-6989586621679619936"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619934"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c -&gt; h c
+g ~&gt; h
+</span><a href="#local-6989586621679619935"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619933"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- | Convert an invariant 'Night' into the covariant version, dropping the</span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- contravariant part.</span><span>
+</span><span id="line-105"></span><span class="hs-comment">--</span><span>
+</span><span id="line-106"></span><span class="hs-comment">-- Note that there is no covariant version of 'Night' defined in any common</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- library, so we use an equivalent type (if @f@ and @g@ are 'Functor's) @f</span><span>
+</span><span id="line-108"></span><span class="hs-comment">-- ':*:' g@.</span><span>
+</span><span id="line-109"></span><span id="local-6989586621679619929"><span id="local-6989586621679619930"><span class="annot"><a href="Data.Functor.Invariant.Night.html#toCoNight"><span class="hs-identifier hs-type">toCoNight</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679619930"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679619929"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619930"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619929"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619930"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*:</span></span><span> </span><span class="annot"><a href="#local-6989586621679619929"><span class="hs-identifier hs-type">g</span></a></span></span></span><span>
+</span><span id="line-110"></span><span id="toCoNight"><span class="annot"><span class="annottext">toCoNight :: Night f g ~&gt; (f :*: g)
+</span><a href="Data.Functor.Invariant.Night.html#toCoNight"><span class="hs-identifier hs-var hs-var">toCoNight</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619928"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619928"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619927"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619927"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619926"><span class="annot"><span class="annottext">f :: b -&gt; x
+</span><a href="#local-6989586621679619926"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619925"><span class="annot"><span class="annottext">g :: c -&gt; x
+</span><a href="#local-6989586621679619925"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; f b -&gt; f x
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619926"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619928"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">f x -&gt; g x -&gt; (:*:) f g x
+forall k (f :: k -&gt; *) (g :: k -&gt; *) (p :: k).
+f p -&gt; g p -&gt; (:*:) f g p
+</span><span class="hs-operator hs-var">:*:</span></span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; g c -&gt; g x
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619925"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619927"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="hs-comment">-- | Convert an invariant 'Night' into the covariant version, dropping the</span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- contravariant part.</span><span>
+</span><span id="line-114"></span><span class="hs-comment">--</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- This version does not require a 'Functor' constraint because it converts</span><span>
+</span><span id="line-116"></span><span class="hs-comment">-- to the coyoneda-wrapped product, which is more accurately the covariant</span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- 'Night' convolution.</span><span>
+</span><span id="line-118"></span><span class="hs-comment">--</span><span>
+</span><span id="line-119"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-120"></span><span id="local-6989586621679619922"><span id="local-6989586621679619923"><span class="annot"><a href="Data.Functor.Invariant.Night.html#toCoNight_"><span class="hs-identifier hs-type">toCoNight_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619923"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619922"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">CY.Coyoneda</span></span><span> </span><span class="annot"><a href="#local-6989586621679619923"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*:</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">CY.Coyoneda</span></span><span> </span><span class="annot"><a href="#local-6989586621679619922"><span class="hs-identifier hs-type">g</span></a></span></span></span><span>
+</span><span id="line-121"></span><span id="toCoNight_"><span class="annot"><span class="annottext">toCoNight_ :: Night f g x -&gt; (:*:) (Coyoneda f) (Coyoneda g) x
+</span><a href="Data.Functor.Invariant.Night.html#toCoNight_"><span class="hs-identifier hs-var hs-var">toCoNight_</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619921"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619921"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619920"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619920"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619919"><span class="annot"><span class="annottext">f :: b -&gt; x
+</span><a href="#local-6989586621679619919"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619918"><span class="annot"><span class="annottext">g :: c -&gt; x
+</span><a href="#local-6989586621679619918"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-identifier">_</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; f b -&gt; Coyoneda f x
+forall b a (f :: * -&gt; *). (b -&gt; a) -&gt; f b -&gt; Coyoneda f a
+</span><span class="hs-identifier hs-var">CY.Coyoneda</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619919"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619921"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Coyoneda f x -&gt; Coyoneda g x -&gt; (:*:) (Coyoneda f) (Coyoneda g) x
+forall k (f :: k -&gt; *) (g :: k -&gt; *) (p :: k).
+f p -&gt; g p -&gt; (:*:) f g p
+</span><span class="hs-operator hs-var">:*:</span></span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; g c -&gt; Coyoneda g x
+forall b a (f :: * -&gt; *). (b -&gt; a) -&gt; f b -&gt; Coyoneda f a
+</span><span class="hs-identifier hs-var">CY.Coyoneda</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619918"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619920"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- | Convert an invariant 'Night' into the contravariant version, dropping</span><span>
+</span><span id="line-125"></span><span class="hs-comment">-- the covariant part.</span><span>
+</span><span id="line-126"></span><span id="local-6989586621679619915"><span id="local-6989586621679619916"><span class="annot"><a href="Data.Functor.Invariant.Night.html#toContraNight"><span class="hs-identifier hs-type">toContraNight</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619916"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619915"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Night"><span class="hs-identifier hs-type">CN.Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619916"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619915"><span class="hs-identifier hs-type">g</span></a></span></span></span><span>
+</span><span id="line-127"></span><span id="toContraNight"><span class="annot"><span class="annottext">toContraNight :: Night f g x -&gt; Night f g x
+</span><a href="Data.Functor.Invariant.Night.html#toContraNight"><span class="hs-identifier hs-var hs-var">toContraNight</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619914"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619914"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619913"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619913"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679619912"><span class="annot"><span class="annottext">h :: x -&gt; Either b c
+</span><a href="#local-6989586621679619912"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f b -&gt; g c -&gt; (x -&gt; Either b c) -&gt; Night f g x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b -&gt; g c -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Contravariant.Night.html#Night"><span class="hs-identifier hs-var">CN.Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619914"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619913"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619912"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="hs-comment">-- | Interpret out of a 'Night' into any instance of 'Inalt' by providing</span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- two interpreting functions.</span><span>
+</span><span id="line-131"></span><span class="hs-comment">--</span><span>
+</span><span id="line-132"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-133"></span><span id="local-6989586621679619908"><span id="local-6989586621679619909"><span id="local-6989586621679619910"><span class="annot"><a href="Data.Functor.Invariant.Night.html#runNight"><span class="hs-identifier hs-type">runNight</span></a></span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier hs-type">Inalt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619910"><span class="hs-identifier hs-type">h</span></a></span><span>
+</span><span id="line-135"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619909"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619910"><span class="hs-identifier hs-type">h</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679619908"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619910"><span class="hs-identifier hs-type">h</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-137"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619909"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619908"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619910"><span class="hs-identifier hs-type">h</span></a></span></span></span></span><span>
+</span><span id="line-138"></span><span id="runNight"><span class="annot"><span class="annottext">runNight :: (f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Night f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Night.html#runNight"><span class="hs-identifier hs-var hs-var">runNight</span></a></span></span><span> </span><span id="local-6989586621679619907"><span class="annot"><span class="annottext">f :: f ~&gt; h
+</span><a href="#local-6989586621679619907"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619906"><span class="annot"><span class="annottext">g :: g ~&gt; h
+</span><a href="#local-6989586621679619906"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619905"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619905"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619904"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619904"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619903"><span class="annot"><span class="annottext">a :: b -&gt; x
+</span><a href="#local-6989586621679619903"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679619902"><span class="annot"><span class="annottext">b :: c -&gt; x
+</span><a href="#local-6989586621679619902"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621679619901"><span class="annot"><span class="annottext">c :: x -&gt; Either b c
+</span><a href="#local-6989586621679619901"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; (c -&gt; x) -&gt; (x -&gt; Either b c) -&gt; h b -&gt; h c -&gt; h x
+forall (f :: * -&gt; *) b a c.
+Inalt f =&gt;
+(b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var">swerve</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619903"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619902"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619901"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; h b
+f ~&gt; h
+</span><a href="#local-6989586621679619907"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619905"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c -&gt; h c
+g ~&gt; h
+</span><a href="#local-6989586621679619906"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619904"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span class="hs-comment">-- | Squash the two items in a 'Night' using their natural 'Inalt'</span><span>
+</span><span id="line-141"></span><span class="hs-comment">-- instances.</span><span>
+</span><span id="line-142"></span><span class="hs-comment">--</span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-144"></span><span id="local-6989586621679619899"><span class="annot"><a href="Data.Functor.Invariant.Night.html#nerve"><span class="hs-identifier hs-type">nerve</span></a></span><span>
+</span><span id="line-145"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier hs-type">Inalt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619899"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-146"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619899"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619899"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619899"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-147"></span><span id="nerve"><span class="annot"><span class="annottext">nerve :: Night f f ~&gt; f
+</span><a href="Data.Functor.Invariant.Night.html#nerve"><span class="hs-identifier hs-var hs-var">nerve</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619898"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619898"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619897"><span class="annot"><span class="annottext">y :: f c
+</span><a href="#local-6989586621679619897"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619896"><span class="annot"><span class="annottext">a :: b -&gt; x
+</span><a href="#local-6989586621679619896"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679619895"><span class="annot"><span class="annottext">b :: c -&gt; x
+</span><a href="#local-6989586621679619895"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621679619894"><span class="annot"><span class="annottext">c :: x -&gt; Either b c
+</span><a href="#local-6989586621679619894"><span class="hs-identifier hs-var">c</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; (c -&gt; x) -&gt; (x -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f x
+forall (f :: * -&gt; *) b a c.
+Inalt f =&gt;
+(b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var">swerve</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619896"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619895"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619894"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619898"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">f c
+</span><a href="#local-6989586621679619897"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-148"></span><span>
+</span><span id="line-149"></span><span class="hs-comment">-- | 'Night' is associative.</span><span>
+</span><span id="line-150"></span><span id="local-6989586621679619891"><span id="local-6989586621679619892"><span id="local-6989586621679619893"><span class="annot"><a href="Data.Functor.Invariant.Night.html#assoc"><span class="hs-identifier hs-type">assoc</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619893"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619892"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619891"><span class="hs-identifier hs-type">h</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619893"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619892"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679619891"><span class="hs-identifier hs-type">h</span></a></span></span></span></span><span>
+</span><span id="line-151"></span><span id="assoc"><span class="annot"><span class="annottext">assoc :: Night f (Night g h) x -&gt; Night (Night f g) h x
+</span><a href="Data.Functor.Invariant.Night.html#assoc"><span class="hs-identifier hs-var hs-var">assoc</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619890"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619890"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619889"><span class="annot"><span class="annottext">y :: g b
+</span><a href="#local-6989586621679619889"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619888"><span class="annot"><span class="annottext">z :: h c
+</span><a href="#local-6989586621679619888"><span class="hs-identifier hs-var">z</span></a></span></span><span> </span><span id="local-6989586621679619887"><span class="annot"><span class="annottext">f :: b -&gt; c
+</span><a href="#local-6989586621679619887"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619886"><span class="annot"><span class="annottext">g :: c -&gt; c
+</span><a href="#local-6989586621679619886"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619885"><span class="annot"><span class="annottext">h :: c -&gt; Either b c
+</span><a href="#local-6989586621679619885"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679619884"><span class="annot"><span class="annottext">j :: b -&gt; x
+</span><a href="#local-6989586621679619884"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span id="local-6989586621679619883"><span class="annot"><span class="annottext">k :: c -&gt; x
+</span><a href="#local-6989586621679619883"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679619882"><span class="annot"><span class="annottext">l :: x -&gt; Either b c
+</span><a href="#local-6989586621679619882"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-152"></span><span>    </span><span class="annot"><span class="annottext">Night f g (Either b b)
+-&gt; h c
+-&gt; (Either b b -&gt; x)
+-&gt; (c -&gt; x)
+-&gt; (x -&gt; Either (Either b b) c)
+-&gt; Night (Night f g) h x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b
+-&gt; g b
+-&gt; (b -&gt; Either b b)
+-&gt; (b -&gt; Either b b)
+-&gt; (Either b b -&gt; Either b b)
+-&gt; Night f g (Either b b)
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619890"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">g b
+</span><a href="#local-6989586621679619889"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; Either b b
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Either b b
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">Either b b -&gt; Either b b
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">h c
+</span><a href="#local-6989586621679619888"><span class="hs-identifier hs-var">z</span></a></span><span>
+</span><span id="line-153"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; (b -&gt; x) -&gt; Either b b -&gt; x
+forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619884"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619883"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; (b -&gt; c) -&gt; b -&gt; x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; c
+</span><a href="#local-6989586621679619887"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-154"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619883"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; (c -&gt; c) -&gt; c -&gt; x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; c
+</span><a href="#local-6989586621679619886"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-155"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Either b (Either b c) -&gt; Either (Either b b) c
+forall (p :: * -&gt; * -&gt; *) a b c.
+Assoc p =&gt;
+p a (p b c) -&gt; p (p a b) c
+</span><span class="hs-identifier hs-var">B.unassoc</span></span><span> </span><span class="annot"><span class="annottext">(Either b (Either b c) -&gt; Either (Either b b) c)
+-&gt; (x -&gt; Either b (Either b c)) -&gt; x -&gt; Either (Either b b) c
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(c -&gt; Either b c) -&gt; Either b c -&gt; Either b (Either b c)
+forall (p :: * -&gt; * -&gt; *) b c a.
+Bifunctor p =&gt;
+(b -&gt; c) -&gt; p a b -&gt; p a c
+</span><span class="hs-identifier hs-var">second</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; Either b c
+</span><a href="#local-6989586621679619885"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">(Either b c -&gt; Either b (Either b c))
+-&gt; (x -&gt; Either b c) -&gt; x -&gt; Either b (Either b c)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619882"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-156"></span><span>
+</span><span id="line-157"></span><span class="hs-comment">-- | 'Night' is associative.</span><span>
+</span><span id="line-158"></span><span id="local-6989586621679619876"><span id="local-6989586621679619877"><span id="local-6989586621679619878"><span class="annot"><a href="Data.Functor.Invariant.Night.html#unassoc"><span class="hs-identifier hs-type">unassoc</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619878"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619877"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679619876"><span class="hs-identifier hs-type">h</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619878"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619877"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619876"><span class="hs-identifier hs-type">h</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-159"></span><span id="unassoc"><span class="annot"><span class="annottext">unassoc :: Night (Night f g) h x -&gt; Night f (Night g h) x
+</span><a href="Data.Functor.Invariant.Night.html#unassoc"><span class="hs-identifier hs-var hs-var">unassoc</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619875"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619875"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619874"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619874"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619873"><span class="annot"><span class="annottext">f :: b -&gt; b
+</span><a href="#local-6989586621679619873"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619872"><span class="annot"><span class="annottext">g :: c -&gt; b
+</span><a href="#local-6989586621679619872"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619871"><span class="annot"><span class="annottext">h :: b -&gt; Either b c
+</span><a href="#local-6989586621679619871"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679619870"><span class="annot"><span class="annottext">z :: h c
+</span><a href="#local-6989586621679619870"><span class="hs-identifier hs-var">z</span></a></span></span><span> </span><span id="local-6989586621679619869"><span class="annot"><span class="annottext">j :: b -&gt; x
+</span><a href="#local-6989586621679619869"><span class="hs-identifier hs-var">j</span></a></span></span><span> </span><span id="local-6989586621679619868"><span class="annot"><span class="annottext">k :: c -&gt; x
+</span><a href="#local-6989586621679619868"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679619867"><span class="annot"><span class="annottext">l :: x -&gt; Either b c
+</span><a href="#local-6989586621679619867"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-160"></span><span>    </span><span class="annot"><span class="annottext">f b
+-&gt; Night g h (Either c c)
+-&gt; (b -&gt; x)
+-&gt; (Either c c -&gt; x)
+-&gt; (x -&gt; Either b (Either c c))
+-&gt; Night f (Night g h) x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619875"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c
+-&gt; h c
+-&gt; (c -&gt; Either c c)
+-&gt; (c -&gt; Either c c)
+-&gt; (Either c c -&gt; Either c c)
+-&gt; Night g h (Either c c)
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619874"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">h c
+</span><a href="#local-6989586621679619870"><span class="hs-identifier hs-var">z</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; Either c c
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; Either c c
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">Either c c -&gt; Either c c
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span>
+</span><span id="line-161"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619869"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; (b -&gt; b) -&gt; b -&gt; x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; b
+</span><a href="#local-6989586621679619873"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-162"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; (c -&gt; x) -&gt; Either c c -&gt; x
+forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619869"><span class="hs-identifier hs-var">j</span></a></span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; (c -&gt; b) -&gt; c -&gt; x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; b
+</span><a href="#local-6989586621679619872"><span class="hs-identifier hs-var">g</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619868"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Either (Either b c) c -&gt; Either b (Either c c)
+forall (p :: * -&gt; * -&gt; *) a b c.
+Assoc p =&gt;
+p (p a b) c -&gt; p a (p b c)
+</span><span class="hs-identifier hs-var">B.assoc</span></span><span> </span><span class="annot"><span class="annottext">(Either (Either b c) c -&gt; Either b (Either c c))
+-&gt; (x -&gt; Either (Either b c) c) -&gt; x -&gt; Either b (Either c c)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(b -&gt; Either b c) -&gt; Either b c -&gt; Either (Either b c) c
+forall (p :: * -&gt; * -&gt; *) a b c.
+Bifunctor p =&gt;
+(a -&gt; b) -&gt; p a c -&gt; p b c
+</span><span class="hs-identifier hs-var">first</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; Either b c
+</span><a href="#local-6989586621679619871"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">(Either b c -&gt; Either (Either b c) c)
+-&gt; (x -&gt; Either b c) -&gt; x -&gt; Either (Either b c) c
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619867"><span class="hs-identifier hs-var">l</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-164"></span><span>      </span><span class="hs-comment">-- (k . g)</span><span>
+</span><span id="line-165"></span><span>      </span><span class="hs-comment">-- (either (k . h) l)</span><span>
+</span><span id="line-166"></span><span>
+</span><span id="line-167"></span><span class="hs-comment">-- | The left identity of 'Night' is 'Not'; this is one side of that</span><span>
+</span><span id="line-168"></span><span class="hs-comment">-- isomorphism.</span><span>
+</span><span id="line-169"></span><span id="local-6989586621679619864"><span class="annot"><a href="Data.Functor.Invariant.Night.html#intro1"><span class="hs-identifier hs-type">intro1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619864"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-type">Not</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619864"><span class="hs-identifier hs-type">g</span></a></span></span><span>
+</span><span id="line-170"></span><span id="intro1"><span class="annot"><span class="annottext">intro1 :: g x -&gt; Night Not g x
+</span><a href="Data.Functor.Invariant.Night.html#intro1"><span class="hs-identifier hs-var hs-var">intro1</span></a></span></span><span> </span><span id="local-6989586621679619863"><span class="annot"><span class="annottext">y :: g x
+</span><a href="#local-6989586621679619863"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Not Void
+-&gt; g x
+-&gt; (Void -&gt; x)
+-&gt; (x -&gt; x)
+-&gt; (x -&gt; Either Void x)
+-&gt; Night Not g x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">Not Void
+</span><a href="Data.Functor.Contravariant.Night.html#refuted"><span class="hs-identifier hs-var">refuted</span></a></span><span> </span><span class="annot"><span class="annottext">g x
+</span><a href="#local-6989586621679619863"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">Void -&gt; x
+forall a. Void -&gt; a
+</span><span class="hs-identifier hs-var">absurd</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; x
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either Void x
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span>
+</span><span id="line-171"></span><span>
+</span><span id="line-172"></span><span class="hs-comment">-- | The right identity of 'Night' is 'Not'; this is one side of that</span><span>
+</span><span id="line-173"></span><span class="hs-comment">-- isomorphism.</span><span>
+</span><span id="line-174"></span><span id="local-6989586621679619861"><span class="annot"><a href="Data.Functor.Invariant.Night.html#intro2"><span class="hs-identifier hs-type">intro2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619861"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619861"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-type">Not</span></a></span></span><span>
+</span><span id="line-175"></span><span id="intro2"><span class="annot"><span class="annottext">intro2 :: f x -&gt; Night f Not x
+</span><a href="Data.Functor.Invariant.Night.html#intro2"><span class="hs-identifier hs-var hs-var">intro2</span></a></span></span><span> </span><span id="local-6989586621679619860"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679619860"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f x
+-&gt; Not Void
+-&gt; (x -&gt; x)
+-&gt; (Void -&gt; x)
+-&gt; (x -&gt; Either x Void)
+-&gt; Night f Not x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679619860"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Not Void
+</span><a href="Data.Functor.Contravariant.Night.html#refuted"><span class="hs-identifier hs-var">refuted</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; x
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">Void -&gt; x
+forall a. Void -&gt; a
+</span><span class="hs-identifier hs-var">absurd</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either x Void
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span>
+</span><span id="line-176"></span><span>
+</span><span id="line-177"></span><span class="hs-comment">-- | The left identity of 'Night' is 'Not'; this is one side of that</span><span>
+</span><span id="line-178"></span><span class="hs-comment">-- isomorphism.</span><span>
+</span><span id="line-179"></span><span id="local-6989586621679619859"><span class="annot"><a href="Data.Functor.Invariant.Night.html#elim1"><span class="hs-identifier hs-type">elim1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679619859"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-type">Not</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619859"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619859"><span class="hs-identifier hs-type">g</span></a></span></span><span>
+</span><span id="line-180"></span><span id="elim1"><span class="annot"><span class="annottext">elim1 :: Night Not g ~&gt; g
+</span><a href="Data.Functor.Invariant.Night.html#elim1"><span class="hs-identifier hs-var hs-var">elim1</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619858"><span class="annot"><span class="annottext">x :: Not b
+</span><a href="#local-6989586621679619858"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619857"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619857"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679619856"><span class="annot"><span class="annottext">g :: c -&gt; x
+</span><a href="#local-6989586621679619856"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619855"><span class="annot"><span class="annottext">h :: x -&gt; Either b c
+</span><a href="#local-6989586621679619855"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; (x -&gt; c) -&gt; g c -&gt; g x
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619856"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(b -&gt; c) -&gt; (c -&gt; c) -&gt; Either b c -&gt; c
+forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Void -&gt; c
+forall a. Void -&gt; a
+</span><span class="hs-identifier hs-var">absurd</span></span><span> </span><span class="annot"><span class="annottext">(Void -&gt; c) -&gt; (b -&gt; Void) -&gt; b -&gt; c
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Not b -&gt; b -&gt; Void
+forall a. Not a -&gt; a -&gt; Void
+</span><a href="Data.Functor.Contravariant.Night.html#refute"><span class="hs-identifier hs-var hs-var">refute</span></a></span><span> </span><span class="annot"><span class="annottext">Not b
+</span><a href="#local-6989586621679619858"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">c -&gt; c
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="annot"><span class="annottext">(Either b c -&gt; c) -&gt; (x -&gt; Either b c) -&gt; x -&gt; c
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619855"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619857"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-181"></span><span>
+</span><span id="line-182"></span><span class="hs-comment">-- | The right identity of 'Night' is 'Not'; this is one side of that</span><span>
+</span><span id="line-183"></span><span class="hs-comment">-- isomorphism.</span><span>
+</span><span id="line-184"></span><span id="local-6989586621679619853"><span class="annot"><a href="Data.Functor.Invariant.Night.html#elim2"><span class="hs-identifier hs-type">elim2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679619853"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619853"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-type">Not</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619853"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-185"></span><span id="elim2"><span class="annot"><span class="annottext">elim2 :: Night f Not ~&gt; f
+</span><a href="Data.Functor.Invariant.Night.html#elim2"><span class="hs-identifier hs-var hs-var">elim2</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619852"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619852"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619851"><span class="annot"><span class="annottext">y :: Not c
+</span><a href="#local-6989586621679619851"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619850"><span class="annot"><span class="annottext">f :: b -&gt; x
+</span><a href="#local-6989586621679619850"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span id="local-6989586621679619849"><span class="annot"><span class="annottext">h :: x -&gt; Either b c
+</span><a href="#local-6989586621679619849"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; (x -&gt; b) -&gt; f b -&gt; f x
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619850"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(b -&gt; b) -&gt; (c -&gt; b) -&gt; Either b c -&gt; b
+forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; b
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Void -&gt; b
+forall a. Void -&gt; a
+</span><span class="hs-identifier hs-var">absurd</span></span><span> </span><span class="annot"><span class="annottext">(Void -&gt; b) -&gt; (c -&gt; Void) -&gt; c -&gt; b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Not c -&gt; c -&gt; Void
+forall a. Not a -&gt; a -&gt; Void
+</span><a href="Data.Functor.Contravariant.Night.html#refute"><span class="hs-identifier hs-var hs-var">refute</span></a></span><span> </span><span class="annot"><span class="annottext">Not c
+</span><a href="#local-6989586621679619851"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Either b c -&gt; b) -&gt; (x -&gt; Either b c) -&gt; x -&gt; b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619849"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619852"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-186"></span><span>
+</span><span id="line-187"></span><span class="hs-comment">-- | The two sides of a 'Night' can be swapped.</span><span>
+</span><span id="line-188"></span><span id="local-6989586621679619847"><span id="local-6989586621679619848"><span class="annot"><a href="Data.Functor.Invariant.Night.html#swapped"><span class="hs-identifier hs-type">swapped</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619848"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619847"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619847"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619848"><span class="hs-identifier hs-type">f</span></a></span></span></span><span>
+</span><span id="line-189"></span><span id="swapped"><span class="annot"><span class="annottext">swapped :: Night f g x -&gt; Night g f x
+</span><a href="Data.Functor.Invariant.Night.html#swapped"><span class="hs-identifier hs-var hs-var">swapped</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619846"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619846"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619845"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619845"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619844"><span class="annot"><span class="annottext">f :: b -&gt; x
+</span><a href="#local-6989586621679619844"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679619843"><span class="annot"><span class="annottext">g :: c -&gt; x
+</span><a href="#local-6989586621679619843"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619842"><span class="annot"><span class="annottext">h :: x -&gt; Either b c
+</span><a href="#local-6989586621679619842"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">g c
+-&gt; f b -&gt; (c -&gt; x) -&gt; (b -&gt; x) -&gt; (x -&gt; Either c b) -&gt; Night g f x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619845"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619846"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619843"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619844"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Either b c -&gt; Either c b
+forall (p :: * -&gt; * -&gt; *) a b. Swap p =&gt; p a b -&gt; p b a
+</span><span class="hs-identifier hs-var">B.swap</span></span><span> </span><span class="annot"><span class="annottext">(Either b c -&gt; Either c b) -&gt; (x -&gt; Either b c) -&gt; x -&gt; Either c b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619842"><span class="hs-identifier hs-var">h</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-190"></span><span>
+</span><span id="line-191"></span><span class="hs-comment">-- | Hoist a function over the left side of a 'Night'.</span><span>
+</span><span id="line-192"></span><span id="local-6989586621679619838"><span id="local-6989586621679619839"><span id="local-6989586621679619840"><span class="annot"><a href="Data.Functor.Invariant.Night.html#trans1"><span class="hs-identifier hs-type">trans1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619840"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619839"><span class="hs-identifier hs-type">h</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619840"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619838"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619839"><span class="hs-identifier hs-type">h</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619838"><span class="hs-identifier hs-type">g</span></a></span></span></span></span><span>
+</span><span id="line-193"></span><span id="trans1"><span class="annot"><span class="annottext">trans1 :: (f ~&gt; h) -&gt; Night f g ~&gt; Night h g
+</span><a href="Data.Functor.Invariant.Night.html#trans1"><span class="hs-identifier hs-var hs-var">trans1</span></a></span></span><span> </span><span id="local-6989586621679619837"><span class="annot"><span class="annottext">f :: f ~&gt; h
+</span><a href="#local-6989586621679619837"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619836"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619836"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619835"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619835"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619834"><span class="annot"><span class="annottext">g :: b -&gt; x
+</span><a href="#local-6989586621679619834"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619833"><span class="annot"><span class="annottext">h :: c -&gt; x
+</span><a href="#local-6989586621679619833"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679619832"><span class="annot"><span class="annottext">j :: x -&gt; Either b c
+</span><a href="#local-6989586621679619832"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">h b
+-&gt; g c -&gt; (b -&gt; x) -&gt; (c -&gt; x) -&gt; (x -&gt; Either b c) -&gt; Night h g x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">f b -&gt; h b
+f ~&gt; h
+</span><a href="#local-6989586621679619837"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619836"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619835"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619834"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619833"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619832"><span class="hs-identifier hs-var">j</span></a></span><span>
+</span><span id="line-194"></span><span>
+</span><span id="line-195"></span><span class="hs-comment">-- | Hoist a function over the right side of a 'Night'.</span><span>
+</span><span id="line-196"></span><span id="local-6989586621679619829"><span id="local-6989586621679619830"><span id="local-6989586621679619831"><span class="annot"><a href="Data.Functor.Invariant.Night.html#trans2"><span class="hs-identifier hs-type">trans2</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679619831"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679619830"><span class="hs-identifier hs-type">h</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619829"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619831"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619829"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679619830"><span class="hs-identifier hs-type">h</span></a></span></span></span></span><span>
+</span><span id="line-197"></span><span id="trans2"><span class="annot"><span class="annottext">trans2 :: (g ~&gt; h) -&gt; Night f g ~&gt; Night f h
+</span><a href="Data.Functor.Invariant.Night.html#trans2"><span class="hs-identifier hs-var hs-var">trans2</span></a></span></span><span> </span><span id="local-6989586621679619828"><span class="annot"><span class="annottext">f :: g ~&gt; h
+</span><a href="#local-6989586621679619828"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679619827"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679619827"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679619826"><span class="annot"><span class="annottext">y :: g c
+</span><a href="#local-6989586621679619826"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679619825"><span class="annot"><span class="annottext">g :: b -&gt; x
+</span><a href="#local-6989586621679619825"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679619824"><span class="annot"><span class="annottext">h :: c -&gt; x
+</span><a href="#local-6989586621679619824"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679619823"><span class="annot"><span class="annottext">j :: x -&gt; Either b c
+</span><a href="#local-6989586621679619823"><span class="hs-identifier hs-var">j</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; h c -&gt; (b -&gt; x) -&gt; (c -&gt; x) -&gt; (x -&gt; Either b c) -&gt; Night f h x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679619827"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g c -&gt; h c
+g ~&gt; h
+</span><a href="#local-6989586621679619828"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">g c
+</span><a href="#local-6989586621679619826"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679619825"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679619824"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679619823"><span class="hs-identifier hs-var">j</span></a></span><span>
+</span><span id="line-198"></span><span>
+</span><span id="line-199"></span></pre></body></html>

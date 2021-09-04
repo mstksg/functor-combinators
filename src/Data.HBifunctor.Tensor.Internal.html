@@ -1,0 +1,463 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# OPTIONS_HADDOCK hide, not-home #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.HBifunctor.Tensor.Internal</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-4"></span><span>    </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier">Tensor</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-5"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#unconsLB"><span class="hs-identifier">unconsLB</span></a></span><span>
+</span><span id="line-6"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#nilLB"><span class="hs-identifier">nilLB</span></a></span><span>
+</span><span id="line-7"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#consLB"><span class="hs-identifier">consLB</span></a></span><span>
+</span><span id="line-8"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#appendChain"><span class="hs-identifier">appendChain</span></a></span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#unroll"><span class="hs-identifier">unroll</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#reroll"><span class="hs-identifier">reroll</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#rerollNE"><span class="hs-identifier">rerollNE</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splitChain1"><span class="hs-identifier">splitChain1</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Control.Natural.IsoF.html"><span class="hs-identifier">Control.Natural.IsoF</span></a></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HBifunctor.html"><span class="hs-identifier">Data.HBifunctor</span></a></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HBifunctor.Associative.html"><span class="hs-identifier">Data.HBifunctor.Associative</span></a></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.html"><span class="hs-identifier">Data.HFunctor</span></a></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html"><span class="hs-identifier">Data.HFunctor.Chain.Internal</span></a></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Kind</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">GHC.Generics</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-comment">-- | An 'Associative' 'HBifunctor' can be a 'Tensor' if there is some</span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- identity @i@ where @t i f@ and @t f i@ are equivalent to just @f@.</span><span>
+</span><span id="line-27"></span><span class="hs-comment">--</span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- That is, &quot;enhancing&quot; @f@ with @t i@ does nothing.</span><span>
+</span><span id="line-29"></span><span class="hs-comment">--</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- The methods in this class provide us useful ways of navigating</span><span>
+</span><span id="line-31"></span><span class="hs-comment">-- a @'Tensor' t@ with respect to this property.</span><span>
+</span><span id="line-32"></span><span class="hs-comment">--</span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- The 'Tensor' is essentially the 'HBifunctor' equivalent of 'Inject',</span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- with 'intro1' and 'intro2' taking the place of 'inject'.</span><span>
+</span><span id="line-35"></span><span class="hs-comment">--</span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- Formally, we can say that @t@ enriches a the category of</span><span>
+</span><span id="line-37"></span><span class="hs-comment">-- endofunctors with monoid strcture: it turns our endofunctor category</span><span>
+</span><span id="line-38"></span><span class="hs-comment">-- into a &quot;monoidal category&quot;.</span><span>
+</span><span id="line-39"></span><span class="hs-comment">--</span><span>
+</span><span id="line-40"></span><span class="hs-comment">-- Different instances of @t@ each enrich the endofunctor category in</span><span>
+</span><span id="line-41"></span><span class="hs-comment">-- different ways, giving a different monoidal category.</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">class</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Associative.html#Associative"><span class="hs-identifier hs-type">Associative</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.html#Inject"><span class="hs-identifier hs-type">Inject</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span id="Tensor"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-var">Tensor</span></a></span></span><span> </span><span id="local-6989586621679631954"><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679631950"><span class="annot"><a href="#local-6989586621679631950"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679631950"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-comment">-- | The &quot;monoidal functor combinator&quot; induced by @t@.</span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-comment">-- A value of type @ListBy t f a@ is /equivalent/ to one of:</span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-comment">-- *  @I a@                         -- zero fs</span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-comment">-- *  @f a@                         -- one f</span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-comment">-- *  @t f f a@                     -- two fs</span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-comment">-- *  @t f (t f f) a@               -- three fs</span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-comment">-- *  @t f (t f (t f f)) a@</span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-comment">-- *  @t f (t f (t f (t f f))) a@</span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-comment">-- *  .. etc</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-comment">-- For example, for ':*:', we have 'ListF'.  This is because:</span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-comment">-- @</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-comment">-- 'Proxy'         ~ 'ListF' []         ~ 'nilLB' \@(':*:')</span><span>
+</span><span id="line-59"></span><span>    </span><span class="hs-comment">-- x             ~ ListF [x]        ~ 'inject' x</span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-comment">-- x :*: y       ~ ListF [x,y]      ~ 'toListBy' (x :*: y)</span><span>
+</span><span id="line-61"></span><span>    </span><span class="hs-comment">-- x :*: y :*: z ~ ListF [x,y,z]</span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-comment">-- -- etc.</span><span>
+</span><span id="line-63"></span><span>    </span><span class="hs-comment">-- @</span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-comment">-- You can create an &quot;empty&quot; one with 'nilLB', a &quot;singleton&quot; one with</span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-comment">-- 'inject', or else one from a single @t f f@ with 'toListBy'.</span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-comment">-- See 'Data.HBifunctor.Associative.NonEmptyBy' for a &quot;non-empty&quot;</span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-comment">-- version of this type.</span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-keyword">type</span><span> </span><span id="ListBy"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-var">ListBy</span></a></span></span><span> </span><span id="local-6989586621679631954"><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Type</span></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-comment">-- | Because @t f (I t)@ is equivalent to @f@, we can always &quot;insert&quot;</span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-comment">-- @f@ into @t f (I t)@.</span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-comment">-- This is analogous to 'inject' from 'Inject', but for 'HBifunctor's.</span><span>
+</span><span id="line-76"></span><span>    </span><span id="local-6989586621679631830"><span id="intro1"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro1"><span class="hs-identifier hs-type">intro1</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679631830"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631830"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631950"><span class="hs-identifier hs-type">i</span></a></span></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-comment">-- | Because @t (I t) g@ is equivalent to @f@, we can always &quot;insert&quot;</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-comment">-- @g@ into @t (I t) g@.</span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-comment">-- This is analogous to 'inject' from 'Inject', but for 'HBifunctor's.</span><span>
+</span><span id="line-82"></span><span>    </span><span id="local-6989586621679631828"><span id="intro2"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro2"><span class="hs-identifier hs-type">intro2</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679631828"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631950"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631828"><span class="hs-identifier hs-type">g</span></a></span></span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-comment">-- | Witnesses the property that @i@ is the identity of @t@: @t</span><span>
+</span><span id="line-85"></span><span>    </span><span class="hs-comment">-- f i@ always leaves @f@ unchanged, so we can always just drop the</span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-comment">-- @i@.</span><span>
+</span><span id="line-87"></span><span>    </span><span id="local-6989586621679631826"><span id="elim1"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim1"><span class="hs-identifier hs-type">elim1</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#FunctorBy"><span class="hs-identifier hs-type">FunctorBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631826"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631826"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631950"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679631826"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span>    </span><span class="hs-comment">-- | Witnesses the property that @i@ is the identity of @t@: @t i g@</span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-comment">-- always leaves @g@ unchanged, so we can always just drop the @i t@.</span><span>
+</span><span id="line-91"></span><span>    </span><span id="local-6989586621679631823"><span id="elim2"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim2"><span class="hs-identifier hs-type">elim2</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#FunctorBy"><span class="hs-identifier hs-type">FunctorBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631823"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631950"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631823"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679631823"><span class="hs-identifier hs-type">g</span></a></span></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span>    </span><span class="hs-comment">-- | If a @'ListBy' t f@ represents multiple applications of @t f@ to</span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-comment">-- itself, then we can also &quot;append&quot; two @'ListBy' t f@s applied to</span><span>
+</span><span id="line-95"></span><span>    </span><span class="hs-comment">-- themselves into one giant @'ListBy' t f@ containing all of the @t f@s.</span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-comment">-- Note that this essentially gives an instance for @'SemigroupIn'</span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-comment">-- t (ListBy t f)@, for any functor @f@; this is witnessed by</span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-comment">-- 'WrapLB'.</span><span>
+</span><span id="line-100"></span><span>    </span><span id="local-6989586621679631891"><span id="appendLB"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#appendLB"><span class="hs-identifier hs-type">appendLB</span></a></span></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631891"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631891"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631891"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span>    </span><span class="hs-comment">-- | Lets you convert an @'NonEmptyBy' t f@ into a single application of @f@ to</span><span>
+</span><span id="line-103"></span><span>    </span><span class="hs-comment">-- @'ListBy' t f@.</span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-comment">-- Analogous to a function @'Data.List.NonEmpty.NonEmpty' a -&gt; (a,</span><span>
+</span><span id="line-106"></span><span>    </span><span class="hs-comment">-- [a])@</span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-108"></span><span>    </span><span class="hs-comment">-- Note that this is not reversible in general unless we have</span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-comment">-- @'Matchable' t@.</span><span>
+</span><span id="line-110"></span><span>    </span><span id="local-6989586621679631917"><span id="splitNE"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splitNE"><span class="hs-identifier hs-type">splitNE</span></a></span></span><span>     </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#NonEmptyBy"><span class="hs-identifier hs-type">NonEmptyBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631917"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631917"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631917"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span>    </span><span class="hs-comment">-- | An @'ListBy' t f@ is either empty, or a single application of @t@ to @f@</span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-comment">-- and @ListBy t f@ (the &quot;head&quot; and &quot;tail&quot;).  This witnesses that</span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-comment">-- isomorphism.</span><span>
+</span><span id="line-115"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-116"></span><span>    </span><span class="hs-comment">-- To /use/ this property, see 'nilLB', 'consLB', and 'unconsLB'.</span><span>
+</span><span id="line-117"></span><span>    </span><span id="local-6989586621679631941"><span id="splittingLB"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splittingLB"><span class="hs-identifier hs-type">splittingLB</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631941"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="Control.Natural.IsoF.html#%3C~%3E"><span class="hs-operator hs-type">&lt;~&gt;</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631950"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">:+:</span></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631941"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631941"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span>    </span><span class="hs-comment">-- | Embed a direct application of @f@ to itself into a @'ListBy' t f@.</span><span>
+</span><span id="line-120"></span><span>    </span><span id="local-6989586621679631818"><span id="toListBy"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#toListBy"><span class="hs-identifier hs-type">toListBy</span></a></span></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631818"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631818"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-121"></span><span>    </span><span id="local-6989586621679631816"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#toListBy"><span class="hs-identifier hs-var hs-var">toListBy</span></a></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f &lt;~&gt; (i :+: t f (ListBy t f)))
+-&gt; (i :+: t f (ListBy t f)) ~&gt; ListBy t f
+forall k (f :: k -&gt; *) (g :: k -&gt; *). (f &lt;~&gt; g) -&gt; g ~&gt; f
+</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splittingLB"><span class="hs-identifier hs-var">splittingLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-122"></span><span>           </span><span class="annot"><span class="annottext">((:+:) i (t f (ListBy t f)) x -&gt; ListBy t f x)
+-&gt; (t f f x -&gt; (:+:) i (t f (ListBy t f)) x)
+-&gt; t f f x
+-&gt; ListBy t f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t f (ListBy t f) x -&gt; (:+:) i (t f (ListBy t f)) x
+forall k (f :: k -&gt; *) (g :: k -&gt; *) (p :: k). g p -&gt; (:+:) f g p
+</span><span class="hs-identifier hs-var">R1</span></span><span>
+</span><span id="line-123"></span><span>           </span><span class="annot"><span class="annottext">(t f (ListBy t f) x -&gt; (:+:) i (t f (ListBy t f)) x)
+-&gt; (t f f x -&gt; t f (ListBy t f) x)
+-&gt; t f f x
+-&gt; (:+:) i (t f (ListBy t f)) x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(f ~&gt; ListBy t f) -&gt; t f f ~&gt; t f (ListBy t f)
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (g :: k -&gt; *)
+       (l :: k -&gt; *) (f :: k -&gt; *).
+HBifunctor t =&gt;
+(g ~&gt; l) -&gt; t f g ~&gt; t f l
+</span><a href="Data.HFunctor.Internal.html#hright"><span class="hs-identifier hs-var">hright</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (f :: * -&gt; *). Inject (ListBy t) =&gt; f ~&gt; ListBy t f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span>    </span><span class="hs-comment">-- | @'NonEmptyBy' t f@ is &quot;one or more @f@s&quot;, and @'ListBy t f@ is &quot;zero or more</span><span>
+</span><span id="line-126"></span><span>    </span><span class="hs-comment">-- @f@s&quot;.  This function lets us convert from one to the other.</span><span>
+</span><span id="line-127"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-comment">-- This is analogous to a function @'Data.List.NonEmpty.NonEmpty' a -&gt;</span><span>
+</span><span id="line-129"></span><span>    </span><span class="hs-comment">-- [a]@.</span><span>
+</span><span id="line-130"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-131"></span><span>    </span><span class="hs-comment">-- Note that because @t@ is not inferrable from the input or output</span><span>
+</span><span id="line-132"></span><span>    </span><span class="hs-comment">-- type, you should call this using /-XTypeApplications/:</span><span>
+</span><span id="line-133"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-comment">-- @</span><span>
+</span><span id="line-135"></span><span>    </span><span class="hs-comment">-- 'fromNE' \@(':*:') :: 'NonEmptyF' f a -&gt; 'ListF' f a</span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-comment">-- fromNE \@'Comp'  :: 'Free1' f a -&gt; 'Free' f a</span><span>
+</span><span id="line-137"></span><span>    </span><span class="hs-comment">-- @</span><span>
+</span><span id="line-138"></span><span>    </span><span id="local-6989586621679631810"><span id="fromNE"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#fromNE"><span class="hs-identifier hs-type">fromNE</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#NonEmptyBy"><span class="hs-identifier hs-type">NonEmptyBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631810"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631810"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-139"></span><span>    </span><span id="local-6989586621679631808"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#fromNE"><span class="hs-identifier hs-var hs-var">fromNE</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f &lt;~&gt; (i :+: t f (ListBy t f)))
+-&gt; (i :+: t f (ListBy t f)) ~&gt; ListBy t f
+forall k (f :: k -&gt; *) (g :: k -&gt; *). (f &lt;~&gt; g) -&gt; g ~&gt; f
+</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splittingLB"><span class="hs-identifier hs-var">splittingLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((:+:) i (t f (ListBy t f)) x -&gt; ListBy t f x)
+-&gt; (NonEmptyBy t f x -&gt; (:+:) i (t f (ListBy t f)) x)
+-&gt; NonEmptyBy t f x
+-&gt; ListBy t f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t f (ListBy t f) x -&gt; (:+:) i (t f (ListBy t f)) x
+forall k (f :: k -&gt; *) (g :: k -&gt; *) (p :: k). g p -&gt; (:+:) f g p
+</span><span class="hs-identifier hs-var">R1</span></span><span> </span><span class="annot"><span class="annottext">(t f (ListBy t f) x -&gt; (:+:) i (t f (ListBy t f)) x)
+-&gt; (NonEmptyBy t f x -&gt; t f (ListBy t f) x)
+-&gt; NonEmptyBy t f x
+-&gt; (:+:) i (t f (ListBy t f)) x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+Tensor t i =&gt;
+NonEmptyBy t f ~&gt; t f (ListBy t f)
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+NonEmptyBy t f ~&gt; t f (ListBy t f)
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splitNE"><span class="hs-identifier hs-var">splitNE</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679631954"><span class="hs-identifier hs-type">t</span></a></span></span><span>
+</span><span id="line-140"></span><span>
+</span><span id="line-141"></span><span>    </span><span class="hs-pragma">{-# MINIMAL</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro1"><span class="hs-pragma hs-type">intro1</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro2"><span class="hs-pragma hs-type">intro2</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim1"><span class="hs-pragma hs-type">elim1</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim2"><span class="hs-pragma hs-type">elim2</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#appendLB"><span class="hs-pragma hs-type">appendLB</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splitNE"><span class="hs-pragma hs-type">splitNE</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splittingLB"><span class="hs-pragma hs-type">splittingLB</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- | Create the &quot;empty 'ListBy'&quot;.</span><span>
+</span><span id="line-144"></span><span class="hs-comment">--</span><span>
+</span><span id="line-145"></span><span class="hs-comment">-- If @'ListBy' t f@ represents multiple applications of @t f@ with</span><span>
+</span><span id="line-146"></span><span class="hs-comment">-- itself, then @nilLB@ gives us &quot;zero applications of @f@&quot;.</span><span>
+</span><span id="line-147"></span><span class="hs-comment">--</span><span>
+</span><span id="line-148"></span><span class="hs-comment">-- Note that @t@ cannot be inferred from the input or output type of</span><span>
+</span><span id="line-149"></span><span class="hs-comment">-- 'nilLB', so this function must always be called with -XTypeApplications:</span><span>
+</span><span id="line-150"></span><span class="hs-comment">--</span><span>
+</span><span id="line-151"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-152"></span><span class="hs-comment">-- 'nilLB' \@'Day' :: 'Identity' '~&gt;' 'Ap' f</span><span>
+</span><span id="line-153"></span><span class="hs-comment">-- nilLB \@'Comp' :: Identity ~&gt; 'Free' f</span><span>
+</span><span id="line-154"></span><span class="hs-comment">-- nilLB \@(':*:') :: 'Proxy' ~&gt; 'ListF' f</span><span>
+</span><span id="line-155"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-156"></span><span class="hs-comment">--</span><span>
+</span><span id="line-157"></span><span class="hs-comment">-- Note that this essentially gives an instance for @'MonoidIn' t i (ListBy</span><span>
+</span><span id="line-158"></span><span class="hs-comment">-- t f)@, for any functor @f@; this is witnessed by 'WrapLB'.</span><span>
+</span><span id="line-159"></span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#nilLB"><span class="hs-identifier hs-type">nilLB</span></a></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679631860"><span class="annot"><a href="#local-6989586621679631860"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679631862"><span class="annot"><a href="#local-6989586621679631862"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679631861"><span class="annot"><a href="#local-6989586621679631861"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-type">Tensor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631860"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631862"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679631862"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631860"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631861"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-160"></span><span id="nilLB"><span class="annot"><span class="annottext">nilLB :: i ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#nilLB"><span class="hs-identifier hs-var hs-var">nilLB</span></a></span></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f &lt;~&gt; (i :+: t f (ListBy t f)))
+-&gt; (i :+: t f (ListBy t f)) ~&gt; ListBy t f
+forall k (f :: k -&gt; *) (g :: k -&gt; *). (f &lt;~&gt; g) -&gt; g ~&gt; f
+</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splittingLB"><span class="hs-identifier hs-var">splittingLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679631860"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((:+:) i (t f (ListBy t f)) x -&gt; ListBy t f x)
+-&gt; (i x -&gt; (:+:) i (t f (ListBy t f)) x) -&gt; i x -&gt; ListBy t f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">i x -&gt; (:+:) i (t f (ListBy t f)) x
+forall k (f :: k -&gt; *) (g :: k -&gt; *) (p :: k). f p -&gt; (:+:) f g p
+</span><span class="hs-identifier hs-var">L1</span></span><span>
+</span><span id="line-161"></span><span>
+</span><span id="line-162"></span><span class="hs-comment">-- | Lets us &quot;cons&quot; an application of @f@ to the front of an @'ListBy' t f@.</span><span>
+</span><span id="line-163"></span><span id="local-6989586621679631857"><span id="local-6989586621679631858"><span id="local-6989586621679631859"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#consLB"><span class="hs-identifier hs-type">consLB</span></a></span><span>   </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-type">Tensor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631859"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631858"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679631859"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631857"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631859"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631857"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631859"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631857"><span class="hs-identifier hs-type">f</span></a></span></span></span></span><span>
+</span><span id="line-164"></span><span id="consLB"><span class="annot"><span class="annottext">consLB :: t f (ListBy t f) ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#consLB"><span class="hs-identifier hs-var hs-var">consLB</span></a></span></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f &lt;~&gt; (i :+: t f (ListBy t f)))
+-&gt; (i :+: t f (ListBy t f)) ~&gt; ListBy t f
+forall k (f :: k -&gt; *) (g :: k -&gt; *). (f &lt;~&gt; g) -&gt; g ~&gt; f
+</span><a href="Control.Natural.IsoF.html#reviewF"><span class="hs-identifier hs-var">reviewF</span></a></span><span> </span><span class="annot"><span class="annottext">ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splittingLB"><span class="hs-identifier hs-var">splittingLB</span></a></span><span> </span><span class="annot"><span class="annottext">((:+:) i (t f (ListBy t f)) x -&gt; ListBy t f x)
+-&gt; (t f (ListBy t f) x -&gt; (:+:) i (t f (ListBy t f)) x)
+-&gt; t f (ListBy t f) x
+-&gt; ListBy t f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t f (ListBy t f) x -&gt; (:+:) i (t f (ListBy t f)) x
+forall k (f :: k -&gt; *) (g :: k -&gt; *) (p :: k). g p -&gt; (:+:) f g p
+</span><span class="hs-identifier hs-var">R1</span></span><span>
+</span><span id="line-165"></span><span>
+</span><span id="line-166"></span><span class="hs-comment">-- | &quot;Pattern match&quot; on an @'ListBy' t@</span><span>
+</span><span id="line-167"></span><span class="hs-comment">--</span><span>
+</span><span id="line-168"></span><span class="hs-comment">-- An @'ListBy' t f@ is either empty, or a single application of @t@ to @f@</span><span>
+</span><span id="line-169"></span><span class="hs-comment">-- and @ListBy t f@ (the &quot;head&quot; and &quot;tail&quot;)</span><span>
+</span><span id="line-170"></span><span class="hs-comment">--</span><span>
+</span><span id="line-171"></span><span class="hs-comment">-- This is analogous to the function @'Data.List.uncons' :: [a] -&gt; Maybe</span><span>
+</span><span id="line-172"></span><span class="hs-comment">-- (a, [a])@.</span><span>
+</span><span id="line-173"></span><span id="local-6989586621679631873"><span id="local-6989586621679631874"><span id="local-6989586621679631875"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#unconsLB"><span class="hs-identifier hs-type">unconsLB</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-type">Tensor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631875"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631874"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631875"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631873"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679631874"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">:+:</span></span><span> </span><span class="annot"><a href="#local-6989586621679631875"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631873"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631875"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631873"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-174"></span><span id="unconsLB"><span class="annot"><span class="annottext">unconsLB :: ListBy t f ~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.Internal.html#unconsLB"><span class="hs-identifier hs-var hs-var">unconsLB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f &lt;~&gt; (i :+: t f (ListBy t f)))
+-&gt; ListBy t f ~&gt; (i :+: t f (ListBy t f))
+forall k (f :: k -&gt; *) (g :: k -&gt; *). (f &lt;~&gt; g) -&gt; f ~&gt; g
+</span><a href="Control.Natural.IsoF.html#viewF"><span class="hs-identifier hs-var">viewF</span></a></span><span> </span><span class="annot"><span class="annottext">ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f &lt;~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splittingLB"><span class="hs-identifier hs-var">splittingLB</span></a></span><span>
+</span><span id="line-175"></span><span>
+</span><span id="line-176"></span><span>
+</span><span id="line-177"></span><span class="hs-comment">-- | 'Chain' is a monoid with respect to @t@: we can &quot;combine&quot; them in</span><span>
+</span><span id="line-178"></span><span class="hs-comment">-- an associative way.  The identity here is anything made with the 'Done'</span><span>
+</span><span id="line-179"></span><span class="hs-comment">-- constructor.</span><span>
+</span><span id="line-180"></span><span class="hs-comment">--</span><span>
+</span><span id="line-181"></span><span class="hs-comment">-- This is essentially 'biretract', but only requiring @'Tensor' t i@: it</span><span>
+</span><span id="line-182"></span><span class="hs-comment">-- comes from the fact that @'Chain1' t i@ is the &quot;free @'MonoidIn' t i@&quot;.</span><span>
+</span><span id="line-183"></span><span class="hs-comment">-- 'pureT' is 'Done'.</span><span>
+</span><span id="line-184"></span><span class="hs-comment">--</span><span>
+</span><span id="line-185"></span><span class="hs-comment">-- @since 0.1.1.0</span><span>
+</span><span id="line-186"></span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#appendChain"><span class="hs-identifier hs-type">appendChain</span></a></span><span>
+</span><span id="line-187"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679631805"><span class="annot"><a href="#local-6989586621679631805"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679631804"><span class="annot"><a href="#local-6989586621679631804"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679631803"><span class="annot"><a href="#local-6989586621679631803"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-type">Tensor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631805"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631804"><span class="hs-identifier hs-type">i</span></a></span><span>
+</span><span id="line-188"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679631805"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631805"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631804"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631803"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631805"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631804"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631803"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631805"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631804"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631803"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-189"></span><span id="appendChain"><span class="annot"><span class="annottext">appendChain :: t (Chain t i f) (Chain t i f) ~&gt; Chain t i f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#appendChain"><span class="hs-identifier hs-var hs-var">appendChain</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ListBy t f x -&gt; Chain t i f x
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#unroll"><span class="hs-identifier hs-var">unroll</span></a></span><span>
+</span><span id="line-190"></span><span>            </span><span class="annot"><span class="annottext">(ListBy t f x -&gt; Chain t i f x)
+-&gt; (t (Chain t i f) (Chain t i f) x -&gt; ListBy t f x)
+-&gt; t (Chain t i f) (Chain t i f) x
+-&gt; Chain t i f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">t (ListBy t f) (ListBy t f) x -&gt; ListBy t f x
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+t (ListBy t f) (ListBy t f) ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#appendLB"><span class="hs-identifier hs-var">appendLB</span></a></span><span>
+</span><span id="line-191"></span><span>            </span><span class="annot"><span class="annottext">(t (ListBy t f) (ListBy t f) x -&gt; ListBy t f x)
+-&gt; (t (Chain t i f) (Chain t i f) x
+    -&gt; t (ListBy t f) (ListBy t f) x)
+-&gt; t (Chain t i f) (Chain t i f) x
+-&gt; ListBy t f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Chain t i f ~&gt; ListBy t f)
+-&gt; (Chain t i f ~&gt; ListBy t f)
+-&gt; t (Chain t i f) (Chain t i f) ~&gt; t (ListBy t f) (ListBy t f)
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (j :: k -&gt; *) (g :: k -&gt; *) (l :: k -&gt; *).
+HBifunctor t =&gt;
+(f ~&gt; j) -&gt; (g ~&gt; l) -&gt; t f g ~&gt; t j l
+</span><a href="Data.HFunctor.Internal.html#hbimap"><span class="hs-identifier hs-var">hbimap</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; ListBy t f
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+Chain t i f ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#reroll"><span class="hs-identifier hs-var">reroll</span></a></span><span> </span><span class="annot"><span class="annottext">Chain t i f ~&gt; ListBy t f
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+Chain t i f ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#reroll"><span class="hs-identifier hs-var">reroll</span></a></span><span>
+</span><span id="line-192"></span><span>
+</span><span id="line-193"></span><span class="hs-comment">-- | A type @'ListBy' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-194"></span><span class="hs-comment">-- @t@s to itself.  'unroll' makes that successive application explicit,</span><span>
+</span><span id="line-195"></span><span class="hs-comment">-- buy converting it to a literal 'Chain' of applications of @t@ to</span><span>
+</span><span id="line-196"></span><span class="hs-comment">-- itself.</span><span>
+</span><span id="line-197"></span><span class="hs-comment">--</span><span>
+</span><span id="line-198"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-199"></span><span class="hs-comment">-- 'unroll' = 'unfoldChain' 'unconsLB'</span><span>
+</span><span id="line-200"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-201"></span><span id="local-6989586621679631892"><span id="local-6989586621679631893"><span id="local-6989586621679631894"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#unroll"><span class="hs-identifier hs-type">unroll</span></a></span><span>
+</span><span id="line-202"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-type">Tensor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631894"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631893"><span class="hs-identifier hs-type">i</span></a></span><span>
+</span><span id="line-203"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631894"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631892"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631894"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631893"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631892"><span class="hs-identifier hs-type">f</span></a></span></span></span></span><span>
+</span><span id="line-204"></span><span id="unroll"><span class="annot"><span class="annottext">unroll :: ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#unroll"><span class="hs-identifier hs-var hs-var">unroll</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f ~&gt; (i :+: t f (ListBy t f)))
+-&gt; ListBy t f ~&gt; Chain t i f
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *)
+       (g :: * -&gt; *) (i :: * -&gt; *).
+HBifunctor t =&gt;
+(g ~&gt; (i :+: t f g)) -&gt; g ~&gt; Chain t i f
+</span><a href="Data.HFunctor.Chain.Internal.html#unfoldChain"><span class="hs-identifier hs-var">unfoldChain</span></a></span><span> </span><span class="annot"><span class="annottext">ListBy t f ~&gt; (i :+: t f (ListBy t f))
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f ~&gt; (i :+: t f (ListBy t f))
+</span><a href="Data.HBifunctor.Tensor.Internal.html#unconsLB"><span class="hs-identifier hs-var">unconsLB</span></a></span><span>
+</span><span id="line-205"></span><span>
+</span><span id="line-206"></span><span class="hs-comment">-- | A type @'ListBy' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-207"></span><span class="hs-comment">-- @t@s to itself.  'rerollNE' takes an explicit 'Chain' of applications of</span><span>
+</span><span id="line-208"></span><span class="hs-comment">-- @t@ to itself and rolls it back up into an @'ListBy' t@.</span><span>
+</span><span id="line-209"></span><span class="hs-comment">--</span><span>
+</span><span id="line-210"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-211"></span><span class="hs-comment">-- 'reroll' = 'foldChain' 'nilLB' 'consLB'</span><span>
+</span><span id="line-212"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-213"></span><span class="hs-comment">--</span><span>
+</span><span id="line-214"></span><span class="hs-comment">-- Because @t@ cannot be inferred from the input or output, you should call</span><span>
+</span><span id="line-215"></span><span class="hs-comment">-- this with /-XTypeApplications/:</span><span>
+</span><span id="line-216"></span><span class="hs-comment">--</span><span>
+</span><span id="line-217"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-218"></span><span class="hs-comment">-- 'reroll' \@'Control.Monad.Freer.Church.Comp'</span><span>
+</span><span id="line-219"></span><span class="hs-comment">--     :: 'Chain' Comp 'Data.Functor.Identity.Identity' f a -&gt; 'Control.Monad.Freer.Church.Free' f a</span><span>
+</span><span id="line-220"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-221"></span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#reroll"><span class="hs-identifier hs-type">reroll</span></a></span><span>
+</span><span id="line-222"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679631886"><span class="annot"><a href="#local-6989586621679631886"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679631885"><span class="annot"><a href="#local-6989586621679631885"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679631884"><span class="annot"><a href="#local-6989586621679631884"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-type">Tensor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631886"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631885"><span class="hs-identifier hs-type">i</span></a></span><span>
+</span><span id="line-223"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631886"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631885"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631884"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#ListBy"><span class="hs-identifier hs-type">ListBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631886"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631884"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-224"></span><span id="reroll"><span class="annot"><span class="annottext">reroll :: Chain t i f ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#reroll"><span class="hs-identifier hs-var hs-var">reroll</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(i ~&gt; ListBy t f)
+-&gt; (t f (ListBy t f) ~&gt; ListBy t f) -&gt; Chain t i f ~&gt; ListBy t f
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *)
+       (f :: k -&gt; *) (g :: k -&gt; *).
+HBifunctor t =&gt;
+(i ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain t i f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain"><span class="hs-identifier hs-var">foldChain</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *). Tensor t i =&gt; i ~&gt; ListBy t f
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+i ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#nilLB"><span class="hs-identifier hs-var">nilLB</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679631886"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">t f (ListBy t f) ~&gt; ListBy t f
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+t f (ListBy t f) ~&gt; ListBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#consLB"><span class="hs-identifier hs-var">consLB</span></a></span><span>
+</span><span id="line-225"></span><span>
+</span><span id="line-226"></span><span class="hs-comment">-- | A type @'NonEmptyBy' t@ is supposed to represent the successive application of</span><span>
+</span><span id="line-227"></span><span class="hs-comment">-- @t@s to itself.  'rerollNE' takes an explicit 'Chain1' of applications</span><span>
+</span><span id="line-228"></span><span class="hs-comment">-- of @t@ to itself and rolls it back up into an @'NonEmptyBy' t@.</span><span>
+</span><span id="line-229"></span><span class="hs-comment">--</span><span>
+</span><span id="line-230"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-231"></span><span class="hs-comment">-- 'rerollNE' = 'foldChain1' 'inject' 'consNE'</span><span>
+</span><span id="line-232"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-233"></span><span id="local-6989586621679631839"><span id="local-6989586621679631840"><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#rerollNE"><span class="hs-identifier hs-type">rerollNE</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#Associative"><span class="hs-identifier hs-type">Associative</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631840"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631840"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631839"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Associative.html#NonEmptyBy"><span class="hs-identifier hs-type">NonEmptyBy</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631840"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631839"><span class="hs-identifier hs-type">f</span></a></span></span></span><span>
+</span><span id="line-234"></span><span id="rerollNE"><span class="annot"><span class="annottext">rerollNE :: Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#rerollNE"><span class="hs-identifier hs-var hs-var">rerollNE</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; NonEmptyBy t f)
+-&gt; (t f (NonEmptyBy t f) ~&gt; NonEmptyBy t f)
+-&gt; Chain1 t f ~&gt; NonEmptyBy t f
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (g :: k -&gt; *).
+HBifunctor t =&gt;
+(f ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain1 t f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain1"><span class="hs-identifier hs-var">foldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; NonEmptyBy t f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span> </span><span class="annot"><span class="annottext">t f (NonEmptyBy t f) ~&gt; NonEmptyBy t f
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
+Associative t =&gt;
+t f (NonEmptyBy t f) ~&gt; NonEmptyBy t f
+</span><a href="Data.HBifunctor.Associative.html#consNE"><span class="hs-identifier hs-var">consNE</span></a></span><span>
+</span><span id="line-235"></span><span>
+</span><span id="line-236"></span><span class="hs-comment">-- | The &quot;forward&quot; function representing 'splittingChain1'.  Provided here</span><span>
+</span><span id="line-237"></span><span class="hs-comment">-- as a separate function because it does not require @'Functor' f@.</span><span>
+</span><span id="line-238"></span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splitChain1"><span class="hs-identifier hs-type">splitChain1</span></a></span><span>
+</span><span id="line-239"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679631797"><span class="annot"><a href="#local-6989586621679631797"><span class="hs-identifier hs-type">t</span></a></span></span><span> </span><span id="local-6989586621679631796"><span class="annot"><a href="#local-6989586621679631796"><span class="hs-identifier hs-type">i</span></a></span></span><span> </span><span id="local-6989586621679631795"><span class="annot"><a href="#local-6989586621679631795"><span class="hs-identifier hs-type">f</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#Tensor"><span class="hs-identifier hs-type">Tensor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631797"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631796"><span class="hs-identifier hs-type">i</span></a></span><span>
+</span><span id="line-240"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631797"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631795"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679631797"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631795"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631797"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631796"><span class="hs-identifier hs-type">i</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679631795"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-241"></span><span id="splitChain1"><span class="annot"><span class="annottext">splitChain1 :: Chain1 t f ~&gt; t f (Chain t i f)
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splitChain1"><span class="hs-identifier hs-var hs-var">splitChain1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ListBy t f ~&gt; Chain t i f)
+-&gt; t f (ListBy t f) ~&gt; t f (Chain t i f)
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (g :: k -&gt; *)
+       (l :: k -&gt; *) (f :: k -&gt; *).
+HBifunctor t =&gt;
+(g ~&gt; l) -&gt; t f g ~&gt; t f l
+</span><a href="Data.HFunctor.Internal.html#hright"><span class="hs-identifier hs-var">hright</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f ~&gt; Chain t i f
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+ListBy t f ~&gt; Chain t i f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#unroll"><span class="hs-identifier hs-var">unroll</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679631797"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(t f (ListBy t f) x -&gt; t f (Chain t i f) x)
+-&gt; (Chain1 t f x -&gt; t f (ListBy t f) x)
+-&gt; Chain1 t f x
+-&gt; t f (Chain t i f) x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">forall (i :: * -&gt; *) (f :: * -&gt; *).
+Tensor t i =&gt;
+NonEmptyBy t f ~&gt; t f (ListBy t f)
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+Tensor t i =&gt;
+NonEmptyBy t f ~&gt; t f (ListBy t f)
+</span><a href="Data.HBifunctor.Tensor.Internal.html#splitNE"><span class="hs-identifier hs-var">splitNE</span></a></span><span> </span><span class="hs-glyph">@</span><span class="annot"><a href="#local-6989586621679631797"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><span class="annottext">(NonEmptyBy t f x -&gt; t f (ListBy t f) x)
+-&gt; (Chain1 t f x -&gt; NonEmptyBy t f x)
+-&gt; Chain1 t f x
+-&gt; t f (ListBy t f) x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Chain1 t f x -&gt; NonEmptyBy t f x
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (f :: * -&gt; *).
+Associative t =&gt;
+Chain1 t f ~&gt; NonEmptyBy t f
+</span><a href="Data.HBifunctor.Tensor.Internal.html#rerollNE"><span class="hs-identifier hs-var">rerollNE</span></a></span><span>
+</span><span id="line-242"></span><span>
+</span><span id="line-243"></span></pre></body></html>

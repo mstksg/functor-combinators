@@ -1,0 +1,851 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# OPTIONS_GHC -fno-warn-orphans #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- |</span><span>
+</span><span id="line-4"></span><span class="hs-comment">-- Module      : Data.Functor.Invariant.Internative.Free</span><span>
+</span><span id="line-5"></span><span class="hs-comment">-- Copyright   : (c) Justin Le 2019</span><span>
+</span><span id="line-6"></span><span class="hs-comment">-- License     : BSD3</span><span>
+</span><span id="line-7"></span><span class="hs-comment">--</span><span>
+</span><span id="line-8"></span><span class="hs-comment">-- Maintainer  : justin@jle.im</span><span>
+</span><span id="line-9"></span><span class="hs-comment">-- Stability   : experimental</span><span>
+</span><span id="line-10"></span><span class="hs-comment">-- Portability : non-portable</span><span>
+</span><span id="line-11"></span><span class="hs-comment">--</span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- Provide an invariant functor combinator choice-collector, like</span><span>
+</span><span id="line-13"></span><span class="hs-comment">-- a combination of 'ListF' and 'Dec'.</span><span>
+</span><span id="line-14"></span><span class="hs-comment">--</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- This module was named 'Data.Functor.Invariant.DecAlt' before v0.4.0.0</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--</span><span>
+</span><span id="line-17"></span><span class="hs-comment">-- @since 0.4.0.0</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Data.Functor.Invariant.Internative.Free</span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-19"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Chain</span></span><span>
+</span><span id="line-20"></span><span>    </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier">DecAlt</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#Swerve"><span class="hs-identifier">Swerve</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#Reject"><span class="hs-identifier">Reject</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt"><span class="hs-identifier">runCoDecAlt</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt"><span class="hs-identifier">runContraDecAlt</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltListF"><span class="hs-identifier">decAltListF</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltListF_"><span class="hs-identifier">decAltListF_</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltDec"><span class="hs-identifier">decAltDec</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt"><span class="hs-identifier">foldDecAlt</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt"><span class="hs-identifier">assembleDecAlt</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="annot"><span class="hs-comment">-- * Nonempty Chain</span></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier">DecAlt1</span></a></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#DecAlt1"><span class="hs-identifier">DecAlt1</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt1"><span class="hs-identifier">runCoDecAlt1</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt1"><span class="hs-identifier">runContraDecAlt1</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltNonEmptyF"><span class="hs-identifier">decAltNonEmptyF</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltNonEmptyF_"><span class="hs-identifier">decAltNonEmptyF_</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltDec1"><span class="hs-identifier">decAltDec1</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt1"><span class="hs-identifier">foldDecAlt1</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt1"><span class="hs-identifier">assembleDecAlt1</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Control.Applicative.ListF.html"><span class="hs-identifier">Control.Applicative.ListF</span></a></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Control.Natural</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Coerce</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Alt</span></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Contravariant.Conclude.html"><span class="hs-identifier">Data.Functor.Contravariant.Conclude</span></a></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Contravariant.Decide.html"><span class="hs-identifier">Data.Functor.Contravariant.Decide</span></a></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html"><span class="hs-identifier">Data.Functor.Contravariant.Divisible.Free</span></a></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Invariant</span></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html"><span class="hs-identifier">Data.Functor.Invariant.Internative</span></a></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.Functor.Invariant.Night.html"><span class="hs-identifier">Data.Functor.Invariant.Night</span></a></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Functor.Plus</span></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HBifunctor.Tensor.html"><span class="hs-identifier">Data.HBifunctor.Tensor</span></a></span><span> </span><span class="hs-keyword">hiding</span><span>             </span><span class="hs-special">(</span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim1"><span class="hs-identifier">elim1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#elim2"><span class="hs-identifier">elim2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro1"><span class="hs-identifier">intro1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#intro2"><span class="hs-identifier">intro2</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.html"><span class="hs-identifier">Data.HFunctor</span></a></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Chain.html"><span class="hs-identifier">Data.HFunctor.Chain</span></a></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html"><span class="hs-identifier">Data.HFunctor.Chain.Internal</span></a></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.SOP</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">hmap</span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span>           </span><span class="annot"><span class="hs-identifier">Data.Void</span></span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Compose</span></span><span>               </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">CT</span></span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Functor.Coyoneda</span></span><span>                     </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">CY</span></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span>                        </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">NE</span></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="hs-comment">-- | In the covariant direction, we can interpret out of a 'Chain1' of 'Night'</span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- into any 'Alt'.</span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt1"><span class="hs-identifier hs-type">runCoDecAlt1</span></a></span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635172"><span class="annot"><a href="#local-6989586621679635172"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635173"><span class="annot"><a href="#local-6989586621679635173"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Alt</span></span><span> </span><span class="annot"><a href="#local-6989586621679635173"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635172"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635173"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635172"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635173"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-67"></span><span id="runCoDecAlt1"><span class="annot"><span class="annottext">runCoDecAlt1 :: (f ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt1"><span class="hs-identifier hs-var hs-var">runCoDecAlt1</span></a></span></span><span> </span><span id="local-6989586621679634993"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679634993"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+(f ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt1"><span class="hs-identifier hs-var">foldDecAlt1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679634993"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (g ~&gt; g) -&gt; Night f g ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *) (h :: * -&gt; *).
+Alt h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Night f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Night.html#runNightAlt"><span class="hs-identifier hs-var">runNightAlt</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679634993"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+g ~&gt; g
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- | In the contravariant direction, we can interpret out of a 'Chain1' of</span><span>
+</span><span id="line-70"></span><span class="hs-comment">-- 'Night' into any 'Decide'.</span><span>
+</span><span id="line-71"></span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt1"><span class="hs-identifier hs-type">runContraDecAlt1</span></a></span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635232"><span class="annot"><a href="#local-6989586621679635232"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635233"><span class="annot"><a href="#local-6989586621679635233"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Decide.html#Decide"><span class="hs-identifier hs-type">Decide</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635233"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635232"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635233"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635232"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635233"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-75"></span><span id="runContraDecAlt1"><span class="annot"><span class="annottext">runContraDecAlt1 :: (f ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt1"><span class="hs-identifier hs-var hs-var">runContraDecAlt1</span></a></span></span><span> </span><span id="local-6989586621679634990"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679634990"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+(f ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt1"><span class="hs-identifier hs-var">foldDecAlt1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679634990"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (g ~&gt; g) -&gt; Night f g ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *) (h :: * -&gt; *).
+Decide h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Night f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Night.html#runNightDecide"><span class="hs-identifier hs-var">runNightDecide</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679634990"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+g ~&gt; g
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>
+</span><span id="line-77"></span><span class="hs-comment">-- | Extract the 'Dec' part out of a 'DecAlt', shedding the</span><span>
+</span><span id="line-78"></span><span class="hs-comment">-- covariant bits.</span><span>
+</span><span id="line-79"></span><span id="local-6989586621679634988"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltDec"><span class="hs-identifier hs-type">decAltDec</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634988"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html#Dec"><span class="hs-identifier hs-type">Dec</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634988"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-80"></span><span id="decAltDec"><span class="annot"><span class="annottext">decAltDec :: DecAlt f x -&gt; Dec f x
+</span><a href="Data.Functor.Invariant.Internative.Free.html#decAltDec"><span class="hs-identifier hs-var hs-var">decAltDec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; Dec f) -&gt; DecAlt f ~&gt; Dec f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Conclude g =&gt;
+(f ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt"><span class="hs-identifier hs-var">runContraDecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; Dec f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-comment">-- | Extract the 'Dec1' part out of a 'DecAlt1', shedding the</span><span>
+</span><span id="line-83"></span><span class="hs-comment">-- covariant bits.</span><span>
+</span><span id="line-84"></span><span id="local-6989586621679634986"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltDec1"><span class="hs-identifier hs-type">decAltDec1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634986"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Divisible.Free.html#Dec1"><span class="hs-identifier hs-type">Dec1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634986"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-85"></span><span id="decAltDec1"><span class="annot"><span class="annottext">decAltDec1 :: DecAlt1 f x -&gt; Dec1 f x
+</span><a href="Data.Functor.Invariant.Internative.Free.html#decAltDec1"><span class="hs-identifier hs-var hs-var">decAltDec1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; Dec1 f) -&gt; DecAlt1 f ~&gt; Dec1 f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Decide g =&gt;
+(f ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt1"><span class="hs-identifier hs-var">runContraDecAlt1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; Dec1 f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- | In the covariant direction, we can interpret out of a 'Chain' of 'Night'</span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- into any 'Plus'.</span><span>
+</span><span id="line-89"></span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt"><span class="hs-identifier hs-type">runCoDecAlt</span></a></span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635207"><span class="annot"><a href="#local-6989586621679635207"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635208"><span class="annot"><a href="#local-6989586621679635208"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Plus</span></span><span> </span><span class="annot"><a href="#local-6989586621679635208"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-91"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635207"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635208"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-92"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635207"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635208"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-93"></span><span id="runCoDecAlt"><span class="annot"><span class="annottext">runCoDecAlt :: (f ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt"><span class="hs-identifier hs-var hs-var">runCoDecAlt</span></a></span></span><span> </span><span id="local-6989586621679634985"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679634985"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(forall x. (x -&gt; Void) -&gt; g x) -&gt; (Night f g ~&gt; g) -&gt; DecAlt f ~&gt; g
+forall (g :: * -&gt; *) (f :: * -&gt; *).
+(forall x. (x -&gt; Void) -&gt; g x) -&gt; (Night f g ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt"><span class="hs-identifier hs-var">foldDecAlt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">g x -&gt; (x -&gt; Void) -&gt; g x
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">g x
+forall (f :: * -&gt; *) a. Plus f =&gt; f a
+</span><span class="hs-identifier hs-var">zero</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (g ~&gt; g) -&gt; Night f g ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *) (h :: * -&gt; *).
+Alt h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Night f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Night.html#runNightAlt"><span class="hs-identifier hs-var">runNightAlt</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679634985"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+g ~&gt; g
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>
+</span><span id="line-95"></span><span class="hs-comment">-- | In the contravariant direction, we can interpret out of a 'Chain' of</span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- 'Night' into any 'Conclude'.</span><span>
+</span><span id="line-97"></span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt"><span class="hs-identifier hs-type">runContraDecAlt</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635241"><span class="annot"><a href="#local-6989586621679635241"><span class="hs-identifier hs-type">f</span></a></span></span><span> </span><span id="local-6989586621679635243"><span class="annot"><a href="#local-6989586621679635243"><span class="hs-identifier hs-type">g</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Conclude.html#Conclude"><span class="hs-identifier hs-type">Conclude</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635243"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635241"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635243"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635241"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635243"><span class="hs-identifier hs-type">g</span></a></span><span>
+</span><span id="line-101"></span><span id="runContraDecAlt"><span class="annot"><span class="annottext">runContraDecAlt :: (f ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runContraDecAlt"><span class="hs-identifier hs-var hs-var">runContraDecAlt</span></a></span></span><span> </span><span id="local-6989586621679634982"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679634982"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(forall x. (x -&gt; Void) -&gt; g x) -&gt; (Night f g ~&gt; g) -&gt; DecAlt f ~&gt; g
+forall (g :: * -&gt; *) (f :: * -&gt; *).
+(forall x. (x -&gt; Void) -&gt; g x) -&gt; (Night f g ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt"><span class="hs-identifier hs-var">foldDecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">forall x. (x -&gt; Void) -&gt; g x
+forall (f :: * -&gt; *) a. Conclude f =&gt; (a -&gt; Void) -&gt; f a
+</span><a href="Data.Functor.Contravariant.Conclude.html#conclude"><span class="hs-identifier hs-var">conclude</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (g ~&gt; g) -&gt; Night f g ~&gt; g
+forall (f :: * -&gt; *) (g :: * -&gt; *) (h :: * -&gt; *).
+Decide h =&gt;
+(f ~&gt; h) -&gt; (g ~&gt; h) -&gt; Night f g ~&gt; h
+</span><a href="Data.Functor.Invariant.Night.html#runNightDecide"><span class="hs-identifier hs-var">runNightDecide</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679634982"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">forall a. a -&gt; a
+g ~&gt; g
+</span><span class="hs-identifier hs-var">id</span></span><span class="hs-special">)</span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- | Extract the 'ListF' part out of a 'DecAlt', shedding the</span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- contravariant bits.</span><span>
+</span><span id="line-105"></span><span class="hs-comment">--</span><span>
+</span><span id="line-106"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-107"></span><span id="local-6989586621679634980"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltListF"><span class="hs-identifier hs-type">decAltListF</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679634980"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634980"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Control.Applicative.ListF.html#ListF"><span class="hs-identifier hs-type">ListF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634980"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-108"></span><span id="decAltListF"><span class="annot"><span class="annottext">decAltListF :: DecAlt f ~&gt; ListF f
+</span><a href="Data.Functor.Invariant.Internative.Free.html#decAltListF"><span class="hs-identifier hs-var hs-var">decAltListF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; ListF f) -&gt; DecAlt f ~&gt; ListF f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Plus g =&gt;
+(f ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt"><span class="hs-identifier hs-var">runCoDecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; ListF f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="hs-comment">-- | Extract the 'ListF' part out of a 'DecAlt', shedding the</span><span>
+</span><span id="line-111"></span><span class="hs-comment">-- contravariant bits.</span><span>
+</span><span id="line-112"></span><span class="hs-comment">--</span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- This version does not require a 'Functor' constraint because it converts</span><span>
+</span><span id="line-114"></span><span class="hs-comment">-- to the coyoneda-wrapped product, which is more accurately the true</span><span>
+</span><span id="line-115"></span><span class="hs-comment">-- conversion to a covariant chain.</span><span>
+</span><span id="line-116"></span><span class="hs-comment">--</span><span>
+</span><span id="line-117"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-118"></span><span id="local-6989586621679634979"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltListF_"><span class="hs-identifier hs-type">decAltListF_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634979"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">CT.ComposeT</span></span><span> </span><span class="annot"><a href="Control.Applicative.ListF.html#ListF"><span class="hs-identifier hs-type">ListF</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">CY.Coyoneda</span></span><span> </span><span class="annot"><a href="#local-6989586621679634979"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-119"></span><span id="decAltListF_"><span class="annot"><span class="annottext">decAltListF_ :: DecAlt f x -&gt; ComposeT ListF Coyoneda f x
+</span><a href="Data.Functor.Invariant.Internative.Free.html#decAltListF_"><span class="hs-identifier hs-var hs-var">decAltListF_</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(forall x. (x -&gt; Void) -&gt; ComposeT ListF Coyoneda f x)
+-&gt; (Night f (ComposeT ListF Coyoneda f)
+    ~&gt; ComposeT ListF Coyoneda f)
+-&gt; DecAlt f ~&gt; ComposeT ListF Coyoneda f
+forall (g :: * -&gt; *) (f :: * -&gt; *).
+(forall x. (x -&gt; Void) -&gt; g x) -&gt; (Night f g ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt"><span class="hs-identifier hs-var">foldDecAlt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ComposeT ListF Coyoneda f x
+-&gt; (x -&gt; Void) -&gt; ComposeT ListF Coyoneda f x
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ListF (Coyoneda f) x -&gt; ComposeT ListF Coyoneda f x
+forall (f :: (* -&gt; *) -&gt; * -&gt; *) (g :: (* -&gt; *) -&gt; * -&gt; *)
+       (m :: * -&gt; *) a.
+f (g m) a -&gt; ComposeT f g m a
+</span><span class="hs-identifier hs-var">CT.ComposeT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Coyoneda f x] -&gt; ListF (Coyoneda f) x
+forall k (f :: k -&gt; *) (a :: k). [f a] -&gt; ListF f a
+</span><a href="Control.Applicative.ListF.html#ListF"><span class="hs-identifier hs-var">ListF</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((Night f (ComposeT ListF Coyoneda f) ~&gt; ComposeT ListF Coyoneda f)
+ -&gt; DecAlt f x -&gt; ComposeT ListF Coyoneda f x)
+-&gt; (Night f (ComposeT ListF Coyoneda f)
+    ~&gt; ComposeT ListF Coyoneda f)
+-&gt; DecAlt f x
+-&gt; ComposeT ListF Coyoneda f x
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-120"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679634975"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679634975"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">CT.ComposeT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Applicative.ListF.html#ListF"><span class="hs-identifier hs-type">ListF</span></a></span><span> </span><span id="local-6989586621679634974"><span class="annot"><a href="#local-6989586621679634974"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span id="local-6989586621679634973"><span class="annot"><span class="annottext">f :: b -&gt; x
+</span><a href="#local-6989586621679634973"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634972"><span class="annot"><span class="annottext">g :: c -&gt; x
+</span><a href="#local-6989586621679634972"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ListF (Coyoneda f) x -&gt; ComposeT ListF Coyoneda f x
+forall (f :: (* -&gt; *) -&gt; * -&gt; *) (g :: (* -&gt; *) -&gt; * -&gt; *)
+       (m :: * -&gt; *) a.
+f (g m) a -&gt; ComposeT f g m a
+</span><span class="hs-identifier hs-var">CT.ComposeT</span></span><span> </span><span class="annot"><span class="annottext">(ListF (Coyoneda f) x -&gt; ComposeT ListF Coyoneda f x)
+-&gt; ([Coyoneda f x] -&gt; ListF (Coyoneda f) x)
+-&gt; [Coyoneda f x]
+-&gt; ComposeT ListF Coyoneda f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Coyoneda f x] -&gt; ListF (Coyoneda f) x
+forall k (f :: k -&gt; *) (a :: k). [f a] -&gt; ListF f a
+</span><a href="Control.Applicative.ListF.html#ListF"><span class="hs-identifier hs-var">ListF</span></a></span><span> </span><span class="annot"><span class="annottext">([Coyoneda f x] -&gt; ComposeT ListF Coyoneda f x)
+-&gt; [Coyoneda f x] -&gt; ComposeT ListF Coyoneda f x
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-121"></span><span>      </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; f b -&gt; Coyoneda f x
+forall b a (f :: * -&gt; *). (b -&gt; a) -&gt; f b -&gt; Coyoneda f a
+</span><span class="hs-identifier hs-var">CY.Coyoneda</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679634973"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679634975"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Coyoneda f x -&gt; [Coyoneda f x] -&gt; [Coyoneda f x]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Coyoneda f c -&gt; Coyoneda f x) -&gt; [Coyoneda f c] -&gt; [Coyoneda f x]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">((Coyoneda f c -&gt; Coyoneda f x)
+ -&gt; [Coyoneda f c] -&gt; [Coyoneda f x])
+-&gt; ((c -&gt; x) -&gt; Coyoneda f c -&gt; Coyoneda f x)
+-&gt; (c -&gt; x)
+-&gt; [Coyoneda f c]
+-&gt; [Coyoneda f x]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; Coyoneda f c -&gt; Coyoneda f x
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679634972"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">[Coyoneda f c]
+</span><a href="#local-6989586621679634974"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span class="hs-comment">-- | Extract the 'NonEmptyF' part out of a 'DecAlt1', shedding the</span><span>
+</span><span id="line-124"></span><span class="hs-comment">-- contravariant bits.</span><span>
+</span><span id="line-125"></span><span class="hs-comment">--</span><span>
+</span><span id="line-126"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-127"></span><span id="local-6989586621679634969"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltNonEmptyF"><span class="hs-identifier hs-type">decAltNonEmptyF</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679634969"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634969"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Control.Applicative.ListF.html#NonEmptyF"><span class="hs-identifier hs-type">NonEmptyF</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634969"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-128"></span><span id="decAltNonEmptyF"><span class="annot"><span class="annottext">decAltNonEmptyF :: DecAlt1 f ~&gt; NonEmptyF f
+</span><a href="Data.Functor.Invariant.Internative.Free.html#decAltNonEmptyF"><span class="hs-identifier hs-var hs-var">decAltNonEmptyF</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; NonEmptyF f) -&gt; DecAlt1 f ~&gt; NonEmptyF f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+Alt g =&gt;
+(f ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#runCoDecAlt1"><span class="hs-identifier hs-var">runCoDecAlt1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; NonEmptyF f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="hs-comment">-- | Extract the 'NonEmptyF' part out of a 'DecAlt1', shedding the</span><span>
+</span><span id="line-131"></span><span class="hs-comment">-- contravariant bits.</span><span>
+</span><span id="line-132"></span><span class="hs-comment">--</span><span>
+</span><span id="line-133"></span><span class="hs-comment">-- This version does not require a 'Functor' constraint because it converts</span><span>
+</span><span id="line-134"></span><span class="hs-comment">-- to the coyoneda-wrapped product, which is more accurately the true</span><span>
+</span><span id="line-135"></span><span class="hs-comment">-- conversion to a covariant chain.</span><span>
+</span><span id="line-136"></span><span class="hs-comment">--</span><span>
+</span><span id="line-137"></span><span class="hs-comment">-- @since 0.3.2.0</span><span>
+</span><span id="line-138"></span><span id="local-6989586621679634968"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#decAltNonEmptyF_"><span class="hs-identifier hs-type">decAltNonEmptyF_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634968"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">CT.ComposeT</span></span><span> </span><span class="annot"><a href="Control.Applicative.ListF.html#NonEmptyF"><span class="hs-identifier hs-type">NonEmptyF</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">CY.Coyoneda</span></span><span> </span><span class="annot"><a href="#local-6989586621679634968"><span class="hs-identifier hs-type">f</span></a></span></span><span>
+</span><span id="line-139"></span><span id="decAltNonEmptyF_"><span class="annot"><span class="annottext">decAltNonEmptyF_ :: DecAlt1 f x -&gt; ComposeT NonEmptyF Coyoneda f x
+</span><a href="Data.Functor.Invariant.Internative.Free.html#decAltNonEmptyF_"><span class="hs-identifier hs-var hs-var">decAltNonEmptyF_</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; ComposeT NonEmptyF Coyoneda f)
+-&gt; (Night f (ComposeT NonEmptyF Coyoneda f)
+    ~&gt; ComposeT NonEmptyF Coyoneda f)
+-&gt; DecAlt1 f ~&gt; ComposeT NonEmptyF Coyoneda f
+forall (f :: * -&gt; *) (g :: * -&gt; *).
+(f ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt1"><span class="hs-identifier hs-var">foldDecAlt1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; ComposeT NonEmptyF Coyoneda f
+forall k (t :: (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *).
+Inject t =&gt;
+f ~&gt; t f
+</span><a href="Data.HFunctor.html#inject"><span class="hs-identifier hs-var">inject</span></a></span><span> </span><span class="annot"><span class="annottext">((Night f (ComposeT NonEmptyF Coyoneda f)
+  ~&gt; ComposeT NonEmptyF Coyoneda f)
+ -&gt; DecAlt1 f x -&gt; ComposeT NonEmptyF Coyoneda f x)
+-&gt; (Night f (ComposeT NonEmptyF Coyoneda f)
+    ~&gt; ComposeT NonEmptyF Coyoneda f)
+-&gt; DecAlt1 f x
+-&gt; ComposeT NonEmptyF Coyoneda f x
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-140"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679634967"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679634967"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">CT.ComposeT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Control.Applicative.ListF.html#NonEmptyF"><span class="hs-identifier hs-type">NonEmptyF</span></a></span><span> </span><span id="local-6989586621679634965"><span class="annot"><a href="#local-6989586621679634965"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span id="local-6989586621679634964"><span class="annot"><span class="annottext">f :: b -&gt; x
+</span><a href="#local-6989586621679634964"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634963"><span class="annot"><span class="annottext">g :: c -&gt; x
+</span><a href="#local-6989586621679634963"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">NonEmptyF (Coyoneda f) x -&gt; ComposeT NonEmptyF Coyoneda f x
+forall (f :: (* -&gt; *) -&gt; * -&gt; *) (g :: (* -&gt; *) -&gt; * -&gt; *)
+       (m :: * -&gt; *) a.
+f (g m) a -&gt; ComposeT f g m a
+</span><span class="hs-identifier hs-var">CT.ComposeT</span></span><span> </span><span class="annot"><span class="annottext">(NonEmptyF (Coyoneda f) x -&gt; ComposeT NonEmptyF Coyoneda f x)
+-&gt; (NonEmpty (Coyoneda f x) -&gt; NonEmptyF (Coyoneda f) x)
+-&gt; NonEmpty (Coyoneda f x)
+-&gt; ComposeT NonEmptyF Coyoneda f x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty (Coyoneda f x) -&gt; NonEmptyF (Coyoneda f) x
+forall k (f :: k -&gt; *) (a :: k). NonEmpty (f a) -&gt; NonEmptyF f a
+</span><a href="Control.Applicative.ListF.html#NonEmptyF"><span class="hs-identifier hs-var">NonEmptyF</span></a></span><span> </span><span class="annot"><span class="annottext">(NonEmpty (Coyoneda f x) -&gt; ComposeT NonEmptyF Coyoneda f x)
+-&gt; NonEmpty (Coyoneda f x) -&gt; ComposeT NonEmptyF Coyoneda f x
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-141"></span><span>      </span><span class="annot"><span class="annottext">(b -&gt; x) -&gt; f b -&gt; Coyoneda f x
+forall b a (f :: * -&gt; *). (b -&gt; a) -&gt; f b -&gt; Coyoneda f a
+</span><span class="hs-identifier hs-var">CY.Coyoneda</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679634964"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679634967"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Coyoneda f x -&gt; NonEmpty (Coyoneda f x) -&gt; NonEmpty (Coyoneda f x)
+forall a. a -&gt; NonEmpty a -&gt; NonEmpty a
+</span><span class="hs-operator hs-var">NE.&lt;|</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Coyoneda f c -&gt; Coyoneda f x)
+-&gt; NonEmpty (Coyoneda f c) -&gt; NonEmpty (Coyoneda f x)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">((Coyoneda f c -&gt; Coyoneda f x)
+ -&gt; NonEmpty (Coyoneda f c) -&gt; NonEmpty (Coyoneda f x))
+-&gt; ((c -&gt; x) -&gt; Coyoneda f c -&gt; Coyoneda f x)
+-&gt; (c -&gt; x)
+-&gt; NonEmpty (Coyoneda f c)
+-&gt; NonEmpty (Coyoneda f x)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(c -&gt; x) -&gt; Coyoneda f c -&gt; Coyoneda f x
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679634963"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty (Coyoneda f c)
+</span><a href="#local-6989586621679634965"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span class="hs-comment">-- | General-purpose folder of 'DecAlt'.  Provide a way to handle the</span><span>
+</span><span id="line-144"></span><span class="hs-comment">-- identity ('empty'/'conclude'/'Reject') and a way to handle a cons</span><span>
+</span><span id="line-145"></span><span class="hs-comment">-- ('&lt;!&gt;'/'decide'/'swerve').</span><span>
+</span><span id="line-146"></span><span class="hs-comment">--</span><span>
+</span><span id="line-147"></span><span class="hs-comment">-- @since 0.3.5.0</span><span>
+</span><span id="line-148"></span><span id="local-6989586621679635225"><span id="local-6989586621679635226"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt"><span class="hs-identifier hs-type">foldDecAlt</span></a></span><span>
+</span><span id="line-149"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679635228"><span class="annot"><a href="#local-6989586621679635228"><span class="hs-identifier hs-type">x</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635228"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Void</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635226"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635228"><span class="hs-identifier hs-type">x</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-150"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635225"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635226"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635226"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-151"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635225"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635226"><span class="hs-identifier hs-type">g</span></a></span></span></span><span>
+</span><span id="line-152"></span><span id="foldDecAlt"><span class="annot"><span class="annottext">foldDecAlt :: (forall x. (x -&gt; Void) -&gt; g x) -&gt; (Night f g ~&gt; g) -&gt; DecAlt f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt"><span class="hs-identifier hs-var hs-var">foldDecAlt</span></a></span></span><span> </span><span id="local-6989586621679634961"><span class="annot"><span class="annottext">f :: forall x. (x -&gt; Void) -&gt; g x
+</span><a href="#local-6989586621679634961"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634960"><span class="annot"><span class="annottext">g :: Night f g ~&gt; g
+</span><a href="#local-6989586621679634960"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Not ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; Chain Night Not f ~&gt; g
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *)
+       (f :: k -&gt; *) (g :: k -&gt; *).
+HBifunctor t =&gt;
+(i ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain t i f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain"><span class="hs-identifier hs-var">foldChain</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(x -&gt; Void) -&gt; g x
+forall x. (x -&gt; Void) -&gt; g x
+</span><a href="#local-6989586621679634961"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">((x -&gt; Void) -&gt; g x) -&gt; (Not x -&gt; x -&gt; Void) -&gt; Not x -&gt; g x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Not x -&gt; x -&gt; Void
+forall a. Not a -&gt; a -&gt; Void
+</span><a href="Data.Functor.Contravariant.Night.html#refute"><span class="hs-identifier hs-var hs-var">refute</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Night f g ~&gt; g
+</span><a href="#local-6989586621679634960"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Night Not f x -&gt; g x)
+-&gt; (DecAlt f x -&gt; Chain Night Not f x) -&gt; DecAlt f x -&gt; g x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">DecAlt f x -&gt; Chain Night Not f x
+forall (f :: * -&gt; *) a. DecAlt f a -&gt; Chain Night Not f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDecAlt"><span class="hs-identifier hs-var hs-var">unDecAlt</span></a></span><span>
+</span><span id="line-153"></span><span>
+</span><span id="line-154"></span><span class="hs-comment">-- | General-purpose folder of 'DecAlt1'.  Provide a way to handle the</span><span>
+</span><span id="line-155"></span><span class="hs-comment">-- individual leaves and a way to handle a cons ('&lt;!&gt;'/'decide'/'swerve').</span><span>
+</span><span id="line-156"></span><span class="hs-comment">--</span><span>
+</span><span id="line-157"></span><span class="hs-comment">-- @since 0.3.5.0</span><span>
+</span><span id="line-158"></span><span id="local-6989586621679635262"><span id="local-6989586621679635263"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt1"><span class="hs-identifier hs-type">foldDecAlt1</span></a></span><span>
+</span><span id="line-159"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635263"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635262"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-160"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635263"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635262"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635262"><span class="hs-identifier hs-type">g</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-161"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635263"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="#local-6989586621679635262"><span class="hs-identifier hs-type">g</span></a></span></span></span><span>
+</span><span id="line-162"></span><span id="foldDecAlt1"><span class="annot"><span class="annottext">foldDecAlt1 :: (f ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; DecAlt1 f ~&gt; g
+</span><a href="Data.Functor.Invariant.Internative.Free.html#foldDecAlt1"><span class="hs-identifier hs-var hs-var">foldDecAlt1</span></a></span></span><span> </span><span id="local-6989586621679634956"><span class="annot"><span class="annottext">f :: f ~&gt; g
+</span><a href="#local-6989586621679634956"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634955"><span class="annot"><span class="annottext">g :: Night f g ~&gt; g
+</span><a href="#local-6989586621679634955"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(f ~&gt; g) -&gt; (Night f g ~&gt; g) -&gt; Chain1 Night f ~&gt; g
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (g :: k -&gt; *).
+HBifunctor t =&gt;
+(f ~&gt; g) -&gt; (t f g ~&gt; g) -&gt; Chain1 t f ~&gt; g
+</span><a href="Data.HFunctor.Chain.Internal.html#foldChain1"><span class="hs-identifier hs-var">foldChain1</span></a></span><span> </span><span class="annot"><span class="annottext">f ~&gt; g
+</span><a href="#local-6989586621679634956"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Night f g ~&gt; g
+</span><a href="#local-6989586621679634955"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain1 Night f x -&gt; g x)
+-&gt; (DecAlt1 f x -&gt; Chain1 Night f x) -&gt; DecAlt1 f x -&gt; g x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">DecAlt1 f x -&gt; Chain1 Night f x
+forall (f :: * -&gt; *) a. DecAlt1 f a -&gt; Chain1 Night f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDecAlt1"><span class="hs-identifier hs-var hs-var">unDecAlt1</span></a></span><span>
+</span><span id="line-163"></span><span>
+</span><span id="line-164"></span><span class="hs-comment">-- | Match on a non-empty 'DecAlt'; contains the splitting function,</span><span>
+</span><span id="line-165"></span><span class="hs-comment">-- the two rejoining functions, the first @f@, and the rest of the chain.</span><span>
+</span><span id="line-166"></span><span class="hs-comment">-- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Choose'</span><span>
+</span><span id="line-167"></span><span class="hs-comment">-- constructor.</span><span>
+</span><span id="line-168"></span><span id="local-6989586621679635132"><span id="local-6989586621679635133"><span id="local-6989586621679635134"><span id="local-6989586621679635135"><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#Swerve"><span class="hs-identifier hs-type">Swerve</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635133"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635134"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635132"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635134"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635134"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679635133"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635132"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635135"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635133"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635135"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635132"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635135"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635134"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span><span>
+</span><span id="line-169"></span><span class="hs-keyword">pattern</span><span> </span><span id="%24bSwerve"><span id="%24mSwerve"><span id="Swerve"><span class="annot"><span class="annottext">$bSwerve :: (b -&gt; a)
+-&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; DecAlt f c -&gt; DecAlt f a
+$mSwerve :: forall r a (f :: * -&gt; *).
+DecAlt f a
+-&gt; (forall b c.
+    (b -&gt; a)
+    -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; DecAlt f c -&gt; r)
+-&gt; (Void# -&gt; r)
+-&gt; r
+</span><a href="Data.Functor.Invariant.Internative.Free.html#%24bSwerve"><span class="hs-identifier hs-var hs-var hs-var hs-var">Swerve</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621679634950"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634949"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634948"><span class="hs-identifier hs-type">h</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634947"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634946"><span class="hs-identifier hs-type">xs</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#unSwerve_"><span class="hs-identifier hs-type">unSwerve_</span></a></span><span class="hs-glyph">-&gt;</span><span class="annot"><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-type">MaybeF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679634947"><span class="annot"><a href="#local-6989586621679634947"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679634946"><span class="annot"><a href="#local-6989586621679634946"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679634950"><span class="annot"><a href="#local-6989586621679634950"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634949"><span class="annot"><a href="#local-6989586621679634949"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679634948"><span class="annot"><a href="#local-6989586621679634948"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-170"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-171"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#Swerve"><span class="hs-identifier hs-var">Swerve</span></a></span><span> </span><span id="local-6989586621679634943"><span class="annot"><span class="annottext">f :: b -&gt; a
+</span><a href="#local-6989586621679634943"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634942"><span class="annot"><span class="annottext">g :: c -&gt; a
+</span><a href="#local-6989586621679634942"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679634941"><span class="annot"><span class="annottext">h :: a -&gt; Either b c
+</span><a href="#local-6989586621679634941"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679634940"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679634940"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679634939"><span class="annot"><span class="annottext">xs :: DecAlt f c
+</span><a href="#local-6989586621679634939"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Chain Night Not f a -&gt; DecAlt f a
+forall (f :: * -&gt; *) a. Chain Night Not f a -&gt; DecAlt f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-var">DecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Night Not f a -&gt; DecAlt f a)
+-&gt; Chain Night Not f a -&gt; DecAlt f a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Night f (Chain Night Not f) a -&gt; Chain Night Not f a
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+t f (Chain t i f) a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More"><span class="hs-identifier hs-var">More</span></a></span><span> </span><span class="annot"><span class="annottext">(Night f (Chain Night Not f) a -&gt; Chain Night Not f a)
+-&gt; Night f (Chain Night Not f) a -&gt; Chain Night Not f a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; Chain Night Not f c
+-&gt; (b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; Night f (Chain Night Not f) a
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679634940"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DecAlt f c -&gt; Chain Night Not f c
+forall (f :: * -&gt; *) a. DecAlt f a -&gt; Chain Night Not f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDecAlt"><span class="hs-identifier hs-var hs-var">unDecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">DecAlt f c
+</span><a href="#local-6989586621679634939"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679634943"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; a
+</span><a href="#local-6989586621679634942"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Either b c
+</span><a href="#local-6989586621679634941"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-172"></span><span>
+</span><span id="line-173"></span><span id="local-6989586621679634936"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#unSwerve_"><span class="hs-identifier hs-type">unSwerve_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634936"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~&gt;</span></span><span> </span><span class="annot"><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-type">MaybeF</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634936"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634936"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-174"></span><span id="unSwerve_"><span class="annot"><span class="annottext">unSwerve_ :: DecAlt f x -&gt; MaybeF (Night f (DecAlt f)) x
+</span><a href="Data.Functor.Invariant.Internative.Free.html#unSwerve_"><span class="hs-identifier hs-var hs-var">unSwerve_</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-175"></span><span>  </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#More"><span class="hs-identifier hs-type">More</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679634935"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679634935"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679634934"><span class="annot"><span class="annottext">xs :: Chain Night Not f c
+</span><a href="#local-6989586621679634934"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679634933"><span class="annot"><span class="annottext">g :: b -&gt; x
+</span><a href="#local-6989586621679634933"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679634932"><span class="annot"><span class="annottext">f :: c -&gt; x
+</span><a href="#local-6989586621679634932"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634931"><span class="annot"><span class="annottext">h :: x -&gt; Either b c
+</span><a href="#local-6989586621679634931"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Night f (DecAlt f) x) -&gt; MaybeF (Night f (DecAlt f)) x
+forall k (f :: k -&gt; *) (a :: k). Maybe (f a) -&gt; MaybeF f a
+</span><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-var">MaybeF</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe (Night f (DecAlt f) x) -&gt; MaybeF (Night f (DecAlt f)) x)
+-&gt; (Night f (DecAlt f) x -&gt; Maybe (Night f (DecAlt f) x))
+-&gt; Night f (DecAlt f) x
+-&gt; MaybeF (Night f (DecAlt f)) x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Night f (DecAlt f) x -&gt; Maybe (Night f (DecAlt f) x)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Night f (DecAlt f) x -&gt; MaybeF (Night f (DecAlt f)) x)
+-&gt; Night f (DecAlt f) x -&gt; MaybeF (Night f (DecAlt f)) x
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; DecAlt f c
+-&gt; (b -&gt; x)
+-&gt; (c -&gt; x)
+-&gt; (x -&gt; Either b c)
+-&gt; Night f (DecAlt f) x
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679634935"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Chain Night Not f c -&gt; DecAlt f c
+forall (f :: * -&gt; *) a. Chain Night Not f a -&gt; DecAlt f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-var">DecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">Chain Night Not f c
+</span><a href="#local-6989586621679634934"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">b -&gt; x
+</span><a href="#local-6989586621679634933"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; x
+</span><a href="#local-6989586621679634932"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">x -&gt; Either b c
+</span><a href="#local-6989586621679634931"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-176"></span><span>  </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Done"><span class="hs-identifier hs-type">Done</span></a></span><span> </span><span class="hs-identifier">_</span><span>                 </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe (Night f (DecAlt f) x) -&gt; MaybeF (Night f (DecAlt f)) x
+forall k (f :: k -&gt; *) (a :: k). Maybe (f a) -&gt; MaybeF f a
+</span><a href="Control.Applicative.ListF.html#MaybeF"><span class="hs-identifier hs-var">MaybeF</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe (Night f (DecAlt f) x)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-177"></span><span>
+</span><span id="line-178"></span><span>
+</span><span id="line-179"></span><span class="hs-comment">-- | Match on an &quot;empty&quot; 'DecAlt'; contains no @f@s, but only the</span><span>
+</span><span id="line-180"></span><span class="hs-comment">-- terminal value.  Analogous to the</span><span>
+</span><span id="line-181"></span><span class="hs-comment">-- 'Data.Functor.Contravariant.Divisible.Free.Lose' constructor.</span><span>
+</span><span id="line-182"></span><span id="local-6989586621679635105"><span id="local-6989586621679635106"><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#Reject"><span class="hs-identifier hs-type">Reject</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635105"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Void</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635106"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635105"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-183"></span><span class="hs-keyword">pattern</span><span> </span><span id="%24bReject"><span id="%24mReject"><span id="Reject"><span class="annot"><span class="annottext">$bReject :: (a -&gt; Void) -&gt; DecAlt f a
+$mReject :: forall r a (f :: * -&gt; *).
+DecAlt f a -&gt; ((a -&gt; Void) -&gt; r) -&gt; (Void# -&gt; r) -&gt; r
+</span><a href="Data.Functor.Invariant.Internative.Free.html#%24bReject"><span class="hs-identifier hs-var hs-var hs-var">Reject</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621679634927"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Done"><span class="hs-identifier hs-type">Done</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-type">Not</span></a></span><span> </span><span id="local-6989586621679634927"><span class="annot"><a href="#local-6989586621679634927"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-184"></span><span class="hs-pragma">{-# COMPLETE</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#Swerve"><span class="hs-pragma hs-type">Swerve</span></a></span><span class="hs-pragma">,</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#Reject"><span class="hs-pragma hs-type">Reject</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-185"></span><span>
+</span><span id="line-186"></span><span id="local-6989586621679634925"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679634921"><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier hs-type">Inalt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634925"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-187"></span><span>    </span><span id="local-6989586621679634919"><span class="annot"><span class="annottext">swerve :: (b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; DecAlt f b
+-&gt; DecAlt f c
+-&gt; DecAlt f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var hs-var hs-var hs-var">swerve</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((b -&gt; a)
+ -&gt; (c -&gt; a)
+ -&gt; (a -&gt; Either b c)
+ -&gt; Chain Night Not f b
+ -&gt; Chain Night Not f c
+ -&gt; Chain Night Not f a)
+-&gt; (b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; DecAlt f b
+-&gt; DecAlt f c
+-&gt; DecAlt f a
+forall a b. Coercible a b =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">coerce</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall b a c.
+Inalt (Chain Night Not f) =&gt;
+(b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; Chain Night Not f b
+-&gt; Chain Night Not f c
+-&gt; Chain Night Not f a
+forall (f :: * -&gt; *) b a c.
+Inalt f =&gt;
+(b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var">swerve</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-type">Not</span></a></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-188"></span><span>
+</span><span id="line-189"></span><span id="local-6989586621679634917"><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inplus"><span class="hs-identifier hs-type">Inplus</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634917"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-190"></span><span>    </span><span id="local-6989586621679634913"><span class="annot"><span class="annottext">reject :: (a -&gt; Void) -&gt; DecAlt f a
+</span><a href="Data.Functor.Invariant.Internative.html#reject"><span class="hs-identifier hs-var hs-var hs-var hs-var">reject</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((a -&gt; Void) -&gt; Chain Night Not f a) -&gt; (a -&gt; Void) -&gt; DecAlt f a
+forall a b. Coercible a b =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">coerce</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall a.
+Inplus (Chain Night Not f) =&gt;
+(a -&gt; Void) -&gt; Chain Night Not f a
+forall (f :: * -&gt; *) a. Inplus f =&gt; (a -&gt; Void) -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#reject"><span class="hs-identifier hs-var">reject</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain"><span class="hs-identifier hs-type">Chain</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-type">Not</span></a></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="hs-comment">-- | Match on a 'DecAlt1' to get the head and the rest of the items.</span><span>
+</span><span id="line-193"></span><span class="hs-comment">-- Analogous to the 'Data.Functor.Contravariant.Divisible.Free.Dec1'</span><span>
+</span><span id="line-194"></span><span class="hs-comment">-- constructor.</span><span>
+</span><span id="line-195"></span><span id="local-6989586621679635077"><span id="local-6989586621679635078"><span id="local-6989586621679635079"><span id="local-6989586621679635080"><span class="hs-keyword">pattern</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679635080"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635078"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635079"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635077"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635079"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635079"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="#local-6989586621679635078"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635077"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679635080"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635078"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635080"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635077"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635080"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635079"><span class="hs-identifier hs-type">a</span></a></span></span></span></span></span><span>
+</span><span id="line-196"></span><span class="hs-keyword">pattern</span><span> </span><span id="%24bDecAlt1"><span id="%24mDecAlt1"><span id="DecAlt1"><span class="annot"><span class="annottext">$bDecAlt1 :: (b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; f b
+-&gt; DecAlt f c
+-&gt; DecAlt1 f a
+$mDecAlt1 :: forall r (f :: * -&gt; *) a.
+Invariant f =&gt;
+DecAlt1 f a
+-&gt; (forall b c.
+    (b -&gt; a)
+    -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; DecAlt f c -&gt; r)
+-&gt; (Void# -&gt; r)
+-&gt; r
+</span><a href="Data.Functor.Invariant.Internative.Free.html#%24bDecAlt1"><span class="hs-identifier hs-var hs-var hs-var hs-var">DecAlt1</span></a></span></span></span></span><span> </span><span class="annot"><a href="#local-6989586621679634909"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634908"><span class="hs-identifier hs-type">g</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634907"><span class="hs-identifier hs-type">h</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634906"><span class="hs-identifier hs-type">x</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634905"><span class="hs-identifier hs-type">xs</span></a></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">coerce</span></span><span> </span><span class="annot"><a href="Data.HBifunctor.Tensor.Internal.html#splitChain1"><span class="hs-identifier hs-type">splitChain1</span></a></span><span class="hs-glyph">-&gt;</span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span id="local-6989586621679634906"><span class="annot"><a href="#local-6989586621679634906"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679634905"><span class="annot"><a href="#local-6989586621679634905"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span id="local-6989586621679634909"><span class="annot"><a href="#local-6989586621679634909"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634908"><span class="annot"><a href="#local-6989586621679634908"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679634907"><span class="annot"><a href="#local-6989586621679634907"><span class="hs-identifier hs-var">h</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-197"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-198"></span><span>    </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#DecAlt1"><span class="hs-identifier hs-var">DecAlt1</span></a></span><span> </span><span id="local-6989586621679634903"><span class="annot"><span class="annottext">f :: b -&gt; a
+</span><a href="#local-6989586621679634903"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679634902"><span class="annot"><span class="annottext">g :: c -&gt; a
+</span><a href="#local-6989586621679634902"><span class="hs-identifier hs-var">g</span></a></span></span><span> </span><span id="local-6989586621679634901"><span class="annot"><span class="annottext">h :: a -&gt; Either b c
+</span><a href="#local-6989586621679634901"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621679634900"><span class="annot"><span class="annottext">x :: f b
+</span><a href="#local-6989586621679634900"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679634899"><span class="annot"><span class="annottext">xs :: DecAlt f c
+</span><a href="#local-6989586621679634899"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Night f (ListBy Night f) a -&gt; DecAlt1 f a
+forall (t :: (* -&gt; *) -&gt; (* -&gt; *) -&gt; * -&gt; *) (i :: * -&gt; *)
+       (f :: * -&gt; *).
+(Matchable t i, FunctorBy t f) =&gt;
+t f (ListBy t f) ~&gt; NonEmptyBy t f
+</span><a href="Data.HBifunctor.Tensor.html#unsplitNE"><span class="hs-identifier hs-var">unsplitNE</span></a></span><span> </span><span class="annot"><span class="annottext">(Night f (ListBy Night f) a -&gt; DecAlt1 f a)
+-&gt; Night f (ListBy Night f) a -&gt; DecAlt1 f a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f b
+-&gt; DecAlt f c
+-&gt; (b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; Night f (DecAlt f) a
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span> </span><span class="annot"><span class="annottext">f b
+</span><a href="#local-6989586621679634900"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">DecAlt f c
+</span><a href="#local-6989586621679634899"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679634903"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">c -&gt; a
+</span><a href="#local-6989586621679634902"><span class="hs-identifier hs-var">g</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; Either b c
+</span><a href="#local-6989586621679634901"><span class="hs-identifier hs-var">h</span></a></span><span>
+</span><span id="line-199"></span><span class="hs-pragma">{-# COMPLETE</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#DecAlt1"><span class="hs-pragma hs-type">DecAlt1</span></a></span><span> </span><span class="hs-pragma">#-}</span><span>
+</span><span id="line-200"></span><span>
+</span><span id="line-201"></span><span id="local-6989586621679634897"><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679634893"><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679634897"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Internative.html#Inalt"><span class="hs-identifier hs-type">Inalt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679634897"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-202"></span><span>    </span><span id="local-6989586621679634892"><span class="annot"><span class="annottext">swerve :: (b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; DecAlt1 f b
+-&gt; DecAlt1 f c
+-&gt; DecAlt1 f a
+</span><a href="#local-6989586621679634892"><span class="hs-identifier hs-var hs-var hs-var hs-var">swerve</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((b -&gt; a)
+ -&gt; (c -&gt; a)
+ -&gt; (a -&gt; Either b c)
+ -&gt; Chain1 Night f b
+ -&gt; Chain1 Night f c
+ -&gt; Chain1 Night f a)
+-&gt; (b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; DecAlt1 f b
+-&gt; DecAlt1 f c
+-&gt; DecAlt1 f a
+forall a b. Coercible a b =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">coerce</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">forall b a c.
+Inalt (Chain1 Night f) =&gt;
+(b -&gt; a)
+-&gt; (c -&gt; a)
+-&gt; (a -&gt; Either b c)
+-&gt; Chain1 Night f b
+-&gt; Chain1 Night f c
+-&gt; Chain1 Night f a
+forall (f :: * -&gt; *) b a c.
+Inalt f =&gt;
+(b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; f b -&gt; f c -&gt; f a
+</span><a href="Data.Functor.Invariant.Internative.html#swerve"><span class="hs-identifier hs-var">swerve</span></a></span><span> </span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#Chain1"><span class="hs-identifier hs-type">Chain1</span></a></span><span> </span><span class="annot"><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-type">Night</span></a></span><span> </span><span class="annot"><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-special">)</span></span><span>
+</span><span id="line-203"></span><span>
+</span><span id="line-204"></span><span class="hs-comment">-- | Convenient wrapper to build up a 'DecAlt' on by providing each</span><span>
+</span><span id="line-205"></span><span class="hs-comment">-- branch of it.  This makes it much easier to build up longer chains</span><span>
+</span><span id="line-206"></span><span class="hs-comment">-- because you would only need to write the splitting/joining functions in</span><span>
+</span><span id="line-207"></span><span class="hs-comment">-- one place.</span><span>
+</span><span id="line-208"></span><span class="hs-comment">--</span><span>
+</span><span id="line-209"></span><span class="hs-comment">-- For example, if you had a data type</span><span>
+</span><span id="line-210"></span><span class="hs-comment">--</span><span>
+</span><span id="line-211"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-212"></span><span class="hs-comment">-- data MyType = MTI Int | MTB Bool | MTS String</span><span>
+</span><span id="line-213"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-214"></span><span class="hs-comment">--</span><span>
+</span><span id="line-215"></span><span class="hs-comment">-- and an invariant functor @Prim@ (representing, say, a bidirectional</span><span>
+</span><span id="line-216"></span><span class="hs-comment">-- parser, where @Prim Int@ is a bidirectional parser for an 'Int'@),</span><span>
+</span><span id="line-217"></span><span class="hs-comment">-- then you could assemble a bidirectional parser for a @MyType@ using:</span><span>
+</span><span id="line-218"></span><span class="hs-comment">--</span><span>
+</span><span id="line-219"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-220"></span><span class="hs-comment">-- invmap (\case MTI x -&gt; Z (I x); MTB y -&gt; S (Z (I y)); MTS z -&gt; S (S (Z (I z))))</span><span>
+</span><span id="line-221"></span><span class="hs-comment">--        (\case Z (I x) -&gt; MTI x; S (Z (I y)) -&gt; MTB y; S (S (Z (I z))) -&gt; MTS z) $</span><span>
+</span><span id="line-222"></span><span class="hs-comment">--   assembleDecAlt $ intPrim</span><span>
+</span><span id="line-223"></span><span class="hs-comment">--                     :* boolPrim</span><span>
+</span><span id="line-224"></span><span class="hs-comment">--                     :* stringPrim</span><span>
+</span><span id="line-225"></span><span class="hs-comment">--                     :* Nil</span><span>
+</span><span id="line-226"></span><span class="hs-comment">-- @</span><span>
+</span><span id="line-227"></span><span class="hs-comment">--</span><span>
+</span><span id="line-228"></span><span class="hs-comment">-- Some notes on usefulness depending on how many components you have:</span><span>
+</span><span id="line-229"></span><span class="hs-comment">--</span><span>
+</span><span id="line-230"></span><span class="hs-comment">-- *    If you have 0 components, use 'Reject' directly.</span><span>
+</span><span id="line-231"></span><span class="hs-comment">-- *    If you have 1 component, use 'inject' or 'injectChain' directly.</span><span>
+</span><span id="line-232"></span><span class="hs-comment">-- *    If you have 2 components, use 'toListBy' or 'toChain'.</span><span>
+</span><span id="line-233"></span><span class="hs-comment">-- *    If you have 3 or more components, these combinators may be useful;</span><span>
+</span><span id="line-234"></span><span class="hs-comment">--      otherwise you'd need to manually peel off eithers one-by-one.</span><span>
+</span><span id="line-235"></span><span class="hs-comment">--</span><span>
+</span><span id="line-236"></span><span class="hs-comment">-- If each component is itself a @'DecAlt' f@ (instead of @f@), you can use</span><span>
+</span><span id="line-237"></span><span class="hs-comment">-- 'concatInplus'.</span><span>
+</span><span id="line-238"></span><span id="local-6989586621679635050"><span id="local-6989586621679635051"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt"><span class="hs-identifier hs-type">assembleDecAlt</span></a></span><span>
+</span><span id="line-239"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679635051"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635050"><span class="hs-keyword hs-type">as</span></a></span><span>
+</span><span id="line-240"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-type">DecAlt</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635051"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NS</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="annot"><a href="#local-6989586621679635050"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-241"></span><span id="assembleDecAlt"><span class="annot"><span class="annottext">assembleDecAlt :: NP f as -&gt; DecAlt f (NS I as)
+</span><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt"><span class="hs-identifier hs-var hs-var">assembleDecAlt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-242"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain Night Not f (NS I as) -&gt; DecAlt f (NS I as)
+forall (f :: * -&gt; *) a. Chain Night Not f a -&gt; DecAlt f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-var">DecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Night Not f (NS I as) -&gt; DecAlt f (NS I as))
+-&gt; Chain Night Not f (NS I as) -&gt; DecAlt f (NS I as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Not (NS I as) -&gt; Chain Night Not f (NS I as)
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+i a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#Done"><span class="hs-identifier hs-var">Done</span></a></span><span> </span><span class="annot"><span class="annottext">(Not (NS I as) -&gt; Chain Night Not f (NS I as))
+-&gt; Not (NS I as) -&gt; Chain Night Not f (NS I as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(NS I as -&gt; Void) -&gt; Not (NS I as)
+forall a. (a -&gt; Void) -&gt; Not a
+</span><a href="Data.Functor.Contravariant.Night.html#Not"><span class="hs-identifier hs-var">Not</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="hs-special">{</span><span class="hs-special">}</span><span class="hs-special">)</span><span>
+</span><span id="line-243"></span><span>    </span><span id="local-6989586621679634890"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679634890"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679634888"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679634888"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Chain Night Not f (NS I (x : xs)) -&gt; DecAlt f (NS I as)
+forall (f :: * -&gt; *) a. Chain Night Not f a -&gt; DecAlt f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DecAlt"><span class="hs-identifier hs-var">DecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain Night Not f (NS I (x : xs)) -&gt; DecAlt f (NS I as))
+-&gt; Chain Night Not f (NS I (x : xs)) -&gt; DecAlt f (NS I as)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Night f (Chain Night Not f) (NS I (x : xs))
+-&gt; Chain Night Not f (NS I (x : xs))
+forall k k (t :: k -&gt; (k -&gt; *) -&gt; k -&gt; *) (i :: k -&gt; *) (f :: k)
+       (a :: k).
+t f (Chain t i f) a -&gt; Chain t i f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More"><span class="hs-identifier hs-var">More</span></a></span><span> </span><span class="annot"><span class="annottext">(Night f (Chain Night Not f) (NS I (x : xs))
+ -&gt; Chain Night Not f (NS I (x : xs)))
+-&gt; Night f (Chain Night Not f) (NS I (x : xs))
+-&gt; Chain Night Not f (NS I (x : xs))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f x
+-&gt; Chain Night Not f (NS I xs)
+-&gt; (x -&gt; NS I (x : xs))
+-&gt; (NS I xs -&gt; NS I (x : xs))
+-&gt; (NS I (x : xs) -&gt; Either x (NS I xs))
+-&gt; Night f (Chain Night Not f) (NS I (x : xs))
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span>
+</span><span id="line-244"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679634890"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-245"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DecAlt f (NS I xs) -&gt; Chain Night Not f (NS I xs)
+forall (f :: * -&gt; *) a. DecAlt f a -&gt; Chain Night Not f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDecAlt"><span class="hs-identifier hs-var hs-var">unDecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">(DecAlt f (NS I xs) -&gt; Chain Night Not f (NS I xs))
+-&gt; DecAlt f (NS I xs) -&gt; Chain Night Not f (NS I xs)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NP f xs -&gt; DecAlt f (NS I xs)
+forall (f :: * -&gt; *) (as :: [*]). NP f as -&gt; DecAlt f (NS I as)
+</span><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt"><span class="hs-identifier hs-var">assembleDecAlt</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679634888"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-246"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NS I (x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]). a x -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">Z</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NS I (x : xs)) -&gt; (x -&gt; I x) -&gt; x -&gt; NS I (x : xs)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span>
+</span><span id="line-247"></span><span>      </span><span class="annot"><span class="annottext">NS I xs -&gt; NS I (x : xs)
+forall k (a :: k -&gt; *) (xs :: [k]) (x :: k).
+NS a xs -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">S</span></span><span>
+</span><span id="line-248"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Z</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679634884"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679634884"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; Either x (NS I xs)
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679634884"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S</span></span><span> </span><span id="local-6989586621679634883"><span class="annot"><span class="annottext">ys :: NS I xs
+</span><a href="#local-6989586621679634883"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">NS I xs -&gt; Either x (NS I xs)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">NS I xs
+</span><a href="#local-6989586621679634883"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-249"></span><span>
+</span><span id="line-250"></span><span class="hs-comment">-- | A version of 'assembleDecAlt' but for 'DecAlt1' instead.  Can</span><span>
+</span><span id="line-251"></span><span class="hs-comment">-- be useful if you intend on interpreting it into something with only</span><span>
+</span><span id="line-252"></span><span class="hs-comment">-- a 'Decide' or 'Alt' instance, but no</span><span>
+</span><span id="line-253"></span><span class="hs-comment">-- 'Data.Functor.Contravariant.Divisible.Decidable' or 'Plus' or</span><span>
+</span><span id="line-254"></span><span class="hs-comment">-- 'Control.Applicative.Alternative'.</span><span>
+</span><span id="line-255"></span><span class="hs-comment">--</span><span>
+</span><span id="line-256"></span><span class="hs-comment">-- If each component is itself a @'DecAlt1' f@ (instead of @f@), you can</span><span>
+</span><span id="line-257"></span><span class="hs-comment">-- use 'concatInalt'.</span><span>
+</span><span id="line-258"></span><span id="local-6989586621679635018"><span id="local-6989586621679635019"><span id="local-6989586621679635020"><span class="annot"><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt1"><span class="hs-identifier hs-type">assembleDecAlt1</span></a></span><span>
+</span><span id="line-259"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Invariant</span></span><span> </span><span class="annot"><a href="#local-6989586621679635020"><span class="hs-identifier hs-type">f</span></a></span><span>
+</span><span id="line-260"></span><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NP</span></span><span> </span><span class="annot"><a href="#local-6989586621679635020"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635019"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679635018"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-261"></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Data.HFunctor.Chain.Internal.html#DecAlt1"><span class="hs-identifier hs-type">DecAlt1</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679635020"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">NS</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679635019"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-special">'</span><span class="hs-glyph">:</span><span> </span><span class="annot"><a href="#local-6989586621679635018"><span class="hs-keyword hs-type">as</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-262"></span><span id="assembleDecAlt1"><span class="annot"><span class="annottext">assembleDecAlt1 :: NP f (a : as) -&gt; DecAlt1 f (NS I (a : as))
+</span><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt1"><span class="hs-identifier hs-var hs-var">assembleDecAlt1</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679634882"><span class="annot"><span class="annottext">x :: f x
+</span><a href="#local-6989586621679634882"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span id="local-6989586621679634881"><span class="annot"><span class="annottext">xs :: NP f xs
+</span><a href="#local-6989586621679634881"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Chain1 Night f (NS I (a : as)) -&gt; DecAlt1 f (NS I (a : as))
+forall (f :: * -&gt; *) a. Chain1 Night f a -&gt; DecAlt1 f a
+</span><a href="Data.HFunctor.Chain.Internal.html#DecAlt1_"><span class="hs-identifier hs-var">DecAlt1_</span></a></span><span> </span><span class="annot"><span class="annottext">(Chain1 Night f (NS I (a : as)) -&gt; DecAlt1 f (NS I (a : as)))
+-&gt; Chain1 Night f (NS I (a : as)) -&gt; DecAlt1 f (NS I (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">NP f xs
+</span><a href="#local-6989586621679634881"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-263"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Nil</span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">f (NS I '[x]) -&gt; Chain1 Night f (NS I (a : as))
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (a :: k).
+f a -&gt; Chain1 t f a
+</span><a href="Data.HFunctor.Chain.Internal.html#Done1"><span class="hs-identifier hs-var">Done1</span></a></span><span> </span><span class="annot"><span class="annottext">(f (NS I '[x]) -&gt; Chain1 Night f (NS I (a : as)))
+-&gt; f (NS I '[x]) -&gt; Chain1 Night f (NS I (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(x -&gt; NS I '[x]) -&gt; (NS I '[x] -&gt; x) -&gt; f x -&gt; f (NS I '[x])
+forall (f :: * -&gt; *) a b.
+Invariant f =&gt;
+(a -&gt; b) -&gt; (b -&gt; a) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">invmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NS I '[x]
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]). a x -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">Z</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NS I '[x]) -&gt; (x -&gt; I x) -&gt; x -&gt; NS I '[x]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; x
+forall a. I a -&gt; a
+</span><span class="hs-identifier hs-var">unI</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; x) -&gt; (NS I '[x] -&gt; I x) -&gt; NS I '[x] -&gt; x
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">NS I '[x] -&gt; I x
+forall k (f :: k -&gt; *) (x :: k). NS f '[x] -&gt; f x
+</span><span class="hs-identifier hs-var">unZ</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679634882"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-264"></span><span>    </span><span class="hs-identifier">_</span><span> </span><span class="annot"><span class="hs-operator hs-type">:*</span></span><span> </span><span class="hs-identifier">_</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Night f (Chain1 Night f) (NS I (x : x : xs))
+-&gt; Chain1 Night f (NS I (a : as))
+forall k (t :: (k -&gt; *) -&gt; (k -&gt; *) -&gt; k -&gt; *) (f :: k -&gt; *)
+       (a :: k).
+t f (Chain1 t f) a -&gt; Chain1 t f a
+</span><a href="Data.HFunctor.Chain.Internal.html#More1"><span class="hs-identifier hs-var">More1</span></a></span><span> </span><span class="annot"><span class="annottext">(Night f (Chain1 Night f) (NS I (x : x : xs))
+ -&gt; Chain1 Night f (NS I (a : as)))
+-&gt; Night f (Chain1 Night f) (NS I (x : x : xs))
+-&gt; Chain1 Night f (NS I (a : as))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">f x
+-&gt; Chain1 Night f (NS I (x : xs))
+-&gt; (x -&gt; NS I (x : x : xs))
+-&gt; (NS I (x : xs) -&gt; NS I (x : x : xs))
+-&gt; (NS I (x : x : xs) -&gt; Either x (NS I (x : xs)))
+-&gt; Night f (Chain1 Night f) (NS I (x : x : xs))
+forall (f :: * -&gt; *) b (g :: * -&gt; *) c a.
+f b
+-&gt; g c -&gt; (b -&gt; a) -&gt; (c -&gt; a) -&gt; (a -&gt; Either b c) -&gt; Night f g a
+</span><a href="Data.Functor.Invariant.Night.html#Night"><span class="hs-identifier hs-var">Night</span></a></span><span>
+</span><span id="line-265"></span><span>      </span><span class="annot"><span class="annottext">f x
+</span><a href="#local-6989586621679634882"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-266"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DecAlt1 f (NS I (x : xs)) -&gt; Chain1 Night f (NS I (x : xs))
+forall (f :: * -&gt; *) a. DecAlt1 f a -&gt; Chain1 Night f a
+</span><a href="Data.HFunctor.Chain.Internal.html#unDecAlt1"><span class="hs-identifier hs-var hs-var">unDecAlt1</span></a></span><span> </span><span class="annot"><span class="annottext">(DecAlt1 f (NS I (x : xs)) -&gt; Chain1 Night f (NS I (x : xs)))
+-&gt; DecAlt1 f (NS I (x : xs)) -&gt; Chain1 Night f (NS I (x : xs))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NP f (x : xs) -&gt; DecAlt1 f (NS I (x : xs))
+forall (f :: * -&gt; *) a (as :: [*]).
+Invariant f =&gt;
+NP f (a : as) -&gt; DecAlt1 f (NS I (a : as))
+</span><a href="Data.Functor.Invariant.Internative.Free.html#assembleDecAlt1"><span class="hs-identifier hs-var">assembleDecAlt1</span></a></span><span> </span><span class="annot"><span class="annottext">NP f xs
+NP f (x : xs)
+</span><a href="#local-6989586621679634881"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-267"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">I x -&gt; NS I (x : x : xs)
+forall k (a :: k -&gt; *) (x :: k) (xs :: [k]). a x -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">Z</span></span><span> </span><span class="annot"><span class="annottext">(I x -&gt; NS I (x : x : xs)) -&gt; (x -&gt; I x) -&gt; x -&gt; NS I (x : x : xs)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">x -&gt; I x
+forall a. a -&gt; I a
+</span><span class="hs-identifier hs-var">I</span></span><span class="hs-special">)</span><span>
+</span><span id="line-268"></span><span>      </span><span class="annot"><span class="annottext">NS I (x : xs) -&gt; NS I (x : x : xs)
+forall k (a :: k -&gt; *) (xs :: [k]) (x :: k).
+NS a xs -&gt; NS a (x : xs)
+</span><span class="hs-identifier hs-var">S</span></span><span>
+</span><span id="line-269"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Z</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">I</span></span><span> </span><span id="local-6989586621679634874"><span class="annot"><span class="annottext">y :: x
+</span><a href="#local-6989586621679634874"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">x -&gt; Either x (NS I (x : xs))
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">x
+</span><a href="#local-6989586621679634874"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">S</span></span><span> </span><span id="local-6989586621679634873"><span class="annot"><span class="annottext">ys :: NS I xs
+</span><a href="#local-6989586621679634873"><span class="hs-identifier hs-var">ys</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">NS I xs -&gt; Either x (NS I xs)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">NS I xs
+</span><a href="#local-6989586621679634873"><span class="hs-identifier hs-var">ys</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-270"></span></pre></body></html>
