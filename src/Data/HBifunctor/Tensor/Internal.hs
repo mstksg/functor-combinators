@@ -1,3 +1,5 @@
+{-# OPTIONS_HADDOCK hide, not-home #-}
+
 module Data.HBifunctor.Tensor.Internal (
     Tensor(..)
   , unconsLB

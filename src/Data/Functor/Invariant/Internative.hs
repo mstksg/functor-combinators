@@ -13,13 +13,18 @@
 --
 -- @since 0.4.0.0
 module Data.Functor.Invariant.Internative (
+  -- * Typeclass
     Inalt(..)
   , Inplus(..)
   , Internative
+  -- * Assembling Helpers
+  , concatInplus
+  , concatInalt
   ) where
 
 import           Data.Functor.Invariant
 import           Data.Functor.Invariant.Inplicative
+import           Data.SOP hiding                    (hmap)
 import           Data.Void
 
 -- | The invariant counterpart of 'Alt' and 'Decide'.
@@ -58,6 +63,8 @@ class Invariant f => Inalt f where
     -- a@ and an @f b@ into an @f c@, in order to consume/produdce the @c@,
     -- it will only use either the @f a@ or the @f b@ -- exactly one of
     -- them.
+    --
+    -- @since 0.4.0.0
     swerve
         :: (b -> a)
         -> (c -> a)
@@ -69,6 +76,8 @@ class Invariant f => Inalt f where
     -- | A simplified version of 'swerive' that splits to and from an
     -- 'Either'. You can then use 'invmap' to reshape it into the proper
     -- shape.
+    --
+    -- @since 0.4.0.0
     swerved
         :: f a
         -> f b
@@ -86,11 +95,76 @@ class Invariant f => Inalt f where
 -- Conceptually, if you think of 'swerve' as "choosing one path and
 -- re-injecting back", then 'reject' introduces a branch that is impossible
 -- to take.
+
+-- @since 0.4.0.0
 class Inalt f => Inplus f where
     reject :: (a -> Void) -> f a
 
 -- | The invariant counterpart to 'Alternative' and 'Decidable': represents
 -- a combination of both 'Applicative' and 'Alt', or 'Divisible' and
 -- 'Conclude'.  There are laws?
+
+-- @since 0.4.0.0
 class (Inplus f, Inplicative f) => Internative f
 
+-- | Convenient wrapper to build up an 'Inplus' instance on by providing
+-- each branch of it.  This makes it much easier to build up longer chains
+-- because you would only need to write the splitting/joining functions in
+-- one place.
+--
+-- For example, if you had a data type
+--
+-- @
+-- data MyType = MTI Int | MTB Bool | MTS String
+-- @
+--
+-- and an invariant functor and 'Inplus' instance @Prim@ (representing, say,
+-- a bidirectional parser, where @Prim Int@ is a bidirectional parser for
+-- an 'Int'@), then you could assemble a bidirectional parser for
+-- a @MyType@ using:
+--
+-- @
+-- invmap (\case MTI x -> Z (I x); MTB y -> S (Z (I y)); MTS z -> S (S (Z (I z))))
+--        (\case Z (I x) -> MTI x; S (Z (I y)) -> MTB y; S (S (Z (I z))) -> MTS z) $
+--   concatInplus $ intPrim
+--               :* boolPrim
+--               :* stringPrim
+--               :* Nil
+-- @
+--
+-- Some notes on usefulness depending on how many components you have:
+--
+-- *    If you have 0 components, use 'reject' directly.
+-- *    If you have 1 component, use 'inject' directly.
+-- *    If you have 2 components, use 'swerve' directly.
+-- *    If you have 3 or more components, these combinators may be useful;
+--      otherwise you'd need to manually peel off eithers one-by-one.
+concatInplus
+    :: Inplus f
+    => NP f as
+    -> f (NS I as)
+concatInplus = \case
+    Nil     -> reject $ \case {}
+    x :* xs -> swerve
+      (Z . I)
+      S
+      (\case Z (I y) -> Left y; S ys -> Right ys)
+      x
+      (concatInplus xs)
+
+-- | A version of 'concatInplus' for non-empty 'NP', but only
+-- requiring an 'Inalt' instance.
+--
+-- @since 0.4.0.0
+concatInalt
+    :: Inalt f
+    => NP f (a ': as)
+    -> f (NS I (a ': as))
+concatInalt (x :* xs) = case xs of
+    Nil    -> invmap (Z . I) (\case Z (I y) -> y; S ys -> case ys of {}) x
+    _ :* _ -> swerve
+      (Z . I)
+      S
+      (\case Z (I y) -> Left y; S ys -> Right ys)
+      x
+      (concatInalt xs)

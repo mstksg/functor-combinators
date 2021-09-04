@@ -12,6 +12,8 @@
 -- Provide an invariant functor combinator sequencer, like a combination of
 -- 'Ap' and 'Div'.
 --
+-- This module was named 'Data.Functor.Invariant.DecAlt' before v0.4.0.0
+--
 -- @since 0.4.0.0
 module Data.Functor.Invariant.Inplicative.Free (
   -- * Chain
@@ -23,8 +25,6 @@ module Data.Functor.Invariant.Inplicative.Free (
   , foldDivAp
   , assembleDivAp
   , assembleDivApRec
-  , concatDivAp
-  , concatDivApRec
   -- * Nonempty Chain
   , DivAp1(.., DivAp1)
   , runCoDivAp1
@@ -34,8 +34,6 @@ module Data.Functor.Invariant.Inplicative.Free (
   , foldDivAp1
   , assembleDivAp1
   , assembleDivAp1Rec
-  , concatDivAp1
-  , concatDivAp1Rec
   -- * Day Utility
   , runDayApply
   , runDayDivise
@@ -172,6 +170,9 @@ divApDiv1 = runContraDivAp1 inject
 -- | Match on a non-empty 'DivAp'; contains no @f@s, but only the
 -- terminal value.  Analogous to the 'Control.Applicative.Free.Ap'
 -- constructor.
+--
+-- Note that the order of the first two arguments has swapped as of
+-- v0.4.0.0
 pattern Gather :: (b -> c -> a) -> (a -> (b, c)) -> f b -> DivAp f c -> DivAp f a
 pattern Gather f g x xs <- (unGather_->MaybeF (Just (Day x xs f g)))
   where
@@ -191,17 +192,22 @@ pattern Knot x = DivAp (Done (Identity x))
 instance Inply (DivAp f) where
     gather = coerce (gather @(Chain Day Identity _))
 
+-- | The free 'Inplicative'
 instance Inplicative (DivAp f) where
     knot = coerce (knot @(Chain Day Identity _))
 
 -- | Match on a 'DivAp1' to get the head and the rest of the items.
 -- Analogous to the 'Data.Functor.Apply.Free.Ap1' constructor.
+--
+-- Note that the order of the first two arguments has swapped as of
+-- v0.4.0.0
 pattern DivAp1 :: Invariant f => (b -> c -> a) -> (a -> (b, c)) -> f b -> DivAp f c -> DivAp1 f a
 pattern DivAp1 f g x xs <- (coerce splitChain1->Day x xs f g)
   where
     DivAp1 f g x xs = unsplitNE $ Day x xs f g
 {-# COMPLETE DivAp1 #-}
 
+-- | The free 'Inplicative'
 instance Invariant f => Inply (DivAp1 f) where
     gather = coerce (gather @(Chain1 Day _))
 
@@ -236,6 +242,9 @@ instance Invariant f => Inply (DivAp1 f) where
 -- *    If you have 2 components, use 'toListBy' or 'toChain'.
 -- *    If you have 3 or more components, these combinators may be useful;
 --      otherwise you'd need to manually peel off tuples one-by-one.
+--
+-- If each component is itself a @'DivAp' f@ (instead of @f@), you can use
+-- 'concatInplicative'.
 assembleDivAp
     :: NP f as
     -> DivAp f (NP I as)
@@ -244,64 +253,26 @@ assembleDivAp = \case
     x :* xs -> DivAp $ More $ Day
       x
       (unDivAp (assembleDivAp xs))
-      consNPI
-      unconsNPI
-
--- | A version of 'assembleDivAp' where each component is itself
--- a 'DivAp'.
---
--- @
--- assembleDivAp (x :* y :* z :* Nil)
---   = concatDivAp (injectChain x :* injectChain y :* injectChain z :* Nil)
--- @
-concatDivAp
-    :: NP (DivAp f) as
-    -> DivAp f (NP I as)
-concatDivAp = \case
-    Nil     -> DivAp $ Done $ Identity Nil
-    x :* xs -> coerce appendChain $ Day
-      x
-      (concatDivAp xs)
-      consNPI
-      unconsNPI
+      (\y ys -> I y :* ys)
+      (\case I y :* ys -> (y, ys))
 
 -- | A version of 'assembleDivAp' but for 'DivAp1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
 -- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.
+--
+-- If each component is itself a @'DivAp1' f@ (instead of @f@), you can use
+-- 'concatInply'.
 assembleDivAp1
     :: Invariant f
     => NP f (a ': as)
     -> DivAp1 f (NP I (a ': as))
-assembleDivAp1 = \case
-    x :* xs -> DivAp1_ $ case xs of
-      Nil    -> Done1 $ invmap ((:* Nil) . I) (unI . hd) x
-      _ :* _ -> More1 $ Day
-        x
-        (unDivAp1 (assembleDivAp1 xs))
-        consNPI
-        unconsNPI
-
--- | A version of 'concatDivAp' but for 'DivAp1' instead.  Can be
--- useful if you intend on interpreting it into something with only
--- a 'Divise' or 'Apply' instance, but no 'Divisible' or 'Applicative'.
-concatDivAp1
-    :: Invariant f
-    => NP (DivAp1 f) (a ': as)
-    -> DivAp1 f (NP I (a ': as))
-concatDivAp1 = \case
-    x :* xs -> case xs of
-      Nil    -> invmap ((:* Nil) . I) (unI . hd) x
-      _ :* _ -> coerce appendChain1 $ Day
-        x
-        (concatDivAp1 xs)
-        consNPI
-        unconsNPI
-
-unconsNPI :: NP I (a ': as) -> (a, NP I as)
-unconsNPI (I y :* ys) = (y, ys)
-
-consNPI :: a -> NP I as -> NP I (a ': as)
-consNPI y ys = I y :* ys
+assembleDivAp1 (x :* xs) = DivAp1_ $ case xs of
+    Nil    -> Done1 $ invmap ((:* Nil) . I) (unI . hd) x
+    _ :* _ -> More1 $ Day
+      x
+      (unDivAp1 (assembleDivAp1 xs))
+      (\y ys -> I y :* ys)
+      (\case I y :* ys -> (y, ys))
 
 -- | A version of 'assembleDivAp' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
@@ -317,6 +288,9 @@ consNPI y ys = I y :* ys
 --                      :& stringPrim
 --                      :& Nil
 -- @
+--
+-- If each component is itself a @'DivAp' f@ (instead of @f@), you can use
+-- 'concatDivApRec'.
 assembleDivApRec
     :: V.Rec f as
     -> DivAp f (V.XRec V.Identity as)
@@ -328,51 +302,23 @@ assembleDivApRec = \case
       (V.::&)
       unconsRec
 
--- | A version of 'concatDivAp' using 'V.XRec' from /vinyl/ instead of
--- 'NP' from /sop-core/.  This can be more convenient because it doesn't
--- require manual unwrapping/wrapping of components.
-concatDivApRec
-    :: V.Rec (DivAp f) as
-    -> DivAp f (V.XRec V.Identity as)
-concatDivApRec = \case
-    V.RNil    -> DivAp $ Done $ Identity V.RNil
-    x V.:& xs -> coerce appendChain $ Day
-      x
-      (concatDivApRec xs)
-      (V.::&)
-      unconsRec
-
 -- | A version of 'assembleDivAp1' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
 -- require manual unwrapping/wrapping of components.
+--
+-- If each component is itself a @'DivAp1' f@ (instead of @f@), you can use
+-- 'concatDivAp1Rec'.
 assembleDivAp1Rec
     :: Invariant f
     => V.Rec f (a ': as)
     -> DivAp1 f (V.XRec V.Identity (a ': as))
-assembleDivAp1Rec = \case
-    x V.:& xs -> case xs of
-      V.RNil   -> DivAp1_ $ Done1 $ invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
-      _ V.:& _ -> DivAp1_ $ More1 $ Day
-        x
-        (unDivAp1 (assembleDivAp1Rec xs))
-        (V.::&)
-        unconsRec
-
--- | A version of 'concatDivAp1' using 'V.XRec' from /vinyl/ instead of
--- 'NP' from /sop-core/.  This can be more convenient because it doesn't
--- require manual unwrapping/wrapping of components.
-concatDivAp1Rec
-    :: Invariant f
-    => V.Rec (DivAp1 f) (a ': as)
-    -> DivAp1 f (V.XRec V.Identity (a ': as))
-concatDivAp1Rec = \case
-    x V.:& xs -> case xs of
-      V.RNil   -> invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
-      _ V.:& _ -> coerce appendChain1 $ Day
-        x
-        (concatDivAp1Rec xs)
-        (V.::&)
-        unconsRec
+assembleDivAp1Rec (x V.:& xs) = case xs of
+    V.RNil   -> DivAp1_ $ Done1 $ invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
+    _ V.:& _ -> DivAp1_ $ More1 $ Day
+      x
+      (unDivAp1 (assembleDivAp1Rec xs))
+      (V.::&)
+      unconsRec
 
 unconsRec :: V.XRec V.Identity (a ': as) -> (a, V.XRec V.Identity as)
 unconsRec (y V.::& ys) = (y, ys)

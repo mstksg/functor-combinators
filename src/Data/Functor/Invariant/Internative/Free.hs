@@ -12,6 +12,8 @@
 -- Provide an invariant functor combinator choice-collector, like
 -- a combination of 'ListF' and 'Dec'.
 --
+-- This module was named 'Data.Functor.Invariant.DecAlt' before v0.4.0.0
+--
 -- @since 0.4.0.0
 module Data.Functor.Invariant.Internative.Free (
   -- * Chain
@@ -23,7 +25,6 @@ module Data.Functor.Invariant.Internative.Free (
   , decAltDec
   , foldDecAlt
   , assembleDecAlt
-  , concatDecAlt
   -- * Nonempty Chain
   , DecAlt1(.., DecAlt1)
   , runCoDecAlt1
@@ -33,7 +34,6 @@ module Data.Functor.Invariant.Internative.Free (
   , decAltDec1
   , foldDecAlt1
   , assembleDecAlt1
-  , concatDecAlt1
   ) where
 
 import           Control.Applicative.ListF
@@ -51,7 +51,6 @@ import           Data.HBifunctor.Tensor hiding             (elim1, elim2, intro1
 import           Data.HFunctor
 import           Data.HFunctor.Chain
 import           Data.HFunctor.Chain.Internal
-import           Data.HFunctor.Interpret
 import           Data.SOP hiding (hmap)
 import           Data.Void
 import qualified Control.Monad.Trans.Compose               as CT
@@ -153,7 +152,7 @@ foldDecAlt
 foldDecAlt f g = foldChain (f . refute) g . unDecAlt
 
 -- | General-purpose folder of 'DecAlt1'.  Provide a way to handle the
--- individual leaves and a way to handle a cons ('<!>'/'decide'/'swerve1').
+-- individual leaves and a way to handle a cons ('<!>'/'decide'/'swerve').
 --
 -- @since 0.3.5.0
 foldDecAlt1
@@ -203,7 +202,7 @@ instance Invariant f => Inalt (DecAlt1 f) where
     swerve = coerce (swerve @(Chain1 Night _))
 
 -- | Convenient wrapper to build up a 'DecAlt' on by providing each
--- component of it.  This makes it much easier to build up longer chains
+-- branch of it.  This makes it much easier to build up longer chains
 -- because you would only need to write the splitting/joining functions in
 -- one place.
 --
@@ -233,6 +232,9 @@ instance Invariant f => Inalt (DecAlt1 f) where
 -- *    If you have 2 components, use 'toListBy' or 'toChain'.
 -- *    If you have 3 or more components, these combinators may be useful;
 --      otherwise you'd need to manually peel off eithers one-by-one.
+--
+-- If each component is itself a @'DecAlt' f@ (instead of @f@), you can use
+-- 'concatInplus'.
 assembleDecAlt
     :: NP f as
     -> DecAlt f (NS I as)
@@ -243,66 +245,25 @@ assembleDecAlt = \case
       (unDecAlt $ assembleDecAlt xs)
       (Z . I)
       S
-      unconsNSI
-
--- | A version of 'assembleDecAlt' where each component is itself
--- a 'DecAlt'.
---
--- @
--- assembleDecAlt (x :* y :* z :* Nil)
---   = concatDecAlt (injectChain x :* injectChain y :* injectChain z :* Nil)
--- @
-concatDecAlt
-    :: NP (DecAlt f) as
-    -> DecAlt f (NS I as)
-concatDecAlt = \case
-    Nil     -> DecAlt $ Done $ Not (\case {})
-    x :* xs -> coerce appendChain $ Night
-      x
-      (unDecAlt $ concatDecAlt xs)
-      (Z . I)
-      S
-      unconsNSI
+      (\case Z (I y) -> Left y; S ys -> Right ys)
 
 -- | A version of 'assembleDecAlt' but for 'DecAlt1' instead.  Can
 -- be useful if you intend on interpreting it into something with only
 -- a 'Decide' or 'Alt' instance, but no
 -- 'Data.Functor.Contravariant.Divisible.Decidable' or 'Plus' or
 -- 'Control.Applicative.Alternative'.
+--
+-- If each component is itself a @'DecAlt1' f@ (instead of @f@), you can
+-- use 'concatInalt'.
 assembleDecAlt1
     :: Invariant f
     => NP f (a ': as)
     -> DecAlt1 f (NS I (a ': as))
-assembleDecAlt1 = \case
-    x :* xs -> DecAlt1_ $ case xs of
-      Nil    -> Done1 $ invmap (Z . I) (unI . unZ) x
-      _ :* _ -> More1 $ Night
-        x
-        (unDecAlt1 $ assembleDecAlt1 xs)
-        (Z . I)
-        S
-        unconsNSI
-
--- | A version of 'concatDecAlt' but for 'DecAlt1' instead.  Can be
--- useful if you intend on interpreting it into something with only
--- a 'Decide' or 'Alt' instance, but no
--- 'Data.Functor.Contravariant.Divisible.Decidable' or 'Plus' or
--- 'Control.Applicative.Alternative'.
-concatDecAlt1
-    :: Invariant f
-    => NP (DecAlt1 f) (a ': as)
-    -> DecAlt1 f (NS I (a ': as))
-concatDecAlt1 = \case
-    x :* xs -> case xs of
-      Nil    -> invmap (Z . I) (unI . unZ) x
-      _ :* _ -> coerce appendChain1 $ Night
-        x
-        (unDecAlt1 $ concatDecAlt1 xs)
-        (Z . I)
-        S
-        unconsNSI
-
-unconsNSI :: NS I (a ': as) -> Either a (NS I as)
-unconsNSI = \case
-  Z (I x) -> Left x
-  S xs    -> Right xs
+assembleDecAlt1 (x :* xs) = DecAlt1_ $ case xs of
+    Nil    -> Done1 $ invmap (Z . I) (unI . unZ) x
+    _ :* _ -> More1 $ Night
+      x
+      (unDecAlt1 $ assembleDecAlt1 xs)
+      (Z . I)
+      S
+      (\case Z (I y) -> Left y; S ys -> Right ys)

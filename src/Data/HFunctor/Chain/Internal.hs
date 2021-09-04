@@ -1,3 +1,4 @@
+{-# OPTIONS_HADDOCK hide, not-home #-}
 
 module Data.HFunctor.Chain.Internal (
     Chain1(..)
@@ -380,26 +381,20 @@ unconsChain = \case
 -- all @f x@s to each interpret, and then re-combined again to produce the
 -- resulting @a@.
 --
--- You run this in any 'Apply' context if you want to interpret it
--- covariantly, treating @'DivAp1' f a@ as a /producer/ of @a@, using
--- 'runCoDivAp1'.  You can run this in any 'Divise' context if you you
--- want to interpret it contravariantly, treating @'DivAp1' f a@ as
--- a /consumer/ of @a@s, using 'runContraDivAp1'.
+-- To do this, the main tools to combine 'DivAp1's are its 'Inply'
+-- instance, using 'gather' to combine two 'DivAp1's in
+-- a parallel-fork-like manner (with the splitting and re-combining
+-- function).
 --
--- Because there is no typeclass that combines both 'Apply' and
--- 'Divise', this type is a little bit tricker to construct/use than
--- 'Ap1' or 'Div1'.
+-- This does have an 'Interpret' function, but the target typeclass
+-- ('Inply') doesn't have too many useful instances.  Instead, you are
+-- probably going to run it into either 'Apply' instance (to "produce" an
+-- @a@ from a @'DivAp1' f a@) with 'runCoDivAp1', or a 'Divise' instance
+-- (to "consume" an @a@ from a @'DivAp1' f a@) with 'runContraDivAp1'.
 --
--- *  Instead of '<.>' and 'divide' (typeclass methods), use
---    'Data.Functor.Invariant.DivAp.gather1' and other variants, which work
---    specifically on this type only.
--- *  Instead of using 'interpret' (to run in a typeclass), either use
---    'runCoDivAp1' (to run in 'Apply'), 'runContraDivAp1' (to run in
---    'Divise'), or 'foldDivAp1' (to interpret by manually providing
---    handlers)
---
--- You can also extract the 'Ap1' part out using 'divApAp1', and extract the
--- 'Div1' part out using 'divApDiv1'.
+-- If you think of this type as a combination of 'Ap1' and 'Div1', then
+-- you can also extract the 'Ap1' part out using 'divApAp1', and
+-- extract the 'Div1' part out using 'divApDiv1'.
 --
 -- Note that this type's utility is similar to that of @'PreT' 'Ap1'@,
 -- except @'PreT' 'Ap1'@ lets you use 'Apply' typeclass methods to assemble
@@ -437,28 +432,22 @@ instance HTraversable1 DivAp1 where
 -- When interpreting this, each @a@ is distributed across all @f x@s to
 -- each interpret, and then re-combined again to produce the resulting @a@.
 --
--- You run this in any 'Applicative' context if you want to interpret it
--- covariantly, treating @'DivAp' f a@ as a /producer/ of @a@, using
--- 'runCoDivAp'.  You can run this in any 'Divisible' context if you you
--- want to interpret it contravariantly, treating @'DivAp' f a@ as
--- a /consumer/ of @a@s, using 'runContraDivAp'.
+-- To do this, the main tools to combine 'DivAp's are its 'Inply'
+-- instance, using 'gather' to combine two 'DivAp's in a choice-like
+-- manner (with the splitting and re-combining function), and its
+-- 'Inplicative' instance, using 'knot' to create an "empty" branch that
+-- does not contribute to the structure.
 --
--- Because there is no typeclass that combines both 'Applicative' and
--- 'Divisible', this type is a little bit tricker to construct/use than
--- 'Ap' or 'Div'.
+-- This does have an 'Interpret' function, but the target typeclass
+-- ('Inplicative') doesn't have too many useful instances.  Instead, you
+-- are probably going to run it into either 'Applicative' instance (to
+-- "produce" an @a@ from a @'DivAp' f a@) with 'runCoDivAp', or
+-- a 'Divisible' instance (to "consume" an @a@ from a @'DivAp' f a@) with
+-- 'runContraDivAp'.
 --
--- *  Instead of '<*>' and 'divide' (typeclass methods), use
---    'Data.Functor.Invariant.DivAp.gather' and other variants, which work
---    specifically on this type only.
--- *  Instead of 'pure' and 'conquer' (typeclass methods), use
---    'Data.Functor.Invariant.DivAp.Knot'.
--- *  Instead of using 'interpret' (to run in a typeclass), either use
---    'runCoDivAp' (to run in 'Applicative'), 'runContraDivAp' (to run in
---    'Divisible'), or 'foldDivAp' (to interpret by manually providing
---    handlers)
---
--- You can also extract the 'Ap' part out using 'divApAp', and extract the
--- 'Div' part out using 'divApDiv'.
+-- If you think of this type as a combination of 'Ap' and 'Div', then
+-- you can also extract the 'Ap' part out using 'divApAp', and
+-- extract the 'Div' part out using 'divApDiv'.
 --
 -- Note that this type's utility is similar to that of @'PreT' 'Ap'@,
 -- except @'PreT' 'Ap'@ lets you use 'Applicative' typeclass methods to
@@ -491,26 +480,19 @@ instance HTraversable DivAp where
 -- handle the interpreting; the @a@ is sent to that @f@, and the single
 -- result is returned back out.
 --
--- You run this in any 'Alt' context if you want to interpret it
--- covariantly, treating @'DecAlt1' f a@ as a /producer/ of @a@, using
--- 'runCoDecAlt1'.  You can run this in any 'Decide' context if you you
--- want to interpret it contravariantly, treating @'DecAlt1' f a@ as
--- a /consumer/ of @a@s, using 'runContraDecAlt1'.
+-- To do this, the main tools to combine 'DecAlt1's are its 'Inalt'
+-- instance, using 'swerve' to combine two 'DecAlt1's in a choice-like
+-- manner (with the choosing and re-injecting function).
 --
--- Because there is no typeclass that combines both 'Alt' and
--- 'Decide', this type is a little bit tricker to construct/use than
--- 'NonEmptyF' or 'Dec1'.
+-- This does have an 'Interpret' function, but the target typeclass
+-- ('Inalt') doesn't have too many useful instances.  Instead, you are
+-- probably going to run it into either an 'Alt' instance (to "produce" an
+-- @a@ from a @'DecAlt1' f a@) with 'runCoDecAlt1', or a 'Decide' instance
+-- (to "consume" an @a@ from a @'DecAlt1' f a@) with 'runContraDecAlt1'.
 --
--- *  Instead of '<!>' and 'decide' (typeclass methods), use
---    'Data.Functor.Invariant.DecAlt.swerve1' and other variants, which
---    work specifically on this type only.
--- *  Instead of using 'interpret' (to run in a typeclass), either use
---    'runCoDecAlt1' (to run in 'Alt'), 'runContraDecAlt1' (to run in
---    'Decide'), or 'foldDecAlt1' (to interpret by manually providing
---    handlers)
---
--- You can also extract the 'NonEmptyF' part out using 'decAltNonEmptyF', and
--- extract the 'Dec1' part out using 'decAltDec1'.
+-- If you think of this type as a combination of 'NonEmptyF' and 'Dec1',
+-- then you can also extract the 'NonEmptyF' part out using
+-- 'decAltNonEmptyF', and extract the 'Dec1' part out using 'decAltDec1'.
 --
 -- Note that this type's utility is similar to that of @'PostT' 'Dec1'@,
 -- except @'PostT' 'Dec1'@ lets you use 'Decide' typeclass methods to
@@ -553,27 +535,20 @@ instance Inalt f => Interpret DecAlt1 f where
 -- interpreting; the @a@ is sent to that @f@, and the single result is
 -- returned back out.
 --
--- You run this in any 'Plus' context if you want to interpret it
--- covariantly, treating @'DecAlt' f a@ as a /producer/ of @a@, using
--- 'runCoDecAlt'.  You can run this in any 'Conclude' context if you you
--- want to interpret it contravariantly, treating @'DecAlt' f a@ as
--- a /consumer/ of @a@s, using 'runContraDecAlt'.
+-- To do this, the main tools to combine 'DecAlt's are its 'Inalt'
+-- instance, using 'swerve' to combine two 'DecAlt's in a choice-like
+-- manner (with the choosing and re-injecting function), and its 'Inplus'
+-- instance, using 'reject' to create an "empty" choice that is never
+-- taken.
 --
--- Because there is no typeclass that combines both 'Plus' and
--- 'Conclude', this type is a little bit tricker to construct/use than
--- 'ListF' or 'Dec'.
+-- This does have an 'Interpret' function, but the target typeclass
+-- ('Inplus') doesn't have too many useful instances.  Instead, you are
+-- probably going to run it into either 'Plus' instance (to "produce" an
+-- @a@ from a @'DecAlt' f a@) with 'runCoDecAlt', or a 'Choose' instance
+-- (to "consume" an @a@ from a @'DecAlt' f a@) with 'runContraDecAlt'.
 --
--- *  Instead of '<!>' and 'decide' (typeclass methods), use
---    'Data.Functor.Invariant.DecAlt.swerve' and other variants, which work
---    specifically on this type only.
--- *  Instead of 'empty' and 'conclude' (typeclass methods), use
---    'Data.Functor.Invariant.DecAlt.Reject'.
--- *  Instead of using 'interpret' (to run in a typeclass), either use
---    'runCoDecAlt' (to run in 'Plus'), 'runContraDecAlt' (to run in
---    'Conclude'), or 'foldDecAlt' (to interpret by manually providing
---    handlers)
---
--- You can also extract the 'ListF' part out using 'decAltListF', and
+-- If you think of this type as a combination of 'ListF' and 'Dec', then
+-- you can also extract the 'ListF' part out using 'decAltListF', and
 -- extract the 'Dec' part out using 'decAltDec'.
 --
 -- Note that this type's utility is similar to that of @'PostT' 'Dec'@,

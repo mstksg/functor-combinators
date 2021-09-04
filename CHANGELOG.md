@@ -1,6 +1,45 @@
 Changelog
 =========
 
+Version 0.4.0.0
+---------------
+
+*September 3, 2021*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.4.0.0>
+
+*   Finally add *Data.Functor.Invariant.Inplicative* and
+    *Data.Functor.Internative*, with the typlecasses `Inply`, `Inplicative`,
+    `Inalt`, `Inplus`, and `Internative`, the invariant versions of
+    `Apply`/`Divise`, `Applicative`/`Divisible`, `Alt`/`Decide`,
+    `Plus`/`Choose`, and `Alternative`/`Decidable`.
+*   Move *Data.Functor.Invariant.DivAp* and *Data.Functor.Invariant.DecAlt* to
+    *Data.Functor.Invariant.Inplicative.Free* and
+    *Data.Functor.Invariant.Internative.Free*, respectively.
+
+    Their specialized `gather`/`knot`/`swerve`/`reject` are now a part of the
+    typeclasses.
+*   `concatDivAp` family and `concatDecAlt` family of functions generalized to
+    work for all *Inplicative* and *Inplus*, respectively, and moved to the
+    modules for their respective typeclasses as `concatInplicative`,
+    `concatInply`, `concatInplus`, and `concatInalt`.
+*   Changed the order of arguments on `gather` and `swerve` to be consistent
+    with the arguments of `invmap`, `Day`, and `Night`.
+*   Changed the order of arguments in the `Gather`, and `Swerve` patterns to
+    be more consistent with the new order of arguments for `gather`/`swerve`.
+*   Changed the order of arguments in the `DivAp1` and `DecAlt1` patterns to
+    be more consistent with the order of arguments for `Day` and `Night`.
+*   Add `runDay` and `runNight` for invariant `Day` and `Night`, using the
+    `Inply` and `Inalt` typeclasses, respectively. `runDay` is found in
+    *Data.Functor.Invariant.Inplicative*, even though it should belong in
+    *Data.Functor.Invariant.Day*, but that's in a different package.
+*   Add `dather`, `necide`, and `nerve` to invariant `Day`, contravariant
+    `Night`, invariant `Night`, in parallel to `dap` for covariant `Day`. Uses
+    the `Inply`, `Divise`, and `Inalt` typeclasses, respectively. `dather` is
+    found in *Data.Functor.Invariant.Inplicative*, even though it should
+    belong in *Data.Functor.Invariant.Day*, but that's in a different package.
+*   Add `hfor` and `hfor1` to *Data.HFunctor.HTraversable*.
+
 Version 0.3.6.0
 ---------------
 

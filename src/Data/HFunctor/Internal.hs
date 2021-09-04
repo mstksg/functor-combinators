@@ -1,4 +1,5 @@
-{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DerivingVia           #-}
+{-# OPTIONS_HADDOCK hide, not-home #-}
 
 module Data.HFunctor.Internal (
     HFunctor(..)
