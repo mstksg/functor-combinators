@@ -18,36 +18,36 @@
 -- @since 0.3.0.0
 module Data.Functor.Contravariant.Divise (
     Divise(..)
-  , divised
   , (<:>)
   , dsum1
   , WrappedDivisible(..)
   ) where
 
-import Control.Applicative
-import Control.Applicative.Backwards
-import Control.Arrow
-import Control.Monad.Trans.Error
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Maybe
-import qualified Control.Monad.Trans.RWS.Lazy as Lazy
-import qualified Control.Monad.Trans.RWS.Strict as Strict
-import Control.Monad.Trans.Reader
-import qualified Control.Monad.Trans.State.Lazy as Lazy
-import qualified Control.Monad.Trans.State.Strict as Strict
-import qualified Control.Monad.Trans.Writer.Lazy as Lazy
-import qualified Control.Monad.Trans.Writer.Strict as Strict
-import qualified Data.Semigroup.Foldable as F1
-
-import Data.Functor.Apply
-import Data.Functor.Compose
-import Data.Functor.Constant
-import Data.Functor.Contravariant
-import Data.Functor.Contravariant.Divisible
-import Data.Functor.Product
-import Data.Functor.Reverse
+import           Control.Applicative
+import           Control.Applicative.Backwards
+import           Control.Arrow
+import           Control.Monad.Trans.Error
+import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.Identity
+import           Control.Monad.Trans.List
+import           Control.Monad.Trans.Maybe
+import           Control.Monad.Trans.Reader
+import           Data.Deriving
+import           Data.Functor.Apply
+import           Data.Functor.Compose
+import           Data.Functor.Constant
+import           Data.Functor.Contravariant
+import           Data.Functor.Contravariant.Divisible
+import           Data.Functor.Invariant
+import           Data.Functor.Product
+import           Data.Functor.Reverse
+import qualified Control.Monad.Trans.RWS.Lazy         as Lazy
+import qualified Control.Monad.Trans.RWS.Strict       as Strict
+import qualified Control.Monad.Trans.State.Lazy       as Lazy
+import qualified Control.Monad.Trans.State.Strict     as Strict
+import qualified Control.Monad.Trans.Writer.Lazy      as Lazy
+import qualified Control.Monad.Trans.Writer.Strict    as Strict
+import qualified Data.Semigroup.Foldable              as F1
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Monoid (Alt(..))
@@ -98,15 +98,12 @@ class Contravariant f => Divise f where
     -- | Takes a "splitting" method and the two sub-consumers, and
     -- returns the wrapped/combined consumer.
     divise :: (a -> (b, c)) -> f b -> f c -> f a
-
--- | Combine a consumer of @a@ with a consumer of @b@ to get a consumer of
--- @(a, b)@.
---
--- @
--- 'divised' = 'divise' 'id'
--- @
-divised :: Divise f => f a -> f b -> f (a, b)
-divised = divise id
+    divise f x y = contramap f (divised x y)
+    -- | Combine a consumer of @a@ with a consumer of @b@ to get a consumer
+    -- of @(a, b)@.
+    divised :: f a -> f b -> f (a, b)
+    divised = divise id
+    {-# MINIMAL divise | divised #-}
 
 -- | The Contravariant version of '<|>': split the same input over two
 -- different consumers.
@@ -130,9 +127,16 @@ dsum1 = foldr1 (<:>) . F1.toNonEmpty
 
 -- | Wrap a 'Divisible' to be used as a member of 'Divise'
 newtype WrappedDivisible f a = WrapDivisible { unwrapDivisible :: f a }
+  deriving (Generic, Eq, Show, Ord, Read, Functor, Foldable, Traversable)
+  deriving newtype (Divisible, Contravariant)
 
-instance Contravariant f => Contravariant (WrappedDivisible f) where
-  contramap f (WrapDivisible a) = WrapDivisible (contramap f a)
+deriveShow1 ''WrappedDivisible
+deriveRead1 ''WrappedDivisible
+deriveEq1 ''WrappedDivisible
+deriveOrd1 ''WrappedDivisible
+
+instance Contravariant f => Invariant (WrappedDivisible f) where
+  invmap _ g (WrapDivisible x) = WrapDivisible (contramap g x)
 
 instance Divisible f => Divise (WrappedDivisible f) where
   divise f (WrapDivisible x) (WrapDivisible y) = WrapDivisible (divide f x y)
@@ -260,3 +264,5 @@ strictFanout f (a, s) = case f a of
 
 funzip :: Functor f => f (a, b) -> (f a, f b)
 funzip = fmap fst &&& fmap snd
+
+-- TODO: WrappedContravariant

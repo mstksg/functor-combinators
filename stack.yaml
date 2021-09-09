@@ -47,6 +47,7 @@ extra-deps:
 - tasty-hedgehog-1.0.0.2
 - hedgehog-1.0.3
 - some-1.0.1
+- semigroupoids-5.3.5
 
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi

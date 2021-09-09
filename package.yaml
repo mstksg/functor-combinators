@@ -102,6 +102,7 @@ library:
   - containers
   - contravariant
   - deriving-compat
+  - hashable
   - invariant
   - kan-extensions
   - mmorph
@@ -112,6 +113,7 @@ library:
   - sop-core
   - tagged
   - these
+  - unordered-containers
   - vinyl
 
 tests:
