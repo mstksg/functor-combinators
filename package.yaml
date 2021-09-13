@@ -96,6 +96,7 @@ library:
   - Data.HFunctor.Chain.Internal
   - Data.HBifunctor.Tensor.Internal
   dependencies:
+  - StateVar
   - assoc
   - comonad
   - constraints
