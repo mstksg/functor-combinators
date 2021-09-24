@@ -358,7 +358,7 @@ instance HFunctor (Final c) where
     hmap f x = Final $ \r -> runFinal x (r . f)
 
 instance Inject (Final c) where
-    inject x = Final ($ x)
+    inject x = Final $ \f -> f x
 
 instance c f => Interpret (Final c) f where
     retract x = runFinal x id

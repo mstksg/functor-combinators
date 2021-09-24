@@ -427,7 +427,7 @@ instance Applicative f => Interpret Ap.Ap f where
     retract   = \case
       Ap.Pure x  -> pure x
       Ap.Ap x xs -> x <**> retract xs
-    interpret = Ap.runAp
+    interpret f x = Ap.runAp f x
 
 -- | A free 'Plus'
 instance Plus f => Interpret ListF f where
@@ -491,7 +491,7 @@ instance Plus f => Interpret (These1 g) f where
 
 -- | A free 'Alternative'
 instance Alternative f => Interpret Alt.Alt f where
-    interpret = Alt.runAlt
+    interpret f x = Alt.runAlt f x
 
 instance Plus g => Interpret ((:*:) g) f where
     retract (_ :*: y) = y
@@ -528,22 +528,22 @@ instance Interpret (M1 i c) f where
 -- | A free 'Monad'
 instance Monad f => Interpret Free f where
     retract   = retractFree
-    interpret = interpretFree
+    interpret f x = interpretFree f x
 
 -- | A free 'Bind'
 instance Bind f => Interpret Free1 f where
     retract   = retractFree1
-    interpret = interpretFree1
+    interpret f x = interpretFree1 f x
 
 -- | A free 'Applicative'
 instance Applicative f => Interpret FA.Ap f where
     retract   = FA.retractAp
-    interpret = FA.runAp
+    interpret f x = FA.runAp f x
 
 -- | A free 'Applicative'
 instance Applicative f => Interpret FAF.Ap f where
     retract   = FAF.retractAp
-    interpret = FAF.runAp
+    interpret f x = FAF.runAp f x
 
 instance Interpret IdentityT f where
     retract = coerce
@@ -552,7 +552,7 @@ instance Interpret IdentityT f where
 -- | A free 'Pointed'
 instance Pointed f => Interpret Lift f where
     retract   = elimLift point id
-    interpret = elimLift point
+    interpret f x = elimLift point f x
 
 -- | A free 'Pointed'
 instance Pointed f => Interpret MaybeApply f where

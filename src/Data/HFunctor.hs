@@ -556,7 +556,7 @@ instance HBind Coyoneda where
     hbind f (Coyoneda g x) = g <$> f x
 
 instance HBind Ap where
-    hbind = runAp
+    hbind f x = runAp f x
 
 instance HBind ListF where
     hbind f = foldMap f . runListF
@@ -614,25 +614,25 @@ instance HBind (M1 i c) where
     hbind f (M1 x) = f x
 
 instance HBind Alt.Alt where
-    hbind = Alt.runAlt
+    hbind f x = Alt.runAlt f x
 
 instance HBind Free where
-    hbind = interpretFree
+    hbind f x = interpretFree f x
 
 instance HBind Free1 where
-    hbind = interpretFree1
+    hbind f x = interpretFree1 f x
 
 instance HBind FA.Ap where
-    hbind = FA.runAp
+    hbind f x = FA.runAp f x
 
 instance HBind FAF.Ap where
-    hbind = FAF.runAp
+    hbind f x = FAF.runAp f x
 
 instance HBind IdentityT where
     hbind f = f . runIdentityT
 
 instance HBind Lift where
-    hbind = elimLift point
+    hbind f x = elimLift point f x
 
 instance HBind MaybeApply where
     hbind f = either f point . runMaybeApply

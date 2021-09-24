@@ -70,7 +70,7 @@ isoF
     :: f ~> g
     -> g ~> f
     -> f <~> g
-isoF = dimap
+isoF f g a = dimap f g a
 
 -- | An isomorphism between two functors that are coercible/have the same
 -- internal representation.  Useful for newtype wrappers.
