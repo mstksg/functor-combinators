@@ -25,6 +25,8 @@ module Data.Functor.Invariant.Inplicative (
   -- * Invariant 'Day'
   , runDay
   , dather
+  , runDayApply
+  , runDayDivise
   -- * Assembling Helpers
   , concatInplicative
   , concatInply
@@ -35,14 +37,14 @@ module Data.Functor.Invariant.Inplicative (
   ) where
 
 import           Control.Applicative
-import           Control.Applicative.Backwards               (Backwards)
-import           Control.Applicative.Lift                    (Lift(Pure))
+import           Control.Applicative.Backwards               (Backwards(..))
+import           Control.Applicative.Lift                    (Lift(Pure, Other))
 import           Control.Arrow                               (Arrow)
 import           Control.Comonad                             (Cokleisli)
 import           Control.Monad.Trans.Cont                    (ContT)
 import           Control.Monad.Trans.Error                   (ErrorT(..))
 import           Control.Monad.Trans.Except                  (ExceptT(..))
-import           Control.Monad.Trans.Identity                (IdentityT)
+import           Control.Monad.Trans.Identity                (IdentityT(..))
 import           Control.Monad.Trans.List                    (ListT(..))
 import           Control.Monad.Trans.Maybe                   (MaybeT(..))
 import           Control.Monad.Trans.RWS                     (RWST(..))
@@ -63,8 +65,8 @@ import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.Functor.Invariant.Day
-import           Data.Functor.Product                        (Product)
-import           Data.Functor.Reverse                        (Reverse)
+import           Data.Functor.Product                        (Product(..))
+import           Data.Functor.Reverse                        (Reverse(..))
 import           Data.Hashable                               (Hashable)
 import           Data.Kind
 import           Data.List.NonEmpty                          (NonEmpty)
@@ -81,9 +83,12 @@ import qualified Control.Monad.Trans.Writer.Strict as Strict (WriterT(..))
 import qualified Data.Bifunctor.Join                         as BFJ
 import qualified Data.HashMap.Lazy                           as HM
 import qualified Data.IntMap                                 as IM
+import qualified Data.IntMap.NonEmpty                        as NEIM
 import qualified Data.Map                                    as M
+import qualified Data.Map.NonEmpty                           as NEM
 import qualified Data.Monoid                                 as Monoid
 import qualified Data.Semigroup                              as Semigroup
+import qualified Data.Sequence.NonEmpty                      as NESeq
 import qualified Data.Vinyl                                  as V
 import qualified Data.Vinyl.Curry                            as V
 import qualified Data.Vinyl.Functor                          as V
@@ -312,6 +317,51 @@ deriving via WrappedFunctor (StateT s m) instance (Monad m, Bind m, Invariant m)
 deriving via WrappedFunctor (Strict.StateT s m) instance (Monad m, Bind m, Invariant m) => Inply (Strict.StateT s m)
 deriving via WrappedFunctor (Strict.StateT s m) instance (Monad m, Bind m, Invariant m) => Inplicative (Strict.StateT s m)
 
+instance Inply f => Inply (Generics.M1 i t f :: Type -> Type) where
+    gather f g (Generics.M1 x) (Generics.M1 y) = Generics.M1 (gather f g x y)
+instance Inplicative f => Inplicative (Generics.M1 i t f :: Type -> Type) where
+    knot = Generics.M1 . knot
+instance (Inply f, Inply g) => Inply (f Generics.:*: g) where
+    gather f g (x1 Generics.:*: y1) (x2 Generics.:*: y2) =
+        gather f g x1 x2 Generics.:*: gather f g y1 y2
+instance (Inplicative f, Inplicative g) => Inplicative (f Generics.:*: g) where
+    knot x = knot x Generics.:*: knot x
+instance (Inply f, Inply g) => Inply (Product f g) where
+    gather f g (Pair x1 y1) (Pair x2 y2) =
+      gather f g x1 x2 `Pair` gather f g y1 y2
+instance (Inplicative f, Inplicative g) => Inplicative (Product f g) where
+    knot x = knot x `Pair` knot x
+instance Inply f => Inply (Generics.Rec1 f :: Type -> Type) where
+    gather f g (Generics.Rec1 x) (Generics.Rec1 y) = Generics.Rec1 (gather f g x y)
+instance Inplicative f => Inplicative (Generics.Rec1 f :: Type -> Type) where
+    knot = Generics.Rec1 . knot
+instance Inply f => Inply (Monoid.Alt f) where
+    gather f g (Monoid.Alt x) (Monoid.Alt y) = Monoid.Alt (gather f g x y)
+instance Inplicative f => Inplicative (Monoid.Alt f) where
+    knot = Monoid.Alt . knot
+instance Inply f => Inply (IdentityT f :: Type -> Type) where
+    gather f g (IdentityT x) (IdentityT y) = IdentityT (gather f g x y)
+instance Inplicative f => Inplicative (IdentityT f :: Type -> Type) where
+    knot = IdentityT . knot
+instance Inply f => Inply (Reverse f :: Type -> Type) where
+    gather f g (Reverse x) (Reverse y) = Reverse (gather f g x y)
+instance Inplicative f => Inplicative (Reverse f :: Type -> Type) where
+    knot = Reverse . knot
+instance Inply f => Inply (Backwards f :: Type -> Type) where
+    gather f g (Backwards x) (Backwards y) = Backwards (gather f g x y)
+instance Inplicative f => Inplicative (Backwards f :: Type -> Type) where
+    knot = Backwards . knot
+instance Inply f => Inply (Lift f) where
+    gather f g = \case
+      Pure  x -> \case
+        Pure  y -> Pure (f x y)
+        Other y -> Other (invmap (f x) (snd . g) y)
+      Other x -> \case
+        Pure  y -> Other (invmap (`f` y) (fst . g) x)
+        Other y -> Other (gather f g x y)
+instance Inply f => Inplicative (Lift f) where
+    knot = Pure
+
 deriving via WrappedApplicativeOnly (Tagged a) instance Inply (Tagged a)
 deriving via WrappedApplicativeOnly (Tagged a) instance Inplicative (Tagged a)
 
@@ -335,12 +385,6 @@ deriving via WrappedFunctor (Generics.U1 :: Type -> Type) instance Inply Generic
 deriving via WrappedFunctor (Generics.U1 :: Type -> Type) instance Inplicative Generics.U1
 deriving via WrappedFunctor (Generics.K1 i c :: Type -> Type) instance Semigroup c => Inply (Generics.K1 i c)
 deriving via WrappedFunctor (Generics.K1 i c :: Type -> Type) instance Monoid c => Inplicative (Generics.K1 i c)
-deriving via WrappedFunctor (Generics.M1 i t f :: Type -> Type) instance (Apply f, Invariant f) => Inply (Generics.M1 i t f)
-deriving via WrappedFunctor (Generics.M1 i t f :: Type -> Type) instance (Applicative f, Apply f, Invariant f) => Inplicative (Generics.M1 i t f)
-deriving via WrappedFunctor ((f Generics.:*: g) :: Type -> Type) instance (Apply f, Apply g, Invariant f, Invariant g) => Inply (f Generics.:*: g)
-deriving via WrappedFunctor ((f Generics.:*: g) :: Type -> Type) instance (Applicative f, Applicative g, Apply f, Apply g, Invariant f, Invariant g) => Inplicative (f Generics.:*: g)
-deriving via WrappedFunctor (Product f g :: Type -> Type) instance (Apply f, Apply g, Invariant f, Invariant g) => Inply (Product f g)
-deriving via WrappedFunctor (Product f g :: Type -> Type) instance (Applicative f, Applicative g, Apply f, Apply g, Invariant f, Invariant g) => Inplicative (Product f g)
 deriving via WrappedFunctor Complex instance Inply Complex
 deriving via WrappedFunctor Complex instance Inplicative Complex
 deriving via WrappedFunctor Semigroup.Min instance Inply Semigroup.Min
@@ -371,6 +415,7 @@ deriving via WrappedFunctor Tree instance Inply Tree
 deriving via WrappedFunctor Tree instance Inplicative Tree
 deriving via WrappedFunctor Seq instance Inply Seq
 deriving via WrappedFunctor Seq instance Inplicative Seq
+deriving via WrappedFunctor NESeq.NESeq instance Inply NESeq.NESeq
 deriving via WrappedFunctor (WrappedArrow a b) instance Arrow a => Inply (WrappedArrow a b)
 deriving via WrappedFunctor (WrappedArrow a b) instance Arrow a => Inplicative (WrappedArrow a b)
 deriving via WrappedFunctor (Generics.V1 :: Type -> Type) instance Inply Generics.V1
@@ -385,23 +430,9 @@ deriving via WrappedFunctor (ContT r (m :: Type -> Type)) instance Inply (ContT 
 deriving via WrappedFunctor (ContT r (m :: Type -> Type)) instance Inplicative (ContT r m)
 deriving via WrappedFunctor (WrappedMonad m) instance Monad m => Inply (WrappedMonad m)
 deriving via WrappedFunctor (WrappedMonad m) instance Monad m => Inplicative (WrappedMonad m)
-deriving via WrappedFunctor (Generics.Rec1 f :: Type -> Type) instance (Apply f, Invariant f) => Inply (Generics.Rec1 f)
-deriving via WrappedFunctor (Generics.Rec1 f :: Type -> Type) instance (Applicative f, Apply f, Invariant f) => Inplicative (Generics.Rec1 f)
-deriving via WrappedFunctor (Monoid.Alt f :: Type -> Type) instance (Apply f, Invariant f) => Inply (Monoid.Alt f)
-deriving via WrappedFunctor (Monoid.Alt f :: Type -> Type) instance (Applicative f, Apply f, Invariant f) => Inplicative (Monoid.Alt f)
-deriving via WrappedFunctor (BFJ.Join p :: Type -> Type) instance (Biapply p, Invariant2 p) => Inply (BFJ.Join p)
-deriving via WrappedFunctor (BFJ.Join p :: Type -> Type) instance (Biapplicative p, Biapply p, Invariant2 p) => Inplicative (BFJ.Join p)
-deriving via WrappedFunctor (IdentityT f :: Type -> Type) instance (Apply f, Invariant f) => Inply (IdentityT f)
-deriving via WrappedFunctor (IdentityT f :: Type -> Type) instance (Applicative f, Apply f, Invariant f) => Inplicative (IdentityT f)
-deriving via WrappedFunctor (Reverse f :: Type -> Type) instance (Apply f, Invariant f) => Inply (Reverse f)
-deriving via WrappedFunctor (Reverse f :: Type -> Type) instance (Applicative f, Apply f, Invariant f) => Inplicative (Reverse f)
-deriving via WrappedFunctor (Backwards f :: Type -> Type) instance (Apply f, Invariant f) => Inply (Backwards f)
-deriving via WrappedFunctor (Backwards f :: Type -> Type) instance (Applicative f, Apply f, Invariant f) => Inplicative (Backwards f)
 deriving via WrappedFunctor ((,) w :: Type -> Type) instance Semigroup w => Inply ((,) w)
 deriving via WrappedFunctor ((,) w :: Type -> Type) instance Monoid w => Inplicative ((,) w)
 
-deriving via WrappedFunctor (Lift f) instance (Invariant f, Apply f) => Inply (Lift f)
-instance (Invariant f, Apply f) => Inplicative (Lift f) where knot x = Pure x
 
 deriving via WrappedDivisible SettableStateVar instance Inply SettableStateVar
 deriving via WrappedDivisible SettableStateVar instance Inplicative SettableStateVar
@@ -601,4 +632,34 @@ swerveN1
 swerveN1 f g = V.rcurry @(a ': as) @f $
     invmap (V.runcurry' f . V.fromXRec) g
   . concatInplyRec
+
+-- | Interpret out of a contravariant 'Day' into any instance of 'Apply' by
+-- providing two interpreting functions.
+--
+-- In theory, this should not need to exist, since you should always be
+-- able to use 'runDay' because every instance of 'Apply' is also an
+-- instance of 'Inply'.  However, this can be handy if you are using an
+-- instance of 'Apply' that has no 'Inply' instance.  Consider also
+-- 'unsafeInplyCo' if you are using a specific, concrete type for @h@.
+runDayApply
+    :: forall f g h. Apply h
+    => f ~> h
+    -> g ~> h
+    -> Day f g ~> h
+runDayApply f g (Day x y j _) = liftF2 j (f x) (g y)
+
+-- | Interpret out of a contravariant 'Day' into any instance of 'Divise'
+-- by providing two interpreting functions.
+--
+-- In theory, this should not need to exist, since you should always be
+-- able to use 'runDay' because every instance of 'Divise' is also an
+-- instance of 'Inply'.  However, this can be handy if you are using an
+-- instance of 'Divise' that has no 'Inply' instance.  Consider also
+-- 'unsafeInplyContra' if you are using a specific, concrete type for @h@.
+runDayDivise
+    :: forall f g h. Divise h
+    => f ~> h
+    -> g ~> h
+    -> Day f g ~> h
+runDayDivise f g (Day x y _ h) = divise h (f x) (g y)
 

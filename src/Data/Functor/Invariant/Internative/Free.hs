@@ -58,16 +58,26 @@ import qualified Data.Functor.Coyoneda                     as CY
 import qualified Data.List.NonEmpty                        as NE
 
 
--- | In the covariant direction, we can interpret out of a 'Chain1' of 'Night'
--- into any 'Alt'.
+-- | In the covariant direction, we can interpret into any 'Alt'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Alt' is also an instance
+-- of 'Inalt'.  However, this can be handy if you are using an instance of
+-- 'Alt' that has no 'Inalt' instance.  Consider also 'unsafeInaltCo' if
+-- you are using a specific, concrete type for @g@.
 runCoDecAlt1
     :: forall f g. Alt g
     => f ~> g
     -> DecAlt1 f ~> g
 runCoDecAlt1 f = foldDecAlt1 f (runNightAlt f id)
 
--- | In the contravariant direction, we can interpret out of a 'Chain1' of
--- 'Night' into any 'Decide'.
+-- | In the contravariant direction, we can interpret into any 'Decide'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Decide' is also an instance
+-- of 'Inalt'.  However, this can be handy if you are using an instance of
+-- 'Decide' that has no 'Inalt' instance.  Consider also
+-- 'unsafeInaltContra' if you are using a specific, concrete type for @g@.
 runContraDecAlt1
     :: forall f g. Decide g
     => f ~> g
@@ -84,16 +94,26 @@ decAltDec = runContraDecAlt inject
 decAltDec1 :: DecAlt1 f ~> Dec1 f
 decAltDec1 = runContraDecAlt1 inject
 
--- | In the covariant direction, we can interpret out of a 'Chain' of 'Night'
--- into any 'Plus'.
+-- | In the covariant direction, we can interpret into any 'Plus'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Plus' is also an instance
+-- of 'Inplus'.  However, this can be handy if you are using an instance of
+-- 'Plus' that has no 'Inplus' instance.  Consider also 'unsafeInplusCo' if
+-- you are using a specific, concrete type for @g@.
 runCoDecAlt
     :: forall f g. Plus g
     => f ~> g
     -> DecAlt f ~> g
 runCoDecAlt f = foldDecAlt (const zero) (runNightAlt f id)
 
--- | In the contravariant direction, we can interpret out of a 'Chain' of
--- 'Night' into any 'Conclude'.
+-- | In the contravariant direction, we can interpret into any 'Decide'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Conclude' is also an
+-- instance of 'Inplus'.  However, this can be handy if you are using an
+-- instance of 'Conclude' that has no 'Inplus' instance.  Consider also
+-- 'unsafeInplusContra' if you are using a specific, concrete type for @g@.
 runContraDecAlt
     :: forall f g. Conclude g
     => f ~> g

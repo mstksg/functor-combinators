@@ -48,6 +48,7 @@ extra-deps:
 - hedgehog-1.0.3
 - some-1.0.1
 - semigroupoids-5.3.5
+- nonempty-containers-0.3.4.4
 
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi

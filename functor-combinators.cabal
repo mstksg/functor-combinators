@@ -1,11 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: c98f05061d45352f630dd964c7671a2a414e5708a12f8f4f8a39d61b986f6f5d
 
 name:           functor-combinators
-version:        0.3.6.0
+version:        0.4.0.0
 synopsis:       Tools for functor combinator-based program design
 description:    Tools for working with /functor combinators/: types that take functors (or
                 other indexed types) and returns a new functor that "enhances" or "mixes"
@@ -33,9 +35,8 @@ maintainer:     justin@jle.im
 copyright:      (c) Justin Le 2019
 license:        BSD3
 license-file:   LICENSE
+tested-with:    GHC >= 8.6
 build-type:     Simple
-tested-with:
-    GHC >= 8.6
 extra-source-files:
     README.md
     CHANGELOG.md
@@ -58,8 +59,10 @@ library
       Data.Functor.Contravariant.Divise
       Data.Functor.Contravariant.Divisible.Free
       Data.Functor.Contravariant.Night
-      Data.Functor.Invariant.DecAlt
-      Data.Functor.Invariant.DivAp
+      Data.Functor.Invariant.Inplicative
+      Data.Functor.Invariant.Inplicative.Free
+      Data.Functor.Invariant.Internative
+      Data.Functor.Invariant.Internative.Free
       Data.Functor.Invariant.Night
       Data.HBifunctor
       Data.HBifunctor.Associative
@@ -76,47 +79,11 @@ library
       Data.HBifunctor.Tensor.Internal
   hs-source-dirs:
       src
-  default-extensions:
-      AllowAmbiguousTypes
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveTraversable
-      DerivingStrategies
-      EmptyCase
-      ExistentialQuantification
-      ExplicitNamespaces
-      FlexibleContexts
-      FlexibleInstances
-      FunctionalDependencies
-      GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      MultiParamTypeClasses
-      OverloadedStrings
-      PatternSynonyms
-      QuantifiedConstraints
-      RankNTypes
-      ScopedTypeVariables
-      StandaloneDeriving
-      TemplateHaskell
-      TupleSections
-      TypeApplications
-      TypeFamilies
-      TypeInType
-      TypeOperators
-      UndecidableInstances
-      UndecidableSuperClasses
-      ViewPatterns
+  default-extensions: AllowAmbiguousTypes ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies EmptyCase ExistentialQuantification ExplicitNamespaces FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses OverloadedStrings PatternSynonyms QuantifiedConstraints RankNTypes ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeInType TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
   ghc-options: -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns
   build-depends:
-      assoc
+      StateVar
+    , assoc
     , base >=4.12 && <5
     , bifunctors
     , comonad
@@ -125,12 +92,13 @@ library
     , contravariant
     , deriving-compat
     , free
+    , hashable
     , invariant
     , kan-extensions
     , mmorph
     , mtl
     , natural-transformation
-    , nonempty-containers
+    , nonempty-containers >=0.3.4.4
     , pointed
     , profunctors
     , semigroupoids
@@ -139,6 +107,7 @@ library
     , these
     , transformers
     , trivial-constraint >=0.5
+    , unordered-containers
     , vinyl
   default-language: Haskell2010
 
@@ -152,44 +121,7 @@ test-suite functor-combinators-test
       Paths_functor_combinators
   hs-source-dirs:
       test
-  default-extensions:
-      AllowAmbiguousTypes
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveTraversable
-      DerivingStrategies
-      EmptyCase
-      ExistentialQuantification
-      ExplicitNamespaces
-      FlexibleContexts
-      FlexibleInstances
-      FunctionalDependencies
-      GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      MultiParamTypeClasses
-      OverloadedStrings
-      PatternSynonyms
-      QuantifiedConstraints
-      RankNTypes
-      ScopedTypeVariables
-      StandaloneDeriving
-      TemplateHaskell
-      TupleSections
-      TypeApplications
-      TypeFamilies
-      TypeInType
-      TypeOperators
-      UndecidableInstances
-      UndecidableSuperClasses
-      ViewPatterns
+  default-extensions: AllowAmbiguousTypes ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies EmptyCase ExistentialQuantification ExplicitNamespaces FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses OverloadedStrings PatternSynonyms QuantifiedConstraints RankNTypes ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies TypeInType TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
   ghc-options: -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
@@ -198,7 +130,7 @@ test-suite functor-combinators-test
     , free
     , functor-combinators
     , hedgehog >=0.6
-    , nonempty-containers
+    , nonempty-containers >=0.3.4.4
     , semigroupoids
     , tasty
     , tasty-hedgehog

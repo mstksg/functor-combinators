@@ -67,6 +67,13 @@ packages:
       sha256: c486e6cddb9c3c2ce6ba074a3e95dd5511eb85b95d702ee3f3cb7e013943ea95
   original:
     hackage: semigroupoids-5.3.5
+- completed:
+    hackage: nonempty-containers-0.3.4.4@sha256:a39a1373560ce7e8ed448712bf157d0be671045bdc18ed7c9edc4ea7df43dbf2,2705
+    pantry-tree:
+      size: 1480
+      sha256: bf30d8ae66f36d109cad6853f2e91693ba6b38253010cb83d35fe87c118ad500
+  original:
+    hackage: nonempty-containers-0.3.4.4
 snapshots:
 - completed:
     size: 532379

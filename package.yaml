@@ -84,7 +84,7 @@ dependencies:
 - base >= 4.12 && < 5
 - bifunctors
 - free
-- nonempty-containers
+- nonempty-containers >= 0.3.4.4
 - semigroupoids
 - transformers
 - trivial-constraint >= 0.5

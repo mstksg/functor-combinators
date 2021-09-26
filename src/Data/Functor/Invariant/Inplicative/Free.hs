@@ -34,9 +34,6 @@ module Data.Functor.Invariant.Inplicative.Free (
   , foldDivAp1
   , assembleDivAp1
   , assembleDivAp1Rec
-  -- * Day Utility
-  , runDayApply
-  , runDayDivise
   ) where
 
 import           Control.Applicative
@@ -62,52 +59,54 @@ import           Data.SOP hiding                           (hmap)
 import qualified Data.Vinyl                                as V
 import qualified Data.Vinyl.Functor                        as V
 
--- | Interpret the covariant part of a 'Day' into a target context @h@,
--- as long as the context is an instance of 'Apply'.  The 'Apply' is used to
--- combine results back together using '<*>'.
-runDayApply
-    :: forall f g h. Apply h
-    => f ~> h
-    -> g ~> h
-    -> Day f g ~> h
-runDayApply f g (Day x y j _) = liftF2 j (f x) (g y)
-
--- | Interpret the contravariant part of a 'Day' into a target context
--- @h@, as long as the context is an instance of 'Divise'.  The 'Divise' is
--- used to split up the input to pass to each of the actions.
-runDayDivise
-    :: forall f g h. Divise h
-    => f ~> h
-    -> g ~> h
-    -> Day f g ~> h
-runDayDivise f g (Day x y _ h) = divise h (f x) (g y)
-
--- | In the covariant direction, we can interpret out of a 'Chain1' of 'Day'
--- into any 'Apply'.
+-- | In the covariant direction, we can interpret into any 'Apply'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Apply' is also an instance
+-- of 'Inply'.  However, this can be handy if you are using an instance of
+-- 'Apply' that has no 'Inply' instance.  Consider also 'unsafeInplyCo' if
+-- you are using a specific, concrete type for @g@.
 runCoDivAp1
     :: forall f g. Apply g
     => f ~> g
     -> DivAp1 f ~> g
 runCoDivAp1 f = foldDivAp1 f (runDayApply f id)
 
--- | In the contravariant direction, we can interpret out of a 'Chain1' of
--- 'Day' into any 'Divise'.
+-- | In the contravariant direction, we can interpret into any 'Divise'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Divise' is also an instance
+-- of 'Inply'.  However, this can be handy if you are using an instance of
+-- 'Divise' that has no 'Inply' instance.  Consider also
+-- 'unsafeInplyContra' if you are using a specific, concrete type for @g@.
 runContraDivAp1
     :: forall f g. Divise g
     => f ~> g
     -> DivAp1 f ~> g
 runContraDivAp1 f = foldDivAp1 f (runDayDivise f id)
 
--- | In the covariant direction, we can interpret out of a 'Chain' of 'Day'
--- into any 'Applicative'.
+-- | In the covariant direction, we can interpret into any 'Applicative'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Applicative' is also an
+-- instance of 'Inplicative'.  However, this can be handy if you are using
+-- an instance of 'Applicative' that has no 'Inplicative' instance.
+-- Consider also 'unsafeInplicativeCo' if you are using a specific,
+-- concrete type for @g@.
 runCoDivAp
     :: forall f g. Applicative g
     => f ~> g
     -> DivAp f ~> g
 runCoDivAp f = foldDivAp pure (\case Day x y h _ -> liftA2 h (f x) y)
 
--- | In the contravariant direction, we can interpret out of a 'Chain' of
--- 'Day' into any 'Divisible'.
+-- | In the covariant direction, we can interpret into any 'Divisible'.
+--
+-- In theory, this shouldn't never be necessary, because you should just be
+-- able to use 'interpret', since any instance of 'Divisible' is also an
+-- instance of 'Inplicative'.  However, this can be handy if you are using
+-- an instance of 'Divisible' that has no 'Inplicative' instance.  Consider
+-- also 'unsafeInplicativeContra' if you are using a specific, concrete
+-- type for @g@.
 runContraDivAp
     :: forall f g. Divisible g
     => f ~> g
