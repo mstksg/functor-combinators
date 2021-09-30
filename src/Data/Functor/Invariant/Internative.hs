@@ -20,13 +20,15 @@ module Data.Functor.Invariant.Internative (
   , Inplus(..)
   , Internative
   -- * Assembling Helpers
-  , concatInplus
-  , concatInalt
+  , swervedN
+  , swervedNMap
+  , swervedN1
+  , swervedN1Map
   ) where
 
 import           Control.Applicative
 import           Control.Applicative.Backwards        (Backwards(..))
-import           Control.Arrow                        (Arrow, ArrowPlus)
+import           Control.Arrow                        (ArrowPlus)
 import           Control.Monad
 import           Control.Monad.Trans.Identity         (IdentityT(..))
 import           Data.Functor.Alt
@@ -35,7 +37,6 @@ import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
 import           Data.Functor.Contravariant.Divisible
-import           Data.Functor.Identity
 import           Data.Functor.Invariant
 import           Data.Functor.Invariant.Inplicative
 import           Data.Functor.Plus
@@ -171,112 +172,191 @@ instance (Decidable f, Invariant f) => Inplus (WrappedDivisibleOnly f) where
     reject f = WrapDivisibleOnly (lose f)
 instance (Decidable f, Invariant f) => Internative (WrappedDivisibleOnly f)
 
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Proxy :: Type -> Type) instance Inalt Proxy
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Proxy :: Type -> Type) instance Inplus Proxy
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Proxy :: Type -> Type) instance Internative Proxy
+-- | @since 0.4.1.0
 deriving via WrappedFunctor [] instance Inalt []
+-- | @since 0.4.1.0
 deriving via WrappedFunctor [] instance Inplus []
+-- | @since 0.4.1.0
 deriving via WrappedFunctor [] instance Internative []
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Maybe instance Inalt Maybe
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Maybe instance Inplus Maybe
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Maybe instance Internative Maybe
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Either e) instance Inalt (Either e)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor IO instance Inalt IO
+-- | @since 0.4.1.0
 deriving via WrappedFunctor IO instance Inplus IO
+-- | @since 0.4.1.0
 deriving via WrappedFunctor IO instance Internative IO
 
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Generics.U1 :: Type -> Type) instance Inalt Generics.U1
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Generics.U1 :: Type -> Type) instance Inplus Generics.U1
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Generics.U1 :: Type -> Type) instance Internative Generics.U1
 
+-- | @since 0.4.1.0
 instance Inalt f => Inalt (Generics.M1 i t f) where
     swerve f g h (Generics.M1 x) (Generics.M1 y) = Generics.M1 (swerve f g h x y)
+-- | @since 0.4.1.0
 instance Inplus f => Inplus (Generics.M1 i t f) where
     reject = Generics.M1 . reject
+-- | @since 0.4.1.0
 instance Internative f => Internative (Generics.M1 i t f)
 
+-- | @since 0.4.1.0
 instance (Inalt f, Inalt g) => Inalt (f Generics.:*: g) where
     swerve f g h (x1 Generics.:*: y1) (x2 Generics.:*: y2) =
         swerve f g h x1 x2 Generics.:*: swerve f g h y1 y2
+-- | @since 0.4.1.0
 instance (Inplus f, Inplus g) => Inplus (f Generics.:*: g) where
     reject f = reject f Generics.:*: reject f
+-- | @since 0.4.1.0
 instance (Internative f, Internative g) => Internative (f Generics.:*: g)
 
+-- | @since 0.4.1.0
 instance (Inalt f, Inalt g) => Inalt (Product f g) where
     swerve f g h (Pair x1 y1) (Pair x2 y2) =
         swerve f g h x1 x2 `Pair` swerve f g h y1 y2
+-- | @since 0.4.1.0
 instance (Inplus f, Inplus g) => Inplus (Product f g) where
     reject f = reject f `Pair` reject f
+-- | @since 0.4.1.0
 instance (Internative f, Internative g) => Internative (Product f g)
 
+-- | @since 0.4.1.0
 instance Inalt f => Inalt (Generics.Rec1 f) where
     swerve f g h (Generics.Rec1 x) (Generics.Rec1 y) = Generics.Rec1 (swerve f g h x y)
+-- | @since 0.4.1.0
 instance Inplus f => Inplus (Generics.Rec1 f) where
     reject = Generics.Rec1 . reject
+-- | @since 0.4.1.0
 instance Internative f => Internative (Generics.Rec1 f)
 
+-- | @since 0.4.1.0
 instance Inalt f => Inalt (IdentityT f) where
     swerve f g h (IdentityT x) (IdentityT y) = IdentityT (swerve f g h x y)
+-- | @since 0.4.1.0
 instance Inplus f => Inplus (IdentityT f) where
     reject = IdentityT . reject
+-- | @since 0.4.1.0
 instance Internative f => Internative (IdentityT f) where
 
+-- | @since 0.4.1.0
 instance Inalt f => Inalt (Reverse f) where
     swerve f g h (Reverse x) (Reverse y) = Reverse (swerve f g h x y)
+-- | @since 0.4.1.0
 instance Inplus f => Inplus (Reverse f) where
     reject = Reverse . reject
+-- | @since 0.4.1.0
 instance Internative f => Internative (Reverse f) where
 
+-- | @since 0.4.1.0
 instance Inalt f => Inalt (Backwards f) where
     swerve f g h (Backwards x) (Backwards y) = Backwards (swerve f g h x y)
+-- | @since 0.4.1.0
 instance Inplus f => Inplus (Backwards f) where
     reject = Backwards . reject
+-- | @since 0.4.1.0
 instance Internative f => Internative (Backwards f) where
 
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.First instance Inalt Semigroup.First
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Last instance Inalt Semigroup.Last
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Inalt Semigroup.Option
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Inplus Semigroup.Option
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Internative Semigroup.Option
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Monoid.First instance Inalt Monoid.First
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Monoid.First instance Inplus Monoid.First
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Monoid.First instance Internative Monoid.First
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Monoid.Last instance Inalt Monoid.Last
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Monoid.Last instance Inplus Monoid.Last
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Monoid.Last instance Internative Monoid.Last
+-- | @since 0.4.1.0
 deriving via WrappedFunctor NonEmpty instance Inalt NonEmpty
--- TODO: we need nonempty seq and etc. instances
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Seq instance Inalt Seq
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Seq instance Inplus Seq
+-- | @since 0.4.1.0
 deriving via WrappedFunctor Seq instance Internative Seq
+-- | @since 0.4.1.0
 deriving via WrappedFunctor NESeq.NESeq instance Inalt NESeq.NESeq
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (WrappedArrow a b) instance ArrowPlus a => Inalt (WrappedArrow a b)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (WrappedArrow a b) instance ArrowPlus a => Inplus (WrappedArrow a b)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (WrappedArrow a b) instance ArrowPlus a => Internative (WrappedArrow a b)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (Generics.V1 :: Type -> Type) instance Inalt Generics.V1
+-- | @since 0.4.1.0
 deriving via WrappedFunctor IM.IntMap instance Inalt IM.IntMap
+-- | @since 0.4.1.0
 deriving via WrappedFunctor NEIM.NEIntMap instance Inalt NEIM.NEIntMap
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (M.Map k) instance Ord k => Inalt (M.Map k)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (NEM.NEMap k) instance Ord k => Inalt (NEM.NEMap k)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (HM.HashMap k) instance (Hashable k, Eq k) => Inalt (HM.HashMap k)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (WrappedMonad m) instance MonadPlus m => Inalt (WrappedMonad m)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (WrappedMonad m) instance MonadPlus m => Inplus (WrappedMonad m)
+-- | @since 0.4.1.0
 deriving via WrappedFunctor (WrappedMonad m) instance MonadPlus m => Internative (WrappedMonad m)
 
+-- | @since 0.4.1.0
 deriving via WrappedDivisible SettableStateVar instance Inalt SettableStateVar
+-- | @since 0.4.1.0
 deriving via WrappedDivisible SettableStateVar instance Inplus SettableStateVar
+-- | @since 0.4.1.0
 deriving via WrappedDivisible SettableStateVar instance Internative SettableStateVar
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Predicate instance Inalt Predicate
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Predicate instance Inplus Predicate
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Predicate instance Internative Predicate
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Comparison instance Inalt Comparison
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Comparison instance Inplus Comparison
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Comparison instance Internative Comparison
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Equivalence instance Inalt Equivalence
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Equivalence instance Inplus Equivalence
+-- | @since 0.4.1.0
 deriving via WrappedDivisible Equivalence instance Internative Equivalence
+-- | @since 0.4.1.0
 deriving via WrappedDivisible (Op r) instance Inalt (Op r)
+-- | @since 0.4.1.0
 deriving via WrappedDivisible (Op r) instance Inplus (Op r)
+-- | @since 0.4.1.0
 deriving via WrappedDivisible (Op r) instance Monoid r => Internative (Op r)
 
 
@@ -300,7 +380,7 @@ deriving via WrappedDivisible (Op r) instance Monoid r => Internative (Op r)
 -- @
 -- invmap (\case MTI x -> Z (I x); MTB y -> S (Z (I y)); MTS z -> S (S (Z (I z))))
 --        (\case Z (I x) -> MTI x; S (Z (I y)) -> MTB y; S (S (Z (I z))) -> MTS z) $
---   concatInplus $ intPrim
+--   swervedN $ intPrim
 --               :* boolPrim
 --               :* stringPrim
 --               :* Nil
@@ -313,32 +393,91 @@ deriving via WrappedDivisible (Op r) instance Monoid r => Internative (Op r)
 -- *    If you have 2 components, use 'swerve' directly.
 -- *    If you have 3 or more components, these combinators may be useful;
 --      otherwise you'd need to manually peel off eithers one-by-one.
-concatInplus
+--
+-- @since 0.4.1.0
+swervedN
     :: Inplus f
     => NP f as
     -> f (NS I as)
-concatInplus = \case
+swervedN = \case
     Nil     -> reject $ \case {}
     x :* xs -> swerve
       (Z . I)
       S
       (\case Z (I y) -> Left y; S ys -> Right ys)
       x
-      (concatInplus xs)
+      (swervedN xs)
 
--- | A version of 'concatInplus' for non-empty 'NP', but only
+-- | Given a function to "discern out" a data type into possible 'NS'
+-- (multi-way Either) branches and one to re-assemble each brann, 'swerve'
+-- all of the components together.
+--
+-- For example, if you had a data type
+--
+-- @
+-- data MyType = MTI Int | MTB Bool | MTS String
+-- @
+--
+-- and an invariant functor and 'Inplus' instance @Prim@ (representing, say,
+-- a bidirectional parser, where @Prim Int@ is a bidirectional parser for
+-- an 'Int'@), then you could assemble a bidirectional parser for
+-- a @MyType@ using:
+--
+-- @
+-- swervedNMap
+--      (\case MTI x -> Z (I x); MTB y -> S (Z (I y)); MTS z -> S (S (Z (I z))))
+--      (\case Z (I x) -> MTI x; S (Z (I y)) -> MTB y; S (S (Z (I z))) -> MTS z) $
+--      $ intPrim
+--     :* boolPrim
+--     :* stringPrim
+--     :* Nil
+-- @
+--
+-- Some notes on usefulness depending on how many components you have:
+--
+-- *    If you have 0 components, use 'reject' directly.
+-- *    If you have 1 component, you don't need anything.
+-- *    If you have 2 components, use 'swerve' directly.
+-- *    If you have 3 or more components, these combinators may be useful;
+--      otherwise you'd need to manually peel off eithers one-by-one.
+--
+-- See notes on 'swervedNMap' for more details and caveats.
+--
+-- @since 0.4.1.0
+swervedNMap
+    :: Inplus f
+    => (NS I as -> b)
+    -> (b -> NS I as)
+    -> NP f as
+    -> f b
+swervedNMap f g = invmap f g . swervedN
+
+-- | A version of 'swervedN' for non-empty 'NP', but only
 -- requiring an 'Inalt' instance.
 --
--- @since 0.4.0.0
-concatInalt
+-- @since 0.4.1.0
+swervedN1
     :: Inalt f
     => NP f (a ': as)
     -> f (NS I (a ': as))
-concatInalt (x :* xs) = case xs of
+swervedN1 (x :* xs) = case xs of
     Nil    -> invmap (Z . I) (\case Z (I y) -> y; S ys -> case ys of {}) x
     _ :* _ -> swerve
       (Z . I)
       S
       (\case Z (I y) -> Left y; S ys -> Right ys)
       x
-      (concatInalt xs)
+      (swervedN1 xs)
+
+-- | A version of 'swervedNMap' for non-empty 'NS', but only
+-- requiring an 'Inalt' instance.
+--
+-- @since 0.4.1.0
+swervedN1Map
+    :: Inalt f
+    => (NS I (a ': as) -> b)
+    -> (b -> NS I (a ': as))
+    -> NP f (a ': as)
+    -> f b
+swervedN1Map f g = invmap f g . swervedN1
+

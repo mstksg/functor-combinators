@@ -31,14 +31,16 @@ import           Control.Natural
 import           Data.Bifunctor
 import           Data.Bifunctor.Assoc
 import           Data.Foldable
+import           Data.Functor.Apply
 import           Data.Functor.Contravariant
 import           Data.Functor.Contravariant.Conclude
 import           Data.Functor.Contravariant.Coyoneda
 import           Data.Functor.Contravariant.Decide
 import           Data.Functor.Contravariant.Divise
-import           Data.Functor.Apply
 import           Data.Functor.Contravariant.Divisible
 import           Data.Functor.Invariant
+import           Data.Functor.Invariant.Inplicative
+import           Data.Functor.Invariant.Internative
 import           Data.HFunctor
 import           Data.HFunctor.HTraversable
 import           Data.HFunctor.Interpret
@@ -70,6 +72,9 @@ instance HTraversable Div where
 
 instance Invariant (Div f) where
     invmap _ = contramap
+
+deriving via WrappedDivisible (Div f) instance Inply (Div f)
+deriving via WrappedDivisible (Div f) instance Inplicative (Div f)
 
 -- | Pattern matching on an empty 'Div'.
 --
@@ -146,6 +151,8 @@ instance HTraversable1 Div1 where
 instance Invariant (Div1 f) where
     invmap _ = contramap
 
+deriving via WrappedDivisible (Div1 f) instance Inply (Div1 f)
+
 instance Divise f => Interpret Div1 f where
     interpret = runDiv1
 
@@ -208,6 +215,8 @@ instance Contravariant (Dec f) where
       Choose g x xs -> Choose (g . f) x xs
 instance Invariant (Dec f) where
     invmap _ = contramap
+deriving via WrappedDivisible (Dec f) instance Inalt (Dec f)
+deriving via WrappedDivisible (Dec f) instance Inplus (Dec f)
 instance Decide (Dec f) where
     decide f = \case
       Lose   g      -> contramap (either (absurd . g) id . f)
@@ -267,6 +276,7 @@ instance Contravariant (Dec1 f) where
     contramap f (Dec1 g x xs) = Dec1 (g . f) x xs
 instance Invariant (Dec1 f) where
     invmap _ = contramap
+deriving via WrappedDivisible (Dec1 f) instance Inalt (Dec1 f)
 instance Decide (Dec1 f) where
     decide f (Dec1 g x xs) = Dec1 (assoc . first g . f) x
                            . decide id xs

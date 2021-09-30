@@ -1,6 +1,21 @@
 Changelog
 =========
 
+Version 0.4.1.0
+---------------
+
+*September 29, 2021*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.4.1.0>
+
+*   All of the missing instances to the typeclasses added in 0.4 that I could
+    remember.
+*   Variations of `concatInply` / `concatInplicative` / `concatInalt` /
+    `concatInplus` renamed to `gatheredN` / `swervedN` / `gatheredN1` /
+    `swervedN1`.
+*   `gatherN`, `gatherN1` added with typeclass-based multi-arity functions.
+*   GHC 9.0 compatibility (@ocharles)
+
 Version 0.4.0.0
 ---------------
 

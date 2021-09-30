@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: c98f05061d45352f630dd964c7671a2a414e5708a12f8f4f8a39d61b986f6f5d
 
 name:           functor-combinators
-version:        0.4.0.0
+version:        0.4.1.0
 synopsis:       Tools for functor combinator-based program design
 description:    Tools for working with /functor combinators/: types that take functors (or
                 other indexed types) and returns a new functor that "enhances" or "mixes"
