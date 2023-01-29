@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP         #-}
 {-# LANGUAGE DerivingVia #-}
 
 -- |
@@ -275,12 +276,16 @@ instance Internative f => Internative (Backwards f) where
 deriving via WrappedFunctor Semigroup.First instance Inalt Semigroup.First
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Last instance Inalt Semigroup.Last
+
+#if !MIN_VERSION_base(4,16,0)
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Inalt Semigroup.Option
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Inplus Semigroup.Option
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Internative Semigroup.Option
+#endif
+
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Monoid.First instance Inalt Monoid.First
 -- | @since 0.4.1.0
@@ -319,8 +324,16 @@ deriving via WrappedFunctor NEIM.NEIntMap instance Inalt NEIM.NEIntMap
 deriving via WrappedFunctor (M.Map k) instance Ord k => Inalt (M.Map k)
 -- | @since 0.4.1.0
 deriving via WrappedFunctor (NEM.NEMap k) instance Ord k => Inalt (NEM.NEMap k)
--- | @since 0.4.1.0
+
+#if MIN_VERSION_base(4,16,0)
+-- | Does not require Eq k since base-4.16
+--
+-- @since 0.4.1.0
+deriving via WrappedFunctor (HM.HashMap k) instance Hashable k => Inalt (HM.HashMap k)
+#else
 deriving via WrappedFunctor (HM.HashMap k) instance (Hashable k, Eq k) => Inalt (HM.HashMap k)
+#endif
+
 -- | @since 0.4.1.0
 deriving via WrappedFunctor (WrappedMonad m) instance MonadPlus m => Inalt (WrappedMonad m)
 -- | @since 0.4.1.0

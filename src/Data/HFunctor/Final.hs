@@ -168,7 +168,6 @@ instance Applicative (Final Monad f) where
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
 instance Monad (Final Monad f) where
-    return x = liftFinal0 (return x)
     x >>= f  = Final $ \r -> do
       y <- runFinal x r
       runFinal (f y) r
@@ -180,7 +179,6 @@ instance Applicative (Final MonadPlus f) where
     (<*>)  = liftFinal2 (<*>)
     liftA2 f = liftFinal2 (liftA2 f)
 instance Monad (Final MonadPlus f) where
-    return x = liftFinal0 (return x)
     x >>= f  = Final $ \r -> do
       y <- runFinal x r
       runFinal (f y) r
@@ -210,7 +208,6 @@ instance Apply (Final (MonadReader r) f) where
     (<.>) = liftFinal2 (<*>)
     liftF2 f = liftFinal2 (liftA2 f)
 instance Monad (Final (MonadReader r) f) where
-    return x = liftFinal0 (return x)
     x >>= f  = Final $ \r -> do
       y <- runFinal x r
       runFinal (f y) r

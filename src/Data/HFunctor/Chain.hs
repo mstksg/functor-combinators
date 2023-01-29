@@ -88,7 +88,7 @@ import qualified Data.Functor.Contravariant.Night     as N
 import qualified Data.Functor.Invariant.Day           as ID
 import qualified Data.Functor.Invariant.Night         as IN
 
-instance (HBifunctor t, SemigroupIn t f) => Interpret (Chain1 t) f where
+instance SemigroupIn t f => Interpret (Chain1 t) f where
     retract = \case
       Done1 x  -> x
       More1 xs -> binterpret id retract xs
@@ -254,7 +254,7 @@ splittingChain1 = fromF unrollingNE
 -- a non-empty linked list of @f@s.  This witnesses the fact that
 -- a @'Chain' t i f@ is either empty (@i@) or non-empty (@'Chain1' t f@).
 matchingChain
-    :: forall t i f. (Tensor t i, Matchable t i, FunctorBy t f)
+    :: forall t i f. (Matchable t i, FunctorBy t f)
     => Chain t i f <~> i :+: Chain1 t f
 matchingChain = fromF unrolling
               . matchingLB @t

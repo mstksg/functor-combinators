@@ -463,10 +463,14 @@ deriving via WrappedFunctor Semigroup.First instance Inplicative Semigroup.First
 deriving via WrappedFunctor Semigroup.Last instance Inply Semigroup.Last
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Last instance Inplicative Semigroup.Last
+
+#if !MIN_VERSION_base(4,16,0)
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Inply Semigroup.Option
 -- | @since 0.4.1.0
 deriving via WrappedFunctor Semigroup.Option instance Inplicative Semigroup.Option
+#endif
+
 -- | @since 0.4.1.0
 deriving via WrappedFunctor ZipList instance Inply ZipList
 -- | @since 0.4.1.0
@@ -515,8 +519,17 @@ deriving via WrappedFunctor (Generics.V1 :: Type -> Type) instance Inply Generic
 deriving via WrappedFunctor IM.IntMap instance Inply IM.IntMap
 -- | @since 0.4.1.0
 deriving via WrappedFunctor (M.Map k) instance Ord k => Inply (M.Map k)
+
+#if MIN_VERSION_base(4,16,0)
+-- | Does not require Eq k since base-4.16
+--
+-- @since 0.4.1.0
+deriving via WrappedFunctor (HM.HashMap k) instance Hashable k => Inply (HM.HashMap k)
+#else
 -- | @since 0.4.1.0
 deriving via WrappedFunctor (HM.HashMap k) instance (Hashable k, Eq k) => Inply (HM.HashMap k)
+#endif
+
 -- | @since 0.4.1.0
 deriving via WrappedFunctor (Const w :: Type -> Type) instance Semigroup w => Inply (Const w)
 -- | @since 0.4.1.0

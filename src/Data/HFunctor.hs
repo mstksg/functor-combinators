@@ -655,12 +655,12 @@ instance Monoid e => HBind (EnvT e) where
       where
         EnvT e' y = f x
 
-instance (HBind t, Inject t) => HBind (HLift t) where
+instance HBind t => HBind (HLift t) where
     hbind f = \case
       HPure   x -> f x
-      HOther x -> HOther $ (`hbind` x) $ \y -> case f y of
+      HOther x -> HOther $ (\y -> case f y of
         HPure  z -> inject z
-        HOther z -> z
+        HOther z -> z) `hbind` x
 
 -- | 'HFree' is the "free 'HBind'" for any 'HFunctor'
 instance HFunctor t => HBind (HFree t) where

@@ -110,10 +110,10 @@ instance GShow f => GShow (Ap f) where
       Ap.Ap x xs -> showsBinaryWith gshowsPrec gshowsPrec "Ap" d x xs
 
 instance GShow f => GShow (FA.Ap f) where
-    gshowsPrec d = gshowsPrec @(Ap f) d . FA.runAp Ap.liftAp
+    gshowsPrec d = gshowsPrec d . FA.runAp Ap.liftAp
 
 instance GShow f => GShow (FAF.Ap f) where
-    gshowsPrec d = gshowsPrec @(Ap f) d . FAF.runAp Ap.liftAp
+    gshowsPrec d = gshowsPrec d . FAF.runAp Ap.liftAp
 
 instance GShow f => Show (Ap f a) where
     showsPrec = gshowsPrec

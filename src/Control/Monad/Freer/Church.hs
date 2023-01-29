@@ -95,7 +95,7 @@ instance Apply (Free f) where
     (<.>) = ap
 
 instance Applicative (Free f) where
-    pure  = return
+    pure x = Free $ \p _ -> p x
     (<*>) = (<.>)
 
 instance Pointed (Free f) where
@@ -105,7 +105,6 @@ instance Bind (Free f) where
     x >>- f  = Free $ \p b -> runFree x (\y -> runFree (f y) p b) b
 
 instance Monad (Free f) where
-    return x = Free $ \p _ -> p x
     (>>=)    = (>>-)
 
 instance M.MonadFree f (Free f) where

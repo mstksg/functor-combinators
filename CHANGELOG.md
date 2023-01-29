@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.4.1.1
+---------------
+
+*January 29, 2023*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.4.1.1>
+
+*   Fix builds and warnings for GHC 9.2 and base 4.16
+
 Version 0.4.1.0
 ---------------
 
