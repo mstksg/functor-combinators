@@ -333,3 +333,78 @@ traverseDec1_ f = go
     go g x = \case
       Lose h        -> (\x' -> Dec1 g x' (Lose h)) <$> f x
       Choose h y ys -> Dec1 g <$> f x <.> (toDec <$> go h y ys)
+
+
+
+-- data DecF :: (Type -> Type) -> Type -> Type where
+--     Lose :: (a -> Void) -> DecF f a
+--     Choose :: (a -> Either b c) -> f b -> Dec f c -> DecF f a
+
+-- instance HFunctor DecF where
+--     hmap f = \case
+--       Lose g -> Lose g
+--       Choose g x xs -> Choose g (f x) (hmap f xs)
+
+-- instance Inject DecF where
+--     inject x = Choose Left x (lose id)
+
+-- instance Contravariant (DecF f) where
+--     contramap f = \case
+--       Lose g -> Lose (g . f)
+--       Choose g x xs -> Choose (g . f) x xs
+
+-- instance Decide (DecF f) where
+--     decide f = \case
+--       Lose g -> contramap (either (absurd . g) id . f)
+--       Choose g x xs -> \ys -> Choose (assocEither . first g . f) x (choose' xs ys)
+--       where
+--         assocEither = \case
+--           Left (Left x) -> Left x
+--           Left (Right y) -> Right (Left y)
+--           Right z -> Right (Right z)
+--         choose' :: Dec f a -> DecF f b -> Dec f (Either a b)
+--         choose' (Dec xs) ys = Dec $ (`decided` hmap inject ys) <$> xs
+
+-- instance Conclude (DecF f) where
+--     conclude = Lose
+
+-- instance Decidable m => Interpret DecF m where
+--     interpret f = \case
+--       Lose g -> lose g
+--       Choose g x xs -> choose g (f x) (interpret f xs)
+
+-- -- yeaaaaah the big problem here is that this list has to be known ahead of
+-- -- time.
+-- newtype Dec f a = Dec { unDec :: [DecF (Coyoneda f) a] }
+
+-- instance HFunctor Dec where
+--     hmap f (Dec xs) = Dec (map (hmap (hmap f)) xs)
+
+-- instance Inject Dec where
+--     inject f = Dec [inject (inject f)]
+
+-- instance Contravariant (Dec f) where
+--     contramap f (Dec xs) = Dec (map (contramap f) xs)
+
+-- instance Divisible (Dec f) where
+--     divide f (Dec xs) (Dec ys) = Dec $ map (contramap (fst . f)) xs <> map (contramap (snd . f)) ys
+--     conquer = Dec []
+
+-- instance Decidable (Dec f) where
+--     lose = conclude
+--     choose = decide
+
+-- instance Decide (Dec f) where
+--     decide f (Dec xs) (Dec ys) = Dec $ decide f <$> xs <*> ys
+
+-- instance Conclude (Dec f) where
+--     conclude f = Dec [conclude f]
+
+-- instance Semigroup (Dec f a) where
+--     Dec xs <> Dec ys = Dec (xs <> ys)
+
+-- instance Monoid (Dec f a) where
+--     mempty = conquer
+
+-- instance Decidable m => Interpret Dec m where
+--     interpret f (Dec xs) = foldr (divide (\q -> (q, q))) conquer $ map (interpret (interpret f)) xs
