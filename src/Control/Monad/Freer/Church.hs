@@ -36,7 +36,6 @@ module Control.Monad.Freer.Church (
   ) where
 
 import           Control.Applicative
-import           Data.Functor.Plus
 import           Control.Monad
 import           Control.Natural
 import           Data.Foldable
@@ -44,6 +43,8 @@ import           Data.Functor
 import           Data.Functor.Bind
 import           Data.Functor.Classes
 import           Data.Functor.Coyoneda
+import           Data.Functor.Invariant
+import           Data.Functor.Plus
 import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
@@ -90,6 +91,10 @@ newtype Free f a = Free
 
 instance Functor (Free f) where
     fmap f x = Free $ \p b -> runFree x (p . f) b
+
+-- | @since 0.4.1.2
+instance Invariant (Free f) where
+    invmap f _ = fmap f
 
 instance Apply (Free f) where
     (<.>) = ap
@@ -237,6 +242,10 @@ newtype Free1 f a = Free1
 
 instance Functor (Free1 f) where
     fmap f x = Free1 $ \p b -> runFree1 x (\y c -> p y (f . c)) b
+
+-- | @since 0.4.1.2
+instance Invariant (Free1 f) where
+    invmap f _ = fmap f
 
 instance Apply (Free1 f) where
     (<.>) = apDefault
@@ -428,6 +437,10 @@ data Comp f g a =
 
 instance Functor g => Functor (Comp f g) where
     fmap f (x :>>= h) = x :>>= (fmap f . h)
+
+-- | @since 0.4.1.2
+instance Invariant g => Invariant (Comp f g) where
+    invmap f g (x :>>= h) = x :>>= (invmap f g . h)
 
 -- | @since 0.3.6.0
 instance (Apply f, Apply g) => Apply (Comp f g) where

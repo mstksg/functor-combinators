@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.4.1.2
+---------------
+
+*January 29, 2023*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.4.1.2>
+
+*   Add Invariant instances to Freer.Church types
+
 Version 0.4.1.1
 ---------------
 
