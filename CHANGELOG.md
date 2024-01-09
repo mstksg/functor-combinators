@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.4.1.3
+---------------
+
+*January 9, 2024*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.4.1.3>
+
+*   Compatibility with transformers 0.6, and therefore ghc 9.6 (#7)
+
 Version 0.4.1.2
 ---------------
 

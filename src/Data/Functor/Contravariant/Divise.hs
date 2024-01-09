@@ -26,10 +26,8 @@ module Data.Functor.Contravariant.Divise (
 import           Control.Applicative
 import           Control.Applicative.Backwards
 import           Control.Arrow
-import           Control.Monad.Trans.Error
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Identity
-import           Control.Monad.Trans.List
 import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Reader
 import           Data.Deriving
@@ -70,6 +68,11 @@ import Data.StateVar
 #if __GLASGOW_HASKELL__ >= 702
 #define GHC_GENERICS
 import GHC.Generics
+#endif
+
+#if !MIN_VERSION_transformers(0,6,0)
+import           Control.Monad.Trans.Error
+import           Control.Monad.Trans.List
 #endif
 
 -- | The contravariant analogue of 'Apply'; it is
@@ -198,17 +201,19 @@ instance (Apply f, Divise g) => Divise (f :.: g) where
 instance Divise f => Divise (Backwards f) where
   divise f (Backwards l) (Backwards r) = Backwards $ divise f l r
 
-instance Divise m => Divise (ErrorT e m) where
-  divise f (ErrorT l) (ErrorT r) = ErrorT $ divise (funzip . fmap f) l r
-
 instance Divise m => Divise (ExceptT e m) where
   divise f (ExceptT l) (ExceptT r) = ExceptT $ divise (funzip . fmap f) l r
 
 instance Divise f => Divise (IdentityT f) where
   divise f (IdentityT l) (IdentityT r) = IdentityT $ divise f l r
 
+#if !MIN_VERSION_transformers(0,6,0)
+instance Divise m => Divise (ErrorT e m) where
+  divise f (ErrorT l) (ErrorT r) = ErrorT $ divise (funzip . fmap f) l r
+
 instance Divise m => Divise (ListT m) where
   divise f (ListT l) (ListT r) = ListT $ divise (funzip . map f) l r
+#endif
 
 instance Divise m => Divise (MaybeT m) where
   divise f (MaybeT l) (MaybeT r) = MaybeT $ divise (funzip . fmap f) l r

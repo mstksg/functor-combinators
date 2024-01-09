@@ -24,7 +24,6 @@ module Data.Functor.Contravariant.Conclude (
 
 import Control.Applicative.Backwards
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
 import Control.Monad.Trans.Maybe
 import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 import qualified Control.Monad.Trans.RWS.Strict as Strict
@@ -65,6 +64,10 @@ import Data.StateVar
 #if __GLASGOW_HASKELL__ >= 702
 #define GHC_GENERICS
 import GHC.Generics
+#endif
+
+#if !MIN_VERSION_transformers(0,6,0)
+import Control.Monad.Trans.List
 #endif
 
 -- | The contravariant analogue of 'Data.Functor.Plus.Plus'.  Adds on to
@@ -160,8 +163,10 @@ instance Conclude m => Conclude (Lazy.RWST r w s m) where
 instance Conclude m => Conclude (Strict.RWST r w s m) where
   conclude f = Strict.RWST $ \_ _ -> contramap (\(a, _, _) -> a) (conclude f)
 
+#if !MIN_VERSION_transformers(0,6,0)
 instance (Divisible m, Divise m) => Conclude (ListT m) where
   conclude _ = ListT conquer
+#endif
 
 instance (Divisible m, Divise m) => Conclude (MaybeT m) where
   conclude _ = MaybeT conquer

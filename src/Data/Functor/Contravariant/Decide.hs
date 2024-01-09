@@ -23,12 +23,9 @@ module Data.Functor.Contravariant.Decide (
   ) where
 
 import Control.Applicative.Backwards
-import Control.Arrow
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
-import Data.Either
 import Data.Functor.Apply
 import Data.Functor.Compose
 import Data.Functor.Contravariant
@@ -60,6 +57,12 @@ import Data.StateVar
 #if __GLASGOW_HASKELL__ >= 702
 #define GHC_GENERICS
 import GHC.Generics
+#endif
+
+#if !MIN_VERSION_transformers(0,6,0)
+import Control.Monad.Trans.List
+import Control.Arrow
+import Data.Either
 #endif
 
 -- | The contravariant analogue of 'Alt'.
@@ -144,8 +147,10 @@ instance Decide m => Decide (Strict.RWST r w s m) where
                                   (abc a))
            (rsmb r s) (rsmc r s)
 
+#if !MIN_VERSION_transformers(0,6,0)
 instance Divise m => Decide (ListT m) where
   decide f (ListT l) (ListT r) = ListT $ divise ((lefts &&& rights) . map f) l r
+#endif
 
 instance Divise m => Decide (MaybeT m) where
   decide f (MaybeT l) (MaybeT r) = MaybeT $

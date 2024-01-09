@@ -45,10 +45,8 @@ import           Control.Applicative.Backwards               (Backwards(..))
 import           Control.Applicative.Lift                    (Lift(Pure, Other))
 import           Control.Arrow                               (Arrow)
 import           Control.Monad.Trans.Cont                    (ContT)
-import           Control.Monad.Trans.Error                   (ErrorT(..))
 import           Control.Monad.Trans.Except                  (ExceptT(..))
 import           Control.Monad.Trans.Identity                (IdentityT(..))
-import           Control.Monad.Trans.List                    (ListT(..))
 import           Control.Monad.Trans.Maybe                   (MaybeT(..))
 import           Control.Monad.Trans.RWS                     (RWST(..))
 import           Control.Monad.Trans.Reader                  (ReaderT(..))
@@ -90,6 +88,11 @@ import qualified Data.Vinyl                                  as V
 import qualified Data.Vinyl.Curry                            as V
 import qualified Data.Vinyl.Functor                          as V
 import qualified GHC.Generics                                as Generics
+
+#if !MIN_VERSION_transformers(0,6,0)
+import           Control.Monad.Trans.Error
+import           Control.Monad.Trans.List
+#endif
 
 -- | The invariant counterpart of 'Apply' and 'Divise'.
 --
@@ -302,6 +305,7 @@ instance Inply f => Inply (ExceptT e f) where
 instance Inplicative f => Inplicative (ExceptT e f) where
     knot x = ExceptT (knot (Right x))
 
+#if !MIN_VERSION_transformers(0,6,0)
 -- | @since 0.4.1.0
 instance Inply f => Inply (ErrorT e f) where
     gather f g (ErrorT x) (ErrorT y) = ErrorT $
@@ -317,6 +321,7 @@ instance Inply f => Inply (ListT f) where
 -- | @since 0.4.1.0
 instance Inplicative f => Inplicative (ListT f) where
     knot x = ListT (knot [x])
+#endif
 
 -- | @since 0.4.1.0
 deriving via WrappedFunctor (RWST r w s m) instance (Bind m, Invariant m, Semigroup w) => Inply (RWST r w s m)
