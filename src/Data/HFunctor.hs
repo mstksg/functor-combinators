@@ -27,6 +27,8 @@ module Data.HFunctor (
   -- * 'HFunctor' Combinators
   , HLift(..), retractHLift
   , HFree(..), foldHFree, retractHFree
+  , HFix (..), foldHFix, fixJoin
+  , HCofree (..), foldHCofree, fixUnwrap, annotate
   -- * Utility functions
   , injectMap
   , injectContramap
@@ -341,6 +343,53 @@ instance HFunctor t => HFunctor (HFree t) where
         go = \case
           HReturn x -> HReturn (f x)
           HJoin   x -> HJoin (hmap go x)
+
+newtype HFix t a = HFix (t (HFix t) a)
+
+foldHFix
+  :: forall t f. HFunctor t
+  => (t f ~> f)
+  -> (HFix t ~> f)
+foldHFix f = go where
+    go :: HFix t ~> f
+    go (HFix t) = f (hmap go t)
+
+deriving instance Functor (t (HFix t)) => Functor (HFix t)
+
+fixJoin :: HFunctor t => HFix t ~> HFree t f
+fixJoin = foldHFix HJoin
+
+data HCofree t f a = (:<)
+  { hextract :: f a
+  , hunwrap  :: t (HCofree t f) a
+  }
+
+deriving instance (Functor f, Functor (t (HCofree t f))) => Functor (HCofree t f)
+
+foldHCofree
+    :: forall t f g. HFunctor t
+    => (forall x. f x -> t g x -> g x)
+    -> (HCofree t f ~> g)
+foldHCofree f = go
+  where
+    go :: HCofree t f ~> g
+    go (a :< t) = f a (hmap go t)
+
+fixUnwrap :: HFunctor t => HCofree t f ~> HFix t
+fixUnwrap = foldHCofree (const HFix)
+
+annotate
+  :: forall t f. HFunctor t
+  => (t f ~> f) -- Replace by `retract`?
+  -> HFix t ~> HCofree t f
+annotate f = foldHFix (\r -> f (hmap hextract r) :< r)
+
+instance HFunctor t => HFunctor (HCofree t) where
+  hmap :: forall f g. (f ~> g) -> (HCofree t f ~> HCofree t g)
+  hmap f = go
+    where
+      go :: HCofree t f ~> HCofree t g
+      go (fa :< t) = (f fa :< hmap go t)
 
 -- | A typeclass for 'HFunctor's where you can "inject" an @f a@ into a @t
 -- f a@:
