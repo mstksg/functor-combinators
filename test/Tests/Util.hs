@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                  #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
 
 module Tests.Util (
@@ -124,8 +125,10 @@ instance GShow f => Show (FA.Ap f a) where
 instance GShow f => Show (FAF.Ap f a) where
     showsPrec = gshowsPrec
 
+#if !MIN_VERSION_free(5,2,0)
 instance GShow f => Eq (Ap f a) where
     (==) = (==) `on` show
+#endif
 
 instance GShow f => Eq (FA.Ap f a) where
     (==) = (==) `on` show
@@ -154,11 +157,13 @@ instance Enum Any where
     toEnum   = Any . toEnum
     fromEnum = fromEnum . getAny
 
+#if !MIN_VERSION_base(0,9,2)
 instance Show1 V1 where
     liftShowsPrec _ _ _ = \case {}
 
 instance Eq1 V1 where
     liftEq _ = \case {}
+#endif
 
 class HFunctor t => TestHFunctor t where
     type TestHFunctorBy t :: (Type -> Type) -> Constraint

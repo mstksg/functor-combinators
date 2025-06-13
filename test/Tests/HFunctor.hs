@@ -11,6 +11,7 @@ import           Data.Functor.Product
 import           Data.Functor.Reverse
 import           Data.Functor.Sum
 import           Data.HFunctor
+import           Data.Void
 import           GHC.Generics                   (M1(..), Meta(..))
 import           Hedgehog
 import           Test.Tasty
@@ -203,7 +204,7 @@ bindInterpProps_ gx = [ hfunctorProps  @t gx
 
 hfunctorTests :: TestTree
 hfunctorTests = testGroup "HFunctors"
-    [ testGroup "Ap"   $ bindInterpProps_ @Ap     (Const . S.Sum <$> intGen)
+    [ testGroup "Ap"   $ bindInterpProps_ @Ap @_ @Void (Const . S.Sum <$> intGen)
     , testGroup "Ap'"  $ bindInterpProps_ @FA.Ap  (Const . S.Sum <$> intGen)
     , testGroup "Ap''" $ bindInterpProps_ @FAF.Ap (Const . S.Sum <$> intGen)
     -- , testGroup "Alt"  $ bindInterpProps_ @Alt    (Const . S.Sum <$> intGen)  -- TODO
