@@ -78,7 +78,7 @@ instance Invariant (Ap1 f) where
 -- | An @'Ap1' f@ is just a @'Day' f ('Ap' f)@.  This bidirectional pattern
 -- synonym lets you treat it as such.
 pattern DayAp1 :: Day f (Ap f) a -> Ap1 f a
-pattern DayAp1 { ap1Day } <- ((\case Ap1 x y -> Day x y (&)) -> ap1Day)
+pattern DayAp1 { ap1Day } <- (\case Ap1 x y -> Day x y (&) -> ap1Day)
   where
     DayAp1 (Day x y f) = Ap1 x (flip f <$> y)
 {-# COMPLETE DayAp1 #-}

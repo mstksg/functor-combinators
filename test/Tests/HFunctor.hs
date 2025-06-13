@@ -110,9 +110,7 @@ hfunctorProps
     => Gen (f a)
     -> TestTree
 hfunctorProps gx = testGroup "HFunctor"
-                 . map (uncurry testProperty . second property) $
-    [ ("hmap", hmapProp @t (genHF gx))
-    ]
+    [ testProperty "hmap" . property $ hmapProp @t (genHF gx) ]
 
 hbindProps
     :: forall t f a.

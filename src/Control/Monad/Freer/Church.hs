@@ -518,7 +518,7 @@ comp = (:>>= id)
 -- | Pattern match on and construct a @'Comp' f g a@ as if it were @f
 -- (g a)@.
 pattern Comp :: Functor f => f (g a) -> Comp f g a
-pattern Comp { unComp } <- ((\case x :>>= f -> f <$> x)->unComp)
+pattern Comp { unComp } <- (\case x :>>= f -> f <$> x->unComp)
   where
     Comp x = comp x
 {-# COMPLETE Comp #-}

@@ -212,7 +212,7 @@ fromListF (ListF xs) = case xs of
 pattern ProdNonEmpty :: (f :*: ListF f) a -> NonEmptyF f a
 pattern ProdNonEmpty { nonEmptyProd
                      }
-            <- ((\case NonEmptyF (x :| xs) -> x :*: ListF xs) -> nonEmptyProd)
+            <- (\case NonEmptyF (x :| xs) -> x :*: ListF xs -> nonEmptyProd)
   where
     ProdNonEmpty (x :*: ListF xs) = NonEmptyF (x :| xs)
 {-# COMPLETE ProdNonEmpty #-}

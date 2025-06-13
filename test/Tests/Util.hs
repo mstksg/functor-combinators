@@ -235,8 +235,7 @@ instance TestHFunctor Ap1 where
 
 instance TestHFunctor Free where
     genHF gx = fmap NE.last
-             . sequence
-             . fmap inject
+             . traverse inject
            <$> Gen.nonEmpty (Range.linear 0 3) gx
 
 instance TestHFunctor Free1 where
@@ -288,7 +287,7 @@ instance TestHBifunctor Day where
     genHB gx gy = do
       f <- Gen.bool <&> \case
         False -> const
-        True  -> flip const
+        True  -> const id
       Day <$> gx <*> gy <*> pure f
 
 instance TestHBifunctor These1 where

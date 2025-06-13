@@ -141,7 +141,7 @@ instance HFunctor ProxyF where
 -- It can be 'inject'ed into (losing all information), but it is impossible
 -- to ever 'Data.HFunctor.Interpret.retract' or
 -- 'Data.HFunctor.Interpret.interpret' it.
-data ConstF e f a = ConstF { getConstF :: e }
+newtype ConstF e f a = ConstF { getConstF :: e }
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
 deriveShow1 ''ConstF

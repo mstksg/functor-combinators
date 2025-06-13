@@ -296,9 +296,7 @@ hbifunctorProps
     => Gen (f a)
     -> TestTree
 hbifunctorProps gx = testGroup "HBifunctor"
-                       . map (uncurry testProperty . second property) $
-    [ ("hbimap", hbimapProp @t (genHB gx gx))
-    ]
+    [ testProperty "hbimap" . property $ hbimapProp @t (genHB gx gx) ]
 
 associativeProps
     :: forall t f a.
