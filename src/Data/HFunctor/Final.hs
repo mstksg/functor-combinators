@@ -119,12 +119,14 @@ instance Functor (Final Apply f) where
     fmap f = liftFinal1 (fmap f)
 instance Apply (Final Apply f) where
     (<.>) = liftFinal2 (<.>)
+    (.>) = liftFinal2 (.>)
     liftF2 f = liftFinal2 (liftF2 f)
 
 instance Functor (Final Bind f) where
     fmap f = liftFinal1 (fmap f)
 instance Apply (Final Bind f) where
     (<.>) = liftFinal2 (<.>)
+    (.>) = liftFinal2 (.>)
     liftF2 f = liftFinal2 (liftF2 f)
 instance Bind (Final Bind f) where
     x >>- f = Final $ \r -> runFinal x r >>- \y -> runFinal (f y) r
@@ -133,20 +135,24 @@ instance Functor (Final Applicative f) where
     fmap f = liftFinal1 (fmap f)
 instance Apply (Final Applicative f) where
     (<.>) = liftFinal2 (<*>)
+    (.>) = liftFinal2 (*>)
     liftF2 f = liftFinal2 (liftA2 f)
 instance Applicative (Final Applicative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
+    (*>)   = liftFinal2 (*>)
     liftA2 f = liftFinal2 (liftA2 f)
 
 instance Functor (Final Alternative f) where
     fmap f = liftFinal1 (fmap f)
 instance Apply (Final Alternative f) where
     (<.>) = liftFinal2 (<*>)
+    (.>) = liftFinal2 (*>)
     liftF2 f = liftFinal2 (liftA2 f)
 instance Applicative (Final Alternative f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
+    (*>)   = liftFinal2 (*>)
     liftA2 f = liftFinal2 (liftA2 f)
 -- | @since 0.3.0.0
 instance Alt (Final Alternative f) where
@@ -162,10 +168,12 @@ instance Functor (Final Monad f) where
     fmap f = liftFinal1 (fmap f)
 instance Apply (Final Monad f) where
     (<.>) = liftFinal2 (<*>)
+    (.>) = liftFinal2 (*>)
     liftF2 f = liftFinal2 (liftA2 f)
 instance Applicative (Final Monad f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
+    (*>)   = liftFinal2 (*>)
     liftA2 f = liftFinal2 (liftA2 f)
 instance Monad (Final Monad f) where
     x >>= f  = Final $ \r -> do
@@ -177,6 +185,7 @@ instance Functor (Final MonadPlus f) where
 instance Applicative (Final MonadPlus f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
+    (*>)   = liftFinal2 (*>)
     liftA2 f = liftFinal2 (liftA2 f)
 instance Monad (Final MonadPlus f) where
     x >>= f  = Final $ \r -> do
@@ -203,9 +212,11 @@ instance Functor (Final (MonadReader r) f) where
 instance Applicative (Final (MonadReader r) f) where
     pure x = liftFinal0 (pure x)
     (<*>)  = liftFinal2 (<*>)
+    (*>)   = liftFinal2 (*>)
     liftA2 f = liftFinal2 (liftA2 f)
 instance Apply (Final (MonadReader r) f) where
     (<.>) = liftFinal2 (<*>)
+    (.>) = liftFinal2 (*>)
     liftF2 f = liftFinal2 (liftA2 f)
 instance Monad (Final (MonadReader r) f) where
     x >>= f  = Final $ \r -> do
