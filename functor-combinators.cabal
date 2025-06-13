@@ -1,4 +1,4 @@
-cabal-version: 1.24
+cabal-version:      1.24
 
 -- This file has been generated from package.yaml by hpack version 0.33.0.
 --
@@ -6,85 +6,127 @@ cabal-version: 1.24
 --
 -- hash: c98f05061d45352f630dd964c7671a2a414e5708a12f8f4f8a39d61b986f6f5d
 
-name:           functor-combinators
-version:        0.4.1.3
-synopsis:       Tools for functor combinator-based program design
-description:    Tools for working with /functor combinators/: types that take functors (or
-                other indexed types) and returns a new functor that "enhances" or "mixes"
-                them in some way.  In the process, you can design featureful programs by
-                composing smaller "primitives" using basic unversal combinators.
-                .
-                The main entry point is "Data.Functor.Combinators", but more fine-grained
-                functionality and extra combinators (some of them re-implementations for
-                compatibility) are available in other modules as well.
-                .
-                This library does not define new functor combinators for the most part,
-                but rather re-exports them from different parts of the Haskell ecosystem
-                and provides a uniform interface.
-                .
-                See the README for a quick overview, and also
-                <https://blog.jle.im/entry/functor-combinatorpedia.html> for an in-depth
-                dive into the motivation behind functor combinator-driven development,
-                examples of the functor combinators in this library, and details about how
-                to use these abstractions!
-category:       Data
-homepage:       https://github.com/mstksg/functor-combinators#readme
-bug-reports:    https://github.com/mstksg/functor-combinators/issues
-author:         Justin Le
-maintainer:     justin@jle.im
-copyright:      (c) Justin Le 2019
-license:        BSD3
-license-file:   LICENSE
-tested-with:    GHC >= 8.6
-build-type:     Simple
+name:               functor-combinators
+version:            0.4.1.3
+synopsis:           Tools for functor combinator-based program design
+description:
+  Tools for working with /functor combinators/: types that take functors (or
+  other indexed types) and returns a new functor that "enhances" or "mixes"
+  them in some way.  In the process, you can design featureful programs by
+  composing smaller "primitives" using basic unversal combinators.
+  .
+  The main entry point is "Data.Functor.Combinators", but more fine-grained
+  functionality and extra combinators (some of them re-implementations for
+  compatibility) are available in other modules as well.
+  .
+  This library does not define new functor combinators for the most part,
+  but rather re-exports them from different parts of the Haskell ecosystem
+  and provides a uniform interface.
+  .
+  See the README for a quick overview, and also
+  <https://blog.jle.im/entry/functor-combinatorpedia.html> for an in-depth
+  dive into the motivation behind functor combinator-driven development,
+  examples of the functor combinators in this library, and details about how
+  to use these abstractions!
+
+category:           Data
+homepage:           https://github.com/mstksg/functor-combinators#readme
+bug-reports:        https://github.com/mstksg/functor-combinators/issues
+author:             Justin Le
+maintainer:         justin@jle.im
+copyright:          (c) Justin Le 2019
+license:            BSD3
+license-file:       LICENSE
+tested-with:        GHC >=8.6
+build-type:         Simple
 extra-source-files:
-    README.md
-    CHANGELOG.md
+  CHANGELOG.md
+  README.md
 
 source-repository head
-  type: git
+  type:     git
   location: https://github.com/mstksg/functor-combinators
 
 library
   exposed-modules:
-      Control.Applicative.ListF
-      Control.Applicative.Step
-      Control.Monad.Freer.Church
-      Control.Natural.IsoF
-      Data.Functor.Apply.Free
-      Data.Functor.Combinator
-      Data.Functor.Combinator.Unsafe
-      Data.Functor.Contravariant.Conclude
-      Data.Functor.Contravariant.Decide
-      Data.Functor.Contravariant.Divise
-      Data.Functor.Contravariant.Divisible.Free
-      Data.Functor.Contravariant.Night
-      Data.Functor.Invariant.Inplicative
-      Data.Functor.Invariant.Inplicative.Free
-      Data.Functor.Invariant.Internative
-      Data.Functor.Invariant.Internative.Free
-      Data.Functor.Invariant.Night
-      Data.HBifunctor
-      Data.HBifunctor.Associative
-      Data.HBifunctor.Tensor
-      Data.HFunctor
-      Data.HFunctor.Chain
-      Data.HFunctor.Final
-      Data.HFunctor.HTraversable
-      Data.HFunctor.Interpret
-      Data.HFunctor.Route
+    Control.Applicative.ListF
+    Control.Applicative.Step
+    Control.Monad.Freer.Church
+    Control.Natural.IsoF
+    Data.Functor.Apply.Free
+    Data.Functor.Combinator
+    Data.Functor.Combinator.Unsafe
+    Data.Functor.Contravariant.Conclude
+    Data.Functor.Contravariant.Decide
+    Data.Functor.Contravariant.Divise
+    Data.Functor.Contravariant.Divisible.Free
+    Data.Functor.Contravariant.Night
+    Data.Functor.Invariant.Inplicative
+    Data.Functor.Invariant.Inplicative.Free
+    Data.Functor.Invariant.Internative
+    Data.Functor.Invariant.Internative.Free
+    Data.Functor.Invariant.Night
+    Data.HBifunctor
+    Data.HBifunctor.Associative
+    Data.HBifunctor.Tensor
+    Data.HFunctor
+    Data.HFunctor.Chain
+    Data.HFunctor.Final
+    Data.HFunctor.HTraversable
+    Data.HFunctor.Interpret
+    Data.HFunctor.Route
+
   other-modules:
-      Data.HFunctor.Internal
-      Data.HFunctor.Chain.Internal
-      Data.HBifunctor.Tensor.Internal
-  hs-source-dirs:
-      src
-  default-extensions: AllowAmbiguousTypes ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies EmptyCase ExistentialQuantification ExplicitNamespaces FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses OverloadedStrings PatternSynonyms QuantifiedConstraints RankNTypes ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies PolyKinds TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
-  ghc-options: -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns
+    Data.HBifunctor.Tensor.Internal
+    Data.HFunctor.Chain.Internal
+    Data.HFunctor.Internal
+
+  hs-source-dirs:     src
+  default-extensions:
+    AllowAmbiguousTypes
+    ConstraintKinds
+    DataKinds
+    DefaultSignatures
+    DeriveDataTypeable
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveTraversable
+    DerivingStrategies
+    EmptyCase
+    ExistentialQuantification
+    ExplicitNamespaces
+    FlexibleContexts
+    FlexibleInstances
+    FunctionalDependencies
+    GADTs
+    GeneralizedNewtypeDeriving
+    InstanceSigs
+    KindSignatures
+    LambdaCase
+    MultiParamTypeClasses
+    OverloadedStrings
+    PatternSynonyms
+    PolyKinds
+    QuantifiedConstraints
+    RankNTypes
+    ScopedTypeVariables
+    StandaloneDeriving
+    TemplateHaskell
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    UndecidableInstances
+    UndecidableSuperClasses
+    ViewPatterns
+
+  ghc-options:
+    -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns
+
   build-depends:
-      StateVar
-    , assoc
-    , base >=4.12 && <5
+      assoc
+    , base                    >=4.12    && <5
     , bifunctors
     , comonad
     , constraints
@@ -98,42 +140,86 @@ library
     , mmorph
     , mtl
     , natural-transformation
-    , nonempty-containers >=0.3.4.4
+    , nonempty-containers     >=0.3.4.4
     , pointed
     , profunctors
     , semigroupoids
     , sop-core
+    , StateVar
     , tagged
     , these
     , transformers
-    , trivial-constraint >=0.5
+    , trivial-constraint      >=0.5
     , unordered-containers
     , vinyl
-  default-language: Haskell2010
+
+  default-language:   Haskell2010
 
 test-suite functor-combinators-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  type:               exitcode-stdio-1.0
+  main-is:            Spec.hs
   other-modules:
-      Tests.HBifunctor
-      Tests.HFunctor
-      Tests.Util
-      Paths_functor_combinators
-  hs-source-dirs:
-      test
-  default-extensions: AllowAmbiguousTypes ConstraintKinds DataKinds DefaultSignatures DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies EmptyCase ExistentialQuantification ExplicitNamespaces FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses OverloadedStrings PatternSynonyms QuantifiedConstraints RankNTypes ScopedTypeVariables StandaloneDeriving TemplateHaskell TupleSections TypeApplications TypeFamilies PolyKinds TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
-  ghc-options: -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
+    Paths_functor_combinators
+    Tests.HBifunctor
+    Tests.HFunctor
+    Tests.Util
+
+  hs-source-dirs:     test
+  default-extensions:
+    AllowAmbiguousTypes
+    ConstraintKinds
+    DataKinds
+    DefaultSignatures
+    DeriveDataTypeable
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveTraversable
+    DerivingStrategies
+    EmptyCase
+    ExistentialQuantification
+    ExplicitNamespaces
+    FlexibleContexts
+    FlexibleInstances
+    FunctionalDependencies
+    GADTs
+    GeneralizedNewtypeDeriving
+    InstanceSigs
+    KindSignatures
+    LambdaCase
+    MultiParamTypeClasses
+    OverloadedStrings
+    PatternSynonyms
+    PolyKinds
+    QuantifiedConstraints
+    RankNTypes
+    ScopedTypeVariables
+    StandaloneDeriving
+    TemplateHaskell
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    UndecidableInstances
+    UndecidableSuperClasses
+    ViewPatterns
+
+  ghc-options:
+    -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns
+    -threaded -rtsopts -with-rtsopts=-N
+
   build-depends:
-      base >=4.12 && <5
+      base                 >=4.12    && <5
     , bifunctors
     , dependent-sum
     , free
     , functor-combinators
-    , hedgehog >=0.6
-    , nonempty-containers >=0.3.4.4
+    , hedgehog             >=0.6
+    , nonempty-containers  >=0.3.4.4
     , semigroupoids
     , tasty
     , tasty-hedgehog
     , transformers
-    , trivial-constraint >=0.5
-  default-language: Haskell2010
+    , trivial-constraint   >=0.5
+
+  default-language:   Haskell2010
