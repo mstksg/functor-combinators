@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
@@ -37,7 +38,9 @@ module Data.Functor.Invariant.Inplicative.Free (
   assembleDivAp1Rec,
 ) where
 
-import Control.Applicative
+#if !MIN_VERSION_base(4,17,0)
+import Control.Applicative (liftA2)
+#endif
 import Control.Applicative.Free (Ap (..))
 import Control.Applicative.ListF (MaybeF (..))
 import Control.Natural

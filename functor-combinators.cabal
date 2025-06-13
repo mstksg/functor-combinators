@@ -123,6 +123,7 @@ library
 
   ghc-options:
     -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns
+    -Wunused-packages
 
   build-depends:
       assoc
@@ -206,7 +207,7 @@ test-suite functor-combinators-test
 
   ghc-options:
     -Wall -Wcompat -Wredundant-constraints -Werror=incomplete-patterns
-    -threaded -rtsopts -with-rtsopts=-N
+    -threaded -rtsopts -with-rtsopts=-N -Wunused-packages
 
   build-depends:
       base                 >=4.12    && <5
