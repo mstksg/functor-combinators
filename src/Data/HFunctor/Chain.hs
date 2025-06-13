@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Data.HFunctor.Chain
--- Copyright   : (c) Justin Le 2019
+-- Copyright   : (c) Justin Le 2025
 -- License     : BSD3
 --
 -- Maintainer  : justin@jle.im

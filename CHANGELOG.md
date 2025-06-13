@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.4.1.4
+---------------
+
+*June 12, 2025*
+
+<https://github.com/mstksg/functor-combinators/releases/tag/v0.4.1.4>
+
+*   Optimize `(.>)` for `Final` (#10) (@rhendric)
+
 Version 0.4.1.3
 ---------------
 
