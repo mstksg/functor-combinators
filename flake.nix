@@ -22,7 +22,7 @@
           inherit name;
           src = ./.;
           excludeCompilerMajors = [ "ghc94" "ghc913" ];
-          defaultCompiler = "ghc982";
+          defaultCompiler = "ghc984";
         };
     in
     {
