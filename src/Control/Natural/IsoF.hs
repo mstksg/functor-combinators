@@ -10,19 +10,21 @@
 -- Types describing isomorphisms between two functors, and functions to
 -- manipulate them.
 module Control.Natural.IsoF (
-    type (~>)
-  , type (<~>)
-  , isoF
-  , coercedF
-  , viewF, reviewF, overF
-  , fromF
-  ) where
+  type (~>),
+  type (<~>),
+  isoF,
+  coercedF,
+  viewF,
+  reviewF,
+  overF,
+  fromF,
+) where
 
-import           Control.Natural
-import           Data.Coerce
-import           Data.Kind
-import           Data.Profunctor
-import           Data.Tagged
+import Control.Natural
+import Data.Coerce
+import Data.Kind
+import Data.Profunctor
+import Data.Tagged
 
 -- | The type of an isomorphism between two functors.  @f '<~>' g@ means that
 -- @f@ and @g@ are isomorphic to each other.
@@ -61,20 +63,22 @@ import           Data.Tagged
 -- 'Data.HBifunctor.Tensor.splittingSF' :: 'Data.HBifunctor.Tensor.Monoidal' t => 'Data.HBifunctor.Associative.SF' t a '<~>' t f ('Data.HBifunctor.Tensor.MF' t f)
 -- 'Data.HBifunctor.Tensor.splitSF'     :: Monoidal t => SF t a  '~>' t f (MF t f)
 -- @
-type f <~> g  = forall p a. Profunctor p => p (g a) (g a) -> p (f a) (f a)
+type f <~> g = forall p a. Profunctor p => p (g a) (g a) -> p (f a) (f a)
+
 infixr 0 <~>
 
 -- | Create an @f '<~>' g@ by providing both legs of the isomorphism (the
 -- @f a -> g a@ and the @g a -> f a@.
-isoF
-    :: f ~> g
-    -> g ~> f
-    -> f <~> g
+isoF ::
+  f ~> g ->
+  g ~> f ->
+  f <~> g
 isoF f g a = dimap f g a
 
 -- | An isomorphism between two functors that are coercible/have the same
 -- internal representation.  Useful for newtype wrappers.
-coercedF :: forall f g. (forall x. Coercible (f x) (g x), forall x. Coercible (g x) (f x)) => f <~> g
+coercedF ::
+  forall f g. (forall x. Coercible (f x) (g x), forall x. Coercible (g x) (f x)) => f <~> g
 coercedF = isoF coerce coerce
 
 -- | Use a '<~>' by retrieving the "forward" function:
@@ -106,8 +110,9 @@ overF i f = i f
 -- 'viewF'   ('fromF' i) == 'reviewF' i
 -- 'reviewF' ('fromF' i) == 'viewF' i
 -- @
-fromF
-    :: forall (f :: Type -> Type) (g :: Type -> Type). ()
-    => f <~> g
-    -> g <~> f
+fromF ::
+  forall (f :: Type -> Type) (g :: Type -> Type).
+  () =>
+  f <~> g ->
+  g <~> f
 fromF i = isoF (reviewF i) (viewF i)

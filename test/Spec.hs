@@ -1,10 +1,12 @@
-import           Test.Tasty
-import           Tests.HBifunctor
-import           Tests.HFunctor
+import Test.Tasty
+import Tests.HBifunctor
+import Tests.HFunctor
 
 main :: IO ()
-main = defaultMain $
-            testGroup "Tests" [ hfunctorTests
-                              , hbifunctorTests
-                              ]
-
+main =
+  defaultMain $
+    testGroup
+      "Tests"
+      [ hfunctorTests
+      , hbifunctorTests
+      ]

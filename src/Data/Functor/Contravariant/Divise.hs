@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP                  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -17,35 +17,35 @@
 --
 -- @since 0.3.0.0
 module Data.Functor.Contravariant.Divise (
-    Divise(..)
-  , (<:>)
-  , dsum1
-  , WrappedDivisible(..)
-  ) where
+  Divise (..),
+  (<:>),
+  dsum1,
+  WrappedDivisible (..),
+) where
 
-import           Control.Applicative
-import           Control.Applicative.Backwards
-import           Control.Arrow
-import           Control.Monad.Trans.Except
-import           Control.Monad.Trans.Identity
-import           Control.Monad.Trans.Maybe
-import           Control.Monad.Trans.Reader
-import           Data.Deriving
-import           Data.Functor.Apply
-import           Data.Functor.Compose
-import           Data.Functor.Constant
-import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Divisible
-import           Data.Functor.Invariant
-import           Data.Functor.Product
-import           Data.Functor.Reverse
-import qualified Control.Monad.Trans.RWS.Lazy         as Lazy
-import qualified Control.Monad.Trans.RWS.Strict       as Strict
-import qualified Control.Monad.Trans.State.Lazy       as Lazy
-import qualified Control.Monad.Trans.State.Strict     as Strict
-import qualified Control.Monad.Trans.Writer.Lazy      as Lazy
-import qualified Control.Monad.Trans.Writer.Strict    as Strict
-import qualified Data.Semigroup.Foldable              as F1
+import Control.Applicative
+import Control.Applicative.Backwards
+import Control.Arrow
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.Identity
+import Control.Monad.Trans.Maybe
+import qualified Control.Monad.Trans.RWS.Lazy as Lazy
+import qualified Control.Monad.Trans.RWS.Strict as Strict
+import Control.Monad.Trans.Reader
+import qualified Control.Monad.Trans.State.Lazy as Lazy
+import qualified Control.Monad.Trans.State.Strict as Strict
+import qualified Control.Monad.Trans.Writer.Lazy as Lazy
+import qualified Control.Monad.Trans.Writer.Strict as Strict
+import Data.Deriving
+import Data.Functor.Apply
+import Data.Functor.Compose
+import Data.Functor.Constant
+import Data.Functor.Contravariant
+import Data.Functor.Contravariant.Divisible
+import Data.Functor.Invariant
+import Data.Functor.Product
+import Data.Functor.Reverse
+import qualified Data.Semigroup.Foldable as F1
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Monoid (Alt(..))
@@ -98,20 +98,22 @@ import           Control.Monad.Trans.List
 -- convolution.  That is, it is possible to define a function @(f `Day` f)
 -- a -> f a@ in a way that is associative.
 class Contravariant f => Divise f where
-    -- | Takes a "splitting" method and the two sub-consumers, and
-    -- returns the wrapped/combined consumer.
-    divise :: (a -> (b, c)) -> f b -> f c -> f a
-    divise f x y = contramap f (divised x y)
-    -- | Combine a consumer of @a@ with a consumer of @b@ to get a consumer
-    -- of @(a, b)@.
-    divised :: f a -> f b -> f (a, b)
-    divised = divise id
-    {-# MINIMAL divise | divised #-}
+  -- | Takes a "splitting" method and the two sub-consumers, and
+  -- returns the wrapped/combined consumer.
+  divise :: (a -> (b, c)) -> f b -> f c -> f a
+  divise f x y = contramap f (divised x y)
+
+  -- | Combine a consumer of @a@ with a consumer of @b@ to get a consumer
+  -- of @(a, b)@.
+  divised :: f a -> f b -> f (a, b)
+  divised = divise id
+
+  {-# MINIMAL divise | divised #-}
 
 -- | The Contravariant version of '<|>': split the same input over two
 -- different consumers.
 (<:>) :: Divise f => f a -> f a -> f a
-x <:> y = divise (\r -> (r,r)) x y
+x <:> y = divise (\r -> (r, r)) x y
 
 -- | Convenient helper function to build up a 'Divise' by splitting
 -- input across many different @f a@s.  Most useful when used alongside
@@ -129,7 +131,7 @@ dsum1 :: (F1.Foldable1 t, Divise f) => t (f a) -> f a
 dsum1 = foldr1 (<:>) . F1.toNonEmpty
 
 -- | Wrap a 'Divisible' to be used as a member of 'Divise'
-newtype WrappedDivisible f a = WrapDivisible { unwrapDivisible :: f a }
+newtype WrappedDivisible f a = WrapDivisible {unwrapDivisible :: f a}
   deriving (Generic, Eq, Show, Ord, Read, Functor, Foldable, Traversable)
   deriving newtype (Divisible, Contravariant)
 
@@ -223,15 +225,21 @@ instance Divise m => Divise (ReaderT r m) where
 
 instance Divise m => Divise (Lazy.RWST r w s m) where
   divise abc (Lazy.RWST rsmb) (Lazy.RWST rsmc) = Lazy.RWST $ \r s ->
-    divise (\ ~(a, s', w) -> case abc a of
-                                  ~(b, c) -> ((b, s', w), (c, s', w)))
-           (rsmb r s) (rsmc r s)
+    divise
+      ( \ ~(a, s', w) -> case abc a of
+          ~(b, c) -> ((b, s', w), (c, s', w))
+      )
+      (rsmb r s)
+      (rsmc r s)
 
 instance Divise m => Divise (Strict.RWST r w s m) where
   divise abc (Strict.RWST rsmb) (Strict.RWST rsmc) = Strict.RWST $ \r s ->
-    divise (\(a, s', w) -> case abc a of
-                                (b, c) -> ((b, s', w), (c, s', w)))
-           (rsmb r s) (rsmc r s)
+    divise
+      ( \(a, s', w) -> case abc a of
+          (b, c) -> ((b, s', w), (c, s', w))
+      )
+      (rsmb r s)
+      (rsmc r s)
 
 instance Divise m => Divise (Lazy.StateT s m) where
   divise f (Lazy.StateT l) (Lazy.StateT r) = Lazy.StateT $ \s ->
@@ -242,12 +250,14 @@ instance Divise m => Divise (Strict.StateT s m) where
     divise (strictFanout f) (l s) (r s)
 
 instance Divise m => Divise (Lazy.WriterT w m) where
-  divise f (Lazy.WriterT l) (Lazy.WriterT r) = Lazy.WriterT $
-    divise (lazyFanout f) l r
+  divise f (Lazy.WriterT l) (Lazy.WriterT r) =
+    Lazy.WriterT $
+      divise (lazyFanout f) l r
 
 instance Divise m => Divise (Strict.WriterT w m) where
-  divise f (Strict.WriterT l) (Strict.WriterT r) = Strict.WriterT $
-    divise (strictFanout f) l r
+  divise f (Strict.WriterT l) (Strict.WriterT r) =
+    Strict.WriterT $
+      divise (strictFanout f) l r
 
 -- | Unlike 'Divisible', requires only 'Apply' on @f@.
 instance (Apply f, Divise g) => Divise (Compose f g) where

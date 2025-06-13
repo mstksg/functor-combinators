@@ -25,56 +25,63 @@
 -- @since 0.3.6.0
 module Data.HFunctor.HTraversable (
   -- * 'HTraversable'
-    HTraversable(..)
-  , hsequence, hfoldMap, htoList, hmapDefault, hfor
+  HTraversable (..),
+  hsequence,
+  hfoldMap,
+  htoList,
+  hmapDefault,
+  hfor,
+
   -- * 'HTraversable1'
-  , HTraversable1(..)
-  , hsequence1, hfoldMap1, htoNonEmpty, hfor1
-  ) where
+  HTraversable1 (..),
+  hsequence1,
+  hfoldMap1,
+  htoNonEmpty,
+  hfor1,
+) where
 
-import           Control.Applicative
-import           Control.Applicative.Backwards
-import           Control.Applicative.Free
-import           Control.Applicative.Lift
-import           Control.Applicative.ListF
-import           Control.Applicative.Step
-import           Control.Comonad.Trans.Env
-import           Control.Monad.Trans.Compose
-import           Control.Monad.Trans.Identity
-import           Control.Monad.Trans.Maybe
-import           Control.Natural
-import           Data.Bifunctor.Joker
-import           Data.Bitraversable
-import           Data.Coerce
-import           Data.Functor.Apply
-import           Data.Functor.Coyoneda
-import           Data.Functor.Day                    (Day(..))
-import           Data.Functor.Identity
-import           Data.Functor.Product
-import           Data.Functor.Reverse
-import           Data.Functor.Sum
-import           Data.Functor.These
-import           Data.HFunctor
-import           Data.HFunctor.Internal
-import           Data.HFunctor.Interpret
-import           Data.List.NonEmpty                  (NonEmpty)
-import           Data.Semigroup                      (Endo(..))
-import           Data.Semigroup.Traversable
-import           Data.Tagged
-import           Data.Vinyl.CoRec
-import           Data.Vinyl.Core                     (Rec)
-import           Data.Vinyl.Recursive
-import           GHC.Generics
-import qualified Control.Alternative.Free            as Alt
-import qualified Control.Applicative.Free            as Ap
-import qualified Control.Applicative.Free.Fast       as FAF
-import qualified Control.Applicative.Free.Final      as FA
-import qualified Control.Applicative.Lift            as Lift
+import qualified Control.Alternative.Free as Alt
+import Control.Applicative
+import Control.Applicative.Backwards
+import Control.Applicative.Free
+import qualified Control.Applicative.Free as Ap
+import qualified Control.Applicative.Free.Fast as FAF
+import qualified Control.Applicative.Free.Final as FA
+import Control.Applicative.Lift
+import qualified Control.Applicative.Lift as Lift
+import Control.Applicative.ListF
+import Control.Applicative.Step
+import Control.Comonad.Trans.Env
+import Control.Monad.Trans.Compose
+import Control.Monad.Trans.Identity
+import Control.Monad.Trans.Maybe
+import Control.Natural
+import Data.Bifunctor.Joker
+import Data.Bitraversable
+import Data.Coerce
+import Data.Functor.Apply
 import qualified Data.Functor.Contravariant.Coyoneda as CCY
-import qualified Data.Functor.Invariant.Day          as ID
-import qualified Data.Functor.Invariant.Night        as IN
-import qualified Data.SOP                            as SOP
-
+import Data.Functor.Coyoneda
+import Data.Functor.Day (Day (..))
+import Data.Functor.Identity
+import qualified Data.Functor.Invariant.Day as ID
+import qualified Data.Functor.Invariant.Night as IN
+import Data.Functor.Product
+import Data.Functor.Reverse
+import Data.Functor.Sum
+import Data.Functor.These
+import Data.HFunctor
+import Data.HFunctor.Internal
+import Data.HFunctor.Interpret
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.SOP as SOP
+import Data.Semigroup (Endo (..))
+import Data.Semigroup.Traversable
+import Data.Tagged
+import Data.Vinyl.CoRec
+import Data.Vinyl.Core (Rec)
+import Data.Vinyl.Recursive
+import GHC.Generics
 
 -- | A higher-kinded version of 'Traversable1', in the same way that
 -- 'HFunctor' is the higher-kinded version of 'Functor'.  Gives you an
@@ -85,9 +92,9 @@ import qualified Data.SOP                            as SOP
 --
 -- @since 0.3.6.0
 class HTraversable t => HTraversable1 t where
-    -- | An "effectful" 'hmap', in the same way that 'traverse1' is an
-    -- effectful 'fmap', guaranteeing at least one item.
-    htraverse1 :: Apply h => (forall x. f x -> h (g x)) -> t f a -> h (t g a)
+  -- | An "effectful" 'hmap', in the same way that 'traverse1' is an
+  -- effectful 'fmap', guaranteeing at least one item.
+  htraverse1 :: Apply h => (forall x. f x -> h (g x)) -> t f a -> h (t g a)
 
 -- | A wrapper over a common pattern of "inverting" layers of a functor
 -- combinator that always contains at least one @f@ item.
@@ -129,9 +136,9 @@ hfor1 x f = htraverse1 f x
 --
 -- @since 0.3.6.0
 class HFunctor t => HTraversable t where
-    -- | An "effectful" 'hmap', in the same way that 'traverse' is an
-    -- effectful 'fmap'.
-    htraverse :: Applicative h => (forall x. f x -> h (g x)) -> t f a -> h (t g a)
+  -- | An "effectful" 'hmap', in the same way that 'traverse' is an
+  -- effectful 'fmap'.
+  htraverse :: Applicative h => (forall x. f x -> h (g x)) -> t f a -> h (t g a)
 
 -- | A wrapper over a common pattern of "inverting" layers of a functor
 -- combinator.
@@ -171,261 +178,265 @@ hmapDefault :: HTraversable t => (f ~> g) -> t f ~> t g
 hmapDefault f = runIdentity . htraverse (Identity . f)
 
 instance HTraversable Coyoneda where
-    htraverse f (Coyoneda g x) = Coyoneda g <$> f x
+  htraverse f (Coyoneda g x) = Coyoneda g <$> f x
 
 instance HTraversable1 Coyoneda where
-    htraverse1 f (Coyoneda g x) = Coyoneda g <$> f x
+  htraverse1 f (Coyoneda g x) = Coyoneda g <$> f x
 
 instance HTraversable CCY.Coyoneda where
-    htraverse f (CCY.Coyoneda g x) = CCY.Coyoneda g <$> f x
+  htraverse f (CCY.Coyoneda g x) = CCY.Coyoneda g <$> f x
 
 instance HTraversable1 CCY.Coyoneda where
-    htraverse1 f (CCY.Coyoneda g x) = CCY.Coyoneda g <$> f x
+  htraverse1 f (CCY.Coyoneda g x) = CCY.Coyoneda g <$> f x
 
 instance HTraversable Ap where
-    htraverse :: forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> Ap f a -> h (Ap g a)
-    htraverse f = go
-      where
-        go :: Ap f b -> h (Ap g b)
-        go = \case
-          Ap.Pure x  -> pure (Ap.Pure x)
-          Ap.Ap x xs -> Ap.Ap <$> f x <*> go xs
+  htraverse :: forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> Ap f a -> h (Ap g a)
+  htraverse f = go
+    where
+      go :: Ap f b -> h (Ap g b)
+      go = \case
+        Ap.Pure x -> pure (Ap.Pure x)
+        Ap.Ap x xs -> Ap.Ap <$> f x <*> go xs
 
 instance HTraversable ListF where
-    htraverse f (ListF xs) = ListF <$> traverse f xs
+  htraverse f (ListF xs) = ListF <$> traverse f xs
 
 instance HTraversable NonEmptyF where
-    htraverse f (NonEmptyF xs) = NonEmptyF <$> traverse f xs
+  htraverse f (NonEmptyF xs) = NonEmptyF <$> traverse f xs
 
 instance HTraversable1 NonEmptyF where
-    htraverse1 f (NonEmptyF xs) = NonEmptyF <$> traverse1 f xs
+  htraverse1 f (NonEmptyF xs) = NonEmptyF <$> traverse1 f xs
 
 instance HTraversable MaybeF where
-    htraverse f (MaybeF xs) = MaybeF <$> traverse f xs
+  htraverse f (MaybeF xs) = MaybeF <$> traverse f xs
 
 instance HTraversable (MapF k) where
-    htraverse f (MapF xs) = MapF <$> traverse f xs
+  htraverse f (MapF xs) = MapF <$> traverse f xs
 
 instance HTraversable (NEMapF k) where
-    htraverse f (NEMapF xs) = NEMapF <$> traverse f xs
+  htraverse f (NEMapF xs) = NEMapF <$> traverse f xs
 
 instance HTraversable1 (NEMapF k) where
-    htraverse1 f (NEMapF xs) = NEMapF <$> traverse1 f xs
+  htraverse1 f (NEMapF xs) = NEMapF <$> traverse1 f xs
 
 instance HTraversable Alt.Alt where
-    htraverse f (Alt.Alt xs) = Alt.Alt <$> traverse (htraverse f) xs
+  htraverse f (Alt.Alt xs) = Alt.Alt <$> traverse (htraverse f) xs
 
 instance HTraversable Alt.AltF where
-    htraverse f = \case
-      Alt.Ap x xs -> Alt.Ap <$> f x <*> htraverse f xs
-      Alt.Pure x  -> pure (Alt.Pure x)
+  htraverse f = \case
+    Alt.Ap x xs -> Alt.Ap <$> f x <*> htraverse f xs
+    Alt.Pure x -> pure (Alt.Pure x)
 
 instance HTraversable Step where
-    htraverse f (Step n x) = Step n <$> f x
+  htraverse f (Step n x) = Step n <$> f x
 
 instance HTraversable1 Step where
-    htraverse1 f (Step n x) = Step n <$> f x
+  htraverse1 f (Step n x) = Step n <$> f x
 
 instance HTraversable Steps where
-    htraverse f (Steps x) = Steps <$> traverse f x
+  htraverse f (Steps x) = Steps <$> traverse f x
 
 instance HTraversable1 Steps where
-    htraverse1 f (Steps x) = Steps <$> traverse1 f x
+  htraverse1 f (Steps x) = Steps <$> traverse1 f x
 
 instance HTraversable Flagged where
-    htraverse f (Flagged b x) = Flagged b <$> f x
+  htraverse f (Flagged b x) = Flagged b <$> f x
 
 instance HTraversable1 Flagged where
-    htraverse1 f (Flagged b x) = Flagged b <$> f x
+  htraverse1 f (Flagged b x) = Flagged b <$> f x
 
 instance HTraversable MaybeT where
-    htraverse f (MaybeT x) = MaybeT <$> f x
+  htraverse f (MaybeT x) = MaybeT <$> f x
 
 instance HTraversable1 MaybeT where
-    htraverse1 f (MaybeT x) = MaybeT <$> f x
+  htraverse1 f (MaybeT x) = MaybeT <$> f x
 
 instance HTraversable FAF.Ap where
-    htraverse = itraverse
+  htraverse = itraverse
 
 instance HTraversable FA.Ap where
-    htraverse = itraverse
+  htraverse = itraverse
 
 instance HTraversable IdentityT where
-    htraverse f (IdentityT x) = IdentityT <$> f x
+  htraverse f (IdentityT x) = IdentityT <$> f x
 
 instance HTraversable1 IdentityT where
-    htraverse1 f (IdentityT x) = IdentityT <$> f x
+  htraverse1 f (IdentityT x) = IdentityT <$> f x
 
 instance HTraversable Lift where
-    htraverse f = \case
-      Lift.Pure  x -> pure (Lift.Pure x)
-      Lift.Other y -> Lift.Other <$> f y
+  htraverse f = \case
+    Lift.Pure x -> pure (Lift.Pure x)
+    Lift.Other y -> Lift.Other <$> f y
 
 instance HTraversable MaybeApply where
-    htraverse f (MaybeApply x) = MaybeApply <$> bitraverse f pure x
+  htraverse f (MaybeApply x) = MaybeApply <$> bitraverse f pure x
 
 instance HTraversable Backwards where
-    htraverse f (Backwards x) = Backwards <$> f x
+  htraverse f (Backwards x) = Backwards <$> f x
 
 instance HTraversable WrappedApplicative where
-    htraverse f (WrapApplicative x) = WrapApplicative <$> f x
+  htraverse f (WrapApplicative x) = WrapApplicative <$> f x
 
 instance HTraversable Tagged where
-    htraverse _ = pure . coerce
+  htraverse _ = pure . coerce
 
 instance HTraversable Reverse where
-    htraverse f (Reverse x) = Reverse <$> f x
+  htraverse f (Reverse x) = Reverse <$> f x
 
 instance HTraversable1 Reverse where
-    htraverse1 f (Reverse x) = Reverse <$> f x
+  htraverse1 f (Reverse x) = Reverse <$> f x
 
 instance (HTraversable s, HTraversable t) => HTraversable (ComposeT s t) where
-    htraverse f (ComposeT x) = ComposeT <$> htraverse (htraverse f) x
+  htraverse f (ComposeT x) = ComposeT <$> htraverse (htraverse f) x
 
 instance Traversable f => HTraversable ((:.:) f) where
-    htraverse f (Comp1 x) = Comp1 <$> traverse f x
+  htraverse f (Comp1 x) = Comp1 <$> traverse f x
 
 instance Traversable1 f => HTraversable1 ((:.:) f) where
-    htraverse1 f (Comp1 x) = Comp1 <$> traverse1 f x
+  htraverse1 f (Comp1 x) = Comp1 <$> traverse1 f x
 
 instance HTraversable (M1 i c) where
-    htraverse f (M1 x) = M1 <$> f x
+  htraverse f (M1 x) = M1 <$> f x
 
 instance HTraversable1 (M1 i c) where
-    htraverse1 f (M1 x) = M1 <$> f x
+  htraverse1 f (M1 x) = M1 <$> f x
 
 instance HTraversable Void2 where
-    htraverse _ = \case {}
+  htraverse _ = \case {}
 
 instance HTraversable1 Void2 where
-    htraverse1 _ = \case {}
+  htraverse1 _ = \case {}
 
 instance HTraversable (EnvT e) where
-    htraverse f (EnvT e x) = EnvT e <$> f x
+  htraverse f (EnvT e x) = EnvT e <$> f x
 
 instance HTraversable1 (EnvT e) where
-    htraverse1 f (EnvT e x) = EnvT e <$> f x
+  htraverse1 f (EnvT e x) = EnvT e <$> f x
 
 instance HTraversable Rec where
-    htraverse = rtraverse
+  htraverse = rtraverse
 
 instance HTraversable CoRec where
-    htraverse f (CoRec x) = CoRec <$> f x
+  htraverse f (CoRec x) = CoRec <$> f x
 
 instance HTraversable SOP.NP where
-    htraverse :: forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> SOP.NP f a -> h (SOP.NP g a)
-    htraverse f = go
-      where
-        go :: SOP.NP f b -> h (SOP.NP g b)
-        go = \case
-          SOP.Nil     -> pure SOP.Nil
-          x SOP.:* xs -> (SOP.:*) <$> f x <*> go xs
+  htraverse ::
+    forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> SOP.NP f a -> h (SOP.NP g a)
+  htraverse f = go
+    where
+      go :: SOP.NP f b -> h (SOP.NP g b)
+      go = \case
+        SOP.Nil -> pure SOP.Nil
+        x SOP.:* xs -> (SOP.:*) <$> f x <*> go xs
 
 instance HTraversable SOP.NS where
-    htraverse :: forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> SOP.NS f a -> h (SOP.NS g a)
-    htraverse f = go
-      where
-        go :: SOP.NS f b -> h (SOP.NS g b)
-        go = \case
-          SOP.Z x  -> SOP.Z <$> f x
-          SOP.S xs -> SOP.S <$> go xs
+  htraverse ::
+    forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> SOP.NS f a -> h (SOP.NS g a)
+  htraverse f = go
+    where
+      go :: SOP.NS f b -> h (SOP.NS g b)
+      go = \case
+        SOP.Z x -> SOP.Z <$> f x
+        SOP.S xs -> SOP.S <$> go xs
 
 instance HTraversable1 SOP.NS where
-    htraverse1
-        :: forall f g h a. Apply h
-        => (forall x. f x -> h (g x))
-        -> SOP.NS f a
-        -> h (SOP.NS g a)
-    htraverse1 f = go
-      where
-        go :: SOP.NS f b -> h (SOP.NS g b)
-        go = \case
-          SOP.Z x  -> SOP.Z <$> f x
-          SOP.S xs -> SOP.S <$> go xs
+  htraverse1 ::
+    forall f g h a.
+    Apply h =>
+    (forall x. f x -> h (g x)) ->
+    SOP.NS f a ->
+    h (SOP.NS g a)
+  htraverse1 f = go
+    where
+      go :: SOP.NS f b -> h (SOP.NS g b)
+      go = \case
+        SOP.Z x -> SOP.Z <$> f x
+        SOP.S xs -> SOP.S <$> go xs
 
 instance HTraversable (Day f) where
-    htraverse f (Day x y g) = (\y' -> Day x y' g) <$> f y
+  htraverse f (Day x y g) = (\y' -> Day x y' g) <$> f y
 
 instance HTraversable1 (Day f) where
-    htraverse1 f (Day x y g) = (\y' -> Day x y' g) <$> f y
+  htraverse1 f (Day x y g) = (\y' -> Day x y' g) <$> f y
 
 instance HTraversable (ID.Day f) where
-    htraverse f (ID.Day x y g h) = (\y' -> ID.Day x y' g h) <$> f y
+  htraverse f (ID.Day x y g h) = (\y' -> ID.Day x y' g h) <$> f y
 
 instance HTraversable1 (ID.Day f) where
-    htraverse1 f (ID.Day x y g h) = (\y' -> ID.Day x y' g h) <$> f y
+  htraverse1 f (ID.Day x y g h) = (\y' -> ID.Day x y' g h) <$> f y
 
 instance HTraversable (IN.Night f) where
-    htraverse f (IN.Night x y g h j) = (\y' -> IN.Night x y' g h j) <$> f y
+  htraverse f (IN.Night x y g h j) = (\y' -> IN.Night x y' g h j) <$> f y
 
 instance HTraversable1 (IN.Night f) where
-    htraverse1 f (IN.Night x y g h j) = (\y' -> IN.Night x y' g h j) <$> f y
+  htraverse1 f (IN.Night x y g h j) = (\y' -> IN.Night x y' g h j) <$> f y
 
 instance HTraversable ((:*:) f) where
-    htraverse f (x :*: y) = (x :*:) <$> f y
+  htraverse f (x :*: y) = (x :*:) <$> f y
 
 instance HTraversable1 ((:*:) f) where
-    htraverse1 f (x :*: y) = (x :*:) <$> f y
+  htraverse1 f (x :*: y) = (x :*:) <$> f y
 
 instance HTraversable ((:+:) f) where
-    htraverse f = \case
-      L1 x -> pure (L1 x)
-      R1 y -> R1 <$> f y
+  htraverse f = \case
+    L1 x -> pure (L1 x)
+    R1 y -> R1 <$> f y
 
 instance HTraversable (Product f) where
-    htraverse f (Pair x y) = Pair x <$> f y
+  htraverse f (Pair x y) = Pair x <$> f y
 
 instance HTraversable1 (Product f) where
-    htraverse1 f (Pair x y) = Pair x <$> f y
+  htraverse1 f (Pair x y) = Pair x <$> f y
 
 instance HTraversable (Sum f) where
-    htraverse f = \case
-      InL x -> pure (InL x)
-      InR y -> InR <$> f y
+  htraverse f = \case
+    InL x -> pure (InL x)
+    InR y -> InR <$> f y
 
 instance HTraversable (Joker f) where
-    htraverse _ = pure . coerce
+  htraverse _ = pure . coerce
 
 instance HTraversable (These1 f) where
-    htraverse f = \case
-      This1  x   -> pure $ This1 x
-      That1    y -> That1 <$> f y
-      These1 x y -> These1 x <$> f y
+  htraverse f = \case
+    This1 x -> pure $ This1 x
+    That1 y -> That1 <$> f y
+    These1 x y -> These1 x <$> f y
 
 instance HTraversable (Void3 f) where
-    htraverse _ = \case {}
+  htraverse _ = \case {}
 
 instance HTraversable ProxyF where
-    htraverse _ = pure . coerce
+  htraverse _ = pure . coerce
 
 instance HTraversable (ConstF e) where
-    htraverse _ = pure . coerce
+  htraverse _ = pure . coerce
 
 instance HTraversable t => HTraversable (HLift t) where
-    htraverse f = \case
-      HPure  x -> HPure  <$> f x
-      HOther x -> HOther <$> htraverse f x
+  htraverse f = \case
+    HPure x -> HPure <$> f x
+    HOther x -> HOther <$> htraverse f x
 
 instance HTraversable1 t => HTraversable1 (HLift t) where
-    htraverse1 f = \case
-      HPure  x -> HPure  <$> f x
-      HOther x -> HOther <$> htraverse1 f x
+  htraverse1 f = \case
+    HPure x -> HPure <$> f x
+    HOther x -> HOther <$> htraverse1 f x
 
 instance HTraversable t => HTraversable (HFree t) where
-    htraverse :: forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> HFree t f a -> h (HFree t g a)
-    htraverse f = go
-      where
-        go :: HFree t f b -> h (HFree t g b)
-        go = \case
-          HReturn x -> HReturn <$> f x
-          HJoin   x -> HJoin   <$> htraverse go x
+  htraverse ::
+    forall f g h a. Applicative h => (forall x. f x -> h (g x)) -> HFree t f a -> h (HFree t g a)
+  htraverse f = go
+    where
+      go :: HFree t f b -> h (HFree t g b)
+      go = \case
+        HReturn x -> HReturn <$> f x
+        HJoin x -> HJoin <$> htraverse go x
 
 instance HTraversable1 t => HTraversable1 (HFree t) where
-    htraverse1 :: forall f g h a. Apply h => (forall x. f x -> h (g x)) -> HFree t f a -> h (HFree t g a)
-    htraverse1 f = go
-      where
-        go :: HFree t f b -> h (HFree t g b)
-        go = \case
-          HReturn x -> HReturn <$> f x
-          HJoin   x -> HJoin   <$> htraverse1 go x
-
+  htraverse1 ::
+    forall f g h a. Apply h => (forall x. f x -> h (g x)) -> HFree t f a -> h (HFree t g a)
+  htraverse1 f = go
+    where
+      go :: HFree t f b -> h (HFree t g b)
+      go = \case
+        HReturn x -> HReturn <$> f x
+        HJoin x -> HJoin <$> htraverse1 go x

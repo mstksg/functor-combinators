@@ -17,47 +17,48 @@
 -- @since 0.4.0.0
 module Data.Functor.Invariant.Inplicative.Free (
   -- * Chain
-    DivAp(.., Gather, Knot)
-  , runCoDivAp
-  , runContraDivAp
-  , divApAp
-  , divApDiv
-  , foldDivAp
-  , assembleDivAp
-  , assembleDivApRec
-  -- * Nonempty Chain
-  , DivAp1(.., DivAp1)
-  , runCoDivAp1
-  , runContraDivAp1
-  , divApAp1
-  , divApDiv1
-  , foldDivAp1
-  , assembleDivAp1
-  , assembleDivAp1Rec
-  ) where
+  DivAp (.., Gather, Knot),
+  runCoDivAp,
+  runContraDivAp,
+  divApAp,
+  divApDiv,
+  foldDivAp,
+  assembleDivAp,
+  assembleDivApRec,
 
-import           Control.Applicative
-import           Control.Applicative.Free                  (Ap(..))
-import           Control.Applicative.ListF                 (MaybeF(..))
-import           Control.Natural
-import           Data.Coerce
-import           Data.Functor.Apply
-import           Data.Functor.Apply.Free                   (Ap1(..))
-import           Data.Functor.Contravariant.Divise
-import           Data.Functor.Contravariant.Divisible
-import           Data.Functor.Contravariant.Divisible.Free (Div(..), Div1)
-import           Data.Functor.Identity
-import           Data.Functor.Invariant
-import           Data.Functor.Invariant.Day
-import           Data.Functor.Invariant.Inplicative
-import           Data.HBifunctor.Tensor hiding             (elim1, elim2, intro1, intro2)
-import           Data.HFunctor
-import           Data.HFunctor.Chain
-import           Data.HFunctor.Chain.Internal
-import           Data.HFunctor.Interpret
-import           Data.SOP hiding                           (hmap)
-import qualified Data.Vinyl                                as V
-import qualified Data.Vinyl.Functor                        as V
+  -- * Nonempty Chain
+  DivAp1 (.., DivAp1),
+  runCoDivAp1,
+  runContraDivAp1,
+  divApAp1,
+  divApDiv1,
+  foldDivAp1,
+  assembleDivAp1,
+  assembleDivAp1Rec,
+) where
+
+import Control.Applicative
+import Control.Applicative.Free (Ap (..))
+import Control.Applicative.ListF (MaybeF (..))
+import Control.Natural
+import Data.Coerce
+import Data.Functor.Apply
+import Data.Functor.Apply.Free (Ap1 (..))
+import Data.Functor.Contravariant.Divise
+import Data.Functor.Contravariant.Divisible
+import Data.Functor.Contravariant.Divisible.Free (Div (..), Div1)
+import Data.Functor.Identity
+import Data.Functor.Invariant
+import Data.Functor.Invariant.Day
+import Data.Functor.Invariant.Inplicative
+import Data.HBifunctor.Tensor hiding (elim1, elim2, intro1, intro2)
+import Data.HFunctor
+import Data.HFunctor.Chain
+import Data.HFunctor.Chain.Internal
+import Data.HFunctor.Interpret
+import Data.SOP hiding (hmap)
+import qualified Data.Vinyl as V
+import qualified Data.Vinyl.Functor as V
 
 -- | In the covariant direction, we can interpret into any 'Apply'.
 --
@@ -66,10 +67,11 @@ import qualified Data.Vinyl.Functor                        as V
 -- of 'Inply'.  However, this can be handy if you are using an instance of
 -- 'Apply' that has no 'Inply' instance.  Consider also 'unsafeInplyCo' if
 -- you are using a specific, concrete type for @g@.
-runCoDivAp1
-    :: forall f g. Apply g
-    => f ~> g
-    -> DivAp1 f ~> g
+runCoDivAp1 ::
+  forall f g.
+  Apply g =>
+  f ~> g ->
+  DivAp1 f ~> g
 runCoDivAp1 f = foldDivAp1 f (runDayApply f id)
 
 -- | In the contravariant direction, we can interpret into any 'Divise'.
@@ -79,10 +81,11 @@ runCoDivAp1 f = foldDivAp1 f (runDayApply f id)
 -- of 'Inply'.  However, this can be handy if you are using an instance of
 -- 'Divise' that has no 'Inply' instance.  Consider also
 -- 'unsafeInplyContra' if you are using a specific, concrete type for @g@.
-runContraDivAp1
-    :: forall f g. Divise g
-    => f ~> g
-    -> DivAp1 f ~> g
+runContraDivAp1 ::
+  forall f g.
+  Divise g =>
+  f ~> g ->
+  DivAp1 f ~> g
 runContraDivAp1 f = foldDivAp1 f (runDayDivise f id)
 
 -- | In the covariant direction, we can interpret into any 'Applicative'.
@@ -93,10 +96,11 @@ runContraDivAp1 f = foldDivAp1 f (runDayDivise f id)
 -- an instance of 'Applicative' that has no 'Inplicative' instance.
 -- Consider also 'unsafeInplicativeCo' if you are using a specific,
 -- concrete type for @g@.
-runCoDivAp
-    :: forall f g. Applicative g
-    => f ~> g
-    -> DivAp f ~> g
+runCoDivAp ::
+  forall f g.
+  Applicative g =>
+  f ~> g ->
+  DivAp f ~> g
 runCoDivAp f = foldDivAp pure (\case Day x y h _ -> liftA2 h (f x) y)
 
 -- | In the covariant direction, we can interpret into any 'Divisible'.
@@ -107,10 +111,11 @@ runCoDivAp f = foldDivAp pure (\case Day x y h _ -> liftA2 h (f x) y)
 -- an instance of 'Divisible' that has no 'Inplicative' instance.  Consider
 -- also 'unsafeInplicativeContra' if you are using a specific, concrete
 -- type for @g@.
-runContraDivAp
-    :: forall f g. Divisible g
-    => f ~> g
-    -> DivAp f ~> g
+runContraDivAp ::
+  forall f g.
+  Divisible g =>
+  f ~> g ->
+  DivAp f ~> g
 runContraDivAp f = foldDivAp (const conquer) (\case Day x y _ g -> divide g (f x) y)
 
 -- | General-purpose folder of 'DivAp'.  Provide a way to handle the
@@ -118,25 +123,21 @@ runContraDivAp f = foldDivAp (const conquer) (\case Day x y _ g -> divide g (f x
 -- ('liftA2'/'divide'/'Gather').
 --
 -- @since 0.3.5.0
-foldDivAp
-    :: (forall x. x -> g x)
-    -> (Day f g ~> g)
-    -> DivAp f ~> g
+foldDivAp ::
+  (forall x. x -> g x) ->
+  (Day f g ~> g) ->
+  DivAp f ~> g
 foldDivAp f g = foldChain (f . runIdentity) g . unDivAp
 
 -- | General-purpose folder of 'DivAp1'.  Provide a way to handle the
 -- individual leaves and a way to handle a cons ('liftF2/'divise'/'Gather').
 --
 -- @since 0.3.5.0
-foldDivAp1
-    :: (f ~> g)
-    -> (Day f g ~> g)
-    -> DivAp1 f ~> g
+foldDivAp1 ::
+  (f ~> g) ->
+  (Day f g ~> g) ->
+  DivAp1 f ~> g
 foldDivAp1 f g = foldChain1 f g . unDivAp1
-
-
-
-
 
 -- | Extract the 'Ap' part out of a 'DivAp', shedding the
 -- contravariant bits.
@@ -173,27 +174,28 @@ divApDiv1 = runContraDivAp1 inject
 -- Note that the order of the first two arguments has swapped as of
 -- v0.4.0.0
 pattern Gather :: (b -> c -> a) -> (a -> (b, c)) -> f b -> DivAp f c -> DivAp f a
-pattern Gather f g x xs <- (unGather_->MaybeF (Just (Day x xs f g)))
+pattern Gather f g x xs <- (unGather_ -> MaybeF (Just (Day x xs f g)))
   where
     Gather f g x xs = DivAp $ More $ Day x (unDivAp xs) f g
 
 unGather_ :: DivAp f ~> MaybeF (Day f (DivAp f))
 unGather_ = \case
   DivAp (More (Day x xs g f)) -> MaybeF . Just $ Day x (DivAp xs) g f
-  DivAp (Done _             ) -> MaybeF Nothing
+  DivAp (Done _) -> MaybeF Nothing
 
 -- | Match on an "empty" 'DivAp'; contains no @f@s, but only the
 -- terminal value.  Analogous to 'Control.Applicative.Free.Pure'.
 pattern Knot :: a -> DivAp f a
 pattern Knot x = DivAp (Done (Identity x))
+
 {-# COMPLETE Gather, Knot #-}
 
 instance Inply (DivAp f) where
-    gather = coerce (gather @(Chain Day Identity _))
+  gather = coerce (gather @(Chain Day Identity _))
 
 -- | The free 'Inplicative'
 instance Inplicative (DivAp f) where
-    knot = coerce (knot @(Chain Day Identity _))
+  knot = coerce (knot @(Chain Day Identity _))
 
 -- | Match on a 'DivAp1' to get the head and the rest of the items.
 -- Analogous to the 'Data.Functor.Apply.Free.Ap1' constructor.
@@ -201,14 +203,15 @@ instance Inplicative (DivAp f) where
 -- Note that the order of the first two arguments has swapped as of
 -- v0.4.0.0
 pattern DivAp1 :: Invariant f => (b -> c -> a) -> (a -> (b, c)) -> f b -> DivAp f c -> DivAp1 f a
-pattern DivAp1 f g x xs <- (coerce splitChain1->Day x xs f g)
+pattern DivAp1 f g x xs <- (coerce splitChain1 -> Day x xs f g)
   where
     DivAp1 f g x xs = unsplitNE $ Day x xs f g
+
 {-# COMPLETE DivAp1 #-}
 
 -- | The free 'Inplicative'
 instance Invariant f => Inply (DivAp1 f) where
-    gather = coerce (gather @(Chain1 Day _))
+  gather = coerce (gather @(Chain1 Day _))
 
 -- | Convenient wrapper to build up a 'DivAp' by providing each
 -- component of it.  This makes it much easier to build up longer chains
@@ -244,16 +247,19 @@ instance Invariant f => Inply (DivAp1 f) where
 --
 -- If each component is itself a @'DivAp' f@ (instead of @f@), you can use
 -- 'concatInplicative'.
-assembleDivAp
-    :: NP f as
-    -> DivAp f (NP I as)
+assembleDivAp ::
+  NP f as ->
+  DivAp f (NP I as)
 assembleDivAp = \case
-    Nil     -> DivAp $ Done $ Identity Nil
-    x :* xs -> DivAp $ More $ Day
-      x
-      (unDivAp (assembleDivAp xs))
-      (\y ys -> I y :* ys)
-      (\case I y :* ys -> (y, ys))
+  Nil -> DivAp $ Done $ Identity Nil
+  x :* xs ->
+    DivAp $
+      More $
+        Day
+          x
+          (unDivAp (assembleDivAp xs))
+          (\y ys -> I y :* ys)
+          (\case I y :* ys -> (y, ys))
 
 -- | A version of 'assembleDivAp' but for 'DivAp1' instead.  Can be
 -- useful if you intend on interpreting it into something with only
@@ -261,17 +267,19 @@ assembleDivAp = \case
 --
 -- If each component is itself a @'DivAp1' f@ (instead of @f@), you can use
 -- 'concatInply'.
-assembleDivAp1
-    :: Invariant f
-    => NP f (a ': as)
-    -> DivAp1 f (NP I (a ': as))
+assembleDivAp1 ::
+  Invariant f =>
+  NP f (a ': as) ->
+  DivAp1 f (NP I (a ': as))
 assembleDivAp1 (x :* xs) = DivAp1_ $ case xs of
-    Nil    -> Done1 $ invmap ((:* Nil) . I) (unI . hd) x
-    _ :* _ -> More1 $ Day
-      x
-      (unDivAp1 (assembleDivAp1 xs))
-      (\y ys -> I y :* ys)
-      (\case I y :* ys -> (y, ys))
+  Nil -> Done1 $ invmap ((:* Nil) . I) (unI . hd) x
+  _ :* _ ->
+    More1 $
+      Day
+        x
+        (unDivAp1 (assembleDivAp1 xs))
+        (\y ys -> I y :* ys)
+        (\case I y :* ys -> (y, ys))
 
 -- | A version of 'assembleDivAp' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
@@ -290,16 +298,19 @@ assembleDivAp1 (x :* xs) = DivAp1_ $ case xs of
 --
 -- If each component is itself a @'DivAp' f@ (instead of @f@), you can use
 -- 'concatDivApRec'.
-assembleDivApRec
-    :: V.Rec f as
-    -> DivAp f (V.XRec V.Identity as)
+assembleDivApRec ::
+  V.Rec f as ->
+  DivAp f (V.XRec V.Identity as)
 assembleDivApRec = \case
-    V.RNil    -> DivAp $ Done $ Identity V.RNil
-    x V.:& xs -> DivAp $ More $ Day
-      x
-      (unDivAp (assembleDivApRec xs))
-      (V.::&)
-      unconsRec
+  V.RNil -> DivAp $ Done $ Identity V.RNil
+  x V.:& xs ->
+    DivAp $
+      More $
+        Day
+          x
+          (unDivAp (assembleDivApRec xs))
+          (V.::&)
+          unconsRec
 
 -- | A version of 'assembleDivAp1' using 'V.XRec' from /vinyl/ instead of
 -- 'NP' from /sop-core/.  This can be more convenient because it doesn't
@@ -307,25 +318,28 @@ assembleDivApRec = \case
 --
 -- If each component is itself a @'DivAp1' f@ (instead of @f@), you can use
 -- 'concatDivAp1Rec'.
-assembleDivAp1Rec
-    :: Invariant f
-    => V.Rec f (a ': as)
-    -> DivAp1 f (V.XRec V.Identity (a ': as))
+assembleDivAp1Rec ::
+  Invariant f =>
+  V.Rec f (a ': as) ->
+  DivAp1 f (V.XRec V.Identity (a ': as))
 assembleDivAp1Rec (x V.:& xs) = case xs of
-    V.RNil   -> DivAp1_ $ Done1 $ invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
-    _ V.:& _ -> DivAp1_ $ More1 $ Day
-      x
-      (unDivAp1 (assembleDivAp1Rec xs))
-      (V.::&)
-      unconsRec
+  V.RNil -> DivAp1_ $ Done1 $ invmap (V.::& V.RNil) (\case z V.::& _ -> z) x
+  _ V.:& _ ->
+    DivAp1_ $
+      More1 $
+        Day
+          x
+          (unDivAp1 (assembleDivAp1Rec xs))
+          (V.::&)
+          unconsRec
 
 unconsRec :: V.XRec V.Identity (a ': as) -> (a, V.XRec V.Identity as)
 unconsRec (y V.::& ys) = (y, ys)
 
 -- | A free 'Inply'
 instance Inply f => Interpret DivAp1 f where
-    interpret f (DivAp1_ x) = foldChain1 f (runDay f id) x
+  interpret f (DivAp1_ x) = foldChain1 f (runDay f id) x
 
 -- | A free 'Inplicative'
 instance Inplicative f => Interpret DivAp f where
-    interpret f (DivAp x) = foldChain (knot . runIdentity) (runDay f id) x
+  interpret f (DivAp x) = foldChain (knot . runIdentity) (runDay f id) x

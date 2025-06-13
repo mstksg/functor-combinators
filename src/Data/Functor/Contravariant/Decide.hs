@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP                  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -18,14 +18,20 @@
 --
 -- @since 0.3.0.0
 module Data.Functor.Contravariant.Decide (
-    Decide(..)
-  , decided
-  ) where
+  Decide (..),
+  decided,
+) where
 
 import Control.Applicative.Backwards
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Maybe
+import qualified Control.Monad.Trans.RWS.Lazy as Lazy
+import qualified Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
+import qualified Control.Monad.Trans.State.Lazy as Lazy
+import qualified Control.Monad.Trans.State.Strict as Strict
+import qualified Control.Monad.Trans.Writer.Lazy as Lazy
+import qualified Control.Monad.Trans.Writer.Strict as Strict
 import Data.Functor.Apply
 import Data.Functor.Compose
 import Data.Functor.Contravariant
@@ -33,12 +39,6 @@ import Data.Functor.Contravariant.Divise
 import Data.Functor.Contravariant.Divisible
 import Data.Functor.Product
 import Data.Functor.Reverse
-import qualified Control.Monad.Trans.RWS.Lazy      as Lazy
-import qualified Control.Monad.Trans.RWS.Strict    as Strict
-import qualified Control.Monad.Trans.State.Lazy    as Lazy
-import qualified Control.Monad.Trans.State.Strict  as Strict
-import qualified Control.Monad.Trans.Writer.Lazy   as Lazy
-import qualified Control.Monad.Trans.Writer.Strict as Strict
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Monoid (Alt(..))
@@ -81,9 +81,9 @@ import Data.Either
 -- That is, it is possible to define a function @(f `EitherDay` f) a ->
 -- f a@ in a way that is associative.
 class Contravariant f => Decide f where
-    -- | Takes the "decision" method and the two potential consumers, and
-    -- returns the wrapped/combined consumer.
-    decide :: (a -> Either b c) -> f b -> f c -> f a
+  -- | Takes the "decision" method and the two potential consumers, and
+  -- returns the wrapped/combined consumer.
+  decide :: (a -> Either b c) -> f b -> f c -> f a
 
 -- | For @'decided' x y@, the resulting @f ('Either' b c)@ will direct
 -- 'Left's to be consumed by @x@, and 'Right's to be consumed by y.
@@ -91,7 +91,7 @@ decided :: Decide f => f b -> f c -> f (Either b c)
 decided = decide id
 
 instance Decidable f => Decide (WrappedDivisible f) where
-    decide f (WrapDivisible x) (WrapDivisible y) = WrapDivisible (choose f x y)
+  decide f (WrapDivisible x) (WrapDivisible y) = WrapDivisible (choose f x y)
 
 instance Decide Comparison where decide = choose
 instance Decide Equivalence where decide = choose
@@ -135,17 +135,27 @@ instance Decide m => Decide (ReaderT r m) where
 
 instance Decide m => Decide (Lazy.RWST r w s m) where
   decide abc (Lazy.RWST rsmb) (Lazy.RWST rsmc) = Lazy.RWST $ \r s ->
-    decide (\ ~(a, s', w) -> either (Left  . betuple3 s' w)
-                                    (Right . betuple3 s' w)
-                                    (abc a))
-           (rsmb r s) (rsmc r s)
+    decide
+      ( \ ~(a, s', w) ->
+          either
+            (Left . betuple3 s' w)
+            (Right . betuple3 s' w)
+            (abc a)
+      )
+      (rsmb r s)
+      (rsmc r s)
 
 instance Decide m => Decide (Strict.RWST r w s m) where
   decide abc (Strict.RWST rsmb) (Strict.RWST rsmc) = Strict.RWST $ \r s ->
-    decide (\(a, s', w) -> either (Left  . betuple3 s' w)
-                                  (Right . betuple3 s' w)
-                                  (abc a))
-           (rsmb r s) (rsmc r s)
+    decide
+      ( \(a, s', w) ->
+          either
+            (Left . betuple3 s' w)
+            (Right . betuple3 s' w)
+            (abc a)
+      )
+      (rsmb r s)
+      (rsmc r s)
 
 #if !MIN_VERSION_transformers(0,6,0)
 instance Divise m => Decide (ListT m) where
@@ -153,29 +163,43 @@ instance Divise m => Decide (ListT m) where
 #endif
 
 instance Divise m => Decide (MaybeT m) where
-  decide f (MaybeT l) (MaybeT r) = MaybeT $
-    divise ( maybe (Nothing, Nothing)
-                   (either (\b -> (Just b, Nothing))
-                           (\c -> (Nothing, Just c)) . f)
-           ) l r
+  decide f (MaybeT l) (MaybeT r) =
+    MaybeT $
+      divise
+        ( maybe
+            (Nothing, Nothing)
+            ( either
+                (\b -> (Just b, Nothing))
+                (\c -> (Nothing, Just c))
+                . f
+            )
+        )
+        l
+        r
 
 instance Decide m => Decide (Lazy.StateT s m) where
   decide f (Lazy.StateT l) (Lazy.StateT r) = Lazy.StateT $ \s ->
-    decide (\ ~(a, s') -> either (Left . betuple s') (Right . betuple s') (f a))
-           (l s) (r s)
+    decide
+      (\ ~(a, s') -> either (Left . betuple s') (Right . betuple s') (f a))
+      (l s)
+      (r s)
 
 instance Decide m => Decide (Strict.StateT s m) where
   decide f (Strict.StateT l) (Strict.StateT r) = Strict.StateT $ \s ->
-    decide (\(a, s') -> either (Left . betuple s') (Right . betuple s') (f a))
-           (l s) (r s)
+    decide
+      (\(a, s') -> either (Left . betuple s') (Right . betuple s') (f a))
+      (l s)
+      (r s)
 
 instance Decide m => Decide (Lazy.WriterT w m) where
-  decide f (Lazy.WriterT l) (Lazy.WriterT r) = Lazy.WriterT $
-    decide (\ ~(a, s') -> either (Left . betuple s') (Right . betuple s') (f a)) l r
+  decide f (Lazy.WriterT l) (Lazy.WriterT r) =
+    Lazy.WriterT $
+      decide (\ ~(a, s') -> either (Left . betuple s') (Right . betuple s') (f a)) l r
 
 instance Decide m => Decide (Strict.WriterT w m) where
-  decide f (Strict.WriterT l) (Strict.WriterT r) = Strict.WriterT $
-    decide (\(a, s') -> either (Left . betuple s') (Right . betuple s') (f a)) l r
+  decide f (Strict.WriterT l) (Strict.WriterT r) =
+    Strict.WriterT $
+      decide (\(a, s') -> either (Left . betuple s') (Right . betuple s') (f a)) l r
 
 -- | Unlike 'Decidable', requires only 'Apply' on @f@.
 instance (Apply f, Decide g) => Decide (Compose f g) where

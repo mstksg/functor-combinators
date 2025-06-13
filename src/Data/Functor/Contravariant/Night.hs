@@ -1,4 +1,3 @@
-
 -- |
 -- Module      : Data.Functor.Contravariant.Night
 -- Copyright   : (c) Justin Le 2019
@@ -13,26 +12,32 @@
 --
 -- @since 0.3.0.0
 module Data.Functor.Contravariant.Night (
-    Night(..)
-  , night
-  , runNight, necide
-  , assoc, unassoc
-  , swapped
-  , trans1, trans2
-  , intro1, intro2
-  , elim1, elim2
-  , Not(..), refuted
-  ) where
+  Night (..),
+  night,
+  runNight,
+  necide,
+  assoc,
+  unassoc,
+  swapped,
+  trans1,
+  trans2,
+  intro1,
+  intro2,
+  elim1,
+  elim2,
+  Not (..),
+  refuted,
+) where
 
-import           Control.Natural
-import           Data.Bifunctor
-import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Decide
-import           Data.Functor.Invariant
-import           Data.Kind
-import           Data.Void
-import qualified Data.Bifunctor.Assoc              as B
-import qualified Data.Bifunctor.Swap               as B
+import Control.Natural
+import Data.Bifunctor
+import qualified Data.Bifunctor.Assoc as B
+import qualified Data.Bifunctor.Swap as B
+import Data.Functor.Contravariant
+import Data.Functor.Contravariant.Decide
+import Data.Functor.Invariant
+import Data.Kind
+import Data.Void
 
 -- | A pairing of contravariant functors to create a new contravariant
 -- functor that represents the "choice" between the two.
@@ -52,43 +57,44 @@ import qualified Data.Bifunctor.Swap               as B
 -- about in Haskell (which uses @(,)@).  Therefore, it is an alternative to
 -- the typical 'Data.Functor.Day' convolution --- hence, the name 'Night'.
 data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
-    Night :: f b
-          -> g c
-          -> (a -> Either b c)
-          -> Night f g a
+  Night ::
+    f b ->
+    g c ->
+    (a -> Either b c) ->
+    Night f g a
 
 instance Contravariant (Night f g) where
-    contramap f (Night x y g) = Night x y (g . f)
+  contramap f (Night x y g) = Night x y (g . f)
 
 instance Invariant (Night f g) where
-    invmap _ f (Night x y g) = Night x y (g . f)
+  invmap _ f (Night x y g) = Night x y (g . f)
 
 -- | Inject into a 'Night'.
 --
 -- @'night' x y@ is a consumer of @'Either' a b@; 'Left' will be passed
 -- to @x@, and 'Right' will be passed to @y@.
-night
-    :: f a
-    -> g b
-    -> Night f g (Either a b)
+night ::
+  f a ->
+  g b ->
+  Night f g (Either a b)
 night x y = Night x y id
 
 -- | Interpret out of a 'Night' into any instance of 'Decide' by providing
 -- two interpreting functions.
-runNight
-    :: Decide h
-    => (f ~> h)
-    -> (g ~> h)
-    -> Night f g ~> h
+runNight ::
+  Decide h =>
+  (f ~> h) ->
+  (g ~> h) ->
+  Night f g ~> h
 runNight f g (Night x y z) = decide z (f x) (g y)
 
 -- | Squash the two items in a 'Night' using their natural 'Decide'
 -- instances.
 --
 -- @since 0.4.0.0
-necide
-    :: Decide f
-    => Night f f ~> f
+necide ::
+  Decide f =>
+  Night f f ~> f
 necide (Night x y z) = decide z x y
 
 -- | 'Night' is associative.
@@ -112,7 +118,7 @@ trans2 :: g ~> h -> Night f g ~> Night f h
 trans2 f (Night x y z) = Night x (f y) z
 
 -- | A value of type @'Not' a@ is "proof" that @a@ is uninhabited.
-newtype Not a = Not { refute :: a -> Void }
+newtype Not a = Not {refute :: a -> Void}
 
 -- | A useful shortcut for a common usage: 'Void' is always not so.
 --
@@ -121,13 +127,14 @@ refuted :: Not Void
 refuted = Not id
 
 instance Contravariant Not where
-    contramap f (Not g) = Not (g . f)
+  contramap f (Not g) = Not (g . f)
+
 -- | @since 0.3.1.0
 instance Invariant Not where
-    invmap _ = contramap
+  invmap _ = contramap
 
 instance Semigroup (Not a) where
-    Not f <> Not g = Not (f <> g)
+  Not f <> Not g = Not (f <> g)
 
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.

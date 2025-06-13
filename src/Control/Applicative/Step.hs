@@ -16,47 +16,49 @@
 -- ':+:' and 'Data.Functor.These.These1'.
 module Control.Applicative.Step (
   -- * Fixed Points
-    Step(..)
-  , Steps(..)
-  , Flagged(..)
-  -- ** Steppers
-  , stepUp
-  , stepDown
-  , stepping
-  , stepsUp
-  , stepsDown
-  , steppings
-  -- * Void
-  , absurd1
-  , Void2
-  , absurd2
-  , Void3
-  , absurd3
-  ) where
+  Step (..),
+  Steps (..),
+  Flagged (..),
 
-import           Control.Natural
-import           Control.Natural.IsoF
-import           Data.Bifunctor
-import           Data.Data
-import           Data.Deriving
-import           Data.Functor.Alt
-import           Data.Functor.Bind
-import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Conclude
-import           Data.Functor.Contravariant.Decide
-import           Data.Functor.Contravariant.Divise
-import           Data.Functor.Contravariant.Divisible
-import           Data.Functor.Invariant
-import           Data.Functor.These
-import           Data.Map.NonEmpty                    (NEMap)
-import           Data.Pointed
-import           Data.Semigroup
-import           Data.Semigroup.Foldable
-import           Data.Semigroup.Traversable
-import           Data.These
-import           GHC.Generics
-import           GHC.Natural
-import qualified Data.Map.NonEmpty                    as NEM
+  -- ** Steppers
+  stepUp,
+  stepDown,
+  stepping,
+  stepsUp,
+  stepsDown,
+  steppings,
+
+  -- * Void
+  absurd1,
+  Void2,
+  absurd2,
+  Void3,
+  absurd3,
+) where
+
+import Control.Natural
+import Control.Natural.IsoF
+import Data.Bifunctor
+import Data.Data
+import Data.Deriving
+import Data.Functor.Alt
+import Data.Functor.Bind
+import Data.Functor.Contravariant
+import Data.Functor.Contravariant.Conclude
+import Data.Functor.Contravariant.Decide
+import Data.Functor.Contravariant.Divise
+import Data.Functor.Contravariant.Divisible
+import Data.Functor.Invariant
+import Data.Functor.These
+import Data.Map.NonEmpty (NEMap)
+import qualified Data.Map.NonEmpty as NEM
+import Data.Pointed
+import Data.Semigroup
+import Data.Semigroup.Foldable
+import Data.Semigroup.Traversable
+import Data.These
+import GHC.Generics
+import GHC.Natural
 
 -- | An @f a@, along with a 'Natural' index.
 --
@@ -79,7 +81,7 @@ import qualified Data.Map.NonEmpty                    as NEM
 --
 -- Note that this type and its instances equivalent to
 -- @'Control.Comonad.Trans.Env.EnvT' ('Data.Semigroup.Sum' 'Natural')@.
-data Step f a = Step { stepPos :: Natural, stepVal :: f a }
+data Step f a = Step {stepPos :: Natural, stepVal :: f a}
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
 deriveShow1 ''Step
@@ -89,50 +91,53 @@ deriveOrd1 ''Step
 
 -- | @since 0.3.0.0
 instance Apply f => Apply (Step f) where
-    Step n f <.> Step m x = Step (n + m) (f <.> x)
+  Step n f <.> Step m x = Step (n + m) (f <.> x)
 
 instance Applicative f => Applicative (Step f) where
-    pure = Step 0 . pure
-    Step n f <*> Step m x = Step (n + m) (f <*> x)
+  pure = Step 0 . pure
+  Step n f <*> Step m x = Step (n + m) (f <*> x)
 
 -- | @since 0.3.0.0
 instance Contravariant f => Contravariant (Step f) where
-    contramap f (Step x y) = Step x (contramap f y)
+  contramap f (Step x y) = Step x (contramap f y)
 
 -- | @since 0.3.0.0
 instance Divisible f => Divisible (Step f) where
-    divide f (Step n x) (Step m y) = Step (n + m) (divide f x y)
-    conquer = Step 0 conquer
+  divide f (Step n x) (Step m y) = Step (n + m) (divide f x y)
+  conquer = Step 0 conquer
+
 -- | @since 0.3.0.0
 instance Divise f => Divise (Step f) where
-    divise f (Step n x) (Step m y) = Step (n + m) (divise f x y)
+  divise f (Step n x) (Step m y) = Step (n + m) (divise f x y)
 
 -- | @since 0.3.0.0
 instance Decide f => Decide (Step f) where
-    decide f (Step n x) (Step m y) = Step (n + m) (decide f x y)
+  decide f (Step n x) (Step m y) = Step (n + m) (decide f x y)
+
 -- | @since 0.3.0.0
 instance Conclude f => Conclude (Step f) where
-    conclude = Step 0 . conclude
+  conclude = Step 0 . conclude
+
 -- | @since 0.3.0.0
 instance Decidable f => Decidable (Step f) where
-    choose f (Step n x) (Step m y) = Step (n + m) (choose f x y)
-    lose = Step 0 . lose
+  choose f (Step n x) (Step m y) = Step (n + m) (choose f x y)
+  lose = Step 0 . lose
 
 -- | @since 0.3.0.0
 instance Invariant f => Invariant (Step f) where
-    invmap f g (Step x y) = Step x (invmap f g y)
+  invmap f g (Step x y) = Step x (invmap f g y)
 
 instance Pointed f => Pointed (Step f) where
-    point = Step 0 . point
+  point = Step 0 . point
 
 instance Foldable1 f => Foldable1 (Step f) where
-    fold1      = fold1 . stepVal
-    foldMap1 f = foldMap1 f . stepVal
-    toNonEmpty = toNonEmpty . stepVal
+  fold1 = fold1 . stepVal
+  foldMap1 f = foldMap1 f . stepVal
+  toNonEmpty = toNonEmpty . stepVal
 
 instance Traversable1 f => Traversable1 (Step f) where
-    traverse1 f (Step n x) = Step n <$> traverse1 f x
-    sequence1 (Step n x) = Step n <$> sequence1 x
+  traverse1 f (Step n x) = Step n <$> traverse1 f x
+  sequence1 (Step n x) = Step n <$> sequence1 x
 
 -- | "Uncons and cons" an @f@ branch before a 'Step'.  This is basically
 -- a witness that 'stepDown' and 'stepUp' form an isomorphism.
@@ -164,8 +169,8 @@ stepping = isoF stepDown stepUp
 -- Forms an isomorphism with 'stepUp' (see 'stepping').
 stepDown :: Step f ~> f :+: Step f
 stepDown (Step n x) = case minusNaturalMaybe n 1 of
-    Nothing -> L1 x
-    Just m  -> R1 (Step m x)
+  Nothing -> L1 x
+  Just m -> R1 (Step m x)
 
 -- | Unshift an item into a 'Step'.  Because a @'Step' f@ is @f :+: f :+:
 -- f :+: f :+: ...@ forever, this basically conses an additional
@@ -193,8 +198,8 @@ stepDown (Step n x) = case minusNaturalMaybe n 1 of
 -- Forms an isomorphism with 'stepDown' (see 'stepping').
 stepUp :: f :+: Step f ~> Step f
 stepUp = \case
-    L1 x          -> Step 0       x
-    R1 (Step n y) -> Step (n + 1) y
+  L1 x -> Step 0 x
+  R1 (Step n y) -> Step (n + 1) y
 
 -- | We have a natural transformation between 'V1' and any other
 -- functor @f@ with no constraints.
@@ -230,7 +235,7 @@ absurd1 = \case {}
 --
 -- This type is essentailly the same as @'Control.Applicative.ListF.NEMapF'
 -- ('Sum' 'Natural')@ (except with a different 'Semigroup' instance).
-newtype Steps f a = Steps { getSteps :: NEMap Natural (f a) }
+newtype Steps f a = Steps {getSteps :: NEMap Natural (f a)}
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
 deriveShow1 ''Steps
@@ -239,39 +244,39 @@ deriveEq1 ''Steps
 deriveOrd1 ''Steps
 
 instance Foldable1 f => Foldable1 (Steps f) where
-    fold1      = foldMap1 fold1 . getSteps
-    foldMap1 f = (foldMap1 . foldMap1) f . getSteps
-    toNonEmpty = foldMap1 toNonEmpty . getSteps
+  fold1 = foldMap1 fold1 . getSteps
+  foldMap1 f = (foldMap1 . foldMap1) f . getSteps
+  toNonEmpty = foldMap1 toNonEmpty . getSteps
 
 instance Traversable1 f => Traversable1 (Steps f) where
-    traverse1 f = fmap Steps . (traverse1 . traverse1) f . getSteps
-    sequence1   = fmap Steps . traverse1 sequence1 . getSteps
+  traverse1 f = fmap Steps . (traverse1 . traverse1) f . getSteps
+  sequence1 = fmap Steps . traverse1 sequence1 . getSteps
 
 -- | Appends the items back-to-back, shifting all of the items in the
 -- second map.  Matches the behavior as the fixed-point of 'These1'.
 instance Semigroup (Steps f a) where
-    Steps xs <> Steps ys = Steps $
+  Steps xs <> Steps ys =
+    Steps $
       let (k, _) = NEM.findMax xs
-      in  xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
+       in xs <> NEM.mapKeysMonotonic (+ (k + 1)) ys
 
 -- | @since 0.3.0.0
 instance Contravariant f => Contravariant (Steps f) where
-    contramap f (Steps xs) = Steps ((fmap . contramap) f xs)
+  contramap f (Steps xs) = Steps ((fmap . contramap) f xs)
 
 -- TODO: consider what Divisible/Decidable should be.  Maybe no need to
 -- rush into this.
 
 -- | @since 0.3.0.0
 instance Invariant f => Invariant (Steps f) where
-    invmap f g (Steps xs) = Steps (fmap (invmap f g) xs)
-
+  invmap f g (Steps xs) = Steps (fmap (invmap f g) xs)
 
 -- | Left-biased untion
 instance Functor f => Alt (Steps f) where
-    Steps xs <!> Steps ys = Steps $ NEM.union xs ys
+  Steps xs <!> Steps ys = Steps $ NEM.union xs ys
 
 instance Pointed f => Pointed (Steps f) where
-    point = Steps . NEM.singleton 0 . point
+  point = Steps . NEM.singleton 0 . point
 
 -- | "Uncons and cons" an @f@ branch before a 'Steps'.  This is basically
 -- a witness that 'stepsDown' and 'stepsUp' form an isomorphism.
@@ -303,15 +308,16 @@ steppings = isoF stepsDown stepsUp
 --
 -- Forms an isomorphism with 'stepsUp' (see 'steppings').
 stepsDown :: Steps f ~> These1 f (Steps f)
-stepsDown = these This1 That1 These1
-          . bimap getFirst Steps
-          . NEM.foldMapWithKey decr
-          . getSteps
+stepsDown =
+  these This1 That1 These1
+    . bimap getFirst Steps
+    . NEM.foldMapWithKey decr
+    . getSteps
 
 decr :: Natural -> f a -> These (First (f a)) (NEMap Natural (f a))
 decr i x = case minusNaturalMaybe i 1 of
-      Nothing -> This $ First x
-      Just i' -> That $ NEM.singleton i' x
+  Nothing -> This $ First x
+  Just i' -> That $ NEM.singleton i' x
 
 -- | Unshift an item into a 'Steps'.  Because a @'Steps' f@ is @f `These1`
 -- f `These1` f `These1` f `These1` ...@ forever, this basically conses an
@@ -341,16 +347,19 @@ decr i x = case minusNaturalMaybe i 1 of
 -- Forms an isomorphism with 'stepDown' (see 'stepping').
 stepsUp :: These1 f (Steps f) ~> Steps f
 stepsUp = \case
-    This1  x    -> Steps $ NEM.singleton 0 x
-    That1    xs -> Steps . NEM.mapKeysMonotonic (+ 1)
-                         . getSteps
-                         $ xs
-    These1 x xs -> Steps . NEM.insertMapMin 0 x
-                         . NEM.toMap
-                         . NEM.mapKeysMonotonic (+ 1)
-                         . getSteps
-                         $ xs
-
+  This1 x -> Steps $ NEM.singleton 0 x
+  That1 xs ->
+    Steps
+      . NEM.mapKeysMonotonic (+ 1)
+      . getSteps
+      $ xs
+  These1 x xs ->
+    Steps
+      . NEM.insertMapMin 0 x
+      . NEM.toMap
+      . NEM.mapKeysMonotonic (+ 1)
+      . getSteps
+      $ xs
 
 -- | An @f a@, along with a 'Bool' flag
 --
@@ -377,7 +386,7 @@ stepsUp = \case
 --
 -- *   @'Data.HFunctor.HLift' 'Control.Monad.Trans.Identity.IdentityT'@
 -- *   @'Control.COmonad.Trans.Env.EnvT' 'Data.Semigroup.Any'@
-data Flagged f a = Flagged { flaggedFlag :: Bool, flaggedVal :: f a }
+data Flagged f a = Flagged {flaggedFlag :: Bool, flaggedVal :: f a}
   deriving (Show, Read, Eq, Ord, Functor, Foldable, Traversable, Typeable, Generic, Data)
 
 deriveShow1 ''Flagged
@@ -387,25 +396,21 @@ deriveOrd1 ''Flagged
 
 -- | Uses 'False' for 'pure', and '||' for '<*>'.
 instance Applicative f => Applicative (Flagged f) where
-    pure = Flagged False . pure
-    Flagged n f <*> Flagged m x = Flagged (n || m) (f <*> x)
+  pure = Flagged False . pure
+  Flagged n f <*> Flagged m x = Flagged (n || m) (f <*> x)
 
 -- | Uses 'False' for 'point'.
 instance Pointed f => Pointed (Flagged f) where
-    point = Flagged False . point
+  point = Flagged False . point
 
 instance Foldable1 f => Foldable1 (Flagged f) where
-    fold1      = fold1 . flaggedVal
-    foldMap1 f = foldMap1 f . flaggedVal
-    toNonEmpty = toNonEmpty . flaggedVal
+  fold1 = fold1 . flaggedVal
+  foldMap1 f = foldMap1 f . flaggedVal
+  toNonEmpty = toNonEmpty . flaggedVal
 
 instance Traversable1 f => Traversable1 (Flagged f) where
-    traverse1 f (Flagged n x) = Flagged n <$> traverse1 f x
-    sequence1 (Flagged n x) = Flagged n <$> sequence1 x
-
-
-
-
+  traverse1 f (Flagged n x) = Flagged n <$> traverse1 f x
+  sequence1 (Flagged n x) = Flagged n <$> sequence1 x
 
 -- | @'Void2' a b@ is uninhabited for all @a@ and @b@.
 data Void2 a b
@@ -417,23 +422,24 @@ deriveEq1 ''Void2
 deriveOrd1 ''Void2
 
 instance Semigroup (Void2 a b) where
-    x <> _ = case x of {}
+  x <> _ = case x of {}
 
 instance Alt (Void2 a) where
-    x <!> _ = absurd2 x
+  x <!> _ = absurd2 x
 
 instance Bind (Void2 a) where
-    x >>- _ = case x of {}
+  x >>- _ = case x of {}
 
 instance Apply (Void2 a) where
-    x <.> _ = case x of {}
+  x <.> _ = case x of {}
 
 -- | @since 0.3.0.0
 instance Contravariant (Void2 a) where
-    contramap _ = \case {}
+  contramap _ = \case {}
+
 -- | @since 0.3.0.0
 instance Invariant (Void2 a) where
-    invmap _ _ = \case {}
+  invmap _ _ = \case {}
 
 -- | If you treat a @'Void2' f a@ as a functor combinator, then 'absurd2'
 -- lets you convert from a @'Void2' f a@ into a @t f a@ for any functor
@@ -451,23 +457,24 @@ deriveEq1 ''Void3
 deriveOrd1 ''Void3
 
 instance Semigroup (Void3 a b c) where
-    x <> _ = case x of {}
+  x <> _ = case x of {}
 
 instance Alt (Void3 a b) where
-    x <!> _ = absurd3 x
+  x <!> _ = absurd3 x
 
 instance Bind (Void3 a b) where
-    x >>- _ = case x of {}
+  x >>- _ = case x of {}
 
 instance Apply (Void3 a b) where
-    x <.> _ = case x of {}
+  x <.> _ = case x of {}
 
 -- | @since 0.3.0.0
 instance Contravariant (Void3 a b) where
-    contramap _ = \case {}
+  contramap _ = \case {}
+
 -- | @since 0.3.0.0
 instance Invariant (Void3 a b) where
-    invmap _ _ = \case {}
+  invmap _ _ = \case {}
 
 -- | If you treat a @'Void3' f a@ as a binary functor combinator, then
 -- 'absurd3' lets you convert from a @'Void3' f a@ into a @t f a@ for any

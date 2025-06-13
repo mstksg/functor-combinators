@@ -1,4 +1,3 @@
-
 -- |
 -- Module      : Data.Functor.Invariant.Night
 -- Copyright   : (c) Justin Le 2019
@@ -12,37 +11,42 @@
 --
 -- @since 0.3.0.0
 module Data.Functor.Invariant.Night (
-    Night(..)
-  , Not(..), refuted
-  , night
-  , runNight
-  , nerve
-  , runNightAlt
-  , runNightDecide
-  , toCoNight
-  , toCoNight_
-  , toContraNight
-  , assoc, unassoc
-  , intro1, intro2
-  , elim1, elim2
-  , swapped
-  , trans1, trans2
-  ) where
+  Night (..),
+  Not (..),
+  refuted,
+  night,
+  runNight,
+  nerve,
+  runNightAlt,
+  runNightDecide,
+  toCoNight,
+  toCoNight_,
+  toContraNight,
+  assoc,
+  unassoc,
+  intro1,
+  intro2,
+  elim1,
+  elim2,
+  swapped,
+  trans1,
+  trans2,
+) where
 
-import           Control.Natural
-import           Data.Bifunctor
-import           Data.Functor.Alt
-import           Data.Functor.Contravariant.Decide
-import           Data.Functor.Contravariant.Night  (Not(..), refuted)
-import           Data.Functor.Invariant
-import           Data.Functor.Invariant.Internative
-import           Data.Kind
-import           Data.Void
-import           GHC.Generics
-import qualified Data.Bifunctor.Assoc              as B
-import qualified Data.Bifunctor.Swap               as B
-import qualified Data.Functor.Contravariant.Night  as CN
-import qualified Data.Functor.Coyoneda             as CY
+import Control.Natural
+import Data.Bifunctor
+import qualified Data.Bifunctor.Assoc as B
+import qualified Data.Bifunctor.Swap as B
+import Data.Functor.Alt
+import Data.Functor.Contravariant.Decide
+import Data.Functor.Contravariant.Night (Not (..), refuted)
+import qualified Data.Functor.Contravariant.Night as CN
+import qualified Data.Functor.Coyoneda as CY
+import Data.Functor.Invariant
+import Data.Functor.Invariant.Internative
+import Data.Kind
+import Data.Void
+import GHC.Generics
 
 -- | A pairing of invariant functors to create a new invariant functor that
 -- represents the "choice" between the two.
@@ -64,15 +68,16 @@ import qualified Data.Functor.Coyoneda             as CY
 -- about in Haskell (which uses @(,)@).  Therefore, it is an alternative to
 -- the typical 'Data.Functor.Day' convolution --- hence, the name 'Night'.
 data Night :: (Type -> Type) -> (Type -> Type) -> (Type -> Type) where
-    Night :: f b
-          -> g c
-          -> (b -> a)
-          -> (c -> a)
-          -> (a -> Either b c)
-          -> Night f g a
+  Night ::
+    f b ->
+    g c ->
+    (b -> a) ->
+    (c -> a) ->
+    (a -> Either b c) ->
+    Night f g a
 
 instance Invariant (Night f g) where
-    invmap f g (Night x y h j k) = Night x y (f . h) (f . j) (k . g)
+  invmap f g (Night x y h j k) = Night x y (f . h) (f . j) (k . g)
 
 -- | Pair two invariant actions together into a 'Night'; assigns the first
 -- one to 'Left' inputs and outputs and the second one to 'Right' inputs
@@ -83,21 +88,23 @@ night x y = Night x y Left Right id
 -- | Interpret the covariant part of a 'Night' into a target context @h@,
 -- as long as the context is an instance of 'Alt'.  The 'Alt' is used to
 -- combine results back together, chosen by '<!>'.
-runNightAlt
-    :: forall f g h. Alt h
-    => f ~> h
-    -> g ~> h
-    -> Night f g ~> h
+runNightAlt ::
+  forall f g h.
+  Alt h =>
+  f ~> h ->
+  g ~> h ->
+  Night f g ~> h
 runNightAlt f g (Night x y h j _) = fmap h (f x) <!> fmap j (g y)
 
 -- | Interpret the contravariant part of a 'Night' into a target context
 -- @h@, as long as the context is an instance of 'Decide'.  The 'Decide' is
 -- used to pick which part to feed the input to.
-runNightDecide
-    :: forall f g h. Decide h
-    => f ~> h
-    -> g ~> h
-    -> Night f g ~> h
+runNightDecide ::
+  forall f g h.
+  Decide h =>
+  f ~> h ->
+  g ~> h ->
+  Night f g ~> h
 runNightDecide f g (Night x y _ _ k) = decide k (f x) (g y)
 
 -- | Convert an invariant 'Night' into the covariant version, dropping the
@@ -120,7 +127,6 @@ toCoNight (Night x y f g _) = fmap f x :*: fmap g y
 toCoNight_ :: Night f g ~> CY.Coyoneda f :*: CY.Coyoneda g
 toCoNight_ (Night x y f g _) = CY.Coyoneda f x :*: CY.Coyoneda g y
 
-
 -- | Convert an invariant 'Night' into the contravariant version, dropping
 -- the covariant part.
 toContraNight :: Night f g ~> CN.Night f g
@@ -130,39 +136,44 @@ toContraNight (Night x y _ _ h) = CN.Night x y h
 -- two interpreting functions.
 --
 -- @since 0.4.0.0
-runNight
-    :: Inalt h
-    => (f ~> h)
-    -> (g ~> h)
-    -> Night f g ~> h
+runNight ::
+  Inalt h =>
+  (f ~> h) ->
+  (g ~> h) ->
+  Night f g ~> h
 runNight f g (Night x y a b c) = swerve a b c (f x) (g y)
 
 -- | Squash the two items in a 'Night' using their natural 'Inalt'
 -- instances.
 --
 -- @since 0.4.0.0
-nerve
-    :: Inalt f
-    => Night f f ~> f
+nerve ::
+  Inalt f =>
+  Night f f ~> f
 nerve (Night x y a b c) = swerve a b c x y
 
 -- | 'Night' is associative.
 assoc :: Night f (Night g h) ~> Night (Night f g) h
 assoc (Night x (Night y z f g h) j k l) =
-    Night (Night x y Left Right id) z
-      (either j (k . f))
-      (k . g)
-      (B.unassoc . second h . l)
+  Night
+    (Night x y Left Right id)
+    z
+    (either j (k . f))
+    (k . g)
+    (B.unassoc . second h . l)
 
 -- | 'Night' is associative.
 unassoc :: Night (Night f g) h ~> Night f (Night g h)
 unassoc (Night (Night x y f g h) z j k l) =
-    Night x (Night y z Left Right id)
-      (j . f)
-      (either (j . g) k)
-      (B.assoc . first h . l)
-      -- (k . g)
-      -- (either (k . h) l)
+  Night
+    x
+    (Night y z Left Right id)
+    (j . f)
+    (either (j . g) k)
+    (B.assoc . first h . l)
+
+-- (k . g)
+-- (either (k . h) l)
 
 -- | The left identity of 'Night' is 'Not'; this is one side of that
 -- isomorphism.
@@ -195,4 +206,3 @@ trans1 f (Night x y g h j) = Night (f x) y g h j
 -- | Hoist a function over the right side of a 'Night'.
 trans2 :: g ~> h -> Night f g ~> Night f h
 trans2 f (Night x y g h j) = Night x (f y) g h j
-

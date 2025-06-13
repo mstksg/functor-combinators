@@ -30,128 +30,163 @@
 -- combinator.
 module Data.Functor.Combinator (
   -- * Classes
+
   -- | A lot of type signatures are stated in terms of '~>'.  '~>'
   -- represents a "natural transformation" between two functors: a value of
   -- type @f '~>' g@ is a value of type 'f a -> g a@ that works for /any/
   -- @a@.
-    type (~>)
-  , type (<~>)
+  type (~>),
+  type (<~>),
+
   -- ** Single Functors
+
   -- | Classes that deal with single-functor combinators, that enhance
   -- a single functor.
-  , HFunctor(..)
-  , Inject(..)
-  , Interpret(..)
-  , forI
-  , iget, icollect, icollect1
-  , iapply, ifanout, ifanout1
-  , getI, collectI
-  , injectMap, injectContramap
-  , AltConst(..)
+  HFunctor (..),
+  Inject (..),
+  Interpret (..),
+  forI,
+  iget,
+  icollect,
+  icollect1,
+  iapply,
+  ifanout,
+  ifanout1,
+  getI,
+  collectI,
+  injectMap,
+  injectContramap,
+  AltConst (..),
+
   -- ** 'HTraversable'
-  , HTraversable(..), hsequence, hfoldMap, htoList
-  , HTraversable1(..), hsequence1, hfoldMap1, htoNonEmpty
+  HTraversable (..),
+  hsequence,
+  hfoldMap,
+  htoList,
+  HTraversable1 (..),
+  hsequence1,
+  hfoldMap1,
+  htoNonEmpty,
+
   -- ** Multi-Functors
+
   -- | Classes that deal with two-functor combinators, that "mix" two
   -- functors together in some way.
-  , HBifunctor(..)
+  HBifunctor (..),
+
   -- *** Associative
-  , Associative(..)
-  , SemigroupIn(..)
-  , biget, biapply
+  Associative (..),
+  SemigroupIn (..),
+  biget,
+  biapply,
   -- , biget, bicollect, bicollect1
-  , (!*!)
-  , (!+!)
-  , (!$!)
+  (!*!),
+  (!+!),
+  (!$!),
+
   -- *** Tensor
-  , Tensor(..)
-  , MonoidIn(..)
-  , nilLB, consLB
-  , inL, inR
-  , outL, outR
+  Tensor (..),
+  MonoidIn (..),
+  nilLB,
+  consLB,
+  inL,
+  inR,
+  outL,
+  outR,
+
   -- * Combinators
+
   -- | Functor combinators
   -- ** Single
-  , Coyoneda(..)
-  , ListF(..)
-  , NonEmptyF(..)
-  , MaybeF(..)
-  , MapF(..)
-  , NEMapF(..)
-  , Ap
-  , Ap1(..)
-  , Alt
-  , Free
-  , Free1
-  , Lift
-  , Step(..)
-  , Steps(..)
-  , ProxyF(..)
-  , ConstF(..)
-  , EnvT(..)
-  , ReaderT(..)
-  , Flagged(..)
-  , IdentityT(..)
-  , Void2
-  , Final(..)
-  , FreeOf(..)
-  , ComposeT(..)
+  Coyoneda (..),
+  ListF (..),
+  NonEmptyF (..),
+  MaybeF (..),
+  MapF (..),
+  NEMapF (..),
+  Ap,
+  Ap1 (..),
+  Alt,
+  Free,
+  Free1,
+  Lift,
+  Step (..),
+  Steps (..),
+  ProxyF (..),
+  ConstF (..),
+  EnvT (..),
+  ReaderT (..),
+  Flagged (..),
+  IdentityT (..),
+  Void2,
+  Final (..),
+  FreeOf (..),
+  ComposeT (..),
+
   -- ** Multi
-  , Day(..)
-  , (:*:)(..), prodOutL, prodOutR
-  , (:+:)(..), V1
-  , These1(..)
-  , Night(..), Not(..), refuted
-  , Comp(Comp, unComp)
-  , LeftF(..)
-  , RightF(..)
+  Day (..),
+  (:*:) (..),
+  prodOutL,
+  prodOutR,
+  (:+:) (..),
+  V1,
+  These1 (..),
+  Night (..),
+  Not (..),
+  refuted,
+  Comp (Comp, unComp),
+  LeftF (..),
+  RightF (..),
+
   -- ** Combinator Combinators
-  , HLift(..)
-  , HFree(..)
+  HLift (..),
+  HFree (..),
+
   -- * Util
+
   -- ** Natural Transformations
-  , generalize
-  , absorb
+  generalize,
+  absorb,
+
   -- ** Divisible
-  , dsum
-  , dsum1
-  , concludeN
-  , decideN
-  ) where
+  dsum,
+  dsum1,
+  concludeN,
+  decideN,
+) where
 
-import           Control.Alternative.Free
-import           Control.Applicative.Free
-import           Control.Applicative.Lift
-import           Control.Applicative.ListF
-import           Control.Applicative.Step
-import           Control.Comonad.Trans.Env
-import           Control.Monad.Freer.Church
-import           Control.Monad.Trans.Compose
-import           Control.Monad.Trans.Identity
-import           Control.Monad.Trans.Reader
-import           Control.Natural
-import           Control.Natural.IsoF
-import           Data.Functor.Apply.Free
-import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Conclude
-import           Data.Functor.Contravariant.Decide
-import           Data.Functor.Contravariant.Divise
-import           Data.Functor.Contravariant.Divisible
-import           Data.Functor.Coyoneda
-import           Data.Functor.Day
-import           Data.Functor.Invariant.Night
-import           Data.Functor.These
-import           Data.HBifunctor
-import           Data.HBifunctor.Associative
-import           Data.HBifunctor.Tensor
-import           Data.HFunctor
-import           Data.HFunctor.Final
-import           Data.HFunctor.HTraversable
-import           Data.HFunctor.Internal
-import           Data.HFunctor.Interpret
-import           GHC.Generics
-import qualified Data.SOP                             as SOP
-
+import Control.Alternative.Free
+import Control.Applicative.Free
+import Control.Applicative.Lift
+import Control.Applicative.ListF
+import Control.Applicative.Step
+import Control.Comonad.Trans.Env
+import Control.Monad.Freer.Church
+import Control.Monad.Trans.Compose
+import Control.Monad.Trans.Identity
+import Control.Monad.Trans.Reader
+import Control.Natural
+import Control.Natural.IsoF
+import Data.Functor.Apply.Free
+import Data.Functor.Contravariant
+import Data.Functor.Contravariant.Conclude
+import Data.Functor.Contravariant.Decide
+import Data.Functor.Contravariant.Divise
+import Data.Functor.Contravariant.Divisible
+import Data.Functor.Coyoneda
+import Data.Functor.Day
+import Data.Functor.Invariant.Night
+import Data.Functor.These
+import Data.HBifunctor
+import Data.HBifunctor.Associative
+import Data.HBifunctor.Tensor
+import Data.HFunctor
+import Data.HFunctor.Final
+import Data.HFunctor.HTraversable
+import Data.HFunctor.Internal
+import Data.HFunctor.Interpret
+import qualified Data.SOP as SOP
+import GHC.Generics
 
 -- | Convenient helper function to build up a 'Divisible' by splitting
 -- input across many different @f a@s.  Most useful when used alongside
@@ -166,11 +201,11 @@ import qualified Data.SOP                             as SOP
 -- @
 --
 -- @since 0.3.3.0
-dsum
-    :: (Foldable t, Divisible f)
-    => t (f a)
-    -> f a
-dsum = foldr (divide (\x -> (x,x))) conquer
+dsum ::
+  (Foldable t, Divisible f) =>
+  t (f a) ->
+  f a
+dsum = foldr (divide (\x -> (x, x))) conquer
 
 -- | Convenient helper function to build up a 'Conclude' by providing
 -- each component of it.  This makes it much easier to build up longer
@@ -204,14 +239,15 @@ dsum = foldr (divide (\x -> (x,x))) conquer
 --      otherwise you'd need to manually peel off eithers one-by-one.
 --
 -- @since 0.3.0.0
-concludeN
-    :: Conclude f
-    => SOP.NP f as
-    -> f (SOP.NS SOP.I as)
+concludeN ::
+  Conclude f =>
+  SOP.NP f as ->
+  f (SOP.NS SOP.I as)
 concludeN = \case
-    SOP.Nil     -> conclude (\case {})
-    x SOP.:* xs -> decide
-      (\case SOP.Z y  -> Left (SOP.unI y); SOP.S ys -> Right ys)
+  SOP.Nil -> conclude (\case {})
+  x SOP.:* xs ->
+    decide
+      (\case SOP.Z y -> Left (SOP.unI y); SOP.S ys -> Right ys)
       x
       (concludeN xs)
 
@@ -219,14 +255,15 @@ concludeN = \case
 -- and so only requires a 'Decide' constraint.
 --
 -- @since 0.3.0.0
-decideN
-    :: Decide f
-    => SOP.NP f (a ': as)
-    -> f (SOP.NS SOP.I (a ': as))
+decideN ::
+  Decide f =>
+  SOP.NP f (a ': as) ->
+  f (SOP.NS SOP.I (a ': as))
 decideN = \case
-    x SOP.:* xs -> case xs of
-      SOP.Nil    -> contramap (SOP.unI . SOP.unZ) x
-      _ SOP.:* _ -> decide
+  x SOP.:* xs -> case xs of
+    SOP.Nil -> contramap (SOP.unI . SOP.unZ) x
+    _ SOP.:* _ ->
+      decide
         (\case SOP.Z z -> Left (SOP.unI z); SOP.S zs -> Right zs)
         x
         (decideN xs)

@@ -20,32 +20,32 @@
 -- coherence.  Because of this, you should always use these with /specific/
 -- @f@s, and never in a polymorphic way over @f@.
 module Data.Functor.Combinator.Unsafe (
-    unsafePlus
-  , unsafeApply
-  , unsafeBind
-  , unsafePointed
-  , unsafeConclude
-  , unsafeDivise
-  , unsafeInvariantCo
-  , unsafeInvariantContra
-  , unsafeInplyCo
-  , unsafeInplyContra
-  , unsafeInplicativeCo
-  , unsafeInplicativeContra
-  ) where
+  unsafePlus,
+  unsafeApply,
+  unsafeBind,
+  unsafePointed,
+  unsafeConclude,
+  unsafeDivise,
+  unsafeInvariantCo,
+  unsafeInvariantContra,
+  unsafeInplyCo,
+  unsafeInplyContra,
+  unsafeInplicativeCo,
+  unsafeInplicativeContra,
+) where
 
-import           Control.Applicative
-import           Data.Constraint
-import           Data.Constraint.Unsafe
-import           Data.Functor.Bind
-import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Conclude
-import           Data.Functor.Contravariant.Divise
-import           Data.Functor.Contravariant.Divisible
-import           Data.Functor.Invariant
-import           Data.Functor.Invariant.Inplicative
-import           Data.Functor.Plus
-import           Data.Pointed
+import Control.Applicative
+import Data.Constraint
+import Data.Constraint.Unsafe
+import Data.Functor.Bind
+import Data.Functor.Contravariant
+import Data.Functor.Contravariant.Conclude
+import Data.Functor.Contravariant.Divise
+import Data.Functor.Contravariant.Divisible
+import Data.Functor.Invariant
+import Data.Functor.Invariant.Inplicative
+import Data.Functor.Plus
+import Data.Pointed
 
 -- | For any @'Alternative' f@, produce a value that would require @'Plus'
 -- f@.
@@ -58,7 +58,7 @@ import           Data.Pointed
 -- \@MyFunctor@.
 unsafePlus :: forall f proxy r. Alternative f => proxy f -> (Plus f => r) -> r
 unsafePlus _ x = case unsafeCoerceConstraint @(Plus (WrappedApplicative f)) @(Plus f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Applicative' f@, produce a value that would require @'Apply'
 -- f@.
@@ -71,7 +71,7 @@ unsafePlus _ x = case unsafeCoerceConstraint @(Plus (WrappedApplicative f)) @(Pl
 -- \@MyFunctor@.
 unsafeApply :: forall f proxy r. Applicative f => proxy f -> (Apply f => r) -> r
 unsafeApply _ x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(Apply f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Monad' f@, produce a value that would require @'Bind'
 -- f@.
@@ -84,12 +84,12 @@ unsafeApply _ x = case unsafeCoerceConstraint @(Apply (WrappedApplicative f)) @(
 -- \@MyFunctor@.
 unsafeBind :: forall f proxy r. Monad f => proxy f -> (Bind f => r) -> r
 unsafeBind _ x = case unsafeCoerceConstraint @(Bind (WrappedMonad f)) @(Bind f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 newtype PointMe f a = PointMe (f a)
 
 instance Applicative f => Pointed (PointMe f) where
-    point = PointMe . pure
+  point = PointMe . pure
 
 -- | For any @'Applicative' f@, produce a value that would require
 -- @'Pointed' f@.
@@ -102,7 +102,7 @@ instance Applicative f => Pointed (PointMe f) where
 -- \@MyFunctor@.
 unsafePointed :: forall f proxy r. Applicative f => proxy f -> (Pointed f => r) -> r
 unsafePointed _ x = case unsafeCoerceConstraint @(Pointed (PointMe f)) @(Pointed f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Decidable' f@, produce a value that would require @'Conclude'
 -- f@.
@@ -117,7 +117,7 @@ unsafePointed _ x = case unsafeCoerceConstraint @(Pointed (PointMe f)) @(Pointed
 -- @since 0.3.0.0
 unsafeConclude :: forall f proxy r. Decidable f => proxy f -> (Conclude f => r) -> r
 unsafeConclude _ x = case unsafeCoerceConstraint @(Conclude (WrappedDivisible f)) @(Conclude f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Divisible' f@, produce a value that would require @'Divise'
 -- f@.
@@ -132,7 +132,7 @@ unsafeConclude _ x = case unsafeCoerceConstraint @(Conclude (WrappedDivisible f)
 -- @since 0.3.0.0
 unsafeDivise :: forall f proxy r. Divisible f => proxy f -> (Divise f => r) -> r
 unsafeDivise _ x = case unsafeCoerceConstraint @(Divise (WrappedDivisible f)) @(Divise f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Functor' f@, produce a value that would require @'Invariant'
 -- f@.
@@ -147,7 +147,7 @@ unsafeDivise _ x = case unsafeCoerceConstraint @(Divise (WrappedDivisible f)) @(
 -- @since 0.4.1.0
 unsafeInvariantCo :: forall f proxy r. Functor f => proxy f -> (Invariant f => r) -> r
 unsafeInvariantCo _ x = case unsafeCoerceConstraint @(Invariant (WrappedFunctor f)) @(Invariant f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Contravariant' f@, produce a value that would require @'Invariant'
 -- f@.
@@ -162,7 +162,7 @@ unsafeInvariantCo _ x = case unsafeCoerceConstraint @(Invariant (WrappedFunctor 
 -- @since 0.4.1.0
 unsafeInvariantContra :: forall f proxy r. Contravariant f => proxy f -> (Invariant f => r) -> r
 unsafeInvariantContra _ x = case unsafeCoerceConstraint @(Invariant (WrappedContravariant f)) @(Invariant f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Apply' f@, produce a value that would require @'Inply'
 -- f@.
@@ -177,7 +177,7 @@ unsafeInvariantContra _ x = case unsafeCoerceConstraint @(Invariant (WrappedCont
 -- @since 0.4.1.0
 unsafeInplyCo :: forall f proxy r. Apply f => proxy f -> (Inply f => r) -> r
 unsafeInplyCo _ x = case unsafeCoerceConstraint @(Inply (WrappedFunctor f)) @(Inply f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Divise' f@, produce a value that would require @'Inply'
 -- f@.
@@ -192,7 +192,7 @@ unsafeInplyCo _ x = case unsafeCoerceConstraint @(Inply (WrappedFunctor f)) @(In
 -- @since 0.4.1.0
 unsafeInplyContra :: forall f proxy r. Divise f => proxy f -> (Inply f => r) -> r
 unsafeInplyContra _ x = case unsafeCoerceConstraint @(Inply (WrappedContravariant f)) @(Inply f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Applicative' f@, produce a value that would require
 -- @'Inplicative' f@.
@@ -205,9 +205,10 @@ unsafeInplyContra _ x = case unsafeCoerceConstraint @(Inply (WrappedContravarian
 -- \@MyFunctor@.
 --
 -- @since 0.4.1.0
-unsafeInplicativeCo :: forall f proxy r. (Applicative f, Invariant f) => proxy f -> (Inplicative f => r) -> r
+unsafeInplicativeCo ::
+  forall f proxy r. (Applicative f, Invariant f) => proxy f -> (Inplicative f => r) -> r
 unsafeInplicativeCo _ x = case unsafeCoerceConstraint @(Inply (WrappedApplicativeOnly f)) @(Inplicative f) of
-    Sub Dict -> x
+  Sub Dict -> x
 
 -- | For any @'Divisibl3' f@, produce a value that would require
 -- @'Inplicative' f@.
@@ -220,7 +221,7 @@ unsafeInplicativeCo _ x = case unsafeCoerceConstraint @(Inply (WrappedApplicativ
 -- \@MyFunctor@.
 --
 -- @since 0.4.1.0
-unsafeInplicativeContra :: forall f proxy r. (Divisible f, Invariant f) => proxy f -> (Inplicative f => r) -> r
+unsafeInplicativeContra ::
+  forall f proxy r. (Divisible f, Invariant f) => proxy f -> (Inplicative f => r) -> r
 unsafeInplicativeContra _ x = case unsafeCoerceConstraint @(Inply (WrappedDivisibleOnly f)) @(Inplicative f) of
-    Sub Dict -> x
-
+  Sub Dict -> x

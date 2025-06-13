@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP                  #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -18,9 +18,9 @@
 --
 -- @since 0.3.0.0
 module Data.Functor.Contravariant.Conclude (
-    Conclude(..)
-  , concluded
-  ) where
+  Conclude (..),
+  concluded,
+) where
 
 import Control.Applicative.Backwards
 import Control.Monad.Trans.Identity
@@ -97,8 +97,8 @@ import Control.Monad.Trans.List
 -- 'Decide', it adds a way to construct an "identity" @conclude@ where
 -- @decide f x (conclude q) == x@, and @decide g (conclude r) y == y@.
 class Decide f => Conclude f where
-    -- | The consumer that cannot ever receive /any/ input.
-    conclude :: (a -> Void) -> f a
+  -- | The consumer that cannot ever receive /any/ input.
+  conclude :: (a -> Void) -> f a
 
 -- | A potentially more meaningful form of 'conclude', the consumer that cannot
 -- ever receive /any/ input.  That is because it expects only input of type
@@ -111,7 +111,7 @@ concluded :: Conclude f => f Void
 concluded = conclude id
 
 instance Decidable f => Conclude (WrappedDivisible f) where
-    conclude f = WrapDivisible (lose f)
+  conclude f = WrapDivisible (lose f)
 
 instance Conclude Comparison where conclude = lose
 instance Conclude Equivalence where conclude = lose
@@ -194,4 +194,3 @@ instance Conclude f => Conclude (Reverse f) where
 
 lazyFst :: (a, b) -> a
 lazyFst ~(a, _) = a
-

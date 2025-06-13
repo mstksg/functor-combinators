@@ -18,41 +18,60 @@
 -- @since 0.3.4.0
 module Data.HFunctor.Route (
   -- * Routing Combinators
-  -- ** Contravariant
-    Pre(..)
-  , interpretPre, getPre, retractPre
-  , injectPre, mapPre
-  , preDivisible, preDivise, preContravariant
-  -- ** Covariant
-  , Post(..)
-  , interpretPost, getPost, retractPost
-  , injectPost, mapPost
-  , postPlus, postAlt, postFunctor
-  -- * Wrapped Invariant
-  -- ** Contravariant
-  , PreT(..)
-  , preDivisibleT, preDiviseT, preContravariantT
-  -- ** Covariant
-  , PostT(..)
-  , postPlusT, postAltT, postFunctorT
-  ) where
 
-import           Control.Natural
-import           Data.Functor.Invariant.Inplicative
-import           Data.Functor.Invariant.Internative
-import           Data.Functor.Bind
-import           Data.Functor.Contravariant
-import           Data.Functor.Contravariant.Conclude
-import           Data.Functor.Contravariant.Decide
-import           Data.Functor.Contravariant.Divise
-import           Data.Functor.Contravariant.Divisible
-import           Data.Functor.Invariant
-import           Data.Functor.Plus
-import           Data.HFunctor
-import           Data.HFunctor.HTraversable
-import           Data.HFunctor.Interpret
-import           Data.Profunctor
-import           Data.Void
+  -- ** Contravariant
+  Pre (..),
+  interpretPre,
+  getPre,
+  retractPre,
+  injectPre,
+  mapPre,
+  preDivisible,
+  preDivise,
+  preContravariant,
+
+  -- ** Covariant
+  Post (..),
+  interpretPost,
+  getPost,
+  retractPost,
+  injectPost,
+  mapPost,
+  postPlus,
+  postAlt,
+  postFunctor,
+
+  -- * Wrapped Invariant
+
+  -- ** Contravariant
+  PreT (..),
+  preDivisibleT,
+  preDiviseT,
+  preContravariantT,
+
+  -- ** Covariant
+  PostT (..),
+  postPlusT,
+  postAltT,
+  postFunctorT,
+) where
+
+import Control.Natural
+import Data.Functor.Bind
+import Data.Functor.Contravariant
+import Data.Functor.Contravariant.Conclude
+import Data.Functor.Contravariant.Decide
+import Data.Functor.Contravariant.Divise
+import Data.Functor.Contravariant.Divisible
+import Data.Functor.Invariant
+import Data.Functor.Invariant.Inplicative
+import Data.Functor.Invariant.Internative
+import Data.Functor.Plus
+import Data.HFunctor
+import Data.HFunctor.HTraversable
+import Data.HFunctor.Interpret
+import Data.Profunctor
+import Data.Void
 
 -- | A useful helper type to use with a covariant functor combinator that
 -- allows you to tag along contravariant access to all @f@s inside the
@@ -93,9 +112,8 @@ import           Data.Void
 -- An example of a usage of this in the real world is the /unjson/
 -- library's record type constructor, to implement bidrectional
 -- serializers for product types.
-data Pre  a f b = (a -> b) :>$<: f b
-  deriving Functor
-
+data Pre a f b = (a -> b) :>$<: f b
+  deriving (Functor)
 
 -- | A useful helper type to use with a contravariant functor combinator that
 -- allows you to tag along covariant access to all @f@s inside the
@@ -140,7 +158,7 @@ data Pre  a f b = (a -> b) :>$<: f b
 data Post a f b = (b -> a) :<$>: f b
 
 instance Contravariant f => Contravariant (Post a f) where
-    contramap f (g :<$>: x) = g . f :<$>: contramap f x
+  contramap f (g :<$>: x) = g . f :<$>: contramap f x
 
 infixl 4 :>$<:
 infixl 4 :<$>:
@@ -172,25 +190,26 @@ infixl 4 :<$>:
 -- @
 --
 -- See 'Pre' for more information.
-newtype PreT t f a = PreT { unPreT :: t (Pre a f) a }
+newtype PreT t f a = PreT {unPreT :: t (Pre a f) a}
 
 instance (HFunctor t, forall x. Functor (t (Pre x f))) => Invariant (PreT t f) where
-    invmap f g = PreT
-               . hmap (mapPre g)
-               . fmap f
-               . unPreT
+  invmap f g =
+    PreT
+      . hmap (mapPre g)
+      . fmap f
+      . unPreT
 
 instance HFunctor t => HFunctor (PreT t) where
-    hmap f = PreT . hmap (hmap f) . unPreT
+  hmap f = PreT . hmap (hmap f) . unPreT
 
 instance Inject t => Inject (PreT t) where
-    inject = PreT . inject . (id :>$<:)
+  inject = PreT . inject . (id :>$<:)
 
 instance HTraversable t => HTraversable (PreT t) where
-    htraverse f = fmap PreT . htraverse (htraverse f) . unPreT
+  htraverse f = fmap PreT . htraverse (htraverse f) . unPreT
 
 instance Interpret t f => Interpret (PreT t) f where
-    interpret f = interpret f . hmap getPre . unPreT
+  interpret f = interpret f . hmap getPre . unPreT
 
 -- | Turn the contravariant functor combinator @t@ into an 'Invariant'
 -- functor combinator; if @t f a@ "consumes" @a@s, then @'PostT' t f a@ will
@@ -212,28 +231,29 @@ instance Interpret t f => Interpret (PreT t) f where
 -- @
 --
 -- See 'Post' for more information.
-newtype PostT t f a = PostT { unPostT :: t (Post a f) a }
+newtype PostT t f a = PostT {unPostT :: t (Post a f) a}
 
 instance (HFunctor t, forall x. Contravariant (t (Post x f))) => Invariant (PostT t f) where
-    invmap f g = PostT
-               . hmap (mapPost f)
-               . contramap g
-               . unPostT
+  invmap f g =
+    PostT
+      . hmap (mapPost f)
+      . contramap g
+      . unPostT
 
 -- | @since 0.3.4.2
 instance HFunctor t => HFunctor (PostT t) where
-    hmap f = PostT . hmap (hmap f) . unPostT
+  hmap f = PostT . hmap (hmap f) . unPostT
 
 -- | @since 0.3.4.2
 instance Inject t => Inject (PostT t) where
-    inject = PostT . inject . (id :<$>:)
+  inject = PostT . inject . (id :<$>:)
 
 instance HTraversable t => HTraversable (PostT t) where
-    htraverse f = fmap PostT . htraverse (htraverse f) . unPostT
+  htraverse f = fmap PostT . htraverse (htraverse f) . unPostT
 
 -- | @since 0.3.4.2
 instance Interpret t f => Interpret (PostT t) f where
-    interpret f = interpret f . hmap getPost . unPostT
+  interpret f = interpret f . hmap getPost . unPostT
 
 -- | Run a @'PreT' t@ into a contravariant 'Divisible' context.  To run it
 -- in @t@s normal covariant context, use 'interpret'.
@@ -245,10 +265,10 @@ instance Interpret t f => Interpret (PostT t) f where
 -- preDivisibleT :: Divisible g => (f ~> g) -> PreT 'Ap'    f ~> g
 -- preDivisibleT :: Divisible g => (f ~> g) -> PreT 'ListF' f ~> g
 -- @
-preDivisibleT
-    :: (forall m. Monoid m => Interpret t (AltConst m), Divisible g)
-    => (f ~> g)
-    -> PreT t f ~> g
+preDivisibleT ::
+  (forall m. Monoid m => Interpret t (AltConst m), Divisible g) =>
+  (f ~> g) ->
+  PreT t f ~> g
 preDivisibleT f = preDivisible f . unPreT
 
 -- | Run a @'PreT' t@ into a contravariant 'Divise' context.  To run it in
@@ -261,10 +281,10 @@ preDivisibleT f = preDivisible f . unPreT
 -- preDiviseT :: Divise g => (f ~> g) -> PreT 'Ap1'       f ~> g
 -- preDiviseT :: Divise g => (f ~> g) -> PreT 'NonEmptyF' f ~> g
 -- @
-preDiviseT
-    :: (forall m. Semigroup m => Interpret t (AltConst m), Divise g)
-    => (f ~> g)
-    -> PreT t f ~> g
+preDiviseT ::
+  (forall m. Semigroup m => Interpret t (AltConst m), Divise g) =>
+  (f ~> g) ->
+  PreT t f ~> g
 preDiviseT f = preDivise f . unPreT
 
 -- | Run a @'PreT' t@ into a 'Contravariant'.  To run it in
@@ -276,10 +296,10 @@ preDiviseT f = preDivise f . unPreT
 -- preContravariantT :: Contravariant g => (f ~> g) -> PreT 'Step'     f ~> g
 -- preContravariantT :: Contravariant g => (f ~> g) -> PreT 'Coyoneda' f ~> g
 -- @
-preContravariantT
-    :: (forall m. Interpret t (AltConst m), Contravariant g)
-    => (f ~> g)
-    -> PreT t f ~> g
+preContravariantT ::
+  (forall m. Interpret t (AltConst m), Contravariant g) =>
+  (f ~> g) ->
+  PreT t f ~> g
 preContravariantT f = preContravariant f . unPreT
 
 -- | Run a "pre-routed" @t@ into a contravariant 'Divisible' context.  To
@@ -292,13 +312,14 @@ preContravariantT f = preContravariant f . unPreT
 -- preDivisible :: Divisible g => (f ~> g) -> 'Ap'    ('Pre' a f) b -> g a
 -- preDivisible :: Divisible g => (f ~> g) -> 'ListF' ('Pre' a f) b -> g a
 -- @
-preDivisible
-    :: (forall m. Monoid m => Interpret t (AltConst m), Divisible g)
-    => (f ~> g)
-    -> t (Pre a f) b
-    -> g a
-preDivisible f = foldr (divide (\x -> (x,x))) conquer
-               . icollect (interpretPre f)
+preDivisible ::
+  (forall m. Monoid m => Interpret t (AltConst m), Divisible g) =>
+  (f ~> g) ->
+  t (Pre a f) b ->
+  g a
+preDivisible f =
+  foldr (divide (\x -> (x, x))) conquer
+    . icollect (interpretPre f)
 
 -- | Run a "pre-routed" @t@ into a contravariant 'Divise' context.  To
 -- run it in @t@s normal covariant context, use 'interpret' with 'getPre'.
@@ -310,11 +331,11 @@ preDivisible f = foldr (divide (\x -> (x,x))) conquer
 -- preDivise :: Divise g => (f ~> g) -> 'Ap1'       ('Pre' a f) b -> g a
 -- preDivise :: Divise g => (f ~> g) -> 'NonEmptyF' ('Pre' a f) b -> g a
 -- @
-preDivise
-    :: (forall m. Semigroup m => Interpret t (AltConst m), Divise g)
-    => (f ~> g)
-    -> t (Pre a f) b
-    -> g a
+preDivise ::
+  (forall m. Semigroup m => Interpret t (AltConst m), Divise g) =>
+  (f ~> g) ->
+  t (Pre a f) b ->
+  g a
 preDivise f = foldr1 (<:>) . icollect1 (interpretPre f)
 
 -- | Run a "pre-routed" @t@ into a 'Contravariant'.  To run it in @t@s
@@ -326,11 +347,11 @@ preDivise f = foldr1 (<:>) . icollect1 (interpretPre f)
 -- preContravariant :: Contravariant g => (f ~> g) -> 'Step'     ('Pre' a f) b -> g a
 -- preContravariant :: Contravariant g => (f ~> g) -> 'Coyoneda' ('Pre' a f) b -> g a
 -- @
-preContravariant
-    :: (forall m. Interpret t (AltConst m), Contravariant g)
-    => (f ~> g)
-    -> t (Pre a f) b
-    -> g a
+preContravariant ::
+  (forall m. Interpret t (AltConst m), Contravariant g) =>
+  (f ~> g) ->
+  t (Pre a f) b ->
+  g a
 preContravariant f = iget (interpretPre f)
 
 -- | Run a @'PostT' t@ into a covariant 'Plus' context.  To run it
@@ -343,10 +364,10 @@ preContravariant f = iget (interpretPre f)
 -- postPlusT :: Plus g => (f ~> g) -> PreT 'Dec' f ~> g
 -- postPlusT :: Plus g => (f ~> g) -> PreT 'Div' f ~> g
 -- @
-postPlusT
-    :: (forall m. Monoid m => Interpret t (AltConst m), Plus g)
-    => (f ~> g)
-    -> PostT t f ~> g
+postPlusT ::
+  (forall m. Monoid m => Interpret t (AltConst m), Plus g) =>
+  (f ~> g) ->
+  PostT t f ~> g
 postPlusT f = postPlus f . unPostT
 
 -- | Run a @'PostT' t@ into a covariant 'Alt' context.  To run it
@@ -359,10 +380,10 @@ postPlusT f = postPlus f . unPostT
 -- postAltT :: Alt g => (f ~> g) -> PreT 'Dec1' f ~> g
 -- postAltT :: Alt g => (f ~> g) -> PreT 'Div1' f ~> g
 -- @
-postAltT
-    :: (forall m. Semigroup m => Interpret t (AltConst m), Alt g)
-    => (f ~> g)
-    -> PostT t f ~> g
+postAltT ::
+  (forall m. Semigroup m => Interpret t (AltConst m), Alt g) =>
+  (f ~> g) ->
+  PostT t f ~> g
 postAltT f = postAlt f . unPostT
 
 -- | Run a @'PostT' t@ into a covariant 'Functor' context.  To run it
@@ -374,10 +395,10 @@ postAltT f = postAlt f . unPostT
 -- postFunctorT :: Functor g => (f ~> g) -> PreT 'Step' f ~> g
 -- postFunctorT :: Functor g => (f ~> g) -> PreT 'CCY.Coyoneda' f ~> g
 -- @
-postFunctorT
-    :: (forall m. Interpret t (AltConst m), Functor g)
-    => (f ~> g)
-    -> PostT t f ~> g
+postFunctorT ::
+  (forall m. Interpret t (AltConst m), Functor g) =>
+  (f ~> g) ->
+  PostT t f ~> g
 postFunctorT f = postFunctor f . unPostT
 
 -- | Run a "post-routed" @t@ into a covariant 'Plus' context.  To run it
@@ -390,11 +411,11 @@ postFunctorT f = postFunctor f . unPostT
 -- postPlus :: Plus g => (f ~> g) -> 'Dec' (Post a f) b -> g a
 -- postPlus :: Plus g => (f ~> g) -> 'Div' (Post a f) b -> g a
 -- @
-postPlus
-    :: (forall m. Monoid m => Interpret t (AltConst m), Plus g)
-    => (f ~> g)
-    -> t (Post a f) b
-    -> g a
+postPlus ::
+  (forall m. Monoid m => Interpret t (AltConst m), Plus g) =>
+  (f ~> g) ->
+  t (Post a f) b ->
+  g a
 postPlus f = foldr (<!>) zero . icollect (interpretPost f)
 
 -- | Run a "post-routed" @t@ into a covariant 'Alt' context.  To run it
@@ -407,11 +428,11 @@ postPlus f = foldr (<!>) zero . icollect (interpretPost f)
 -- postAlt :: Alt g => (f ~> g) -> 'Dec1' (Post a f) b -> g a
 -- postAlt :: Alt g => (f ~> g) -> 'Div1' (Post a f) b -> g a
 -- @
-postAlt
-    :: (forall m. Semigroup m => Interpret t (AltConst m), Alt g)
-    => (f ~> g)
-    -> t (Post a f) b
-    -> g a
+postAlt ::
+  (forall m. Semigroup m => Interpret t (AltConst m), Alt g) =>
+  (f ~> g) ->
+  t (Post a f) b ->
+  g a
 postAlt f = foldr1 (<!>) . icollect1 (interpretPost f)
 
 -- | Run a "post-routed" @t@ into a covariant 'Functor' context.  To run it
@@ -423,11 +444,11 @@ postAlt f = foldr1 (<!>) . icollect1 (interpretPost f)
 -- postFunctor :: Functor g => (f ~> g) -> 'Step'         (Post a f) b -> g a
 -- postFunctor :: Functor g => (f ~> g) -> 'CCY.Coyoneda' (Post a f) b -> g a
 -- @
-postFunctor
-    :: (forall m. Interpret t (AltConst m), Functor g)
-    => (f ~> g)
-    -> t (Post a f) b
-    -> g a
+postFunctor ::
+  (forall m. Interpret t (AltConst m), Functor g) =>
+  (f ~> g) ->
+  t (Post a f) b ->
+  g a
 postFunctor f = iget (interpretPost f)
 
 -- | Contravariantly retract the @f@ out of a 'Pre', applying the
@@ -472,131 +493,155 @@ getPost (_ :<$>: x) = x
 
 -- | Post-compose on the post-routing function.
 mapPost :: (a -> c) -> Post a f b -> Post c f b
-mapPost f (g :<$>: x) = f  . g :<$>: x
+mapPost f (g :<$>: x) = f . g :<$>: x
 
 -- | Like 'inject', but allowing you to provide a post-routing function.
 injectPost :: Inject t => (b -> a) -> f b -> t (Post a f) b
 injectPost f x = inject (f :<$>: x)
 
 instance Functor f => Invariant (Post a f) where
-    invmap f g (h :<$>: x) = h . g :<$>: fmap f x
+  invmap f g (h :<$>: x) = h . g :<$>: fmap f x
 
 instance Contravariant f => Invariant (Pre a f) where
-    invmap f g (h :>$<: x) = f . h :>$<: contramap g x
+  invmap f g (h :>$<: x) = f . h :>$<: contramap g x
 
 instance HFunctor (Post a) where
-    hmap g (f :<$>: x) = f :<$>: g x
+  hmap g (f :<$>: x) = f :<$>: g x
 
 instance HFunctor (Pre a) where
-    hmap g (f :>$<: x) = f :>$<: g x
+  hmap g (f :>$<: x) = f :>$<: g x
 
 instance HTraversable (Post a) where
-    htraverse g (f :<$>: x) = (f :<$>:) <$> g x
+  htraverse g (f :<$>: x) = (f :<$>:) <$> g x
 
 instance HTraversable (Pre a) where
-    htraverse g (f :>$<: x) = (f :>$<:) <$> g x
+  htraverse g (f :>$<: x) = (f :>$<:) <$> g x
 
 instance Monoid a => Inject (Post a) where
-    inject x = const mempty :<$>: x
+  inject x = const mempty :<$>: x
 
 instance Monoid a => HBind (Post a) where
-    hjoin (f :<$>: (g :<$>: x)) = (f <> g) :<$>: x
+  hjoin (f :<$>: (g :<$>: x)) = (f <> g) :<$>: x
 
 instance Monoid a => Interpret (Post a) f where
-    retract (_ :<$>: x) = x
+  retract (_ :<$>: x) = x
 
 -- | This instance is over-contrained (@a@ only needs to be uninhabited),
 -- but there is no commonly used "uninhabited" typeclass
-instance (a ~ Void) => Inject (Pre a) where
-    inject x = absurd :>$<: x
+instance a ~ Void => Inject (Pre a) where
+  inject x = absurd :>$<: x
 
 -- | This instance is over-contrained (@a@ only needs to be uninhabited),
 -- but there is no commonly used "uninhabited" typeclass
-instance (a ~ Void) => HBind (Pre a) where
-    hjoin (_ :>$<: (_ :>$<: x)) = absurd :>$<: x
+instance a ~ Void => HBind (Pre a) where
+  hjoin (_ :>$<: (_ :>$<: x)) = absurd :>$<: x
 
-instance (a ~ Void) => Interpret (Pre a) f where
-    retract (_ :>$<: x) = x
+instance a ~ Void => Interpret (Pre a) f where
+  retract (_ :>$<: x) = x
 
 -- | If @t@ is a covariant functor combinator, then you applying it to
 -- @'Pre' a f@ gives you a profunctor.
-newtype ProPre t f a b = ProPre { unProPre :: t (Pre a f) b }
+newtype ProPre t f a b = ProPre {unProPre :: t (Pre a f) b}
 
 instance (HFunctor t, forall x. Functor (t (Pre x f))) => Profunctor (ProPre t f) where
-    dimap f g = ProPre
-              . hmap (mapPre f)
-              . fmap g
-              . unProPre
-
+  dimap f g =
+    ProPre
+      . hmap (mapPre f)
+      . fmap g
+      . unProPre
 
 -- | @since 0.3.4.1
 deriving instance Functor (t (Pre a f)) => Functor (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Apply (t (Pre a f)) => Apply (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Applicative (t (Pre a f)) => Applicative (ProPre t f a)
+
 -- | @since 0.3.4.1
 instance Bind (t (Pre a f)) => Bind (ProPre t f a) where
-    ProPre x >>- f = ProPre $ x >>- (unProPre . f)
+  ProPre x >>- f = ProPre $ x >>- (unProPre . f)
+
 -- | @since 0.3.4.1
 deriving instance Monad (t (Pre a f)) => Monad (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Contravariant (t (Pre a f)) => Contravariant (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Divisible (t (Pre a f)) => Divisible (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Divise (t (Pre a f)) => Divise (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Decide (t (Pre a f)) => Decide (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Conclude (t (Pre a f)) => Conclude (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Decidable (t (Pre a f)) => Decidable (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Plus (t (Pre a f)) => Plus (ProPre t f a)
+
 -- | @since 0.3.4.1
 instance Alt (t (Pre a f)) => Alt (ProPre t f a) where
-    ProPre x <!> ProPre y = ProPre (x <!> y)
+  ProPre x <!> ProPre y = ProPre (x <!> y)
+
 -- | @since 0.3.4.1
 deriving instance Invariant (t (Pre a f)) => Invariant (ProPre t f a)
+
 -- | @since 0.4.0.0.0
 deriving instance Inply (t (Pre a f)) => Inply (ProPre t f a)
+
 -- | @since 0.4.0.0.0
 deriving instance Inplicative (t (Pre a f)) => Inplicative (ProPre t f a)
+
 -- | @since 0.4.0.0.0
 deriving instance Inalt (t (Pre a f)) => Inalt (ProPre t f a)
+
 -- | @since 0.4.0.0.0
 deriving instance Inplus (t (Pre a f)) => Inplus (ProPre t f a)
+
 -- | @since 0.4.0.0.0
 deriving instance Internative (t (Pre a f)) => Internative (ProPre t f a)
+
 -- | @since 0.3.4.1
 deriving instance Semigroup (t (Pre a f) b) => Semigroup (ProPre t f a b)
+
 -- | @since 0.3.4.1
 deriving instance Monoid (t (Pre a f) b) => Monoid (ProPre t f a b)
+
 -- | @since 0.3.4.1
 deriving instance Show (t (Pre a f) b) => Show (ProPre t f a b)
+
 -- | @since 0.3.4.1
 deriving instance Eq (t (Pre a f) b) => Eq (ProPre t f a b)
+
 -- | @since 0.3.4.1
 deriving instance Ord (t (Pre a f) b) => Ord (ProPre t f a b)
 
-
-
 -- | If @t@ is a contravariant functor combinator, then you applying it to
 -- @'Post' a f@ gives you a profunctor.
-newtype ProPost t f a b = ProPost { unProPost :: t (Post b f) a }
+newtype ProPost t f a b = ProPost {unProPost :: t (Post b f) a}
 
 instance (HFunctor t, forall x. Contravariant (t (Post x f))) => Profunctor (ProPost t f) where
-    dimap f g = ProPost
-              . hmap (mapPost g)
-              . contramap f
-              . unProPost
+  dimap f g =
+    ProPost
+      . hmap (mapPost g)
+      . contramap f
+      . unProPost
 
 -- | @since 0.3.4.1
 instance (HFunctor t, Contravariant (t (Post a f))) => Functor (ProPost t f a) where
-    fmap f = ProPost
-           . hmap (mapPost f)
-           . unProPost
+  fmap f =
+    ProPost
+      . hmap (mapPost f)
+      . unProPost
+
 -- | @since 0.3.4.1
 instance (HFunctor t, Contravariant (t (Post a f))) => Invariant (ProPost t f a) where
-    invmap f _ = fmap f
+  invmap f _ = fmap f
