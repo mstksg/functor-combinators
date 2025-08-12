@@ -1,5 +1,4 @@
 .stack-work/
-functor-combinators.cabal
 .log.log
 .stack.yaml.lock
 .ghc.environment.*
